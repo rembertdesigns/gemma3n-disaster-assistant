@@ -3,26 +3,137 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Disaster Response Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disaster Response & Recovery Assistant</title>
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">🆘</div>
+      <div>
+        <h1 class="title">Disaster Response & Recovery Assistant</h1>
+        <p class="subtitle">AI-Powered Emergency Analysis & Support System</p>
+      </div>
+      <div class="status-bar">
+        <div class="status-indicator status-offline">
+          <div class="status-dot"></div>
+          Offline Ready
+        </div>
+      </div>
+    </div>
+  </header>
+
   <div class="container">
-    <h1>🆘 Disaster Response & Recovery Assistant</h1>
+    <div class="main-card">
+      <div class="card-header">
+        <h2>Emergency Situation Analysis</h2>
+        <p>Provide details about the situation for immediate assessment and guidance</p>
+      </div>
 
-    <form method="post" action="/analyze" enctype="multipart/form-data">
-      <label for="report_text">Text Report:</label>
-      <textarea name="report_text" rows="4" placeholder="Enter a brief report or request..." required></textarea>
+      <div class="form-container">
+        <form id="analysisForm" method="post" action="/analyze" enctype="multipart/form-data">
+          <div class="form-section">
+            <div class="section-title">
+              <span class="section-icon">📝</span>
+              Situation Report
+            </div>
+            <div class="input-group">
+              <label for="report_text">Describe the situation, location, and immediate needs:</label>
+              <textarea 
+                name="report_text" 
+                id="report_text"
+                placeholder="Example: Building collapse at 123 Main St. Multiple people trapped. Need immediate rescue assistance. Estimate 5-10 people affected..."
+                required
+              ></textarea>
+            </div>
+          </div>
 
-      <label for="file">Upload Image or Audio (optional):</label>
-      <input type="file" name="file" accept=".jpg,.jpeg,.png,.wav,.mp3,.m4a">
+          <div class="form-section">
+            <div class="section-title">
+              <span class="section-icon">📱</span>
+              Priority Level
+            </div>
+            <div class="priority-selector">
+              <div class="priority-option priority-critical">
+                <input type="radio" name="priority" value="critical" class="priority-input" id="critical">
+                <label for="critical" class="priority-label">🔴 Critical</label>
+              </div>
+              <div class="priority-option priority-urgent">
+                <input type="radio" name="priority" value="urgent" class="priority-input" id="urgent" checked>
+                <label for="urgent" class="priority-label">🟠 Urgent</label>
+              </div>
+              <div class="priority-option priority-medium">
+                <input type="radio" name="priority" value="medium" class="priority-input" id="medium">
+                <label for="medium" class="priority-label">🟡 Medium</label>
+              </div>
+              <div class="priority-option priority-low">
+                <input type="radio" name="priority" value="low" class="priority-input" id="low">
+                <label for="low" class="priority-label">🟢 Low</label>
+              </div>
+            </div>
+          </div>
 
-      <button type="submit">Analyze</button>
-    </form>
+          <div class="form-section">
+            <div class="section-title">
+              <span class="section-icon">📷</span>
+              Evidence Upload
+            </div>
+            <div class="file-upload-area" id="fileUpload">
+              <div class="upload-icon">📁</div>
+              <div class="upload-text">Drop files here or click to upload</div>
+              <div class="file-types">Images: JPG, PNG | Audio: WAV, MP3, M4A</div>
+              <input type="file" name="file" class="file-input" accept=".jpg,.jpeg,.png,.wav,.mp3,.m4a" id="fileInput">
+            </div>
+          </div>
 
+          <button type="submit" class="analyze-button" id="analyzeBtn">
+            <div class="button-content">
+              <div class="loading-spinner" id="loadingSpinner"></div>
+              <span id="buttonText">🔍 Analyze Situation</span>
+            </div>
+          </button>
+        </form>
+
+        <div class="quick-actions">
+          <div class="quick-action" onclick="setQuickReport('medical')">
+            <div class="quick-action-icon">🏥</div>
+            <div class="quick-action-title">Medical Emergency</div>
+            <div class="quick-action-desc">Injuries, health crisis</div>
+          </div>
+          <div class="quick-action" onclick="setQuickReport('fire')">
+            <div class="quick-action-icon">🔥</div>
+            <div class="quick-action-title">Fire/Explosion</div>
+            <div class="quick-action-desc">Active fire, smoke, explosion</div>
+          </div>
+          <div class="quick-action" onclick="setQuickReport('structural')">
+            <div class="quick-action-icon">🏗️</div>
+            <div class="quick-action-title">Structural Damage</div>
+            <div class="quick-action-desc">Building collapse, damage</div>
+          </div>
+          <div class="quick-action" onclick="setQuickReport('natural')">
+            <div class="quick-action-icon">🌪️</div>
+            <div class="quick-action-title">Natural Disaster</div>
+            <div class="quick-action-desc">Weather, geological events</div>
+          </div>
+        </div>
+
+        <div class="emergency-contacts">
+          <h3>🚨 Emergency Contacts</h3>
+          <div class="contacts-grid">
+            <div class="contact-item">📞 911 - Emergency</div>
+            <div class="contact-item">🚒 Fire Dept</div>
+            <div class="contact-item">👮 Police</div>
+            <div class="contact-item">🏥 Medical</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results section for Flask template -->
     {% if result %}
     <div class="result">
-      <h2>✅ Analysis Result:</h2>
+      <h2>✅ Analysis Results</h2>
       <ul>
         {% for key, value in result.items() %}
           <li><strong>{{ key | capitalize }}:</strong> {{ value }}</li>
@@ -31,5 +142,96 @@
     </div>
     {% endif %}
   </div>
+
+  <footer class="footer">
+    <p>🔒 Privacy-First | 🌐 Offline Capable | ⚡ Powered by AI</p>
+    <p>For immediate life-threatening emergencies, always call 911 first</p>
+  </footer>
+
+  <script>
+    // File upload drag and drop functionality
+    const fileUpload = document.getElementById('fileUpload');
+    const fileInput = document.getElementById('fileInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const buttonText = document.getElementById('buttonText');
+
+    fileUpload.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      fileUpload.classList.add('dragover');
+    });
+
+    fileUpload.addEventListener('dragleave', () => {
+      fileUpload.classList.remove('dragover');
+    });
+
+    fileUpload.addEventListener('drop', (e) => {
+      e.preventDefault();
+      fileUpload.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        updateFileUploadText(files[0].name);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        updateFileUploadText(e.target.files[0].name);
+      }
+    });
+
+    function updateFileUploadText(filename) {
+      const uploadText = fileUpload.querySelector('.upload-text');
+      uploadText.textContent = `Selected: ${filename}`;
+      uploadText.style.color = '#16a34a';
+      uploadText.style.fontWeight = '500';
+    }
+
+    // Form submission handling
+    document.getElementById('analysisForm').addEventListener('submit', (e) => {
+      analyzeBtn.classList.add('processing');
+      loadingSpinner.style.display = 'block';
+      buttonText.textContent = 'Analyzing...';
+      analyzeBtn.disabled = true;
+    });
+
+    // Quick action templates
+    function setQuickReport(type) {
+      const textarea = document.getElementById('report_text');
+      const templates = {
+        medical: 'Medical emergency reported. Person unconscious/injured at [LOCATION]. Immediate medical attention required. Current status: [DESCRIBE CONDITION]. Number of people affected: [NUMBER].',
+        fire: 'Fire/explosion reported at [LOCATION]. Active flames/smoke visible. Evacuation needed. Estimated size: [DESCRIBE]. People at risk: [NUMBER]. Access points: [DESCRIBE].',
+        structural: 'Structural damage/collapse at [LOCATION]. Building integrity compromised. People potentially trapped: [NUMBER]. Access blocked: [YES/NO]. Immediate hazards: [DESCRIBE].',
+        natural: 'Natural disaster event: [TYPE] at [LOCATION]. Severity: [SCALE]. Population affected: [NUMBER]. Infrastructure damage: [DESCRIBE]. Immediate needs: [LIST].'
+      };
+      
+      textarea.value = templates[type];
+      textarea.focus();
+      
+      // Set appropriate priority
+      if (type === 'medical' || type === 'fire') {
+        document.getElementById('critical').checked = true;
+      } else if (type === 'structural') {
+        document.getElementById('urgent').checked = true;
+      }
+    }
+
+    // Simulate offline capability indicator
+    function updateConnectionStatus() {
+      const indicator = document.querySelector('.status-indicator');
+      if (navigator.onLine) {
+        indicator.innerHTML = '<div class="status-dot"></div>Online + Offline Ready';
+        indicator.className = 'status-indicator status-online';
+      } else {
+        indicator.innerHTML = '<div class="status-dot"></div>Offline Mode Active';
+        indicator.className = 'status-indicator status-offline';
+      }
+    }
+
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    updateConnectionStatus();
+  </script>
 </body>
 </html>
