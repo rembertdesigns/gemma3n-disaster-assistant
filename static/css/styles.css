@@ -552,6 +552,24 @@ input[type="file"]:focus {
   font-weight: 700;
 }
 
+.hazard-warnings {
+  background-color: #fff5f5;
+  border-left: 4px solid #dc2626;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 0.5rem;
+  color: #991b1b;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 /* Enhanced Footer */
 .footer {
   text-align: center;
