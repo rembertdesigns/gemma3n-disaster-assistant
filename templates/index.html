@@ -132,15 +132,13 @@
 
     <!-- Results section for Flask template -->
     {% if result %}
-    <div class="result">
-      <h2>✅ Analysis Results</h2>
-      <ul>
-        {% for key, value in result.items() %}
-          <li><strong>{{ key | capitalize }}:</strong> {{ value }}</li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
+        <div class="result-card">
+          <h2>🚑 AI Situation Assessment</h2>
+          <p><strong>Priority Level:</strong> {{ result.triage_level }}</p>
+          <p><strong>Detected Damage:</strong> {{ result.damage_detected }}</p>
+          <p><strong>Suggested Action:</strong> {{ result.suggested_action }}</p>
+        </div>
+        {% endif %}
   </div>
 
   <footer class="footer">

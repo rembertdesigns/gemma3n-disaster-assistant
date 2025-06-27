@@ -442,6 +442,15 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
   
+  .result-card {
+    background-color: #fefefe;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 25px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  }
+  
   .footer {
     text-align: center;
     padding: 2rem;
