@@ -1,25 +1,25 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+from app.hazard_detection import detect_hazards
+from app.preprocessing import preprocess_input
+from app.inference import run_disaster_analysis
+from app.audio_transcription import transcribe_audio
+
+from weasyprint import HTML as WeasyHTML
 import shutil
 import os
 import uuid
 
-from app.preprocessing import preprocess_input
-from app.inference import run_disaster_analysis
-from app.audio_transcription import transcribe_audio
-from weasyprint import HTML as WeasyHTML
-
 app = FastAPI()
 
-# Mount static files (CSS, uploads)
+# Static assets
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# HTML templates
 templates = Jinja2Templates(directory="templates")
 
-# Upload directories
+# Create folders if not exist
 UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -42,7 +42,7 @@ async def analyze_input(
     hazards = []
     saved_path = None
 
-    # Image file upload
+    # Image upload
     if file and file.filename != "":
         extension = os.path.splitext(file.filename)[1]
         unique_filename = f"upload_{uuid.uuid4().hex}{extension}"
@@ -51,7 +51,7 @@ async def analyze_input(
             shutil.copyfileobj(file.file, buffer)
         input_payload = {"type": "image", "content": saved_path}
 
-    # Audio transcription
+    # Audio upload
     elif audio and audio.filename != "":
         extension = os.path.splitext(audio.filename)[1]
         audio_path = os.path.join(UPLOAD_DIR, f"audio_{uuid.uuid4().hex}{extension}")
@@ -69,11 +69,11 @@ async def analyze_input(
         input_payload = {"type": "text", "content": transcription["text"]}
         hazards = transcription.get("hazards", [])
 
-    # Default to raw text
+    # Plain text input
     else:
         input_payload = {"type": "text", "content": report_text.strip()}
 
-    # Run AI analysis
+    # Run analysis
     processed = preprocess_input(input_payload)
     result = run_disaster_analysis(processed)
 
@@ -96,3 +96,17 @@ async def export_pdf(request: Request, report_text: str = Form(...)):
         "request": request,
         "pdf_url": f"/{pdf_path}"
     })
+
+
+@app.post("/detect-hazards")
+async def detect_hazards_api(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
+        return JSONResponse(content={"error": "Unsupported file format"}, status_code=400)
+
+    try:
+        image_bytes = await file.read()
+        result = detect_hazards(image_bytes)
+        return JSONResponse(content=result)
+
+    except Exception as e:
+        return JSONResponse(content={"error": f"Hazard detection failed: {str(e)}"}, status_code=500)
