@@ -59,6 +59,10 @@
         </div>
 
         <button type="submit" id="analyzeBtn">🔍 Analyze Situation</button>
+        <form id="pdfForm" method="post" action="/export-pdf">
+          <input type="hidden" name="report_text" id="hiddenReportText">
+          <button type="submit" class="analyze-button" style="margin-top: 1rem;">🖨️ Export as PDF</button>
+        </form>        
       </form>
     </div>
 
@@ -154,6 +158,10 @@
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);
     updateConnectionStatus();
+  document.getElementById("pdfForm").addEventListener("submit", function(e) {
+    const report = document.getElementById("report_text").value;
+    document.getElementById("hiddenReportText").value = report;
+  });
   </script>
 </body>
 </html>

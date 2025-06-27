@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Emergency Report</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    h1 { color: #dc2626; }
+    .report { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Emergency Field Report</h1>
+  <p>Date: {{ now().strftime('%Y-%m-%d %H:%M') }}</p>
+  <div class="report">
+    <h2>Reported Situation:</h2>
+    <p>{{ report_text }}</p>
+  </div>
+</body>
+</html>
