@@ -37,6 +37,7 @@
             placeholder="Ex: Building collapse near 5th Ave..."
             aria-label="Type or paste a description of the emergency"
           ></textarea>
+
           <label for="audioUpload">🎙️ Upload Voice Note</label>
           <input type="file" name="audio" id="audioUpload" accept=".wav,.mp3,.m4a"
             aria-describedby="voiceNoteHelp" />
@@ -81,6 +82,17 @@
     {% if result %}
     <div class="result-card" id="resultCard">
       <h2>📊 AI Situation Assessment</h2>
+      {% if hazards %}
+        <div class="hazard-warnings">
+        <h3>🚨 Detected Audio Hazards:</h3>
+        <ul>
+          {% for h in hazards %}
+            <li>{{ h }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
       {% if result.error %}
         <p><strong>Error:</strong> {{ result.error }}</p>
       {% else %}

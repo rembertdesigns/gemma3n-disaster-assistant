@@ -39,6 +39,7 @@ async def analyze_input(
     audio: UploadFile = File(None)
 ):
     input_payload = {}
+    hazards = []
     saved_path = None
 
     # Image file upload
@@ -66,6 +67,7 @@ async def analyze_input(
             })
 
         input_payload = {"type": "text", "content": transcription["text"]}
+        hazards = transcription.get("hazards", [])
 
     # Default to raw text
     else:
@@ -78,7 +80,8 @@ async def analyze_input(
     return templates.TemplateResponse("index.html", {
         "request": request,
         "result": result,
-        "original_input": input_payload["content"]
+        "original_input": input_payload["content"],
+        "hazards": hazards
     })
 
 
@@ -90,6 +93,6 @@ async def export_pdf(request: Request, report_text: str = Form(...)):
     pdf_path = os.path.join(OUTPUT_DIR, f"report_{uuid.uuid4().hex}.pdf")
     WeasyHTML(string=html_content).write_pdf(pdf_path)
     return templates.TemplateResponse("pdf_success.html", {
-    "request": request,
-    "pdf_url": f"/{pdf_path}"
-})
+        "request": request,
+        "pdf_url": f"/{pdf_path}"
+    })
