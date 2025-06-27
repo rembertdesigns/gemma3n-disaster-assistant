@@ -683,3 +683,23 @@ input[type="file"]:focus {
   outline: 3px solid var(--info-blue);
   outline-offset: 2px;
 }
+
+/* High Contrast Mode */
+html[data-contrast="high"] {
+  --card-bg: #000000;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --border-color: #ffffff;
+  --safe-green: #00ff00;
+  --info-blue: #00ffff;
+  --emergency-red: #ff0000;
+  --urgent-orange: #ffaa00;
+  --warning-yellow: #ffff00;
+  --neutral-gray: #999999;
+  background-color: #000;
+}
+
+html[data-contrast="high"] body {
+  background: #000;
+  color: var(--text-primary);
+}

@@ -17,6 +17,7 @@
       </div>
       <div class="controls">
         <button id="toggleThemeBtn">🌓 Toggle Theme</button>
+        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
         <div class="status-bar">
           <div class="status-indicator status-offline">
             <div class="status-dot"></div>
@@ -32,7 +33,18 @@
       <form id="analysisForm" method="post" action="/analyze" enctype="multipart/form-data">
         <div class="form-section">
           <label for="report_text">📝 Situation Description (Optional):</label>
-          <textarea name="report_text" id="report_text" rows="4" placeholder="Ex: Building collapse near 5th Ave..."></textarea>
+          <textarea name="report_text" id="report_text" rows="4"
+            placeholder="Ex: Building collapse near 5th Ave..."
+            aria-label="Type or paste a description of the emergency"
+          ></textarea>
+          <label for="audioUpload">🎙️ Upload Voice Note</label>
+          <input type="file" name="audio" id="audioUpload" accept=".wav,.mp3,.m4a"
+            aria-describedby="voiceNoteHelp" />
+          <small id="voiceNoteHelp">Upload a voice file describing the situation</small>
+          
+          <button type="button" id="recordBtn" aria-label="Start or stop recording voice report">
+            🎤 Start Recording
+          </button>          
         </div>
 
         <div class="form-section">
@@ -100,20 +112,34 @@
       html.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
     });
-
+  
     // Load saved theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-
+  
+    // High contrast mode toggle
+    const contrastBtn = document.getElementById("contrastToggleBtn");
+    contrastBtn.addEventListener("click", () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-contrast');
+      const next = current === 'high' ? 'normal' : 'high';
+      html.setAttribute('data-contrast', next);
+      localStorage.setItem('contrast', next);
+    });
+  
+    // Load saved contrast setting
+    const savedContrast = localStorage.getItem('contrast');
+    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
+  
     // Voice recording
     const recordBtn = document.getElementById('recordBtn');
     const recordStatus = document.getElementById('recordStatus');
     const audioUpload = document.getElementById('audioUpload');
     const playback = document.getElementById('playback');
-
+  
     let mediaRecorder;
     let audioChunks = [];
-
+  
     recordBtn.addEventListener('click', async () => {
       if (recordBtn.textContent.includes("Stop")) {
         mediaRecorder.stop();
@@ -123,27 +149,27 @@
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
-
+  
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
         mediaRecorder.onstop = () => {
           const blob = new Blob(audioChunks, { type: 'audio/webm' });
           const file = new File([blob], "voice_input.webm", { type: 'audio/webm' });
-
+  
           const dt = new DataTransfer();
           dt.items.add(file);
           audioUpload.files = dt.files;
-
+  
           playback.src = URL.createObjectURL(blob);
           playback.style.display = 'block';
           recordStatus.textContent = "Recorded";
         };
-
+  
         mediaRecorder.start();
         recordBtn.textContent = "⏹ Stop Recording";
         recordStatus.textContent = "Recording...";
       }
     });
-
+  
     // Offline indicator
     function updateConnectionStatus() {
       const indicator = document.querySelector('.status-indicator');
@@ -155,13 +181,16 @@
         indicator.className = 'status-indicator status-offline';
       }
     }
+  
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);
     updateConnectionStatus();
-  document.getElementById("pdfForm").addEventListener("submit", function(e) {
-    const report = document.getElementById("report_text").value;
-    document.getElementById("hiddenReportText").value = report;
-  });
-  </script>
+  
+    // PDF form transfer
+    document.getElementById("pdfForm").addEventListener("submit", function(e) {
+      const report = document.getElementById("report_text").value;
+      document.getElementById("hiddenReportText").value = report;
+    });
+  </script>  
 </body>
 </html>
