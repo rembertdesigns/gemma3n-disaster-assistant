@@ -1,0 +1,35 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Disaster Response Assistant</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🆘 Disaster Response & Recovery Assistant</h1>
+
+    <form method="post" action="/analyze" enctype="multipart/form-data">
+      <label for="report_text">Text Report:</label>
+      <textarea name="report_text" rows="4" placeholder="Enter a brief report or request..." required></textarea>
+
+      <label for="file">Upload Image or Audio (optional):</label>
+      <input type="file" name="file" accept=".jpg,.jpeg,.png,.wav,.mp3,.m4a">
+
+      <button type="submit">Analyze</button>
+    </form>
+
+    {% if result %}
+    <div class="result">
+      <h2>✅ Analysis Result:</h2>
+      <ul>
+        {% for key, value in result.items() %}
+          <li><strong>{{ key | capitalize }}:</strong> {{ value }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>
