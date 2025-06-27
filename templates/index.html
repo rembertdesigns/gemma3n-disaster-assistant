@@ -28,27 +28,28 @@
     <div class="main-card">
       <div class="card-header">
         <h2>Emergency Situation Analysis</h2>
-        <p>Provide details about the situation for immediate assessment and guidance</p>
+        <p>Provide details via text, image, or audio for instant AI assessment</p>
       </div>
 
       <div class="form-container">
         <form id="analysisForm" method="post" action="/analyze" enctype="multipart/form-data">
+          <!-- TEXT INPUT -->
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">📝</span>
               Situation Report
             </div>
             <div class="input-group">
-              <label for="report_text">Describe the situation, location, and immediate needs:</label>
+              <label for="report_text">Describe the situation (optional if uploading audio):</label>
               <textarea 
                 name="report_text" 
                 id="report_text"
-                placeholder="Example: Building collapse at 123 Main St. Multiple people trapped. Need immediate rescue assistance. Estimate 5-10 people affected..."
-                required
+                placeholder="Ex: Earthquake in downtown area, building collapse, trapped individuals..."
               ></textarea>
             </div>
           </div>
 
+          <!-- PRIORITY -->
           <div class="form-section">
             <div class="section-title">
               <span class="section-icon">📱</span>
@@ -74,19 +75,22 @@
             </div>
           </div>
 
+          <!-- UPLOAD AREA -->
           <div class="form-section">
             <div class="section-title">
-              <span class="section-icon">📷</span>
-              Evidence Upload
+              <span class="section-icon">📷🎙️</span>
+              Upload Evidence
             </div>
             <div class="file-upload-area" id="fileUpload">
               <div class="upload-icon">📁</div>
-              <div class="upload-text">Drop files here or click to upload</div>
+              <div class="upload-text">Drop file or click to upload</div>
               <div class="file-types">Images: JPG, PNG | Audio: WAV, MP3, M4A</div>
-              <input type="file" name="file" class="file-input" accept=".jpg,.jpeg,.png,.wav,.mp3,.m4a" id="fileInput">
+              <input type="file" name="file" class="file-input" accept=".jpg,.jpeg,.png" id="fileInput">
+              <input type="file" name="audio" class="file-input" accept=".wav,.mp3,.m4a" id="audioInput">
             </div>
           </div>
 
+          <!-- SUBMIT -->
           <button type="submit" class="analyze-button" id="analyzeBtn">
             <div class="button-content">
               <div class="loading-spinner" id="loadingSpinner"></div>
@@ -95,6 +99,7 @@
           </button>
         </form>
 
+        <!-- QUICK ACTIONS -->
         <div class="quick-actions">
           <div class="quick-action" onclick="setQuickReport('medical')">
             <div class="quick-action-icon">🏥</div>
@@ -114,10 +119,11 @@
           <div class="quick-action" onclick="setQuickReport('natural')">
             <div class="quick-action-icon">🌪️</div>
             <div class="quick-action-title">Natural Disaster</div>
-            <div class="quick-action-desc">Weather, geological events</div>
+            <div class="quick-action-desc">Weather, earthquake, etc.</div>
           </div>
         </div>
 
+        <!-- EMERGENCY CONTACTS -->
         <div class="emergency-contacts">
           <h3>🚨 Emergency Contacts</h3>
           <div class="contacts-grid">
@@ -130,25 +136,34 @@
       </div>
     </div>
 
-    <!-- Results section for Flask template -->
-{% if result %}
-<div class="result-card">
-    <h2>🚑 AI Situation Assessment</h2>
-    <p><strong>Priority Level:</strong> {{ result.priority }}</p>
-  <p><strong>Detected Damage:</strong> {{ result.damage_type }}</p>
-  <p><strong>Suggested Action:</strong> {{ result.suggestion }}</p>
-</div>
-{% endif %}
-
+    <!-- RESULTS CARD -->
+    {% if result %}
+    <div class="result-card">
+      <h2>📊 AI Situation Assessment</h2>
+      {% if result.error %}
+        <p class="result-error"><strong>Error:</strong> {{ result.error }}</p>
+      {% else %}
+        <p><strong>Type:</strong> {{ result.type|capitalize }}</p>
+        {% if result.type == 'image' %}
+          <p><strong>Detected:</strong> {{ result.damage_detected }}</p>
+          <p><strong>Confidence:</strong> {{ result.confidence * 100 }}%</p>
+          <p><strong>Suggested Action:</strong> {{ result.suggested_action }}</p>
+        {% elif result.type == 'text' %}
+          <p><strong>Response:</strong> {{ result.output }}</p>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 
+  <!-- FOOTER -->
   <footer class="footer">
     <p>🔒 Privacy-First | 🌐 Offline Capable | ⚡ Powered by AI</p>
-    <p>For immediate life-threatening emergencies, always call 911 first</p>
+    <p>For life-threatening situations, call emergency services immediately.</p>
   </footer>
 
+  <!-- SCRIPTS -->
   <script>
-    // File upload drag and drop functionality
     const fileUpload = document.getElementById('fileUpload');
     const fileInput = document.getElementById('fileInput');
     const analyzeBtn = document.getElementById('analyzeBtn');
@@ -159,64 +174,59 @@
       e.preventDefault();
       fileUpload.classList.add('dragover');
     });
-
     fileUpload.addEventListener('dragleave', () => {
       fileUpload.classList.remove('dragover');
     });
-
     fileUpload.addEventListener('drop', (e) => {
       e.preventDefault();
       fileUpload.classList.remove('dragover');
       const files = e.dataTransfer.files;
       if (files.length > 0) {
-        fileInput.files = files;
+        if (files[0].type.startsWith("audio")) {
+          document.getElementById('audioInput').files = files;
+        } else {
+          fileInput.files = files;
+        }
         updateFileUploadText(files[0].name);
       }
     });
-
     fileInput.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
         updateFileUploadText(e.target.files[0].name);
       }
     });
-
+    document.getElementById('audioInput').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        updateFileUploadText(e.target.files[0].name);
+      }
+    });
     function updateFileUploadText(filename) {
       const uploadText = fileUpload.querySelector('.upload-text');
       uploadText.textContent = `Selected: ${filename}`;
       uploadText.style.color = '#16a34a';
-      uploadText.style.fontWeight = '500';
     }
-
-    // Form submission handling
     document.getElementById('analysisForm').addEventListener('submit', (e) => {
       analyzeBtn.classList.add('processing');
       loadingSpinner.style.display = 'block';
       buttonText.textContent = 'Analyzing...';
       analyzeBtn.disabled = true;
     });
-
-    // Quick action templates
     function setQuickReport(type) {
       const textarea = document.getElementById('report_text');
       const templates = {
-        medical: 'Medical emergency reported. Person unconscious/injured at [LOCATION]. Immediate medical attention required. Current status: [DESCRIBE CONDITION]. Number of people affected: [NUMBER].',
-        fire: 'Fire/explosion reported at [LOCATION]. Active flames/smoke visible. Evacuation needed. Estimated size: [DESCRIBE]. People at risk: [NUMBER]. Access points: [DESCRIBE].',
-        structural: 'Structural damage/collapse at [LOCATION]. Building integrity compromised. People potentially trapped: [NUMBER]. Access blocked: [YES/NO]. Immediate hazards: [DESCRIBE].',
-        natural: 'Natural disaster event: [TYPE] at [LOCATION]. Severity: [SCALE]. Population affected: [NUMBER]. Infrastructure damage: [DESCRIBE]. Immediate needs: [LIST].'
+        medical: 'Medical emergency reported at [LOCATION]. Injured persons: [NUMBER]. Immediate medical aid required.',
+        fire: 'Fire reported at [LOCATION]. Smoke and flames visible. Evacuation required. People in danger: [NUMBER].',
+        structural: 'Building collapse reported at [LOCATION]. People possibly trapped: [NUMBER]. Debris blocking access.',
+        natural: 'Natural disaster at [LOCATION]. Event: [EARTHQUAKE/FLOOD]. People affected: [NUMBER]. Infrastructure damage: [BRIEFLY DESCRIBE].'
       };
-      
       textarea.value = templates[type];
       textarea.focus();
-      
-      // Set appropriate priority
       if (type === 'medical' || type === 'fire') {
         document.getElementById('critical').checked = true;
-      } else if (type === 'structural') {
+      } else {
         document.getElementById('urgent').checked = true;
       }
     }
-
-    // Simulate offline capability indicator
     function updateConnectionStatus() {
       const indicator = document.querySelector('.status-indicator');
       if (navigator.onLine) {
@@ -227,7 +237,6 @@
         indicator.className = 'status-indicator status-offline';
       }
     }
-
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);
     updateConnectionStatus();
