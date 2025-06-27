@@ -1,11 +1,11 @@
 <!-- templates/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Disaster Response & Recovery Assistant</title>
-  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
 <body>
   <header class="header">
@@ -13,12 +13,15 @@
       <div class="logo">🆘</div>
       <div>
         <h1 class="title">Disaster Response & Recovery Assistant</h1>
-        <p class="subtitle">AI-Powered Emergency Analysis & Support System</p>
+        <p class="subtitle">AI-Powered Emergency Analysis & Support</p>
       </div>
-      <div class="status-bar">
-        <div class="status-indicator status-offline">
-          <div class="status-dot"></div>
-          Offline Ready
+      <div class="controls">
+        <button id="toggleThemeBtn">🌓 Toggle Theme</button>
+        <div class="status-bar">
+          <div class="status-indicator status-offline">
+            <div class="status-dot"></div>
+            Offline Ready
+          </div>
         </div>
       </div>
     </div>
@@ -26,122 +29,44 @@
 
   <div class="container">
     <div class="main-card">
-      <div class="card-header">
-        <h2>Emergency Situation Analysis</h2>
-        <p>Provide details via text, image, or audio for instant AI assessment</p>
-      </div>
+      <form id="analysisForm" method="post" action="/analyze" enctype="multipart/form-data">
+        <div class="form-section">
+          <label for="report_text">📝 Situation Description (Optional):</label>
+          <textarea name="report_text" id="report_text" rows="4" placeholder="Ex: Building collapse near 5th Ave..."></textarea>
+        </div>
 
-      <div class="form-container">
-        <form id="analysisForm" method="post" action="/analyze" enctype="multipart/form-data">
-          <!-- TEXT INPUT -->
-          <div class="form-section">
-            <div class="section-title">
-              <span class="section-icon">📝</span>
-              Situation Report
-            </div>
-            <div class="input-group">
-              <label for="report_text">Describe the situation (optional if uploading audio):</label>
-              <textarea 
-                name="report_text" 
-                id="report_text"
-                placeholder="Ex: Earthquake in downtown area, building collapse, trapped individuals..."
-              ></textarea>
-            </div>
-          </div>
-
-          <!-- PRIORITY -->
-          <div class="form-section">
-            <div class="section-title">
-              <span class="section-icon">📱</span>
-              Priority Level
-            </div>
-            <div class="priority-selector">
-              <div class="priority-option priority-critical">
-                <input type="radio" name="priority" value="critical" class="priority-input" id="critical">
-                <label for="critical" class="priority-label">🔴 Critical</label>
-              </div>
-              <div class="priority-option priority-urgent">
-                <input type="radio" name="priority" value="urgent" class="priority-input" id="urgent" checked>
-                <label for="urgent" class="priority-label">🟠 Urgent</label>
-              </div>
-              <div class="priority-option priority-medium">
-                <input type="radio" name="priority" value="medium" class="priority-input" id="medium">
-                <label for="medium" class="priority-label">🟡 Medium</label>
-              </div>
-              <div class="priority-option priority-low">
-                <input type="radio" name="priority" value="low" class="priority-input" id="low">
-                <label for="low" class="priority-label">🟢 Low</label>
-              </div>
-            </div>
-          </div>
-
-          <!-- UPLOAD AREA -->
-          <div class="form-section">
-            <div class="section-title">
-              <span class="section-icon">📷🎙️</span>
-              Upload Evidence
-            </div>
-            <div class="file-upload-area" id="fileUpload">
-              <div class="upload-icon">📁</div>
-              <div class="upload-text">Drop file or click to upload</div>
-              <div class="file-types">Images: JPG, PNG | Audio: WAV, MP3, M4A</div>
-              <input type="file" name="file" class="file-input" accept=".jpg,.jpeg,.png" id="fileInput">
-              <input type="file" name="audio" class="file-input" accept=".wav,.mp3,.m4a" id="audioInput">
-            </div>
-          </div>
-
-          <!-- SUBMIT -->
-          <button type="submit" class="analyze-button" id="analyzeBtn">
-            <div class="button-content">
-              <div class="loading-spinner" id="loadingSpinner"></div>
-              <span id="buttonText">🔍 Analyze Situation</span>
-            </div>
-          </button>
-        </form>
-
-        <!-- QUICK ACTIONS -->
-        <div class="quick-actions">
-          <div class="quick-action" onclick="setQuickReport('medical')">
-            <div class="quick-action-icon">🏥</div>
-            <div class="quick-action-title">Medical Emergency</div>
-            <div class="quick-action-desc">Injuries, health crisis</div>
-          </div>
-          <div class="quick-action" onclick="setQuickReport('fire')">
-            <div class="quick-action-icon">🔥</div>
-            <div class="quick-action-title">Fire/Explosion</div>
-            <div class="quick-action-desc">Active fire, smoke, explosion</div>
-          </div>
-          <div class="quick-action" onclick="setQuickReport('structural')">
-            <div class="quick-action-icon">🏗️</div>
-            <div class="quick-action-title">Structural Damage</div>
-            <div class="quick-action-desc">Building collapse, damage</div>
-          </div>
-          <div class="quick-action" onclick="setQuickReport('natural')">
-            <div class="quick-action-icon">🌪️</div>
-            <div class="quick-action-title">Natural Disaster</div>
-            <div class="quick-action-desc">Weather, earthquake, etc.</div>
+        <div class="form-section">
+          <label>📍 Priority Level:</label>
+          <div class="priority-selector">
+            <label><input type="radio" name="priority" value="critical" />🔴 Critical</label>
+            <label><input type="radio" name="priority" value="urgent" checked />🟠 Urgent</label>
+            <label><input type="radio" name="priority" value="medium" />🟡 Medium</label>
+            <label><input type="radio" name="priority" value="low" />🟢 Low</label>
           </div>
         </div>
 
-        <!-- EMERGENCY CONTACTS -->
-        <div class="emergency-contacts">
-          <h3>🚨 Emergency Contacts</h3>
-          <div class="contacts-grid">
-            <div class="contact-item">📞 911 - Emergency</div>
-            <div class="contact-item">🚒 Fire Dept</div>
-            <div class="contact-item">👮 Police</div>
-            <div class="contact-item">🏥 Medical</div>
-          </div>
+        <div class="form-section">
+          <label>📎 Upload Evidence:</label>
+          <input type="file" name="file" accept=".jpg,.jpeg,.png" />
+          <input type="file" name="audio" id="audioUpload" accept=".wav,.mp3,.m4a" />
         </div>
-      </div>
+
+        <div class="form-section">
+          <label>🎙️ Voice Report:</label>
+          <button type="button" id="recordBtn">🎤 Start Recording</button>
+          <span id="recordStatus">Idle</span>
+          <audio id="playback" controls style="display:none;"></audio>
+        </div>
+
+        <button type="submit" id="analyzeBtn">🔍 Analyze Situation</button>
+      </form>
     </div>
 
-    <!-- RESULTS CARD -->
     {% if result %}
-    <div class="result-card">
+    <div class="result-card" id="resultCard">
       <h2>📊 AI Situation Assessment</h2>
       {% if result.error %}
-        <p class="result-error"><strong>Error:</strong> {{ result.error }}</p>
+        <p><strong>Error:</strong> {{ result.error }}</p>
       {% else %}
         <p><strong>Type:</strong> {{ result.type|capitalize }}</p>
         {% if result.type == 'image' %}
@@ -153,80 +78,69 @@
         {% endif %}
       {% endif %}
     </div>
+    <script>document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });</script>
     {% endif %}
   </div>
 
-  <!-- FOOTER -->
   <footer class="footer">
-    <p>🔒 Privacy-First | 🌐 Offline Capable | ⚡ Powered by AI</p>
-    <p>For life-threatening situations, call emergency services immediately.</p>
+    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
   </footer>
 
-  <!-- SCRIPTS -->
   <script>
-    const fileUpload = document.getElementById('fileUpload');
-    const fileInput = document.getElementById('fileInput');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const buttonText = document.getElementById('buttonText');
+    // Theme toggle
+    const themeBtn = document.getElementById('toggleThemeBtn');
+    themeBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
 
-    fileUpload.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      fileUpload.classList.add('dragover');
-    });
-    fileUpload.addEventListener('dragleave', () => {
-      fileUpload.classList.remove('dragover');
-    });
-    fileUpload.addEventListener('drop', (e) => {
-      e.preventDefault();
-      fileUpload.classList.remove('dragover');
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        if (files[0].type.startsWith("audio")) {
-          document.getElementById('audioInput').files = files;
-        } else {
-          fileInput.files = files;
-        }
-        updateFileUploadText(files[0].name);
-      }
-    });
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) {
-        updateFileUploadText(e.target.files[0].name);
-      }
-    });
-    document.getElementById('audioInput').addEventListener('change', (e) => {
-      if (e.target.files.length > 0) {
-        updateFileUploadText(e.target.files[0].name);
-      }
-    });
-    function updateFileUploadText(filename) {
-      const uploadText = fileUpload.querySelector('.upload-text');
-      uploadText.textContent = `Selected: ${filename}`;
-      uploadText.style.color = '#16a34a';
-    }
-    document.getElementById('analysisForm').addEventListener('submit', (e) => {
-      analyzeBtn.classList.add('processing');
-      loadingSpinner.style.display = 'block';
-      buttonText.textContent = 'Analyzing...';
-      analyzeBtn.disabled = true;
-    });
-    function setQuickReport(type) {
-      const textarea = document.getElementById('report_text');
-      const templates = {
-        medical: 'Medical emergency reported at [LOCATION]. Injured persons: [NUMBER]. Immediate medical aid required.',
-        fire: 'Fire reported at [LOCATION]. Smoke and flames visible. Evacuation required. People in danger: [NUMBER].',
-        structural: 'Building collapse reported at [LOCATION]. People possibly trapped: [NUMBER]. Debris blocking access.',
-        natural: 'Natural disaster at [LOCATION]. Event: [EARTHQUAKE/FLOOD]. People affected: [NUMBER]. Infrastructure damage: [BRIEFLY DESCRIBE].'
-      };
-      textarea.value = templates[type];
-      textarea.focus();
-      if (type === 'medical' || type === 'fire') {
-        document.getElementById('critical').checked = true;
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // Voice recording
+    const recordBtn = document.getElementById('recordBtn');
+    const recordStatus = document.getElementById('recordStatus');
+    const audioUpload = document.getElementById('audioUpload');
+    const playback = document.getElementById('playback');
+
+    let mediaRecorder;
+    let audioChunks = [];
+
+    recordBtn.addEventListener('click', async () => {
+      if (recordBtn.textContent.includes("Stop")) {
+        mediaRecorder.stop();
+        recordBtn.textContent = "🎤 Start Recording";
+        recordStatus.textContent = "Processing...";
       } else {
-        document.getElementById('urgent').checked = true;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunks, { type: 'audio/webm' });
+          const file = new File([blob], "voice_input.webm", { type: 'audio/webm' });
+
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          audioUpload.files = dt.files;
+
+          playback.src = URL.createObjectURL(blob);
+          playback.style.display = 'block';
+          recordStatus.textContent = "Recorded";
+        };
+
+        mediaRecorder.start();
+        recordBtn.textContent = "⏹ Stop Recording";
+        recordStatus.textContent = "Recording...";
       }
-    }
+    });
+
+    // Offline indicator
     function updateConnectionStatus() {
       const indicator = document.querySelector('.status-indicator');
       if (navigator.onLine) {
