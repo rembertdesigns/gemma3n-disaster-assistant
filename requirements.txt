@@ -6,3 +6,7 @@ sentence-transformers
 chromadb
 whisper
 ffmpeg-python
+fastapi
+uvicorn
+jinja2
+python-multipart
