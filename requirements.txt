@@ -5,3 +5,4 @@ torch
 sentence-transformers
 chromadb
 whisper
+ffmpeg-python
