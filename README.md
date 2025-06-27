@@ -1,18 +1,31 @@
-# Disaster Response & Recovery Assistant 🤖🆘
+# 🆘 Disaster Response & Recovery Assistant
 
-A compact, offline-first AI assistant powered by Google's Gemma 3n, designed to help in disaster zones where connectivity and privacy matter most.
+A compact, offline-first AI assistant powered by Google's **Gemma 3n**, designed to support first responders, field medics, and disaster relief personnel in low-connectivity, high-stakes environments.
+
+---
 
 ## 🚀 Features
-- 📷 Image-based damage assessment
-- 🎤 Voice + text triage guidance
-- 📚 Embedded offline emergency resources
-- 🔐 100% on-device, privacy-preserving
-- 📴 Works fully offline (airplane mode friendly)
+
+- 📷 **Image-based damage detection** (collapsed structures, hazard zones)
+- 🎤 **Voice-to-text triage** via Whisper integration
+- 📝 **Natural language analysis** of reports or observations
+- 🌐 **Offline-first** operation (airplane mode compatible)
+- 🔐 **Privacy-first** — all inference happens locally
+- 🌒 **Dark Mode + Mobile UI** optimized for real-world field use
+- 📄 **Auto-scroll to result** and quick report templates
+
+---
 
 ## 🧠 Powered By
-- **Gemma 3n**: On-device multimodal model
-- **Python** for backend orchestration
-- **ChromaDB / SQLite** for local retrieval
-- **Kivy / Streamlit** UI (device-dependent)
+
+- 🤖 **Gemma 3n**: On-device multimodal transformer from Google
+- 🐍 **FastAPI** + Jinja2 for backend and templating
+- 🎙️ **OpenAI Whisper** for local speech-to-text
+- 🧠 **ChromaDB / SQLite** (optional): for emergency document retrieval
+- 💅 **Tailored UI**: Custom CSS for responsive field-ready display
+
+---
 
 ## 📦 Folder Structure
+
+
