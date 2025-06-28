@@ -80,7 +80,28 @@ A compact, **offline-first AI assistant** powered by Google's **Gemma 3n**, desi
 
 ## 📦 Folder Structure
 
-
+```bash
+gemma3n-disaster-assistant/
+├── app/
+│ ├── api.py
+│ ├── hazard_detection.py
+│ ├── inference.py
+│ ├── preprocessing.py
+│ ├── audio_transcription.py
+│ └── report_utils.py
+├── static/
+│ ├── css/
+│ ├── js/
+│ └── mock_hazard_image.jpg
+├── templates/
+│ ├── index.html
+│ ├── hazards.html
+│ ├── pdf_success.html
+│ ├── pdf_template.html
+│ └── generate.html
+├── outputs/
+└── uploads/
+```
 
 
 
