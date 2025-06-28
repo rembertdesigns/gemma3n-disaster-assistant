@@ -68,6 +68,26 @@ A compact, **offline-first AI assistant** powered by Google's **Gemma 3n**, desi
 
 ---
 
+## 🔭 Roadmap & Sprint 4 (Planned)
+
+### 🛠️ Coming Next:
+- 🧭 **GPS & Timestamp Embedding**  
+  Embed coordinates and incident time in all reports.
+
+- 📍 **Interactive Map Embeds**  
+  Support for leaflet-style local maps with marked hazards.
+
+- 📡 **Real-Time Comms Sync (optional)**  
+  Bluetooth/local Wi-Fi syncing for cross-device field ops (P2P mesh).
+
+- 🛜 **Edge-Based Language Model Deployment**  
+  Integrate Gemma 3n locally via Ollama or Jetson Nano board.
+
+- 🧪 **Stress-Test Mode for Offline Conditions**  
+  Simulated airplane-mode testing harness with artificial lag/load.
+
+---
+
 ## 🧠 Powered By
 
 - 🤖 **Gemma 3n (Google)** — Multimodal Transformer (text/image)
