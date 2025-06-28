@@ -7,8 +7,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const hazardList = document.getElementById("hazardList");
     const toast = document.getElementById("toast");
     const testBtn = document.getElementById("runTestHazardBtn");
+    const progressBar = document.getElementById("progressBar");
+    const toggleBoxes = document.getElementById("toggleBoxes");
   
     let imageElement = null;
+    let lastDetections = [];
   
     function showToast(message, duration = 3000) {
       toast.textContent = message;
@@ -18,6 +21,13 @@ document.addEventListener("DOMContentLoaded", () => {
         toast.style.opacity = "0";
         setTimeout(() => (toast.style.display = "none"), 500);
       }, duration);
+    }
+  
+    function setProgress(percent) {
+      if (progressBar) {
+        progressBar.style.width = percent + "%";
+        progressBar.parentElement.style.display = percent < 100 ? "block" : "none";
+      }
     }
   
     input.addEventListener("change", () => {
@@ -43,11 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
   
+      setProgress(10);
       const formData = new FormData();
       formData.append("file", input.files[0]);
   
-      // Show loading message
-      showToast("Analyzing image for hazards...");
+      showToast("🔍 Analyzing image for hazards...");
   
       try {
         const res = await fetch("/detect-hazards", {
@@ -55,18 +65,23 @@ document.addEventListener("DOMContentLoaded", () => {
           body: formData,
         });
   
+        setProgress(70);
         const data = await res.json();
+  
         if (data.error) {
           showToast(data.error);
+          setProgress(0);
           return;
         }
   
-        // Draw result on canvas
+        lastDetections = data.predictions || [];
         drawResults(data);
+        setProgress(100);
   
       } catch (err) {
         console.error(err);
-        showToast("Something went wrong during detection.");
+        showToast("❌ Something went wrong during detection.");
+        setProgress(0);
       }
     });
   
@@ -76,10 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
   
-      // Show result section
       resultSection.style.display = "block";
-  
-      // Setup canvas size
       canvas.width = imageElement.width;
       canvas.height = imageElement.height;
   
@@ -87,42 +99,42 @@ document.addEventListener("DOMContentLoaded", () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
   
-      // Draw boxes
-      if (data.predictions && Array.isArray(data.predictions)) {
-        hazardList.innerHTML = "";
-        data.predictions.forEach((pred) => {
-          const { label, score, box } = pred;
+      hazardList.innerHTML = "";
+  
+      if (Array.isArray(data.predictions)) {
+        data.predictions.forEach(({ label, score, box }) => {
           const [x1, y1, x2, y2] = box;
   
-          ctx.strokeStyle = "#dc2626";
-          ctx.lineWidth = 2;
-          ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+          if (toggleBoxes.checked) {
+            ctx.strokeStyle = "#dc2626";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
   
-          ctx.fillStyle = "#dc2626";
-          ctx.font = "bold 14px sans-serif";
-          ctx.fillText(`${label} (${(score * 100).toFixed(1)}%)`, x1 + 4, y1 + 16);
+            ctx.fillStyle = "#dc2626";
+            ctx.font = "bold 14px sans-serif";
+            ctx.fillText(`${label} (${(score * 100).toFixed(1)}%)`, x1 + 4, y1 + 16);
+          }
   
           const li = document.createElement("li");
           li.textContent = `🚨 ${label} (${(score * 100).toFixed(1)}%)`;
           hazardList.appendChild(li);
         });
       } else {
-        showToast("No hazards detected.");
+        showToast("✅ No hazards detected.");
       }
     }
   
-    // --- MOCK TEST DETECTION LOGIC ---
+    // Redraw on toggle
+    if (toggleBoxes) {
+      toggleBoxes.addEventListener("change", () => {
+        drawResults({ predictions: lastDetections });
+      });
+    }
+  
+    // ---------- MOCK TEST MODE ----------
     const mockDetections = [
-      {
-        label: "Downed Power Line",
-        confidence: 0.91,
-        box: [50, 40, 300, 160],
-      },
-      {
-        label: "Flooded Area",
-        confidence: 0.87,
-        box: [100, 200, 280, 320],
-      }
+      { label: "Downed Power Line", confidence: 0.91, box: [50, 40, 300, 160] },
+      { label: "Flooded Area", confidence: 0.87, box: [100, 200, 280, 320] }
     ];
   
     function drawMockDetections(image, detections) {
@@ -132,19 +144,23 @@ document.addEventListener("DOMContentLoaded", () => {
   
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(image, 0, 0);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
   
       hazardList.innerHTML = "";
+      lastDetections = detections;
+  
       detections.forEach(({ label, confidence, box }) => {
         const [x1, y1, x2, y2] = box;
   
-        ctx.strokeStyle = "#dc2626";
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        if (toggleBoxes.checked) {
+          ctx.strokeStyle = "#dc2626";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
   
-        ctx.fillStyle = "rgba(220, 38, 38, 0.85)";
-        ctx.font = "bold 14px sans-serif";
-        ctx.fillText(`${label} (${(confidence * 100).toFixed(1)}%)`, x1 + 5, y1 - 8);
+          ctx.fillStyle = "rgba(220, 38, 38, 0.85)";
+          ctx.font = "bold 14px sans-serif";
+          ctx.fillText(`${label} (${(confidence * 100).toFixed(1)}%)`, x1 + 5, y1 - 8);
+        }
   
         const li = document.createElement("li");
         li.textContent = `🚨 ${label} (${(confidence * 100).toFixed(1)}%)`;
@@ -158,9 +174,11 @@ document.addEventListener("DOMContentLoaded", () => {
       mockImage.onload = () => {
         drawMockDetections(mockImage, mockDetections);
         showToast("🧠 Simulated hazard detection complete");
+        setProgress(100);
       };
       mockImage.onerror = () => {
         showToast("⚠️ Failed to load mock image");
+        setProgress(0);
       };
     }
   

@@ -16,7 +16,7 @@
         <p class="subtitle">AI-Powered Emergency Analysis & Support</p>
       </div>
       <div class="controls">
-        <button id="toggleThemeBtn">🌓 Toggle Theme</button>
+        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
         <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
         <div class="status-bar">
           <div class="status-indicator status-offline">
@@ -28,29 +28,27 @@
     </div>
   </header>
 
-  <div class="container">
+  <main class="container">
     <div class="main-card">
       <form id="analysisForm" method="post" action="/analyze" enctype="multipart/form-data">
         <div class="form-section">
           <label for="report_text">📝 Situation Description (Optional):</label>
-          <textarea name="report_text" id="report_text" rows="4"
+          <textarea id="report_text" name="report_text" rows="4"
             placeholder="Ex: Building collapse near 5th Ave..."
-            aria-label="Type or paste a description of the emergency"
-          ></textarea>
+            aria-label="Describe the situation"></textarea>
 
           <label for="audioUpload">🎙️ Upload Voice Note</label>
-          <input type="file" name="audio" id="audioUpload" accept=".wav,.mp3,.m4a"
-            aria-describedby="voiceNoteHelp" />
-          <small id="voiceNoteHelp">Upload a voice file describing the situation</small>
-          
-          <button type="button" id="recordBtn" aria-label="Start or stop recording voice report">
-            🎤 Start Recording
-          </button>          
+          <input type="file" id="audioUpload" name="audio" accept=".wav,.mp3,.m4a,.webm"
+            aria-label="Upload voice file" />
+
+          <button type="button" id="recordBtn" aria-label="Start or stop recording">🎤 Start Recording</button>
+          <span id="recordStatus">Idle</span>
+          <audio id="playback" controls style="display:none;"></audio>
         </div>
 
         <div class="form-section">
           <label>📍 Priority Level:</label>
-          <div class="priority-selector">
+          <div class="priority-selector" role="radiogroup" aria-label="Priority level">
             <label><input type="radio" name="priority" value="critical" />🔴 Critical</label>
             <label><input type="radio" name="priority" value="urgent" checked />🟠 Urgent</label>
             <label><input type="radio" name="priority" value="medium" />🟡 Medium</label>
@@ -59,39 +57,38 @@
         </div>
 
         <div class="form-section">
-          <label>📎 Upload Evidence:</label>
-          <input type="file" name="file" accept=".jpg,.jpeg,.png" />
-          <input type="file" name="audio" id="audioUpload" accept=".wav,.mp3,.m4a" />
+          <label for="file">📎 Upload Evidence (Image)</label>
+          <input type="file" name="file" id="file" accept=".jpg,.jpeg,.png"
+            aria-label="Upload image evidence" />
         </div>
 
-        <div class="form-section">
-          <label>🎙️ Voice Report:</label>
-          <button type="button" id="recordBtn">🎤 Start Recording</button>
-          <span id="recordStatus">Idle</span>
-          <audio id="playback" controls style="display:none;"></audio>
-        </div>
+        <button type="submit" id="analyzeBtn" aria-label="Submit form for AI analysis">🔍 Analyze Situation</button>
+      </form>
 
-        <button type="submit" id="analyzeBtn">🔍 Analyze Situation</button>
-        <form id="pdfForm" method="post" action="/export-pdf">
-          <input type="hidden" name="report_text" id="hiddenReportText">
-          <button type="submit" class="analyze-button" style="margin-top: 1rem;">🖨️ Export as PDF</button>
-        </form>        
+      <form id="pdfForm" method="post" action="/export-pdf">
+        <input type="hidden" name="report_text" id="hiddenReportText">
+        <button type="submit" class="analyze-button" style="margin-top: 1rem;">🖨️ Export as PDF</button>
       </form>
     </div>
 
     {% if result %}
     <div class="result-card" id="resultCard">
       <h2>📊 AI Situation Assessment</h2>
+
       {% if hazards %}
-        <div class="hazard-warnings">
-        <h3>🚨 Detected Audio Hazards:</h3>
-        <ul>
-          {% for h in hazards %}
-            <li>🚨 {{ h }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-    {% endif %}
+        <div class="hazard-warnings" id="hazardSection">
+          <button id="toggleHazards" aria-expanded="true" style="background: none; border: none; font-weight: bold; font-size: 1rem; margin-bottom: 0.5rem; color: #991b1b;">
+            🔽 Detected Audio Hazards
+          </button>
+          <div id="hazardList">
+            <ul>
+              {% for h in hazards %}
+                <li>🚨 {{ h }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
 
       {% if result.error %}
         <p><strong>Error:</strong> {{ result.error }}</p>
@@ -108,22 +105,7 @@
     </div>
     <script>document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });</script>
     {% endif %}
-
-    {% if hazards %}
-  <div class="hazard-warnings" id="hazardSection">
-    <button id="toggleHazards" aria-expanded="true" style="background: none; border: none; font-weight: bold; font-size: 1rem; margin-bottom: 0.5rem; color: #991b1b;">
-      🔽 Detected Audio Hazards
-    </button>
-    <div id="hazardList">
-      <ul>
-        {% for h in hazards %}
-          <li>🚨 {{ h }}</li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-{% endif %}
-  </div>
+  </main>
 
   <footer class="footer">
     <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
@@ -139,12 +121,11 @@
       html.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
     });
-  
-    // Load saved theme
+
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-  
-    // High contrast mode toggle
+
+    // High contrast toggle
     const contrastBtn = document.getElementById("contrastToggleBtn");
     contrastBtn.addEventListener("click", () => {
       const html = document.documentElement;
@@ -153,20 +134,18 @@
       html.setAttribute('data-contrast', next);
       localStorage.setItem('contrast', next);
     });
-  
-    // Load saved contrast setting
+
     const savedContrast = localStorage.getItem('contrast');
     if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
-  
-    // Voice recording
+
+    // Voice recording logic
     const recordBtn = document.getElementById('recordBtn');
     const recordStatus = document.getElementById('recordStatus');
     const audioUpload = document.getElementById('audioUpload');
     const playback = document.getElementById('playback');
-  
     let mediaRecorder;
     let audioChunks = [];
-  
+
     recordBtn.addEventListener('click', async () => {
       if (recordBtn.textContent.includes("Stop")) {
         mediaRecorder.stop();
@@ -176,28 +155,27 @@
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
-  
+
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
         mediaRecorder.onstop = () => {
           const blob = new Blob(audioChunks, { type: 'audio/webm' });
           const file = new File([blob], "voice_input.webm", { type: 'audio/webm' });
-  
           const dt = new DataTransfer();
           dt.items.add(file);
           audioUpload.files = dt.files;
-  
+
           playback.src = URL.createObjectURL(blob);
           playback.style.display = 'block';
           recordStatus.textContent = "Recorded";
         };
-  
+
         mediaRecorder.start();
         recordBtn.textContent = "⏹ Stop Recording";
         recordStatus.textContent = "Recording...";
       }
     });
-  
-    // Offline indicator
+
+    // Connection status
     function updateConnectionStatus() {
       const indicator = document.querySelector('.status-indicator');
       if (navigator.onLine) {
@@ -208,31 +186,29 @@
         indicator.className = 'status-indicator status-offline';
       }
     }
-  
+
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);
     updateConnectionStatus();
-  
-    // PDF form transfer
+
+    // Export PDF content transfer
     document.getElementById("pdfForm").addEventListener("submit", function(e) {
-      const report = document.getElementById("report_text").value;
-      document.getElementById("hiddenReportText").value = report;
+      document.getElementById("hiddenReportText").value = document.getElementById("report_text").value;
     });
 
-    // Toggle audio hazard display (mobile accordion)
-const toggleHazards = document.getElementById("toggleHazards");
-const hazardList = document.getElementById("hazardList");
-
-if (toggleHazards && hazardList) {
-  toggleHazards.addEventListener("click", () => {
-    const isVisible = hazardList.style.display !== "none";
-    hazardList.style.display = isVisible ? "none" : "block";
-    toggleHazards.setAttribute("aria-expanded", !isVisible);
-    toggleHazards.textContent = isVisible
-      ? "▶️ Show Detected Audio Hazards"
-      : "🔽 Detected Audio Hazards";
-  });
-}
-  </script>  
+    // Collapsible hazard list
+    const toggleHazards = document.getElementById("toggleHazards");
+    const hazardList = document.getElementById("hazardList");
+    if (toggleHazards && hazardList) {
+      toggleHazards.addEventListener("click", () => {
+        const isVisible = hazardList.style.display !== "none";
+        hazardList.style.display = isVisible ? "none" : "block";
+        toggleHazards.setAttribute("aria-expanded", !isVisible);
+        toggleHazards.textContent = isVisible
+          ? "▶️ Show Detected Audio Hazards"
+          : "🔽 Detected Audio Hazards";
+      });
+    }
+  </script>
 </body>
 </html>

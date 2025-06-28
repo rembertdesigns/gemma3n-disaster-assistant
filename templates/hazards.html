@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hazard Detection</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/styles.css" />
   <script defer src="/static/js/hazard_detection.js"></script>
 </head>
 <body>
@@ -13,7 +13,9 @@
       <a href="/" class="logo" aria-label="Back to Dashboard">🚨</a>
       <h1 class="title">Hazard Detection</h1>
       <div class="controls">
-        <a href="/" class="status-indicator status-online">⬅ Back to Dashboard</a>
+        <a href="/" class="status-indicator status-online">
+          ⬅ Back to Dashboard
+        </a>
       </div>
     </div>
   </header>
@@ -21,23 +23,36 @@
   <main class="container">
     <section class="form-section">
       <h2>📷 Upload Image</h2>
-      <form id="hazardForm">
-        <input type="file" id="imageInput" accept="image/*" required />
+      <form id="hazardForm" aria-label="Hazard Detection Form">
+        <input type="file" id="imageInput" accept="image/*" required aria-label="Upload image for hazard detection" />
         <button id="detectBtn" type="submit">🔍 Detect Hazards</button>
+
+        <label style="margin-top: 0.75rem; display: block;">
+          <input type="checkbox" id="toggleBoxes" checked />
+          Show Bounding Boxes
+        </label>
+
+        <button id="runTestHazardBtn" type="button" style="margin-top: 0.75rem;">🧪 Run Hazard Detection Test</button>
+
+        <div class="progress-wrapper" style="margin-top: 1rem; display: none;">
+          <div id="progressBar" class="progress-bar" aria-label="Analysis progress"></div>
+        </div>
       </form>
 
-      <button id="runTestHazardBtn" style="margin-top: 1rem;">🧪 Run Hazard Detection Test</button>
-
-      <div id="previewContainer" style="margin-top: 1.5rem;"></div>
+      <div id="previewContainer" style="margin-top: 1rem;" aria-label="Image Preview"></div>
     </section>
 
-    <section id="resultSection" class="result-card" style="display: none;">
+    <section id="resultSection" class="result-card" style="display: none;" aria-label="Detection Results">
       <h2>🧠 Detection Results</h2>
-      <canvas id="resultCanvas" style="margin-top: 1rem;"></canvas>
-      <ul id="hazardList"></ul>
+      <canvas id="resultCanvas" aria-label="Hazard Detection Canvas" role="img"></canvas>
+      <ul id="hazardList" aria-label="List of detected hazards"></ul>
     </section>
 
-    <div id="toast" class="toast" style="display: none;"></div>
+    <div id="toast" class="toast" style="display: none;" role="alert" aria-live="polite"></div>
   </main>
+
+  <footer class="footer">
+    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
+  </footer>
 </body>
 </html>

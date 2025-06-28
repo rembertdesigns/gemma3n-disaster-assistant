@@ -244,6 +244,22 @@ body {
   background: rgba(31, 41, 55, 0.8);
 }
 
+/* Progress Bar Styles */
+.progress-wrapper {
+  width: 100%;
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background-color: #dc2626;
+  transition: width 0.3s ease-in-out;
+}
+
 label {
   display: block;
   font-weight: 600;
