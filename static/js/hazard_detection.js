@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.getElementById("resultCanvas");
     const hazardList = document.getElementById("hazardList");
     const toast = document.getElementById("toast");
+    const testBtn = document.getElementById("runTestHazardBtn");
   
     let imageElement = null;
   
@@ -108,5 +109,62 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         showToast("No hazards detected.");
       }
+    }
+  
+    // --- MOCK TEST DETECTION LOGIC ---
+    const mockDetections = [
+      {
+        label: "Downed Power Line",
+        confidence: 0.91,
+        box: [50, 40, 300, 160],
+      },
+      {
+        label: "Flooded Area",
+        confidence: 0.87,
+        box: [100, 200, 280, 320],
+      }
+    ];
+  
+    function drawMockDetections(image, detections) {
+      resultSection.style.display = "block";
+      canvas.width = image.width;
+      canvas.height = image.height;
+  
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0);
+  
+      hazardList.innerHTML = "";
+      detections.forEach(({ label, confidence, box }) => {
+        const [x1, y1, x2, y2] = box;
+  
+        ctx.strokeStyle = "#dc2626";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+  
+        ctx.fillStyle = "rgba(220, 38, 38, 0.85)";
+        ctx.font = "bold 14px sans-serif";
+        ctx.fillText(`${label} (${(confidence * 100).toFixed(1)}%)`, x1 + 5, y1 - 8);
+  
+        const li = document.createElement("li");
+        li.textContent = `🚨 ${label} (${(confidence * 100).toFixed(1)}%)`;
+        hazardList.appendChild(li);
+      });
+    }
+  
+    function runMockDetection() {
+      const mockImage = new Image();
+      mockImage.src = "/static/mock_hazard_image.jpg";
+      mockImage.onload = () => {
+        drawMockDetections(mockImage, mockDetections);
+        showToast("🧠 Simulated hazard detection complete");
+      };
+      mockImage.onerror = () => {
+        showToast("⚠️ Failed to load mock image");
+      };
+    }
+  
+    if (testBtn) {
+      testBtn.addEventListener("click", runMockDetection);
     }
   });  
