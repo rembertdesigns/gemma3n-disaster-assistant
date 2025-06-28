@@ -3,86 +3,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Generate PDF Report</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 2rem;
-      text-align: center;
-    }
-
-    button {
-      background-color: #1d4ed8;
-      color: white;
-      border: none;
-      padding: 1rem 2rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #2563eb;
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #16a34a;
-      color: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
-    }
-  </style>
-</head>
-<body>
-  <h1>Generate Emergency Report PDF</h1>
-  <p>Click below to generate and download a sample incident report.</p>
-
-  <button id="generate-pdf-btn">Generate PDF</button>
-
+  <title>Generate Report</title>
   <script>
-    document.getElementById("generate-pdf-btn").onclick = () => {
+    const sampleData = {
+      location: "Austin, TX",
+      hazards: ["fire", "collapsed structure"],
+      severity: 8.5,
+      notes: "Smoke observed, no visible injuries",
+      image_url: "https://via.placeholder.com/300"
+    };
+
+    function renderPreview(data) {
+      const preview = document.getElementById("preview");
+      preview.innerHTML = `
+        <h2>Report Preview</h2>
+        <p><strong>Location:</strong> ${data.location}</p>
+        <p><strong>Hazards:</strong> ${data.hazards.join(", ")}</p>
+        <p><strong>Severity:</strong> ${data.severity}</p>
+        <p><strong>Notes:</strong> ${data.notes}</p>
+        <img src="${data.image_url}" alt="Hazard Image" width="300" style="margin-top:1rem;">
+        <button onclick="generatePDF()" style="margin-top:1rem;">📄 Download PDF</button>
+      `;
+    }
+
+    function generatePDF() {
       fetch("/generate-report", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          location: "Austin, TX",
-          hazards: ["fire", "collapsed structure"],
-          severity: 8.5,
-          notes: "Smoke observed, no visible injuries",
-          image_url: "https://via.placeholder.com/300"
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sampleData)
       })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("PDF generation failed.");
-        }
-        return response.blob();
-      })
+      .then(response => response.blob())
       .then(blob => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = "incident_report.pdf";
         a.click();
-
-        const toast = document.createElement("div");
-        toast.className = "toast";
-        toast.textContent = "✅ Emergency report downloaded!";
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-      })
-      .catch(error => {
-        alert("Error: " + error.message);
       });
+    }
+
+    window.onload = () => {
+      renderPreview(sampleData);
     };
   </script>
+</head>
+<body style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 2rem;">
+  <h1>📋 Emergency Report Generator</h1>
+  <div id="preview" style="margin-top: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px;"></div>
 </body>
 </html>
