@@ -113,3 +113,7 @@ async def detect_hazards_api(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(content={"error": f"Hazard detection failed: {str(e)}"}, status_code=500)
+    
+@app.get("/offline.html", response_class=HTMLResponse)
+async def offline_page(request: Request):
+    return templates.TemplateResponse("offline.html", {"request": request})

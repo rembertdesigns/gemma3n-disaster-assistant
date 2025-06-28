@@ -2,9 +2,10 @@ import torch
 import torchvision.transforms as T
 from PIL import Image
 import io
+from torchvision.models.detection import fasterrcnn_resnet50_fpn
 
 # Load pre-trained object detection model (COCO classes)
-model = torch.hub.load('pytorch/vision', 'fasterrcnn_resnet50_fpn', pretrained=True)
+model = fasterrcnn_resnet50_fpn(pretrained=True)
 model.eval()
 
 # COCO class labels

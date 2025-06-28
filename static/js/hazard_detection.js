@@ -9,6 +9,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const testBtn = document.getElementById("runTestHazardBtn");
     const progressBar = document.getElementById("progressBar");
     const toggleBoxes = document.getElementById("toggleBoxes");
+    const downloadBtn = document.getElementById("downloadCanvasBtn");
+  
+    const openDrawerBtn = document.getElementById("openDrawerBtn");
+    const closeDrawerBtn = document.getElementById("closeDrawerBtn");
+    const settingsDrawer = document.getElementById("settingsDrawer");
+    const drawerToggleTheme = document.getElementById("drawerToggleTheme");
+    const drawerToggleBoxes = document.getElementById("drawerToggleBoxes");
+    const drawerSoundAlerts = document.getElementById("drawerSoundAlerts");
   
     let imageElement = null;
     let lastDetections = [];
@@ -77,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
         lastDetections = data.predictions || [];
         drawResults(data);
         setProgress(100);
-  
       } catch (err) {
         console.error(err);
         showToast("❌ Something went wrong during detection.");
@@ -105,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         data.predictions.forEach(({ label, score, box }) => {
           const [x1, y1, x2, y2] = box;
   
-          if (toggleBoxes.checked) {
+          if (toggleBoxes?.checked) {
             ctx.strokeStyle = "#dc2626";
             ctx.lineWidth = 2;
             ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
@@ -124,14 +131,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   
-    // Redraw on toggle
-    if (toggleBoxes) {
-      toggleBoxes.addEventListener("change", () => {
-        drawResults({ predictions: lastDetections });
-      });
-    }
+    toggleBoxes?.addEventListener("change", () => {
+      drawResults({ predictions: lastDetections });
+    });
   
-    // ---------- MOCK TEST MODE ----------
     const mockDetections = [
       { label: "Downed Power Line", confidence: 0.91, box: [50, 40, 300, 160] },
       { label: "Flooded Area", confidence: 0.87, box: [100, 200, 280, 320] }
@@ -152,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
       detections.forEach(({ label, confidence, box }) => {
         const [x1, y1, x2, y2] = box;
   
-        if (toggleBoxes.checked) {
+        if (toggleBoxes?.checked) {
           ctx.strokeStyle = "#dc2626";
           ctx.lineWidth = 3;
           ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
@@ -182,7 +185,44 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     }
   
-    if (testBtn) {
-      testBtn.addEventListener("click", runMockDetection);
+    testBtn?.addEventListener("click", runMockDetection);
+  
+    if (downloadBtn && canvas) {
+      downloadBtn.addEventListener("click", () => {
+        const imageURI = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.download = "hazard_detection_result.png";
+        link.href = imageURI;
+        link.click();
+      });
     }
+  
+    // -------- Settings Drawer Logic --------
+    openDrawerBtn?.addEventListener("click", () => {
+      settingsDrawer?.classList.add("open");
+    });
+  
+    closeDrawerBtn?.addEventListener("click", () => {
+      settingsDrawer?.classList.remove("open");
+    });
+  
+    drawerToggleTheme?.addEventListener("change", () => {
+      document.documentElement.setAttribute("data-theme", drawerToggleTheme.checked ? "dark" : "light");
+    });
+  
+    drawerToggleBoxes?.addEventListener("change", () => {
+      if (toggleBoxes) {
+        toggleBoxes.checked = drawerToggleBoxes.checked;
+        drawResults({ predictions: lastDetections });
+      }
+    });
+  
   });  
+
+  // --- Service Worker Registration ---
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("/static/js/sw.js")
+    .then(() => console.log("✅ Service Worker registered"))
+    .catch((err) => console.error("❌ SW registration failed:", err));
+}

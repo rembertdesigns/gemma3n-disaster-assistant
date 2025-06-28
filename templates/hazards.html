@@ -45,6 +45,9 @@
     <section id="resultSection" class="result-card" style="display: none;" aria-label="Detection Results">
       <h2>🧠 Detection Results</h2>
       <canvas id="resultCanvas" aria-label="Hazard Detection Canvas" role="img"></canvas>
+      <button id="downloadCanvasBtn" class="download-btn" style="margin-top: 1rem;">
+        📥 Download Image with Annotations
+      </button>      
       <ul id="hazardList" aria-label="List of detected hazards"></ul>
     </section>
 
@@ -54,5 +57,27 @@
   <footer class="footer">
     <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
   </footer>
+
+  <!-- Settings Drawer -->
+  <div id="settingsDrawer" class="settings-drawer hidden">
+    <div class="drawer-header">
+      <h2>⚙️ Settings</h2>
+      <button id="closeDrawerBtn">✖</button>
+    </div>
+    <div class="drawer-content">
+      <label>
+        <input type="checkbox" id="drawerToggleTheme"> 🌙 Dark Mode
+      </label>
+      <label>
+        <input type="checkbox" id="drawerToggleBoxes" checked> 🔲 Show Bounding Boxes
+      </label>
+      <label>
+        <input type="checkbox" id="drawerSoundAlerts"> 🔊 Sound Alerts
+      </label>
+    </div>
+  </div>
+
+  <!-- Floating Settings Button -->
+  <button id="openDrawerBtn" class="floating-settings-btn">⚙️</button>
 </body>
 </html>
