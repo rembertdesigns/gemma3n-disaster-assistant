@@ -35,6 +35,39 @@ A compact, **offline-first AI assistant** powered by Google's **Gemma 3n**, desi
 
 ---
 
+## ✅ Sprint Progress
+
+### 🧩 Sprint 1 – Core Input & Analysis
+- ✅ Voice/audio transcription via Whisper
+- ✅ Hazard keyword detection in speech
+- ✅ Image upload + object detection
+- ✅ Text-based disaster analysis engine
+- ✅ Severity scoring logic
+- ✅ Panic mode UX setup
+- ✅ Static fallback map (placeholder)
+- ✅ Offline HTML fallback route
+
+---
+
+### 🧩 Sprint 2 – Multimodal UX & Offline Enhancements
+- ✅ Dark Mode toggle in settings drawer
+- ✅ Bounding box toggle for hazard overlays
+- ✅ Detection result download (canvas PNG)
+- ✅ Offline-first PWA shell with service worker
+- ✅ Export PDF from text triage reports
+- ✅ Simulated test hazard UI + mock output
+
+---
+
+### 🧩 Sprint 3 – Smart Report Automation
+- ✅ JSON-to-PDF generator endpoint (`/generate-report`)
+- ✅ Field-friendly test page for JSON input (`/generate`)
+- ✅ Auto-download + success toast for generated PDFs
+- ✅ Full integration with `report_utils.py` + image rendering
+- ✅ All reports saved locally in `outputs/`
+
+---
+
 ## 🧠 Powered By
 
 - 🤖 **Gemma 3n (Google)** — Multimodal Transformer (text/image)
@@ -46,6 +79,8 @@ A compact, **offline-first AI assistant** powered by Google's **Gemma 3n**, desi
 ---
 
 ## 📦 Folder Structure
+
+
 
 
 
