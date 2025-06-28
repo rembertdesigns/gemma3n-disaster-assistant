@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File
+from fastapi import FastAPI, Request, Form, UploadFile, File, APIRouter
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -7,8 +7,9 @@ from app.hazard_detection import detect_hazards
 from app.preprocessing import preprocess_input
 from app.inference import run_disaster_analysis
 from app.audio_transcription import transcribe_audio
-
+from app.report_utils import generate_report_pdf  # ✅ added
 from weasyprint import HTML as WeasyHTML
+
 import shutil
 import os
 import uuid
@@ -25,14 +26,17 @@ OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+# ---------- ROUTES ----------
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "result": None})
 
+
 @app.get("/hazards", response_class=HTMLResponse)
 async def serve_hazard_page(request: Request):
     return templates.TemplateResponse("hazards.html", {"request": request, "result": None})
+
 
 @app.post("/analyze", response_class=HTMLResponse)
 async def analyze_input(
@@ -113,7 +117,20 @@ async def detect_hazards_api(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(content={"error": f"Hazard detection failed: {str(e)}"}, status_code=500)
-    
+
+
 @app.get("/offline.html", response_class=HTMLResponse)
 async def offline_page(request: Request):
     return templates.TemplateResponse("offline.html", {"request": request})
+
+
+# ✅ New: JSON-to-PDF generation endpoint
+@app.post("/generate-report")
+async def generate_report(request: Request):
+    payload = await request.json()
+    pdf_path = generate_report_pdf(payload)
+    return FileResponse(pdf_path, media_type='application/pdf', filename="incident_report.pdf")
+
+@app.get("/generate", response_class=HTMLResponse)
+async def serve_generate_page(request: Request):
+    return templates.TemplateResponse("generate.html", {"request": request})

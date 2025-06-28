@@ -1,0 +1,88 @@
+<!-- templates/generate.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Generate PDF Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    button {
+      background-color: #1d4ed8;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #16a34a;
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <h1>Generate Emergency Report PDF</h1>
+  <p>Click below to generate and download a sample incident report.</p>
+
+  <button id="generate-pdf-btn">Generate PDF</button>
+
+  <script>
+    document.getElementById("generate-pdf-btn").onclick = () => {
+      fetch("/generate-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          location: "Austin, TX",
+          hazards: ["fire", "collapsed structure"],
+          severity: 8.5,
+          notes: "Smoke observed, no visible injuries",
+          image_url: "https://via.placeholder.com/300"
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("PDF generation failed.");
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "incident_report.pdf";
+        a.click();
+
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.textContent = "✅ Emergency report downloaded!";
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      })
+      .catch(error => {
+        alert("Error: " + error.message);
+      });
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Incident Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { color: #d9534f; }
+        .section { margin-bottom: 20px; }
+        .label { font-weight: bold; }
+        .image { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <h1>Disaster Incident Report</h1>
+    <div class="section">
+        <p><span class="label">Date:</span> {{ date }}</p>
+        <p><span class="label">Location:</span> {{ location }}</p>
+        <p><span class="label">Hazards:</span> {{ hazards }}</p>
+        <p><span class="label">Severity Score:</span> {{ severity }}</p>
+        {% if notes %}
+        <p><span class="label">Notes:</span> {{ notes }}</p>
+        {% endif %}
+    </div>
+    {% if image_url %}
+    <div class="section">
+        <img class="image" src="{{ image_url }}">
+    </div>
+    {% endif %}
+</body>
+</html>
