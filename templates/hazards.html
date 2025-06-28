@@ -1,0 +1,42 @@
+<!-- templates/hazards.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hazard Detection</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <script defer src="/static/js/hazard_detection.js"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="/" class="logo">🚨</a>
+      <h1 class="title">Hazard Detection</h1>
+      <div class="controls">
+        <a href="/" class="status-indicator status-online">
+          ⬅ Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="form-section">
+      <h2>📷 Upload Image</h2>
+      <form id="hazardForm">
+        <input type="file" id="imageInput" accept="image/*" required />
+        <button id="detectBtn" type="submit">🔍 Detect Hazards</button>
+      </form>
+      <div id="previewContainer" style="margin-top: 1rem;"></div>
+    </section>
+
+    <section id="resultSection" class="result-card" style="display: none;">
+      <h2>🧠 Detection Results</h2>
+      <canvas id="resultCanvas"></canvas>
+      <ul id="hazardList"></ul>
+    </section>
+
+    <div id="toast" class="toast" style="display: none;"></div>
+  </main>
+</body>
+</html>

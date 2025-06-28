@@ -30,6 +30,9 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 async def serve_home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "result": None})
 
+@app.get("/hazards", response_class=HTMLResponse)
+async def serve_hazard_page(request: Request):
+    return templates.TemplateResponse("hazards.html", {"request": request, "result": None})
 
 @app.post("/analyze", response_class=HTMLResponse)
 async def analyze_input(
