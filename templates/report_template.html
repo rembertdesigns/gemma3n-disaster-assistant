@@ -47,5 +47,16 @@
         <img class="image" src="{{ image_url }}" alt="Hazard Image">
     </div>
     {% endif %}
+
+    {% if checklist %}
+    <div class="section">
+        <p><span class="label">Checklist:</span></p>
+        <ul>
+            {% for task in checklist %}
+            <li>✅ {{ task }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 </body>
 </html>

@@ -16,14 +16,38 @@
     crossorigin=""
   ></script>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 2rem; }
-    #map { height: 250px; margin-top: 1rem; border-radius: 8px; }
-    .preview-section { margin-top: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px; }
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 2rem;
+    }
+    #map {
+      height: 250px;
+      margin-top: 1rem;
+      border-radius: 8px;
+    }
+    .preview-section {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    input {
+      padding: 0.5rem;
+      margin-right: 0.5rem;
+    }
   </style>
 </head>
 <body>
   <h1>📋 Emergency Report Generator</h1>
 
+  <!-- Checklist Input -->
+  <h3 style="margin-top: 2rem;">Checklist Builder</h3>
+  <input id="newTaskInput" placeholder="Add new task" />
+  <button onclick="addChecklistItem()">➕ Add Task</button>
+
+  <!-- Preview -->
   <div id="preview" class="preview-section"></div>
   <div id="map" aria-label="Map Preview"></div>
 
@@ -34,7 +58,8 @@
       hazards: ["fire", "collapsed structure"],
       severity: 8.5,
       notes: "Smoke observed, no visible injuries",
-      image_url: "https://via.placeholder.com/300"
+      image_url: "https://via.placeholder.com/300",
+      checklist: ["Clear debris", "Search for victims"]
     };
 
     function renderPreview(data) {
@@ -46,9 +71,21 @@
         <p><strong>Hazards:</strong> ${data.hazards.join(", ")}</p>
         <p><strong>Severity:</strong> ${data.severity}</p>
         <p><strong>Notes:</strong> ${data.notes}</p>
+        <p><strong>Checklist:</strong></p>
+        <ul>${data.checklist.map(task => `<li>✅ ${task}</li>`).join("")}</ul>
         <img src="${data.image_url}" alt="Hazard Image" width="300" style="margin-top:1rem;">
         <button onclick="generatePDF()" style="margin-top:1rem;">📄 Download PDF</button>
       `;
+    }
+
+    function addChecklistItem() {
+      const input = document.getElementById("newTaskInput");
+      const task = input.value.trim();
+      if (task) {
+        sampleData.checklist.push(task);
+        input.value = "";
+        renderPreview(sampleData);
+      }
     }
 
     function initMap([lat, lon]) {

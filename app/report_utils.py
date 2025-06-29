@@ -8,22 +8,23 @@ def generate_report_pdf(data: dict, output_path="output/report.pdf"):
     env = Environment(loader=FileSystemLoader("app/templates"))
     template = env.get_template("report_template.html")
 
-    # Extract values safely
-    location = data.get("location", "Unknown")
-    latitude = data.get("latitude", None)
-    longitude = data.get("longitude", None)
+    # Extract coordinates if provided
+    latitude = data.get("latitude") or (data.get("coordinates")[0] if data.get("coordinates") else None)
+    longitude = data.get("longitude") or (data.get("coordinates")[1] if data.get("coordinates") else None)
     coordinates = f"{latitude}, {longitude}" if latitude and longitude else "N/A"
 
-    timestamp = data.get("timestamp") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Fallbacks and formatting
+    timestamp = data.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     html_out = template.render(
         date=timestamp,
-        location=location,
+        location=data.get("location", "Unknown"),
         coordinates=coordinates,
         hazards=", ".join(data.get("hazards", [])),
         severity=data.get("severity", "N/A"),
         notes=data.get("notes", ""),
-        image_url=data.get("image_url", None)
+        image_url=data.get("image_url", None),
+        checklist=data.get("checklist", [])
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
