@@ -4,9 +4,33 @@
 <head>
   <meta charset="UTF-8">
   <title>Generate Report</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha384-sA+rk4kJv1m9NBN7ZTQuNjvmZVcoESNkT0UX8sn7msodMbcTF2zX7HnqMQ7+AjzE"
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha384-o4Ehm7RAtWk1e5RP2EuZPoAG0TcBXf+nL3dNyf6OhIsZhfu6My6ZTDlVcnlfciMn"
+    crossorigin=""
+  ></script>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 2rem; }
+    #map { height: 250px; margin-top: 1rem; border-radius: 8px; }
+    .preview-section { margin-top: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>📋 Emergency Report Generator</h1>
+
+  <div id="preview" class="preview-section"></div>
+  <div id="map" aria-label="Map Preview"></div>
+
   <script>
     const sampleData = {
       location: "Austin, TX",
+      coordinates: [30.2672, -97.7431],
       hazards: ["fire", "collapsed structure"],
       severity: 8.5,
       notes: "Smoke observed, no visible injuries",
@@ -18,12 +42,21 @@
       preview.innerHTML = `
         <h2>Report Preview</h2>
         <p><strong>Location:</strong> ${data.location}</p>
+        <p><strong>Coordinates:</strong> ${data.coordinates.join(", ")}</p>
         <p><strong>Hazards:</strong> ${data.hazards.join(", ")}</p>
         <p><strong>Severity:</strong> ${data.severity}</p>
         <p><strong>Notes:</strong> ${data.notes}</p>
         <img src="${data.image_url}" alt="Hazard Image" width="300" style="margin-top:1rem;">
         <button onclick="generatePDF()" style="margin-top:1rem;">📄 Download PDF</button>
       `;
+    }
+
+    function initMap([lat, lon]) {
+      const map = L.map('map').setView([lat, lon], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+      L.marker([lat, lon]).addTo(map).bindPopup('Hazard Location').openPopup();
     }
 
     function generatePDF() {
@@ -44,11 +77,8 @@
 
     window.onload = () => {
       renderPreview(sampleData);
+      initMap(sampleData.coordinates);
     };
   </script>
-</head>
-<body style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 2rem;">
-  <h1>📋 Emergency Report Generator</h1>
-  <div id="preview" style="margin-top: 2rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px;"></div>
 </body>
 </html>
