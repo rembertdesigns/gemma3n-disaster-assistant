@@ -8,7 +8,7 @@ A compact, **offline-first AI assistant** powered by Google's **Gemma 3n**, desi
 
 - 📷 **Image-Based Damage Detection**  
   Upload photos to detect collapsed structures, debris, and hazard zones using AI.
-  
+
 - 🎤 **Voice-to-Text Triage with Hazard Detection**  
   Upload or record voice notes that are transcribed via Whisper and scanned for key hazard keywords (e.g., “help”, “gunshot”, “fire”).
 
@@ -68,23 +68,46 @@ A compact, **offline-first AI assistant** powered by Google's **Gemma 3n**, desi
 
 ---
 
-## 🔭 Roadmap & Sprint 4 (Planned)
+### 🧩 Sprint 4 – Admin Tools & Offline Sync
 
-### 🛠️ Coming Next:
-- 🧭 **GPS & Timestamp Embedding**  
-  Embed coordinates and incident time in all reports.
+- 🔐 Admin dashboard and report filters  
+- 📥 PDF downloads for each report  
+- 🔄 Update report statuses via dropdown  
+- 📦 Export full archive as `.zip`  
+  - Includes:
+    - `/<report_id>.pdf`
+    - `metadata.json`
 
-- 📍 **Interactive Map Embeds**  
-  Support for leaflet-style local maps with marked hazards.
+---
 
-- 📡 **Real-Time Comms Sync (optional)**  
-  Bluetooth/local Wi-Fi syncing for cross-device field ops (P2P mesh).
+## 🔭 Roadmap (Sprint 5 Preview)
 
-- 🛜 **Edge-Based Language Model Deployment**  
-  Integrate Gemma 3n locally via Ollama or Jetson Nano board.
+- 📡 **Offline Sync Queue**  
+  Queue + retry system for submissions made while offline.
+
+- 🧭 **GPS Auto-Capture**  
+  Automatically embed coordinates and time in each report.
+
+- 🗺️ **Interactive Hazard Map**  
+  Leaflet-style local maps with plotted hazard icons.
+
+- 🛜 **On-Device AI (Gemma 3n)**  
+  Local deployment with Ollama or Jetson Nano for edge inference.
 
 - 🧪 **Stress-Test Mode for Offline Conditions**  
-  Simulated airplane-mode testing harness with artificial lag/load.
+  Simulate airplane-mode UX with artificial load/delay to test resilience.
+
+---
+
+## 📦 Export Reports as Zip
+
+You can download all reports and metadata using:
+
+
+Returns a `report_archive.zip` containing:
+
+- Individual report PDFs named as `<report_id>.pdf`
+- A `metadata.json` file with details for each report
 
 ---
 
@@ -96,9 +119,10 @@ A compact, **offline-first AI assistant** powered by Google's **Gemma 3n**, desi
 - 🧠 **ChromaDB / SQLite** (optional) — Emergency document embedding and search
 - 🎨 **Custom Tailwind-style CSS** — Optimized for clarity, contrast, and real-world use
 
-___
+---
 
-## 📦 Folder Structure
+## 📁 Project Structure
+
 
 ```bash
 gemma3n-disaster-assistant/
