@@ -1,0 +1,20 @@
+<!-- templates/admin.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+</head>
+<body>
+  <h1>👤 Admin Panel</h1>
+  <p><strong>User:</strong> {{ username }}</p>
+  <p><strong>Role:</strong> {{ role }}</p>
+
+  <h2>🔐 Secure Actions</h2>
+  <ul>
+    <li><a href="/generate">Generate PDF (form)</a></li>
+    <li><a href="/live-generate">Live Report Editor</a></li>
+    <li><a href="/hazards">Hazard Uploader</a></li>
+    <li><a href="/offline.html">Offline Mode</a></li>
+  </ul>
+</body>
+</html>

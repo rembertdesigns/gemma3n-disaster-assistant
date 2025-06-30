@@ -17,22 +17,15 @@ import os
 import uuid
 import json
 
-# Initialize app
 app = FastAPI()
 
-# Static and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Create required directories
 UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-# ----------------------------
-# AUTH
-# ----------------------------
 
 @app.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -42,10 +35,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
     access_token = create_access_token(data={"sub": user["username"]})
     return {"access_token": access_token, "token_type": "bearer"}
-
-# ----------------------------
-# ROUTES
-# ----------------------------
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
@@ -67,17 +56,25 @@ async def serve_live_generate_page(request: Request):
 async def offline_page(request: Request):
     return templates.TemplateResponse("offline.html", {"request": request})
 
+@app.get("/me")
+async def read_current_user(user: dict = Depends(get_current_user)):
+    return {"username": user["username"], "role": user["role"]}
 
-# ----------------------------
-# ANALYSIS & REPORTING
-# ----------------------------
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, user: dict = Depends(require_role(["admin"]))):
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "username": user["username"],
+        "role": user["role"]
+    })
 
 @app.post("/analyze", response_class=HTMLResponse)
 async def analyze_input(
     request: Request,
     report_text: str = Form(""),
     file: UploadFile = File(None),
-    audio: UploadFile = File(None)
+    audio: UploadFile = File(None),
+    user: dict = Depends(require_role(["admin", "responder"]))
 ):
     input_payload = {}
     hazards = []
@@ -120,7 +117,6 @@ async def analyze_input(
         "hazards": hazards
     })
 
-
 @app.post("/export-pdf")
 async def export_pdf(request: Request, report_text: str = Form(...)):
     html_content = templates.get_template("pdf_template.html").render({
@@ -134,8 +130,6 @@ async def export_pdf(request: Request, report_text: str = Form(...)):
         "pdf_url": f"/{pdf_path}"
     })
 
-
-# 🔐 Protected with Role-Based Auth
 @app.post("/generate-report")
 async def generate_report(
     request: Request,
@@ -169,13 +163,11 @@ async def generate_report(
     pdf_path = generate_report_pdf(payload)
     return FileResponse(pdf_path, media_type="application/pdf", filename="incident_report.pdf")
 
-
-# ----------------------------
-# HAZARD DETECTION
-# ----------------------------
-
 @app.post("/detect-hazards")
-async def detect_hazards_api(file: UploadFile = File(...)):
+async def detect_hazards_api(
+    file: UploadFile = File(...),
+    user: dict = Depends(require_role(["admin", "responder"]))
+):
     if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
         return JSONResponse(content={"error": "Unsupported file format"}, status_code=400)
     try:
