@@ -1,10 +1,8 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.responses import RedirectResponse
-
 
 from app.hazard_detection import detect_hazards
 from app.preprocessing import preprocess_input
@@ -26,6 +24,8 @@ import shutil
 import os
 import uuid
 import json
+import zipfile
+import io
 
 app = FastAPI()
 
@@ -121,6 +121,36 @@ async def update_report_status(
     conn.commit()
     conn.close()
     return RedirectResponse("/reports", status_code=303)
+
+@app.get("/reports/export")
+async def export_reports_zip(user: dict = Depends(require_role(["admin"]))):
+    conn = get_db_connection()
+    reports = get_all_reports(conn)
+    conn.close()
+
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, "w") as zipf:
+        for report in reports:
+            pdf_path = os.path.join(OUTPUT_DIR, report["filename"])
+            if os.path.exists(pdf_path):
+                zipf.write(pdf_path, arcname=f"{report['id']}.pdf")
+
+        metadata = [{
+            "id": r["id"],
+            "location": r["location"],
+            "severity": r["severity"],
+            "timestamp": r["timestamp"],
+            "user": r["user"],
+            "status": r["status"]
+        } for r in reports]
+
+        zipf.writestr("metadata.json", json.dumps(metadata, indent=2))
+
+    zip_buffer.seek(0)
+    return StreamingResponse(zip_buffer, media_type="application/zip", headers={
+        "Content-Disposition": "attachment; filename=report_archive.zip"
+    })
 
 # ---------------- ANALYSIS & REPORTING ----------------
 
