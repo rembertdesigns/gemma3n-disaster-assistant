@@ -10,8 +10,10 @@ from app.inference import run_disaster_analysis
 from app.audio_transcription import transcribe_audio
 from app.report_utils import generate_report_pdf
 from app.auth import authenticate_user, create_access_token, get_current_user, require_role
+from app.models import save_report_metadata  # NEW
 
 from weasyprint import HTML as WeasyHTML
+from datetime import datetime
 import shutil
 import os
 import uuid
@@ -27,6 +29,8 @@ OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+# ---------------- AUTH ----------------
+
 @app.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
@@ -35,6 +39,20 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
     access_token = create_access_token(data={"sub": user["username"]})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/me")
+async def read_current_user(user: dict = Depends(get_current_user)):
+    return {"username": user["username"], "role": user["role"]}
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, user: dict = Depends(require_role(["admin"]))):
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "username": user["username"],
+        "role": user["role"]
+    })
+
+# ---------------- ROUTES ----------------
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
@@ -56,17 +74,8 @@ async def serve_live_generate_page(request: Request):
 async def offline_page(request: Request):
     return templates.TemplateResponse("offline.html", {"request": request})
 
-@app.get("/me")
-async def read_current_user(user: dict = Depends(get_current_user)):
-    return {"username": user["username"], "role": user["role"]}
 
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard(request: Request, user: dict = Depends(require_role(["admin"]))):
-    return templates.TemplateResponse("admin.html", {
-        "request": request,
-        "username": user["username"],
-        "role": user["role"]
-    })
+# ---------------- ANALYSIS & REPORTING ----------------
 
 @app.post("/analyze", response_class=HTMLResponse)
 async def analyze_input(
@@ -160,8 +169,26 @@ async def generate_report(
     else:
         return JSONResponse(content={"error": "Unsupported content type"}, status_code=415)
 
+    # Generate the PDF
     pdf_path = generate_report_pdf(payload)
+
+    # ⬇️ Save metadata to SQLite
+    save_report_metadata({
+        "report_id": str(uuid.uuid4()),
+        "timestamp": payload.get("timestamp", datetime.now().isoformat()),
+        "location": payload.get("location", "Unknown"),
+        "severity": payload.get("severity", "N/A"),
+        "filename": os.path.basename(pdf_path),
+        "user": user["username"],
+        "status": "submitted",
+        "image_url": payload.get("image_url"),
+        "checklist": ", ".join(payload.get("checklist", []))
+    })
+
     return FileResponse(pdf_path, media_type="application/pdf", filename="incident_report.pdf")
+
+
+# ---------------- HAZARD DETECTION ----------------
 
 @app.post("/detect-hazards")
 async def detect_hazards_api(
