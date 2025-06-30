@@ -1,0 +1,84 @@
+<!-- templates/live_generate.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Report Builder</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+    .editor {
+      flex: 1;
+      padding: 1rem;
+      border-right: 1px solid #ccc;
+      overflow-y: auto;
+    }
+    .preview {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    textarea {
+      width: 100%;
+      height: 80%;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="editor">
+    <h2>📝 Edit Report JSON</h2>
+    <textarea id="jsonInput">{
+  "location": "Austin, TX",
+  "coordinates": [30.2672, -97.7431],
+  "hazards": ["fire", "collapsed structure"],
+  "severity": 8.5,
+  "notes": "Smoke observed, no visible injuries",
+  "image_url": "https://via.placeholder.com/300",
+  "checklist": ["Clear debris", "Search for victims"]
+}</textarea>
+    <button onclick="updatePDF()">🔄 Regenerate PDF</button>
+  </div>
+  <div class="preview">
+    <h2>📄 Live PDF Preview</h2>
+    <iframe id="pdfFrame" title="Live PDF"></iframe>
+  </div>
+
+  <script>
+    function updatePDF() {
+      const jsonText = document.getElementById("jsonInput").value;
+      try {
+        const payload = JSON.parse(jsonText);
+        fetch("/generate-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+        .then(res => res.blob())
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          document.getElementById("pdfFrame").src = url;
+        });
+      } catch (err) {
+        alert("Invalid JSON format: " + err.message);
+      }
+    }
+
+    window.onload = updatePDF;
+  </script>
+</body>
+</html>

@@ -145,3 +145,7 @@ async def detect_hazards_api(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(content={"error": f"Hazard detection failed: {str(e)}"}, status_code=500)
+    
+@app.get("/live-generate", response_class=HTMLResponse)
+async def serve_live_generate_page(request: Request):
+    return templates.TemplateResponse("live_generate.html", {"request": request})
