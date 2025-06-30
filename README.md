@@ -96,7 +96,7 @@ A compact, **offline-first AI assistant** powered by Google's **Gemma 3n**, desi
 - 🧠 **ChromaDB / SQLite** (optional) — Emergency document embedding and search
 - 🎨 **Custom Tailwind-style CSS** — Optimized for clarity, contrast, and real-world use
 
----
+___
 
 ## 📦 Folder Structure
 
