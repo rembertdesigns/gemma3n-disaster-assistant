@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Live Report Builder</title>
+  <link rel="stylesheet" href="/static/styles.css" />
   <style>
     body {
       margin: 0;
@@ -15,9 +16,7 @@
       padding: 1rem;
       overflow-y: auto;
     }
-    .editor {
-      border-right: 1px solid #ccc;
-    }
+    .editor { border-right: 1px solid #ccc; }
     details {
       border: 1px solid #aaa;
       border-radius: 6px;
@@ -33,17 +32,14 @@
       border-radius: 4px;
       user-select: none;
     }
-    input[type="text"], input[type="number"], input[type="file"], textarea, select {
+    input, textarea, select {
       width: 100%;
       margin-top: 0.5rem;
       margin-bottom: 1rem;
       padding: 0.5rem;
       font-size: 1rem;
     }
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-    }
+    label { display: block; margin-bottom: 0.5rem; }
     button {
       margin-top: 0.5rem;
       padding: 0.5rem 1rem;
@@ -65,11 +61,6 @@
     .sev-yellow { background-color: gold; color: black; }
     .sev-orange { background-color: orange; }
     .sev-red { background-color: red; }
-    #checklistDisplay {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
     .checklist-item {
       display: flex;
       gap: 0.5rem;
@@ -79,12 +70,7 @@
       border-radius: 5px;
       background: #fff;
     }
-    .checklist-item.dragging {
-      opacity: 0.5;
-    }
-    .checklist-label {
-      flex: 1;
-    }
+    .checklist-label { flex: 1; }
     #imagePreview {
       max-width: 100%;
       max-height: 200px;
@@ -92,6 +78,8 @@
       border: 1px solid #ccc;
     }
   </style>
+  <!-- ✅ Include idb-keyval for offline image storage -->
+  <script src="https://unpkg.com/idb-keyval@6/dist/idb-keyval-iife.min.js"></script>
 </head>
 <body>
   <div class="editor">
@@ -125,7 +113,7 @@
       <div id="checklistDisplay"></div>
     </details>
 
-    <details>
+    <details open>
       <summary>🖼️ Hazard Images</summary>
       <label>Image URL:
         <input type="text" id="image_url" />
@@ -136,22 +124,18 @@
       <img id="imagePreview" src="" alt="Image preview" />
     </details>
 
-    <button onclick="updatePDF()">🔄 Regenerate PDF</button>
+    <button onclick="saveAndSyncReport()">💾 Save & Sync</button>
   </div>
 
   <div class="preview">
     <h2>📄 Live JSON Preview</h2>
     <pre id="jsonPreview"></pre>
     <h2>📄 PDF Preview</h2>
-    <iframe id="pdfFrame" title="Live PDF"></iframe>
+    <iframe id="pdfFrame" title="Live PDF" width="100%" height="400px"></iframe>
   </div>
 
   <script>
-    const inputs = [
-      "location", "coordinates", "hazards",
-      "severity", "notes", "image_url", "checklist"
-    ];
-
+    const inputs = ["location", "coordinates", "hazards", "severity", "notes", "image_url", "checklist"];
     const teamMembers = ["Unassigned", "Fire Chief", "Medic", "Safety Officer", "Search & Rescue"];
 
     function getSeverityClass(sev) {
@@ -179,16 +163,12 @@
       const container = document.getElementById("checklistDisplay");
       container.innerHTML = "";
 
-      items.forEach((item, idx) => {
+      items.forEach(item => {
         const div = document.createElement("div");
         div.className = "checklist-item";
-        div.draggable = true;
-        div.dataset.index = idx;
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.dataset.label = item;
-        checkbox.addEventListener("change", renderPreview);
 
         const label = document.createElement("div");
         label.className = "checklist-label";
@@ -201,37 +181,12 @@
           opt.textContent = name;
           select.appendChild(opt);
         });
-        select.addEventListener("change", renderPreview);
 
         div.appendChild(checkbox);
         div.appendChild(label);
         div.appendChild(select);
-
-        // Drag handlers
-        div.addEventListener("dragstart", (e) => {
-          div.classList.add("dragging");
-          e.dataTransfer.setData("text/plain", div.dataset.index);
-        });
-        div.addEventListener("dragend", () => div.classList.remove("dragging"));
-        div.addEventListener("dragover", e => e.preventDefault());
-        div.addEventListener("drop", (e) => {
-          e.preventDefault();
-          const from = parseInt(e.dataTransfer.getData("text/plain"));
-          const to = parseInt(div.dataset.index);
-          reorderChecklist(from, to);
-        });
-
         container.appendChild(div);
       });
-    }
-
-    function reorderChecklist(from, to) {
-      const items = document.getElementById("checklist").value.split(",").map(i => i.trim());
-      const moved = items.splice(from, 1)[0];
-      items.splice(to, 0, moved);
-      document.getElementById("checklist").value = items.join(", ");
-      renderChecklist();
-      renderPreview();
     }
 
     function updateImagePreview() {
@@ -259,12 +214,14 @@
       const imageURL = document.getElementById("image_url").value;
 
       return {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
         location: document.getElementById("location").value,
         coordinates: document.getElementById("coordinates").value.split(",").map(Number),
         hazards: document.getElementById("hazards").value.split(",").map(h => h.trim()),
         severity: parseFloat(document.getElementById("severity").value),
         notes: document.getElementById("notes").value,
-        image_url: imageFile ? "uploaded://" + imageFile.name : imageURL,
+        image_url: imageFile ? "offline_blob://" + imageFile.name : imageURL,
         checklist: checklistData
       };
     }
@@ -274,21 +231,70 @@
       document.getElementById("jsonPreview").textContent = JSON.stringify(data, null, 2);
     }
 
-    function updatePDF() {
+    async function saveAndSyncReport() {
       const data = collectFormData();
-      fetch("/generate-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      })
-      .then(res => res.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        document.getElementById("pdfFrame").src = url;
-      });
+      const imageFile = document.getElementById("image_file").files[0];
+
+      // Save blob to IndexedDB if uploaded
+      if (imageFile) {
+        await idbKeyval.set(data.id, imageFile);
+        data.image_blob_id = data.id;
+      }
+
+      // Save the entire report to sync queue
+      let queue = await idbKeyval.get("sync_queue") || [];
+      queue.push(data);
+      await idbKeyval.set("sync_queue", queue);
+
+      alert("✅ Report saved locally and queued for sync!");
+      renderPreview();
     }
 
-    // Live update listeners
+    // Sync logic when back online
+    async function syncQueue() {
+      const queue = await idbKeyval.get("sync_queue") || [];
+      const remaining = [];
+
+      for (const report of queue) {
+        const formData = new FormData();
+        formData.append("json", JSON.stringify(report));
+
+        if (report.image_blob_id) {
+          const blob = await idbKeyval.get(report.image_blob_id);
+          if (blob) formData.append("file", blob, "image.jpg");
+        }
+
+        try {
+          const res = await fetch("/generate-report", {
+            method: "POST",
+            body: formData
+          });
+          if (!res.ok) throw new Error("Failed to upload");
+        } catch {
+          remaining.push(report);
+        }
+      }
+
+      await idbKeyval.set("sync_queue", remaining);
+    }
+
+    window.addEventListener("online", syncQueue);
+
+    // Init default values
+    window.onload = () => {
+      document.getElementById("location").value = "Austin, TX";
+      document.getElementById("coordinates").value = "30.2672,-97.7431";
+      document.getElementById("hazards").value = "fire, collapsed structure";
+      document.getElementById("severity").value = "8.5";
+      document.getElementById("notes").value = "Smoke observed, no visible injuries";
+      document.getElementById("image_url").value = "https://via.placeholder.com/300";
+      document.getElementById("checklist").value = "Clear debris, Search for victims";
+      updateSeverityBadge();
+      renderChecklist();
+      updateImagePreview();
+      renderPreview();
+    };
+
     inputs.forEach(id => {
       document.getElementById(id).addEventListener("input", () => {
         if (id === "checklist") renderChecklist();
@@ -302,21 +308,6 @@
       updateImagePreview();
       renderPreview();
     });
-
-    window.onload = () => {
-      document.getElementById("location").value = "Austin, TX";
-      document.getElementById("coordinates").value = "30.2672,-97.7431";
-      document.getElementById("hazards").value = "fire, collapsed structure";
-      document.getElementById("severity").value = "8.5";
-      document.getElementById("notes").value = "Smoke observed, no visible injuries";
-      document.getElementById("image_url").value = "https://via.placeholder.com/300";
-      document.getElementById("checklist").value = "Clear debris, Search for victims";
-      updateSeverityBadge();
-      renderChecklist();
-      updateImagePreview();
-      renderPreview();
-      updatePDF();
-    };
   </script>
 </body>
 </html>
