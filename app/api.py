@@ -1,13 +1,15 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File
+from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.security import OAuth2PasswordRequestForm
 
 from app.hazard_detection import detect_hazards
 from app.preprocessing import preprocess_input
 from app.inference import run_disaster_analysis
 from app.audio_transcription import transcribe_audio
 from app.report_utils import generate_report_pdf
+from app.auth import authenticate_user, create_access_token, get_current_user, require_role
 
 from weasyprint import HTML as WeasyHTML
 import shutil
@@ -29,30 +31,38 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ----------------------------
+# AUTH
+# ----------------------------
+
+@app.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+
+    access_token = create_access_token(data={"sub": user["username"]})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# ----------------------------
 # ROUTES
 # ----------------------------
 
-# Home page
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "result": None})
 
-# Hazards page
 @app.get("/hazards", response_class=HTMLResponse)
 async def serve_hazard_page(request: Request):
     return templates.TemplateResponse("hazards.html", {"request": request, "result": None})
 
-# Generate page (JSON-to-PDF UI)
 @app.get("/generate", response_class=HTMLResponse)
 async def serve_generate_page(request: Request):
     return templates.TemplateResponse("generate.html", {"request": request})
 
-# Live JSON-to-PDF editor
 @app.get("/live-generate", response_class=HTMLResponse)
 async def serve_live_generate_page(request: Request):
     return templates.TemplateResponse("live_generate.html", {"request": request})
 
-# Offline fallback page
 @app.get("/offline.html", response_class=HTMLResponse)
 async def offline_page(request: Request):
     return templates.TemplateResponse("offline.html", {"request": request})
@@ -111,7 +121,6 @@ async def analyze_input(
     })
 
 
-# Export PDF from textarea input (classic HTML input)
 @app.post("/export-pdf")
 async def export_pdf(request: Request, report_text: str = Form(...)):
     html_content = templates.get_template("pdf_template.html").render({
@@ -126,13 +135,16 @@ async def export_pdf(request: Request, report_text: str = Form(...)):
     })
 
 
-# Export PDF from structured JSON or multipart (with upload)
+# 🔐 Protected with Role-Based Auth
 @app.post("/generate-report")
-async def generate_report(request: Request, file: UploadFile = File(None)):
+async def generate_report(
+    request: Request,
+    file: UploadFile = File(None),
+    user: dict = Depends(require_role(["admin", "responder"]))
+):
     content_type = request.headers.get("Content-Type", "")
 
     if "application/json" in content_type:
-        # Raw JSON (e.g., from fetch)
         payload = await request.json()
 
     elif "multipart/form-data" in content_type:
@@ -159,18 +171,17 @@ async def generate_report(request: Request, file: UploadFile = File(None)):
 
 
 # ----------------------------
-# HAZARD DETECTION API
+# HAZARD DETECTION
 # ----------------------------
 
 @app.post("/detect-hazards")
 async def detect_hazards_api(file: UploadFile = File(...)):
     if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
         return JSONResponse(content={"error": "Unsupported file format"}, status_code=400)
-
     try:
         image_bytes = await file.read()
         result = detect_hazards(image_bytes)
         return JSONResponse(content=result)
-
     except Exception as e:
         return JSONResponse(content={"error": f"Hazard detection failed: {str(e)}"}, status_code=500)
+
