@@ -26,6 +26,18 @@
             border: 1px solid #ccc;
             padding: 4px;
         }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .sev-green { background-color: green; }
+        .sev-yellow { background-color: gold; color: black; }
+        .sev-orange { background-color: orange; }
+        .sev-red { background-color: red; }
     </style>
 </head>
 <body>
@@ -36,7 +48,24 @@
         <p><span class="label">Location:</span> {{ location }}</p>
         <p><span class="label">Coordinates:</span> {{ coordinates }}</p>
         <p><span class="label">Hazards:</span> {{ hazards }}</p>
-        <p><span class="label">Severity Score:</span> {{ severity }}</p>
+        <p>
+            <span class="label">Severity Score:</span> {{ severity }}
+            {% if severity is number %}
+                <span class="badge
+                    {% if severity >= 8 %}
+                        sev-red
+                    {% elif severity >= 5 %}
+                        sev-orange
+                    {% elif severity >= 3 %}
+                        sev-yellow
+                    {% else %}
+                        sev-green
+                    {% endif %}
+                ">
+                    SEV-{{ severity }}
+                </span>
+            {% endif %}
+        </p>
         {% if notes %}
         <p><span class="label">Notes:</span> {{ notes }}</p>
         {% endif %}
@@ -53,7 +82,17 @@
         <p><span class="label">Checklist:</span></p>
         <ul>
             {% for task in checklist %}
-            <li>✅ {{ task }}</li>
+                <li>
+                    {% if task.completed %}
+                        ✅
+                    {% else %}
+                        ☐
+                    {% endif %}
+                    {{ task.item }}
+                    {% if task.assigned_to and task.assigned_to != 'Unassigned' %}
+                        — <em>Assigned to: {{ task.assigned_to }}</em>
+                    {% endif %}
+                </li>
             {% endfor %}
         </ul>
     </div>

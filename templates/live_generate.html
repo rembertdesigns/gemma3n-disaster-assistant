@@ -1,8 +1,7 @@
-<!-- templates/live_generate.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Live Report Builder</title>
   <style>
     body {
@@ -11,74 +10,313 @@
       height: 100vh;
       font-family: sans-serif;
     }
+    .editor, .preview {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
     .editor {
-      flex: 1;
-      padding: 1rem;
       border-right: 1px solid #ccc;
-      overflow-y: auto;
     }
-    .preview {
-      flex: 1;
-      padding: 1rem;
-      overflow-y: auto;
+    details {
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      background-color: #f9f9f9;
     }
-    textarea {
+    summary {
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0.5rem;
+      background-color: #eee;
+      border-radius: 4px;
+      user-select: none;
+    }
+    input[type="text"], input[type="number"], input[type="file"], textarea, select {
       width: 100%;
-      height: 80%;
-      font-family: monospace;
-      font-size: 14px;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      font-size: 1rem;
     }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
     }
     button {
-      margin-top: 1rem;
+      margin-top: 0.5rem;
       padding: 0.5rem 1rem;
+    }
+    pre {
+      background: #f0f0f0;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+    .severity-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      margin-left: 0.5rem;
+    }
+    .sev-green { background-color: green; }
+    .sev-yellow { background-color: gold; color: black; }
+    .sev-orange { background-color: orange; }
+    .sev-red { background-color: red; }
+    #checklistDisplay {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .checklist-item {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      border: 1px solid #ccc;
+      padding: 0.25rem;
+      border-radius: 5px;
+      background: #fff;
+    }
+    .checklist-item.dragging {
+      opacity: 0.5;
+    }
+    .checklist-label {
+      flex: 1;
+    }
+    #imagePreview {
+      max-width: 100%;
+      max-height: 200px;
+      margin-top: 0.5rem;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
   <div class="editor">
-    <h2>📝 Edit Report JSON</h2>
-    <textarea id="jsonInput">{
-  "location": "Austin, TX",
-  "coordinates": [30.2672, -97.7431],
-  "hazards": ["fire", "collapsed structure"],
-  "severity": 8.5,
-  "notes": "Smoke observed, no visible injuries",
-  "image_url": "https://via.placeholder.com/300",
-  "checklist": ["Clear debris", "Search for victims"]
-}</textarea>
+    <h2>📝 Edit Report</h2>
+
+    <details open>
+      <summary>📍 Incident Details</summary>
+      <label>Location:
+        <input type="text" id="location" />
+      </label>
+      <label>Coordinates (lat,lng):
+        <input type="text" id="coordinates" placeholder="30.2672,-97.7431" />
+      </label>
+      <label>Hazards:
+        <input type="text" id="hazards" />
+      </label>
+      <label>Severity:
+        <input type="number" id="severity" min="1" max="10" />
+        <span id="severityBadge" class="severity-badge"></span>
+      </label>
+      <label>Notes:
+        <textarea id="notes" rows="3"></textarea>
+      </label>
+    </details>
+
+    <details open>
+      <summary>✅ Checklist</summary>
+      <label>Checklist Items (comma separated):
+        <input type="text" id="checklist" />
+      </label>
+      <div id="checklistDisplay"></div>
+    </details>
+
+    <details>
+      <summary>🖼️ Hazard Images</summary>
+      <label>Image URL:
+        <input type="text" id="image_url" />
+      </label>
+      <label>Upload Image:
+        <input type="file" id="image_file" accept="image/*" />
+      </label>
+      <img id="imagePreview" src="" alt="Image preview" />
+    </details>
+
     <button onclick="updatePDF()">🔄 Regenerate PDF</button>
   </div>
+
   <div class="preview">
-    <h2>📄 Live PDF Preview</h2>
+    <h2>📄 Live JSON Preview</h2>
+    <pre id="jsonPreview"></pre>
+    <h2>📄 PDF Preview</h2>
     <iframe id="pdfFrame" title="Live PDF"></iframe>
   </div>
 
   <script>
-    function updatePDF() {
-      const jsonText = document.getElementById("jsonInput").value;
-      try {
-        const payload = JSON.parse(jsonText);
-        fetch("/generate-report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        })
-        .then(res => res.blob())
-        .then(blob => {
-          const url = URL.createObjectURL(blob);
-          document.getElementById("pdfFrame").src = url;
-        });
-      } catch (err) {
-        alert("Invalid JSON format: " + err.message);
+    const inputs = [
+      "location", "coordinates", "hazards",
+      "severity", "notes", "image_url", "checklist"
+    ];
+
+    const teamMembers = ["Unassigned", "Fire Chief", "Medic", "Safety Officer", "Search & Rescue"];
+
+    function getSeverityClass(sev) {
+      if (sev >= 8) return "sev-red";
+      if (sev >= 5) return "sev-orange";
+      if (sev >= 3) return "sev-yellow";
+      return "sev-green";
+    }
+
+    function updateSeverityBadge() {
+      const val = parseFloat(document.getElementById("severity").value);
+      const badge = document.getElementById("severityBadge");
+      if (!isNaN(val)) {
+        badge.textContent = "SEV-" + val.toFixed(1);
+        badge.className = "severity-badge " + getSeverityClass(val);
+      } else {
+        badge.textContent = "";
+        badge.className = "severity-badge";
       }
     }
 
-    window.onload = updatePDF;
+    function renderChecklist() {
+      const raw = document.getElementById("checklist").value;
+      const items = raw.split(",").map(c => c.trim()).filter(Boolean);
+      const container = document.getElementById("checklistDisplay");
+      container.innerHTML = "";
+
+      items.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.className = "checklist-item";
+        div.draggable = true;
+        div.dataset.index = idx;
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.label = item;
+        checkbox.addEventListener("change", renderPreview);
+
+        const label = document.createElement("div");
+        label.className = "checklist-label";
+        label.textContent = item;
+
+        const select = document.createElement("select");
+        teamMembers.forEach(name => {
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          select.appendChild(opt);
+        });
+        select.addEventListener("change", renderPreview);
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        div.appendChild(select);
+
+        // Drag handlers
+        div.addEventListener("dragstart", (e) => {
+          div.classList.add("dragging");
+          e.dataTransfer.setData("text/plain", div.dataset.index);
+        });
+        div.addEventListener("dragend", () => div.classList.remove("dragging"));
+        div.addEventListener("dragover", e => e.preventDefault());
+        div.addEventListener("drop", (e) => {
+          e.preventDefault();
+          const from = parseInt(e.dataTransfer.getData("text/plain"));
+          const to = parseInt(div.dataset.index);
+          reorderChecklist(from, to);
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    function reorderChecklist(from, to) {
+      const items = document.getElementById("checklist").value.split(",").map(i => i.trim());
+      const moved = items.splice(from, 1)[0];
+      items.splice(to, 0, moved);
+      document.getElementById("checklist").value = items.join(", ");
+      renderChecklist();
+      renderPreview();
+    }
+
+    function updateImagePreview() {
+      const fileInput = document.getElementById("image_file");
+      const urlInput = document.getElementById("image_url");
+      const preview = document.getElementById("imagePreview");
+
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        preview.src = URL.createObjectURL(file);
+      } else {
+        preview.src = urlInput.value;
+      }
+    }
+
+    function collectFormData() {
+      const checklistNodes = document.querySelectorAll(".checklist-item");
+      const checklistData = Array.from(checklistNodes).map(div => ({
+        item: div.querySelector(".checklist-label").textContent,
+        completed: div.querySelector("input[type='checkbox']").checked,
+        assigned_to: div.querySelector("select").value
+      }));
+
+      const imageFile = document.getElementById("image_file").files[0];
+      const imageURL = document.getElementById("image_url").value;
+
+      return {
+        location: document.getElementById("location").value,
+        coordinates: document.getElementById("coordinates").value.split(",").map(Number),
+        hazards: document.getElementById("hazards").value.split(",").map(h => h.trim()),
+        severity: parseFloat(document.getElementById("severity").value),
+        notes: document.getElementById("notes").value,
+        image_url: imageFile ? "uploaded://" + imageFile.name : imageURL,
+        checklist: checklistData
+      };
+    }
+
+    function renderPreview() {
+      const data = collectFormData();
+      document.getElementById("jsonPreview").textContent = JSON.stringify(data, null, 2);
+    }
+
+    function updatePDF() {
+      const data = collectFormData();
+      fetch("/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        document.getElementById("pdfFrame").src = url;
+      });
+    }
+
+    // Live update listeners
+    inputs.forEach(id => {
+      document.getElementById(id).addEventListener("input", () => {
+        if (id === "checklist") renderChecklist();
+        if (id === "image_url") updateImagePreview();
+        if (id === "severity") updateSeverityBadge();
+        renderPreview();
+      });
+    });
+
+    document.getElementById("image_file").addEventListener("change", () => {
+      updateImagePreview();
+      renderPreview();
+    });
+
+    window.onload = () => {
+      document.getElementById("location").value = "Austin, TX";
+      document.getElementById("coordinates").value = "30.2672,-97.7431";
+      document.getElementById("hazards").value = "fire, collapsed structure";
+      document.getElementById("severity").value = "8.5";
+      document.getElementById("notes").value = "Smoke observed, no visible injuries";
+      document.getElementById("image_url").value = "https://via.placeholder.com/300";
+      document.getElementById("checklist").value = "Clear debris, Search for victims";
+      updateSeverityBadge();
+      renderChecklist();
+      updateImagePreview();
+      renderPreview();
+      updatePDF();
+    };
   </script>
 </body>
 </html>

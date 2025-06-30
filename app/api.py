@@ -13,6 +13,7 @@ from weasyprint import HTML as WeasyHTML
 import shutil
 import os
 import uuid
+import json
 
 # Initialize app
 app = FastAPI()
@@ -46,6 +47,11 @@ async def serve_hazard_page(request: Request):
 async def serve_generate_page(request: Request):
     return templates.TemplateResponse("generate.html", {"request": request})
 
+# Live JSON-to-PDF editor
+@app.get("/live-generate", response_class=HTMLResponse)
+async def serve_live_generate_page(request: Request):
+    return templates.TemplateResponse("live_generate.html", {"request": request})
+
 # Offline fallback page
 @app.get("/offline.html", response_class=HTMLResponse)
 async def offline_page(request: Request):
@@ -56,7 +62,6 @@ async def offline_page(request: Request):
 # ANALYSIS & REPORTING
 # ----------------------------
 
-# Analyze input (text, image, audio)
 @app.post("/analyze", response_class=HTMLResponse)
 async def analyze_input(
     request: Request,
@@ -106,7 +111,7 @@ async def analyze_input(
     })
 
 
-# Export PDF from textarea input (classic)
+# Export PDF from textarea input (classic HTML input)
 @app.post("/export-pdf")
 async def export_pdf(request: Request, report_text: str = Form(...)):
     html_content = templates.get_template("pdf_template.html").render({
@@ -121,10 +126,34 @@ async def export_pdf(request: Request, report_text: str = Form(...)):
     })
 
 
-# Export PDF from JSON input (structured)
+# Export PDF from structured JSON or multipart (with upload)
 @app.post("/generate-report")
-async def generate_report(request: Request):
-    payload = await request.json()
+async def generate_report(request: Request, file: UploadFile = File(None)):
+    content_type = request.headers.get("Content-Type", "")
+
+    if "application/json" in content_type:
+        # Raw JSON (e.g., from fetch)
+        payload = await request.json()
+
+    elif "multipart/form-data" in content_type:
+        form = await request.form()
+        payload_raw = form.get("json")
+        try:
+            payload = json.loads(payload_raw)
+        except json.JSONDecodeError:
+            return JSONResponse(content={"error": "Invalid JSON format"}, status_code=400)
+
+        if file and file.filename:
+            ext = os.path.splitext(file.filename)[1]
+            filename = f"upload_{uuid.uuid4().hex}{ext}"
+            filepath = os.path.join(UPLOAD_DIR, filename)
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            payload["image_url"] = f"uploaded://{filename}"
+
+    else:
+        return JSONResponse(content={"error": "Unsupported content type"}, status_code=415)
+
     pdf_path = generate_report_pdf(payload)
     return FileResponse(pdf_path, media_type="application/pdf", filename="incident_report.pdf")
 
@@ -145,7 +174,3 @@ async def detect_hazards_api(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(content={"error": f"Hazard detection failed: {str(e)}"}, status_code=500)
-    
-@app.get("/live-generate", response_class=HTMLResponse)
-async def serve_live_generate_page(request: Request):
-    return templates.TemplateResponse("live_generate.html", {"request": request})
