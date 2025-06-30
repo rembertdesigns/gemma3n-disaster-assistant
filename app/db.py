@@ -45,3 +45,31 @@ def save_report_metadata(report_data: dict):
     ))
     conn.commit()
     conn.close()
+
+def get_all_reports(conn):
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM reports ORDER BY timestamp DESC")
+    return cursor.fetchall()
+
+def get_report_by_id(conn, report_id):
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM reports WHERE id = ?", (report_id,))
+    return cursor.fetchone()
+
+def get_dashboard_stats(conn):
+    cursor = conn.cursor()
+    stats = {}
+
+    cursor.execute("SELECT COUNT(*) FROM reports")
+    stats["total_reports"] = cursor.fetchone()[0]
+
+    cursor.execute("SELECT AVG(CAST(severity AS REAL)) FROM reports")
+    stats["avg_severity"] = round(cursor.fetchone()[0] or 0, 2)
+
+    cursor.execute("SELECT user, COUNT(*) as count FROM reports GROUP BY user")
+    stats["reports_per_user"] = cursor.fetchall()
+
+    cursor.execute("SELECT status, COUNT(*) as count FROM reports GROUP BY status")
+    stats["status_counts"] = cursor.fetchall()
+
+    return stats

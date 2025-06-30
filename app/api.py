@@ -10,7 +10,13 @@ from app.inference import run_disaster_analysis
 from app.audio_transcription import transcribe_audio
 from app.report_utils import generate_report_pdf
 from app.auth import authenticate_user, create_access_token, get_current_user, require_role
-from app.models import save_report_metadata  # NEW
+from app.db import (
+    get_db_connection,
+    save_report_metadata,
+    get_all_reports,
+    get_report_by_id,
+    get_dashboard_stats
+)
 
 from weasyprint import HTML as WeasyHTML
 from datetime import datetime
@@ -44,14 +50,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def read_current_user(user: dict = Depends(get_current_user)):
     return {"username": user["username"], "role": user["role"]}
 
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard(request: Request, user: dict = Depends(require_role(["admin"]))):
-    return templates.TemplateResponse("admin.html", {
-        "request": request,
-        "username": user["username"],
-        "role": user["role"]
-    })
-
 # ---------------- ROUTES ----------------
 
 @app.get("/", response_class=HTMLResponse)
@@ -74,6 +72,40 @@ async def serve_live_generate_page(request: Request):
 async def offline_page(request: Request):
     return templates.TemplateResponse("offline.html", {"request": request})
 
+# ---------------- ADMIN ----------------
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, user: dict = Depends(require_role(["admin"]))):
+    conn = get_db_connection()
+    stats = get_dashboard_stats(conn)
+    conn.close()
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "username": user["username"],
+        "role": user["role"],
+        "stats": stats
+    })
+
+@app.get("/reports", response_class=HTMLResponse)
+async def list_reports(request: Request, user: dict = Depends(require_role(["admin"]))):
+    conn = get_db_connection()
+    rows = get_all_reports(conn)
+    conn.close()
+    return templates.TemplateResponse("reports.html", {"request": request, "reports": rows})
+
+@app.get("/reports/{report_id}")
+async def download_report(report_id: str, user: dict = Depends(require_role(["admin"]))):
+    conn = get_db_connection()
+    report = get_report_by_id(conn, report_id)
+    conn.close()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    file_path = os.path.join(OUTPUT_DIR, report["filename"])
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(file_path, media_type="application/pdf", filename=report["filename"])
 
 # ---------------- ANALYSIS & REPORTING ----------------
 
@@ -169,12 +201,10 @@ async def generate_report(
     else:
         return JSONResponse(content={"error": "Unsupported content type"}, status_code=415)
 
-    # Generate the PDF
     pdf_path = generate_report_pdf(payload)
 
-    # ⬇️ Save metadata to SQLite
     save_report_metadata({
-        "report_id": str(uuid.uuid4()),
+        "id": str(uuid.uuid4()),
         "timestamp": payload.get("timestamp", datetime.now().isoformat()),
         "location": payload.get("location", "Unknown"),
         "severity": payload.get("severity", "N/A"),
@@ -182,11 +212,10 @@ async def generate_report(
         "user": user["username"],
         "status": "submitted",
         "image_url": payload.get("image_url"),
-        "checklist": ", ".join(payload.get("checklist", []))
+        "checklist": payload.get("checklist", [])
     })
 
     return FileResponse(pdf_path, media_type="application/pdf", filename="incident_report.pdf")
-
 
 # ---------------- HAZARD DETECTION ----------------
 

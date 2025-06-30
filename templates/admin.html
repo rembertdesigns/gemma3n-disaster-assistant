@@ -1,20 +1,76 @@
-<!-- templates/admin.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Dashboard</title>
+  <meta charset="UTF-8">
+  <title>👤 Admin Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    body {
+      padding: 2rem;
+      font-family: system-ui, sans-serif;
+    }
+    h1 {
+      margin-bottom: 1rem;
+      font-size: 1.75rem;
+    }
+    .info-section {
+      margin-bottom: 2rem;
+    }
+    .stats-box {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 8px;
+      background: #f9f9f9;
+      max-width: 400px;
+      margin-bottom: 1.5rem;
+    }
+    .stats-box h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+    }
+    .stats-box p {
+      margin: 0.3rem 0;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin: 0.4rem 0;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
   <h1>👤 Admin Panel</h1>
-  <p><strong>User:</strong> {{ username }}</p>
-  <p><strong>Role:</strong> {{ role }}</p>
 
-  <h2>🔐 Secure Actions</h2>
-  <ul>
-    <li><a href="/generate">Generate PDF (form)</a></li>
-    <li><a href="/live-generate">Live Report Editor</a></li>
-    <li><a href="/hazards">Hazard Uploader</a></li>
-    <li><a href="/offline.html">Offline Mode</a></li>
-  </ul>
+  <div class="info-section">
+    <p><strong>User:</strong> {{ username }}</p>
+    <p><strong>Role:</strong> {{ role }}</p>
+  </div>
+
+  <div class="stats-box">
+    <h2>📊 Dashboard Stats</h2>
+    <p><strong>Total Reports:</strong> {{ stats.total_reports }}</p>
+    <p><strong>Active Users:</strong> {{ stats.active_users }}</p>
+    <p><strong>Average Severity:</strong> {{ stats.avg_severity }}</p>
+  </div>
+
+  <div class="info-section">
+    <h2>🔐 Secure Tools</h2>
+    <ul>
+      <li><a href="/generate">📝 Generate PDF (form-based)</a></li>
+      <li><a href="/live-generate">🧠 Live Report Editor</a></li>
+      <li><a href="/hazards">📷 Hazard Detection Uploader</a></li>
+      <li><a href="/offline.html">🛰️ Offline Mode Simulation</a></li>
+      <li><a href="/reports">📄 View All Reports (DB)</a></li>
+    </ul>
+  </div>
 </body>
 </html>

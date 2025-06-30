@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>📄 Report Archive</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 0.5rem;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th.sortable {
+      cursor: pointer;
+    }
+    input, select {
+      padding: 0.4rem;
+      margin-right: 1rem;
+    }
+    .actions a {
+      margin-right: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>📄 Report Archive</h1>
+
+  <div>
+    <label for="severityFilter">Severity:</label>
+    <select id="severityFilter" onchange="filterTable()">
+      <option value="">All</option>
+      <option value="low">Low</option>
+      <option value="moderate">Moderate</option>
+      <option value="high">High</option>
+      <option value="critical">Critical</option>
+    </select>
+
+    <label for="userFilter">User:</label>
+    <input type="text" id="userFilter" placeholder="Filter by user..." onkeyup="filterTable()">
+  </div>
+
+  <table id="reportsTable">
+    <thead>
+      <tr>
+        <th class="sortable" onclick="sortTable(0)">📄 Report ID</th>
+        <th class="sortable" onclick="sortTable(1)">📍 Location</th>
+        <th class="sortable" onclick="sortTable(2)">📊 Severity</th>
+        <th class="sortable" onclick="sortTable(3)">👤 User</th>
+        <th class="sortable" onclick="sortTable(4)">🕒 Timestamp</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for report in reports %}
+      <tr>
+        <td>{{ report.id }}</td>
+        <td>{{ report.location }}</td>
+        <td>{{ report.severity }}</td>
+        <td>{{ report.user }}</td>
+        <td>{{ report.timestamp }}</td>
+        <td>{{ report.status }}</td>
+        <td class="actions">
+          <a href="/reports/{{ report.id }}" target="_blank">📥 View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script>
+    function filterTable() {
+      const severityFilter = document.getElementById('severityFilter').value.toLowerCase();
+      const userFilter = document.getElementById('userFilter').value.toLowerCase();
+      const rows = document.querySelectorAll("#reportsTable tbody tr");
+
+      rows.forEach(row => {
+        const severity = row.children[2].textContent.toLowerCase();
+        const user = row.children[3].textContent.toLowerCase();
+        const matchesSeverity = !severityFilter || severity === severityFilter;
+        const matchesUser = !userFilter || user.includes(userFilter);
+        row.style.display = matchesSeverity && matchesUser ? "" : "none";
+      });
+    }
+
+    function sortTable(colIndex) {
+      const table = document.getElementById("reportsTable");
+      const rows = Array.from(table.rows).slice(1); // skip header
+      const ascending = table.dataset.sortOrder !== "asc";
+      rows.sort((a, b) => {
+        const valA = a.cells[colIndex].textContent.trim().toLowerCase();
+        const valB = b.cells[colIndex].textContent.trim().toLowerCase();
+        return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      });
+
+      rows.forEach(row => table.tBodies[0].appendChild(row));
+      table.dataset.sortOrder = ascending ? "asc" : "desc";
+    }
+  </script>
+</body>
+</html>
