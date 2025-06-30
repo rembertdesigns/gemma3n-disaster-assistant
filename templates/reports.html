@@ -19,16 +19,21 @@
       padding: 0.5rem;
       border-bottom: 1px solid #ddd;
       text-align: left;
+      vertical-align: middle;
     }
     th.sortable {
       cursor: pointer;
     }
-    input, select {
+    input, select, button {
       padding: 0.4rem;
-      margin-right: 1rem;
-    }
-    .actions a {
       margin-right: 0.5rem;
+    }
+    .actions a, .actions form {
+      display: inline-block;
+      margin-right: 0.25rem;
+    }
+    form {
+      display: inline;
     }
   </style>
 </head>
@@ -69,7 +74,16 @@
         <td>{{ report.severity }}</td>
         <td>{{ report.user }}</td>
         <td>{{ report.timestamp }}</td>
-        <td>{{ report.status }}</td>
+        <td>
+          <form method="post" action="/reports/{{ report.id }}/status">
+            <select name="new_status">
+              <option value="submitted" {% if report.status == "submitted" %}selected{% endif %}>Submitted</option>
+              <option value="reviewed" {% if report.status == "reviewed" %}selected{% endif %}>Reviewed</option>
+              <option value="resolved" {% if report.status == "resolved" %}selected{% endif %}>Resolved</option>
+            </select>
+            <button type="submit">Update</button>
+          </form>
+        </td>
         <td class="actions">
           <a href="/reports/{{ report.id }}" target="_blank">📥 View</a>
         </td>

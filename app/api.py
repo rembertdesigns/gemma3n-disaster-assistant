@@ -3,6 +3,8 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import RedirectResponse
+
 
 from app.hazard_detection import detect_hazards
 from app.preprocessing import preprocess_input
@@ -106,6 +108,19 @@ async def download_report(report_id: str, user: dict = Depends(require_role(["ad
         raise HTTPException(status_code=404, detail="File not found")
 
     return FileResponse(file_path, media_type="application/pdf", filename=report["filename"])
+
+@app.post("/reports/{report_id}/status")
+async def update_report_status(
+    report_id: str,
+    new_status: str = Form(...),
+    user: dict = Depends(require_role(["admin"]))
+):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE reports SET status = ? WHERE id = ?", (new_status, report_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse("/reports", status_code=303)
 
 # ---------------- ANALYSIS & REPORTING ----------------
 

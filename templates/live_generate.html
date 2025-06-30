@@ -308,6 +308,34 @@
       updateImagePreview();
       renderPreview();
     });
+
+    window.addEventListener('online', () => {
+      import('/static/js/sync-queue.js')
+        .then(module => module.trySyncQueuedReports())
+        .catch(err => console.error('Sync error', err));
+    });
+
+    async function updatePDF() {
+      const data = collectFormData();
+
+      if (!navigator.onLine) {
+        const syncModule = await import('/static/js/sync-queue.js');
+        await syncModule.queueReport(data);
+        alert('📥 Report saved offline. Will sync when back online.');
+        return;
+      }
+
+      fetch("/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        document.getElementById("pdfFrame").src = url;
+      });
+    }
   </script>
 </body>
 </html>
