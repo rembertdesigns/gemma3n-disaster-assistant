@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import Body
 from fastapi.responses import JSONResponse
 from predictive_engine import calculate_risk_score
+from app.broadcast_utils import start_broadcast, discover_nearby_broadcasts
 
 
 from app.hazard_detection import detect_hazards
@@ -656,6 +657,24 @@ async def predict_risk_api(payload: dict = Body(...)):
     hazard = payload.get("hazard_type", "unknown")
 
     result = calculate_risk_score(location, weather, hazard)
+    return JSONResponse(content=result)
+
+# ================================
+# PHASE 1: EMERGENCY BROADCAST ROUTES
+# ================================
+
+@app.post("/broadcast")
+async def trigger_broadcast(request: Request):
+    payload = await request.json()
+    message = payload.get("message", "Emergency Broadcast")
+    location = payload.get("location", {})
+    severity = payload.get("severity", "High")
+    result = start_broadcast(message, location, severity)
+    return JSONResponse(content=result)
+
+@app.get("/broadcasts")
+async def get_active_broadcasts():
+    result = discover_nearby_broadcasts(location={})  # Replace with real location filtering if needed
     return JSONResponse(content=result)
 
 # ================================
