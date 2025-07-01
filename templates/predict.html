@@ -7,28 +7,25 @@
   <!-- Load risk engine -->
   <script src="{{ url_for('static', filename='js/weather-risk.js') }}" defer></script>
 
-  <!-- Load modules: broadcast polling + map -->
+  <!-- P2P Fallback (WebRTC) -->
+  <script src="https://unpkg.com/simple-peer@latest/simplepeer.min.js"></script>
   <script type="module">
-    import { startBroadcastListener } from "{{ url_for('static', filename='js/workers/broadcast.js') }}";
     import { initBroadcastMap } from "{{ url_for('static', filename='js/workers/broadcast-map.js') }}";
+    import { startBroadcastListener } from "{{ url_for('static', filename='js/workers/broadcast.js') }}";
+    import { initP2PFallback } from "{{ url_for('static', filename='js/p2p/fallback-webrtc.js') }}";
 
     document.addEventListener("DOMContentLoaded", () => {
       initBroadcastMap();
       startBroadcastListener();
+      initP2PFallback(); // 🚀 P2P fallback activated
     });
   </script>
 
-  <!-- Leaflet styles & script -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    defer
-  ></script>
+  <!-- Leaflet Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 
-  <!-- App CSS -->
+  <!-- Styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <style>
     body {
@@ -75,12 +72,12 @@
 <body>
   <h1>🧠 Disaster Risk Prediction</h1>
 
-  <!-- 🚨 Emergency Alert Banner -->
+  <!-- 🚨 Alert Banner -->
   <div id="broadcast-alert">
     🚨 Emergency broadcast triggered!
   </div>
 
-  <!-- Prediction Results -->
+  <!-- Risk Info -->
   <div>
     <p id="risk-score">Risk Score: <strong>Loading...</strong></p>
     <p id="severity">Severity: <strong>Loading...</strong></p>
