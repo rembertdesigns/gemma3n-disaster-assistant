@@ -3,6 +3,10 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Redirect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import Body
+from fastapi.responses import JSONResponse
+from predictive_engine import calculate_risk_score
+
 
 from app.hazard_detection import detect_hazards
 from app.preprocessing import preprocess_input
@@ -644,6 +648,15 @@ async def get_map_config(user: dict = Depends(require_role(["admin", "responder"
         },
         "user": user['username']
     }
+
+@app.post("/predict-risk")
+async def predict_risk_api(payload: dict = Body(...)):
+    location = payload.get("location", {})
+    weather = payload.get("weather", {})
+    hazard = payload.get("hazard_type", "unknown")
+
+    result = calculate_risk_score(location, weather, hazard)
+    return JSONResponse(content=result)
 
 # ================================
 # STARTUP EVENT

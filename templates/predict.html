@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Disaster Risk Prediction</title>
+  <script src="{{ url_for('static', filename='js/weather-risk.js') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <h1>🧠 Disaster Risk Prediction</h1>
+  
+  <div>
+    <p id="risk-score">Risk Score: <strong>Loading...</strong></p>
+    <p id="severity">Severity: <strong>Loading...</strong></p>
+    <pre id="resources">Resources: Loading...</pre>
+  </div>
+</body>
+</html>
