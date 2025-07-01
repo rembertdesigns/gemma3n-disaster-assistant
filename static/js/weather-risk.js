@@ -1,11 +1,9 @@
 import { sendP2PBroadcast } from "./p2p/fallback-webrtc.js";
 
 async function fetchRiskPrediction() {
-  // Step 1: Set default or dynamic location
   let lat = 34.05;
   let lon = -118.25;
 
-  // Try to get user geolocation
   if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -16,17 +14,17 @@ async function fetchRiskPrediction() {
       },
       (error) => {
         console.warn("⚠️ Geolocation error:", error.message);
-        sendPredictionRequest(lat, lon); // Fallback to default
+        sendPredictionRequest(lat, lon); // fallback
       }
     );
   } else {
-    sendPredictionRequest(lat, lon); // Geolocation not available
+    sendPredictionRequest(lat, lon);
   }
 }
 
 async function sendPredictionRequest(lat, lon) {
   const weather = {
-    temperature: 42,       // Replace with dynamic input later
+    temperature: 42,
     wind_speed: 60,
     rainfall: 20
   };
@@ -44,8 +42,11 @@ async function sendPredictionRequest(lat, lon) {
     });
 
     const data = await response.json();
-    data.location = { lat, lon }; // ensure location is preserved
+    data.location = { lat, lon }; // attach location if missing
+
     updateRiskUI(data);
+    analyzeSentiment(data.severity); // 🧠 Analyze tone
+
   } catch (error) {
     console.error("❌ Error fetching risk prediction:", error);
     document.getElementById("risk-score").textContent = "Risk Score: Error";
@@ -59,11 +60,9 @@ function updateRiskUI(data) {
   document.getElementById("severity").innerHTML = `Severity: <strong>${data.severity}</strong>`;
   document.getElementById("resources").textContent = JSON.stringify(data.suggested_resources, null, 2);
 
-  // 🚨 Trigger emergency broadcast if risk is high
   if (data.risk_score >= 0.8) {
     triggerBroadcast(data);
 
-    // 🌐 Send to peers via WebRTC fallback
     const broadcastPayload = {
       message: `⚠️ High disaster risk (${data.severity}) at location!`,
       severity: data.severity,
@@ -90,7 +89,6 @@ async function triggerBroadcast(data) {
     const result = await response.json();
     console.log("📢 Broadcast triggered:", result);
 
-    // Show alert banner
     const alertBanner = document.getElementById("broadcast-alert");
     if (alertBanner) {
       alertBanner.style.display = "block";
@@ -101,5 +99,23 @@ async function triggerBroadcast(data) {
   }
 }
 
-// Start on page load
-document.addEventListener("DOMContentLoaded", fetchRiskPrediction);  
+// 🧠 Gemma-powered Sentiment Analysis
+async function analyzeSentiment(text) {
+  try {
+    const response = await fetch("/analyze-sentiment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+
+    const result = await response.json();
+    document.getElementById("sentiment-result").innerHTML = `Sentiment: <strong>${result.sentiment}</strong>`;
+    document.getElementById("escalation-level").innerHTML = `Escalation Level: <strong>${result.escalation}</strong>`;
+  } catch (err) {
+    console.warn("⚠️ Sentiment analysis failed:", err);
+    document.getElementById("sentiment-result").textContent = "Sentiment: Unknown";
+    document.getElementById("escalation-level").textContent = "Escalation Level: N/A";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", fetchRiskPrediction); 
