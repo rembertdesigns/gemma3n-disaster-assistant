@@ -7,6 +7,7 @@ from fastapi import Body
 from fastapi.responses import JSONResponse
 from predictive_engine import calculate_risk_score
 from app.broadcast_utils import start_broadcast, discover_nearby_broadcasts
+from app.sentiment_utils import analyze_sentiment
 
 
 from app.hazard_detection import detect_hazards
@@ -61,6 +62,8 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+crowd_reports = []  # In-memory store; consider replacing with DB later
+
 UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -106,6 +109,10 @@ async def serve_live_generate_page(request: Request):
 @app.get("/offline.html", response_class=HTMLResponse)
 async def offline_page(request: Request):
     return templates.TemplateResponse("offline.html", {"request": request})
+
+@app.get("/submit-report", response_class=HTMLResponse)
+async def submit_report_page(request: Request):
+    return templates.TemplateResponse("submit-report.html", {"request": request})
 
 # ================================
 # EXISTING ADMIN ROUTES (unchanged)
@@ -658,6 +665,28 @@ async def predict_risk_api(payload: dict = Body(...)):
 
     result = calculate_risk_score(location, weather, hazard)
     return JSONResponse(content=result)
+
+@app.post("/api/submit-report")
+async def submit_crowd_report(payload: dict = Body(...)):
+    message = payload.get("message", "")
+    location = payload.get("location", {})
+    user = payload.get("user", "anonymous")
+
+    sentiment_result = analyze_sentiment(message)
+
+    report = {
+        "id": str(uuid.uuid4()),
+        "message": message,
+        "location": location,
+        "user": user,
+        "timestamp": datetime.now().isoformat(),
+        "sentiment": sentiment_result.get("sentiment"),
+        "tone": sentiment_result.get("tone"),
+        "escalation": sentiment_result.get("escalation"),
+    }
+
+    crowd_reports.append(report)
+    return JSONResponse(content={"success": True, "report": report})
 
 # ================================
 # PHASE 1: EMERGENCY BROADCAST ROUTES

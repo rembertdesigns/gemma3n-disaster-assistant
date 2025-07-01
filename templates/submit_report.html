@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📝 Submit Emergency Report</title>
+  <script src="{{ url_for('static', filename='js/submit-report.js') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f9f9f9; }
+    form { background: white; padding: 1rem; border-radius: 8px; max-width: 600px; margin: auto; }
+    textarea { width: 100%; height: 120px; margin-bottom: 1rem; }
+    button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; }
+    .status { margin-top: 1rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>📢 Submit Community Emergency Report</h1>
+  <form id="report-form">
+    <label for="message">Describe what you see:</label>
+    <textarea id="message" required placeholder="e.g., Thick smoke and people fleeing..."></textarea>
+    
+    <button type="submit">Submit Report</button>
+  </form>
+  
+  <div class="status" id="submit-status"></div>
+</body>
+</html>
