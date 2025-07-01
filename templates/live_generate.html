@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -6,6 +6,10 @@
   <title>Live Report Builder</title>
   <link rel="stylesheet" href="/static/styles.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Add offline recovery system -->
+  <script src="/static/js/offline-recovery.js"></script>
+  
   <style>
     body {
       margin: 0;
@@ -141,6 +145,43 @@
       padding: 0.5rem;
       margin-bottom: 1rem;
       font-size: 0.9rem;
+    }
+    
+    /* Enhanced Offline Recovery Status */
+    .recovery-status-panel {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .recovery-status-panel.visible {
+      display: block;
+    }
+    
+    .recovery-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      font-weight: bold;
+    }
+    
+    .recovery-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .recovery-metric {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
     }
     
     /* AI Analysis Panel Styles */
@@ -359,11 +400,6 @@
       animation: none;
     }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.8; }
@@ -511,7 +547,7 @@
     }
     
     @media (max-width: 768px) {
-      .ai-metrics {
+      .ai-metrics, .recovery-metrics {
         grid-template-columns: 1fr;
       }
       
@@ -549,6 +585,28 @@
     <div class="sync-queue-info" id="syncInfo">
       <strong>📊 Sync Queue:</strong> <span id="queueCount">0</span> reports pending
       <button onclick="forceSyncQueue()" style="margin-left: 1rem; padding: 0.25rem 0.5rem;">🔄 Force Sync</button>
+    </div>
+
+    <!-- Enhanced Recovery Status Panel -->
+    <div class="recovery-status-panel" id="recoveryStatusPanel">
+      <div class="recovery-header">
+        <span>🛡️ Recovery System</span>
+        <div style="font-size: 0.8rem; opacity: 0.9;" id="recoveryStatusText">Monitoring...</div>
+      </div>
+      <div class="recovery-metrics" id="recoveryMetricsGrid">
+        <div class="recovery-metric">
+          <div><strong id="syncSuccessCount">0</strong></div>
+          <div>Successful Syncs</div>
+        </div>
+        <div class="recovery-metric">
+          <div><strong id="syncFailureCount">0</strong></div>
+          <div>Failed Syncs</div>
+        </div>
+        <div class="recovery-metric">
+          <div><strong id="recoveryQueueSize">0</strong></div>
+          <div>Recovery Queue</div>
+        </div>
+      </div>
     </div>
 
     <!-- AI Analysis Panel -->
@@ -1343,6 +1401,49 @@
       } else {
         queueStatus.style.display = 'none';
       }
+      
+      // Update recovery metrics if available
+      if (window.offlineRecovery) {
+        updateRecoveryMetricsDisplay(window.offlineRecovery.getMetrics());
+      }
+    }
+
+    // Enhanced Recovery Metrics Display
+    function updateRecoveryMetricsDisplay(metrics) {
+      const panel = document.getElementById('recoveryStatusPanel');
+      const statusText = document.getElementById('recoveryStatusText');
+      const successCount = document.getElementById('syncSuccessCount');
+      const failureCount = document.getElementById('syncFailureCount');
+      const queueSize = document.getElementById('recoveryQueueSize');
+      
+      // Show panel if there are metrics to display
+      const hasActivity = metrics.syncSuccesses > 0 || metrics.syncFailures > 0 || metrics.queueSize > 0;
+      
+      if (hasActivity) {
+        panel.classList.add('visible');
+        
+        // Update status text
+        if (metrics.queueSize > 5) {
+          statusText.textContent = 'High queue volume';
+          statusText.style.color = '#f59e0b';
+        } else if (metrics.syncFailures > metrics.syncSuccesses && metrics.syncFailures > 0) {
+          statusText.textContent = 'Recovery active';
+          statusText.style.color = '#ef4444';
+        } else if (metrics.isOnline && metrics.queueSize === 0) {
+          statusText.textContent = 'All synced';
+          statusText.style.color = '#10b981';
+        } else {
+          statusText.textContent = 'Monitoring...';
+          statusText.style.color = 'white';
+        }
+        
+        // Update metric values
+        successCount.textContent = metrics.syncSuccesses;
+        failureCount.textContent = metrics.syncFailures;
+        queueSize.textContent = metrics.queueSize;
+      } else {
+        panel.classList.remove('visible');
+      }
     }
 
     // Map Functions
@@ -1478,75 +1579,266 @@
       document.getElementById("jsonPreview").textContent = JSON.stringify(data, null, 2);
     }
 
-    // Save Functions
+    // Enhanced Save Functions with Offline Recovery Integration
     async function saveOfflineReport() {
-      const data = collectFormData();
-      
-      // Save image blob if exists
-      if (currentImageBlob) {
-        await saveImageBlob(data.id, currentImageBlob, currentImageMetadata);
+      try {
+        const data = collectFormData();
+        
+        // Save image blob if exists
+        if (currentImageBlob) {
+          await saveImageBlob(data.id, currentImageBlob, currentImageMetadata);
+        }
+
+        // Save to local queue
+        let queue = await idbKeyval.get("sync_queue") || [];
+        queue.push(data);
+        await idbKeyval.set("sync_queue", queue);
+
+        // Notify recovery system of new offline report
+        if (window.offlineRecovery) {
+          window.offlineRecovery.updateSyncStatus();
+          window.offlineRecovery.showNotification(
+            '📴 Report saved offline - will sync when network returns', 
+            'info'
+          );
+        } else {
+          alert("📴 Report saved offline! Will sync when connected.");
+        }
+        
+        updateQueueDisplay();
+        renderPreview();
+      } catch (error) {
+        console.error('❌ Enhanced save offline failed:', error);
+        
+        // Show user-friendly error with recovery options
+        if (window.offlineRecovery) {
+          window.offlineRecovery.showNotification(
+            '❌ Save failed - trying recovery methods...', 
+            'error'
+          );
+          
+          // Attempt emergency save
+          await attemptEmergencySave();
+        } else {
+          alert('❌ Failed to save report offline. Please try again.');
+        }
       }
-
-      // Save to local queue
-      let queue = await idbKeyval.get("sync_queue") || [];
-      queue.push(data);
-      await idbKeyval.set("sync_queue", queue);
-
-      alert("📴 Report saved offline! Will sync when connected.");
-      updateQueueDisplay();
-      renderPreview();
     }
 
     async function saveAndSyncReport() {
-      const data = collectFormData();
-      
-      // Save image blob if exists
-      if (currentImageBlob) {
-        await saveImageBlob(data.id, currentImageBlob, currentImageMetadata);
-      }
+      try {
+        const data = collectFormData();
+        
+        // Check network status first
+        if (!navigator.onLine && window.offlineRecovery) {
+          console.log('📴 Network offline, using enhanced offline save');
+          await saveOfflineReport();
+          return;
+        }
+        
+        // Save image blob if exists
+        if (currentImageBlob) {
+          await saveImageBlob(data.id, currentImageBlob, currentImageMetadata);
+        }
 
-      if (navigator.onLine) {
-        // Try immediate sync
-        try {
-          await syncSingleReport(data);
-          alert("✅ Report uploaded successfully!");
-        } catch (error) {
-          // Fall back to offline queue
-          console.warn('Sync failed, saving offline:', error);
+        // Try enhanced sync with recovery
+        const success = await attemptEnhancedSync(data);
+        
+        if (success) {
+          if (window.offlineRecovery) {
+            window.offlineRecovery.showNotification('✅ Report uploaded successfully!', 'success');
+          } else {
+            alert('✅ Report uploaded successfully!');
+          }
+        } else {
+          // Fallback to offline save with recovery tracking
+          console.log('⚠️ Sync failed, using enhanced offline save');
           await saveOfflineReport();
         }
-      } else {
-        // Save offline
-        await saveOfflineReport();
+        
+      } catch (error) {
+        console.error('❌ Enhanced save and sync failed:', error);
+        
+        // Emergency fallback
+        await attemptEmergencySave();
       }
     }
 
-    async function syncSingleReport(report) {
-      const formData = new FormData();
-      formData.append("json", JSON.stringify(report));
-      
-      if (report.has_offline_image) {
-        const { blob } = await getImageBlob(report.id);
-        if (blob) {
-          formData.append("file", blob, report.image_metadata?.filename || "image.jpg");
+    async function attemptEnhancedSync(data) {
+      try {
+        // Try primary sync method
+        const success = await syncSingleReport(data);
+        
+        if (success) {
+          return true;
         }
+        
+        // If primary fails and recovery system available, try recovery strategies
+        if (window.offlineRecovery && window.offlineRecovery.recoveryStrategies) {
+          console.log('🔧 Primary sync failed, trying recovery strategies...');
+          
+          const recovered = await window.offlineRecovery.recoveryStrategies.attemptRecovery(data);
+          
+          if (recovered) {
+            console.log('✅ Recovery successful');
+            return true;
+          }
+        }
+        
+        return false;
+        
+      } catch (error) {
+        console.error('❌ Enhanced sync attempt failed:', error);
+        return false;
       }
+    }
 
-      const response = await fetch("/generate-report", {
-        method: "POST",
-        body: formData
+    async function attemptEmergencySave() {
+      try {
+        const data = collectFormData();
+        
+        // Try multiple emergency save methods
+        const emergencyMethods = [
+          () => saveToLocalStorage(data),
+          () => saveToIndexedDB(data),
+          () => saveToSessionStorage(data),
+          () => saveToCookies(data)
+        ];
+        
+        for (const method of emergencyMethods) {
+          try {
+            await method();
+            console.log('✅ Emergency save successful');
+            
+            if (window.offlineRecovery) {
+              window.offlineRecovery.showNotification(
+                '🆘 Emergency save completed - data preserved!', 
+                'warning'
+              );
+            } else {
+              alert('🆘 Emergency save completed - data preserved!');
+            }
+            return;
+          } catch (error) {
+            console.warn('⚠️ Emergency method failed:', error);
+          }
+        }
+        
+        // If all methods fail
+        console.error('❌ All emergency save methods failed');
+        
+        if (window.offlineRecovery) {
+          window.offlineRecovery.showNotification(
+            '❌ All save methods failed - please try again', 
+            'error'
+          );
+        } else {
+          alert('❌ All save methods failed - please try again');
+        }
+        
+      } catch (error) {
+        console.error('❌ Emergency save system failed:', error);
+      }
+    }
+
+    function saveToLocalStorage(data) {
+      const key = `emergency_report_${Date.now()}`;
+      localStorage.setItem(key, JSON.stringify(data));
+      console.log('💾 Saved to localStorage:', key);
+    }
+
+    function saveToIndexedDB(data) {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('emergency_reports', 1);
+        
+        request.onerror = () => reject(request.error);
+        
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('reports')) {
+            db.createObjectStore('reports', { keyPath: 'id' });
+          }
+        };
+        
+        request.onsuccess = (event) => {
+          const db = event.target.result;
+          const transaction = db.transaction(['reports'], 'readwrite');
+          const store = transaction.objectStore('reports');
+          
+          const addRequest = store.add({
+            ...data,
+            emergency_save: true,
+            emergency_timestamp: Date.now()
+          });
+          
+          addRequest.onsuccess = () => {
+            console.log('💾 Saved to IndexedDB emergency store');
+            resolve();
+          };
+          
+          addRequest.onerror = () => reject(addRequest.error);
+        };
       });
+    }
 
-      if (!response.ok) {
-        throw new Error(`Sync failed: ${response.status}`);
+    function saveToSessionStorage(data) {
+      const key = `session_emergency_${Date.now()}`;
+      sessionStorage.setItem(key, JSON.stringify(data));
+      console.log('💾 Saved to sessionStorage:', key);
+    }
+
+    function saveToCookies(data) {
+      // Only save essential data to cookies due to size limits
+      const essentialData = {
+        id: data.id,
+        timestamp: data.timestamp,
+        location: data.location,
+        severity: data.severity,
+        notes: data.notes.substring(0, 100) // Truncate for cookie size
+      };
+      
+      const cookieValue = btoa(JSON.stringify(essentialData));
+      document.cookie = `emergency_report_${Date.now()}=${cookieValue}; max-age=86400`; // 24 hours
+      console.log('🍪 Saved essential data to cookies');
+    }
+
+    async function syncSingleReport(report) {
+      try {
+        // Use recovery system's enhanced sync if available
+        if (window.offlineRecovery && window.offlineRecovery.syncSingleReport) {
+          return await window.offlineRecovery.syncSingleReport(report);
+        } else {
+          // Fallback to original sync method
+          const formData = new FormData();
+          formData.append("json", JSON.stringify(report));
+          
+          if (report.has_offline_image) {
+            const { blob } = await getImageBlob(report.id);
+            if (blob) {
+              formData.append("file", blob, report.image_metadata?.filename || "image.jpg");
+            }
+          }
+
+          const response = await fetch("/generate-report", {
+            method: "POST",
+            body: formData
+          });
+
+          if (!response.ok) {
+            throw new Error(`Sync failed: ${response.status}`);
+          }
+
+          // Clean up local image storage after successful sync
+          if (report.has_offline_image) {
+            await deleteImageBlob(report.id);
+          }
+
+          return true;
+        }
+      } catch (error) {
+        console.error('❌ Enhanced single sync failed:', error);
+        return false;
       }
-
-      // Clean up local image storage after successful sync
-      if (report.has_offline_image) {
-        await deleteImageBlob(report.id);
-      }
-
-      return response;
     }
 
     async function syncQueue() {
@@ -1557,8 +1849,12 @@
 
       for (const report of queue) {
         try {
-          await syncSingleReport(report);
-          console.log(`✅ Synced report: ${report.id}`);
+          const success = await syncSingleReport(report);
+          if (success) {
+            console.log(`✅ Synced report: ${report.id}`);
+          } else {
+            remaining.push(report);
+          }
         } catch (error) {
           console.warn(`⚠️ Failed to sync report ${report.id}:`, error);
           remaining.push(report);
@@ -1571,13 +1867,21 @@
 
     async function forceSyncQueue() {
       if (!navigator.onLine) {
-        alert("❌ Cannot sync while offline!");
+        if (window.offlineRecovery) {
+          window.offlineRecovery.showNotification("❌ Cannot sync while offline!", 'error');
+        } else {
+          alert("❌ Cannot sync while offline!");
+        }
         return;
       }
 
       const queue = await idbKeyval.get("sync_queue") || [];
       if (queue.length === 0) {
-        alert("✅ No reports to sync!");
+        if (window.offlineRecovery) {
+          window.offlineRecovery.showNotification("✅ No reports to sync!", 'success');
+        } else {
+          alert("✅ No reports to sync!");
+        }
         return;
       }
 
@@ -1585,9 +1889,18 @@
       const remaining = await idbKeyval.get("sync_queue") || [];
       
       if (remaining.length === 0) {
-        alert("✅ All reports synced successfully!");
+        if (window.offlineRecovery) {
+          window.offlineRecovery.showNotification("✅ All reports synced successfully!", 'success');
+        } else {
+          alert("✅ All reports synced successfully!");
+        }
       } else {
-        alert(`⚠️ ${remaining.length} reports failed to sync. Will retry automatically.`);
+        const message = `⚠️ ${remaining.length} reports failed to sync. Will retry automatically.`;
+        if (window.offlineRecovery) {
+          window.offlineRecovery.showNotification(message, 'warning');
+        } else {
+          alert(message);
+        }
       }
     }
 
@@ -1596,13 +1909,47 @@
       await captureQuickGPS();
     }
 
+    // Enhanced Network Status Management with Recovery Integration
+    function updateNetworkStatusUI(online) {
+      // Update existing sync status if it exists
+      const statusSpan = document.getElementById('connectionStatus');
+      if (statusSpan) {
+        statusSpan.innerHTML = online ? 
+          '<span class="online-indicator">🟢 Online</span>' : 
+          '<span class="offline-indicator">🔴 Offline</span>';
+      }
+      
+      // Update any offline-specific UI elements
+      const offlineElements = document.querySelectorAll('.offline-only');
+      const onlineElements = document.querySelectorAll('.online-only');
+      
+      offlineElements.forEach(el => el.style.display = online ? 'none' : 'block');
+      onlineElements.forEach(el => el.style.display = online ? 'block' : 'none');
+    }
+
     // Event Listeners
     window.addEventListener("online", () => {
+      console.log('🟢 Network online - updating UI');
       updateConnectionStatus();
+      updateNetworkStatusUI(true);
     });
 
     window.addEventListener("offline", () => {
+      console.log('🔴 Network offline - updating UI');
       updateConnectionStatus();
+      updateNetworkStatusUI(false);
+    });
+
+    // Listen for recovery system events
+    window.addEventListener('recovery-complete', (event) => {
+      console.log('🔄 Recovery complete:', event.detail);
+      updateQueueDisplay();
+    });
+    
+    // Listen for sync status changes
+    window.addEventListener('sync-status-changed', (event) => {
+      console.log('📊 Sync status changed:', event.detail);
+      updateQueueDisplay();
     });
 
     // Edge AI ready handler
@@ -1681,7 +2028,52 @@
           updateAISeverity();
         }
       }, 1000);
+
+      // Initialize recovery monitoring if available
+      if (window.offlineRecovery) {
+        initializeRecoveryMonitoring();
+      }
     };
+
+    function initializeRecoveryMonitoring() {
+      console.log('📶 Initializing recovery monitoring...');
+      
+      // Enhanced queue monitoring with recovery metrics
+      const originalUpdateQueueDisplay = window.updateQueueDisplay;
+      
+      window.updateQueueDisplay = async function() {
+        // Call original function
+        if (originalUpdateQueueDisplay) {
+          await originalUpdateQueueDisplay();
+        } else {
+          await updateQueueDisplay();
+        }
+        
+        // Add recovery system metrics
+        if (window.offlineRecovery) {
+          const metrics = window.offlineRecovery.getMetrics();
+          updateRecoveryMetricsDisplay(metrics);
+        }
+      };
+      
+      // Periodic recovery health check
+      setInterval(async () => {
+        if (window.offlineRecovery) {
+          await window.offlineRecovery.updateSyncStatus();
+          
+          // Check for potential issues
+          const metrics = window.offlineRecovery.getMetrics();
+          
+          if (metrics.syncFailures > 10) {
+            console.warn('⚠️ High sync failure rate detected');
+            window.offlineRecovery.showNotification(
+              '⚠️ Multiple sync failures - check network connection', 
+              'warning'
+            );
+          }
+        }
+      }, 30000); // Check every 30 seconds
+    }
 
     inputs.forEach(id => {
       document.getElementById(id).addEventListener("input", () => {
@@ -1715,6 +2107,223 @@
           console.error('❌ Service Worker registration failed:', error);
         });
     }
+
+    // Global debug functions for testing (enhanced with recovery system)
+    window.OfflineDebug = {
+      simulateOffline: () => {
+        if (window.offlineRecovery) {
+          window.offlineRecovery.startNetworkSimulation();
+        } else {
+          console.log('🔴 Simulating offline mode...');
+          Object.defineProperty(navigator, 'onLine', { value: false, writable: true });
+          window.dispatchEvent(new Event('offline'));
+        }
+      },
+      
+      restoreOnline: () => {
+        if (window.offlineRecovery) {
+          window.offlineRecovery.stopNetworkSimulation();
+        } else {
+          console.log('🟢 Restoring online mode...');
+          Object.defineProperty(navigator, 'onLine', { value: true, writable: true });
+          window.dispatchEvent(new Event('online'));
+        }
+      },
+      
+      runStressTest: () => {
+        if (window.OfflineStressTesting) {
+          return window.OfflineStressTesting.runStressTest();
+        } else {
+          console.log('🧪 Basic stress test - creating multiple reports...');
+          for (let i = 0; i < 5; i++) {
+            setTimeout(() => saveOfflineReport(), i * 100);
+          }
+        }
+      },
+      
+      getMetrics: () => {
+        if (window.offlineRecovery) {
+          return window.offlineRecovery.getMetrics();
+        } else {
+          return {
+            syncSuccesses: 0,
+            syncFailures: 0,
+            queueSize: 0,
+            isOnline: navigator.onLine
+          };
+        }
+      },
+      
+      forceRecovery: () => {
+        if (window.offlineRecovery) {
+          return window.offlineRecovery.attemptFullRecovery();
+        } else {
+          console.log('🔧 Basic recovery - force syncing queue...');
+          return forceSyncQueue();
+        }
+      },
+      
+      clearQueues: () => {
+        if (window.offlineRecovery) {
+          return window.offlineRecovery.clearQueue();
+        } else {
+          console.log('🗑️ Clearing local queue...');
+          return idbKeyval.set("sync_queue", []).then(() => updateQueueDisplay());
+        }
+      }
+    };
+
+    console.log('📶 Enhanced Live Report Builder with Offline Recovery loaded');
+    console.log('🧪 Use OfflineDebug.runStressTest() to test offline resilience');
+    console.log('📊 Use OfflineDebug.getMetrics() to view recovery metrics');
+    console.log('🔧 Use OfflineDebug.forceRecovery() to trigger recovery process');
+  </script>
+
+  <!-- Enhanced integration with offline recovery system -->
+  <script>
+    // Enhanced integration with offline recovery system
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('📶 Integrating offline recovery with live report builder...');
+      
+      // Wait for offline recovery to be ready
+      if (window.offlineRecovery) {
+        // Hook into existing save functions
+        enhanceSaveFunctions();
+        
+        // Setup recovery event listeners
+        setupRecoveryEventListeners();
+        
+        // Initialize recovery monitoring
+        initializeRecoveryMonitoring();
+        
+        console.log('✅ Offline recovery integration complete');
+      } else {
+        console.warn('⚠️ Offline recovery system not available');
+        
+        // Try again after a delay
+        setTimeout(() => {
+          if (window.offlineRecovery) {
+            enhanceSaveFunctions();
+            setupRecoveryEventListeners();
+            initializeRecoveryMonitoring();
+            console.log('✅ Delayed offline recovery integration complete');
+          }
+        }, 2000);
+      }
+    });
+
+    function enhanceSaveFunctions() {
+      // Store original functions
+      const originalSaveOfflineReport = window.saveOfflineReport;
+      const originalSaveAndSyncReport = window.saveAndSyncReport;
+      const originalSyncSingleReport = window.syncSingleReport;
+      
+      // Enhanced saveOfflineReport with recovery tracking
+      window.saveOfflineReport = async function() {
+        try {
+          await originalSaveOfflineReport();
+          
+          // Notify recovery system of new offline report
+          if (window.offlineRecovery) {
+            window.offlineRecovery.updateSyncStatus();
+          }
+        } catch (error) {
+          console.error('❌ Enhanced save offline failed:', error);
+          
+          // Show user-friendly error with recovery options
+          if (window.offlineRecovery) {
+            window.offlineRecovery.showNotification(
+              '❌ Save failed - trying recovery methods...', 
+              'error'
+            );
+            
+            // Attempt emergency save
+            await attemptEmergencySave();
+          }
+        }
+      };
+      
+      // Enhanced saveAndSyncReport with advanced retry logic
+      window.saveAndSyncReport = async function() {
+        try {
+          const data = collectFormData();
+          
+          // Check network status first
+          if (!navigator.onLine && window.offlineRecovery) {
+            console.log('📴 Network offline, using enhanced offline save');
+            await saveOfflineReport();
+            window.offlineRecovery.showNotification(
+              '📴 Saved offline - will sync when network returns', 
+              'info'
+            );
+            return;
+          }
+          
+          // Try enhanced sync with recovery
+          const success = await attemptEnhancedSync(data);
+          
+          if (success) {
+            if (window.offlineRecovery) {
+              window.offlineRecovery.showNotification('✅ Report uploaded successfully!', 'success');
+            } else {
+              alert('✅ Report uploaded successfully!');
+            }
+          } else {
+            // Fallback to offline save with recovery tracking
+            console.log('⚠️ Sync failed, using enhanced offline save');
+            await saveOfflineReport();
+          }
+          
+        } catch (error) {
+          console.error('❌ Enhanced save and sync failed:', error);
+          
+          // Emergency fallback
+          await attemptEmergencySave();
+        }
+      };
+      
+      // Enhanced syncSingleReport with conflict resolution
+      window.syncSingleReport = async function(report) {
+        try {
+          // Use recovery system's enhanced sync if available
+          if (window.offlineRecovery && window.offlineRecovery.syncSingleReport) {
+            return await window.offlineRecovery.syncSingleReport(report);
+          } else {
+            return await originalSyncSingleReport(report);
+          }
+        } catch (error) {
+          console.error('❌ Enhanced single sync failed:', error);
+          return false;
+        }
+      };
+    }
+
+    function setupRecoveryEventListeners() {
+      // Listen for network status changes
+      window.addEventListener('online', () => {
+        console.log('🟢 Network online - updating UI');
+        updateNetworkStatusUI(true);
+      });
+
+      window.addEventListener('offline', () => {
+        console.log('🔴 Network offline - updating UI');
+        updateNetworkStatusUI(false);
+      });
+      
+      // Listen for recovery system events
+      window.addEventListener('recovery-complete', (event) => {
+        console.log('🔄 Recovery complete:', event.detail);
+        updateQueueDisplay();
+      });
+      
+      // Listen for sync status changes
+      window.addEventListener('sync-status-changed', (event) => {
+        console.log('📊 Sync status changed:', event.detail);
+        updateQueueDisplay();
+      });
+    }
+
+    console.log('📶 Offline recovery integration loaded');
   </script>
 </body>
 </html>
