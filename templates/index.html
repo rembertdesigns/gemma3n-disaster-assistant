@@ -6,6 +6,207 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Disaster Response & Recovery Assistant</title>
   <link rel="stylesheet" href="/static/css/styles.css" />
+  <style>
+    /* Edge AI Status Indicators */
+    .ai-status-bar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .ai-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ff00;
+      animation: pulse 2s infinite;
+    }
+    
+    .ai-status-dot.loading {
+      background: #ffaa00;
+    }
+    
+    .ai-status-dot.error {
+      background: #ff0000;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+    
+    /* Real-time Analysis Panel */
+    .realtime-analysis {
+      background: rgba(37, 99, 235, 0.05);
+      border: 2px solid #2563eb;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: none;
+      transition: all 0.3s ease;
+    }
+    
+    .realtime-analysis.visible {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .analysis-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-weight: bold;
+      color: #1e40af;
+    }
+    
+    .severity-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .severity-low { background: #16a34a; }
+    .severity-medium { background: #d97706; }
+    .severity-high { background: #dc2626; }
+    .severity-critical { background: #991b1b; animation: blink 1s infinite; }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .panic-indicator {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-left: 0.5rem;
+    }
+    
+    .panic-calm { background: #dcfce7; color: #166534; }
+    .panic-concerned { background: #fef3c7; color: #92400e; }
+    .panic-elevated { background: #fecaca; color: #991b1b; }
+    .panic-critical { background: #dc2626; color: white; animation: blink 1s infinite; }
+    
+    .ai-recommendations {
+      background: #f8fafc;
+      border-left: 4px solid #3b82f6;
+      padding: 0.75rem;
+      margin-top: 1rem;
+      border-radius: 0 8px 8px 0;
+    }
+    
+    .ai-recommendations h4 {
+      margin: 0 0 0.5rem 0;
+      color: #1e40af;
+      font-size: 0.9rem;
+    }
+    
+    .ai-recommendations ul {
+      margin: 0;
+      padding-left: 1.2rem;
+    }
+    
+    .ai-recommendations li {
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+      color: #374151;
+    }
+    
+    .processing-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      color: #6b7280;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    
+    .processing-indicator.active {
+      display: flex;
+    }
+    
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e5e7eb;
+      border-top: 2px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Image Analysis Preview */
+    .image-analysis-preview {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      display: none;
+    }
+    
+    .image-analysis-preview.visible {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .hazard-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    
+    .hazard-tag {
+      background: #dc2626;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    
+    .confidence-bar {
+      width: 100%;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #dc2626, #16a34a);
+      transition: width 0.5s ease;
+    }
+  </style>
 </head>
 <body>
   <header class="header">
@@ -32,6 +233,15 @@
   </header>
 
   <main class="container">
+    <!-- Edge AI Status Bar -->
+    <div class="ai-status-bar" id="aiStatusBar">
+      <div class="ai-status-dot loading" id="aiStatusDot"></div>
+      <span id="aiStatusText">🧠 Loading Edge AI models...</span>
+      <button onclick="window.EdgeAI?.runDiagnostics()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-left: auto;">
+        🧪 Test AI
+      </button>
+    </div>
+
     <div class="main-card">
       <form id="analysisForm" method="post" action="/analyze" enctype="multipart/form-data">
         <div class="form-section">
@@ -39,6 +249,12 @@
           <textarea id="report_text" name="report_text" rows="4"
             placeholder="Ex: Building collapse near 5th Ave..."
             aria-label="Describe the situation"></textarea>
+          
+          <!-- Processing Indicator -->
+          <div class="processing-indicator" id="textProcessing">
+            <div class="spinner"></div>
+            <span>Analyzing text for emergency indicators...</span>
+          </div>
 
           <label for="audioUpload">🎙️ Upload Voice Note</label>
           <input type="file" id="audioUpload" name="audio" accept=".wav,.mp3,.m4a,.webm"
@@ -63,6 +279,40 @@
           <label for="file">📎 Upload Evidence (Image)</label>
           <input type="file" name="file" id="file" accept=".jpg,.jpeg,.png"
             aria-label="Upload image evidence" />
+          
+          <!-- Image Analysis Preview -->
+          <div class="image-analysis-preview" id="imageAnalysisPreview">
+            <h4>🔍 AI Image Analysis</h4>
+            <div id="imageAnalysisContent"></div>
+          </div>
+        </div>
+
+        <!-- Real-time AI Analysis Panel -->
+        <div class="realtime-analysis" id="realtimeAnalysis">
+          <div class="analysis-header">
+            <span>🧠 Real-time AI Analysis</span>
+            <div id="processingTime" style="margin-left: auto; font-size: 0.8rem; color: #6b7280;"></div>
+          </div>
+          
+          <div id="aiAnalysisContent">
+            <div style="margin-bottom: 1rem;">
+              <strong>Severity Assessment:</strong>
+              <span class="severity-indicator" id="severityIndicator">
+                <span id="severityText">Analyzing...</span>
+              </span>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+              <strong>Text Analysis:</strong>
+              <span id="sentimentAnalysis">No text analysis yet</span>
+              <span class="panic-indicator" id="panicIndicator" style="display: none;"></span>
+            </div>
+            
+            <div class="ai-recommendations" id="aiRecommendations" style="display: none;">
+              <h4>💡 AI Recommendations</h4>
+              <ul id="recommendationsList"></ul>
+            </div>
+          </div>
         </div>
 
         <button type="submit" id="analyzeBtn" aria-label="Submit form for AI analysis">🔍 Analyze Situation</button>
@@ -114,7 +364,15 @@
     <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
   </footer>
 
+  <!-- Load Edge AI Engine -->
+  <script src="/static/js/edge-ai.js"></script>
+
   <script>
+    // Global variables for AI integration
+    let currentImageAnalysis = null;
+    let currentTextAnalysis = null;
+    let analysisTimeout = null;
+
     // Theme toggle
     const themeBtn = document.getElementById('toggleThemeBtn');
     themeBtn.addEventListener('click', () => {
@@ -140,6 +398,266 @@
 
     const savedContrast = localStorage.getItem('contrast');
     if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
+
+    // Edge AI Status Management
+    function updateAIStatus(status, message) {
+      const statusDot = document.getElementById('aiStatusDot');
+      const statusText = document.getElementById('aiStatusText');
+      
+      statusDot.className = `ai-status-dot ${status}`;
+      statusText.textContent = message;
+    }
+
+    // Listen for Edge AI ready event
+    window.addEventListener('edgeai-ready', (event) => {
+      updateAIStatus('ready', '🧠 Edge AI Ready - Privacy-first analysis active');
+      console.log('✅ Edge AI models loaded:', event.detail.models);
+    });
+
+    // Real-time Text Analysis
+    const reportTextArea = document.getElementById('report_text');
+    reportTextArea.addEventListener('input', (e) => {
+      const text = e.target.value.trim();
+      
+      // Clear previous timeout
+      if (analysisTimeout) {
+        clearTimeout(analysisTimeout);
+      }
+      
+      // Show processing indicator
+      const processingIndicator = document.getElementById('textProcessing');
+      if (text.length > 10) {
+        processingIndicator.classList.add('active');
+        
+        // Debounce analysis
+        analysisTimeout = setTimeout(async () => {
+          await performTextAnalysis(text);
+          processingIndicator.classList.remove('active');
+        }, 500);
+      } else {
+        processingIndicator.classList.remove('active');
+        hideRealtimeAnalysis();
+      }
+    });
+
+    async function performTextAnalysis(text) {
+      try {
+        const startTime = performance.now();
+        
+        // Perform sentiment analysis
+        currentTextAnalysis = window.EdgeAI.analyzeSentiment(text);
+        
+        // Calculate processing time
+        const processingTime = performance.now() - startTime;
+        
+        // Update UI with results
+        updateRealtimeAnalysis();
+        showProcessingTime(processingTime);
+        
+        console.log('📝 Text analysis complete:', currentTextAnalysis);
+      } catch (error) {
+        console.error('❌ Text analysis failed:', error);
+        updateAIStatus('error', '🧠 Text analysis unavailable');
+      }
+    }
+
+    // Image Upload Analysis
+    const fileInput = document.getElementById('file');
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        await performImageAnalysis(file);
+      }
+    });
+
+    async function performImageAnalysis(file) {
+      try {
+        // Show loading state
+        showImageAnalysisLoading();
+        
+        // Create image element for analysis
+        const img = new Image();
+        img.onload = async () => {
+          const startTime = performance.now();
+          
+          // Perform AI analysis
+          currentImageAnalysis = await window.EdgeAI.analyzeImage(img);
+          
+          // Calculate processing time
+          const processingTime = performance.now() - startTime;
+          
+          // Update UI
+          updateImageAnalysisDisplay();
+          updateRealtimeAnalysis();
+          showProcessingTime(processingTime);
+          
+          console.log('📷 Image analysis complete:', currentImageAnalysis);
+        };
+        
+        img.src = URL.createObjectURL(file);
+      } catch (error) {
+        console.error('❌ Image analysis failed:', error);
+        hideImageAnalysis();
+      }
+    }
+
+    function showImageAnalysisLoading() {
+      const preview = document.getElementById('imageAnalysisPreview');
+      const content = document.getElementById('imageAnalysisContent');
+      
+      content.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <div class="spinner"></div>
+          <span>Analyzing image for hazards...</span>
+        </div>
+      `;
+      
+      preview.classList.add('visible');
+    }
+
+    function updateImageAnalysisDisplay() {
+      if (!currentImageAnalysis) return;
+      
+      const content = document.getElementById('imageAnalysisContent');
+      const analysis = currentImageAnalysis;
+      
+      let hazardTags = '';
+      if (analysis.hazards && analysis.hazards.length > 0) {
+        hazardTags = analysis.hazards.map(hazard => 
+          `<span class="hazard-tag">${hazard.type.replace('_', ' ')} (${hazard.confidence}%)</span>`
+        ).join('');
+      }
+      
+      let objectTags = '';
+      if (analysis.objects && analysis.objects.length > 0) {
+        objectTags = analysis.objects.map(obj => 
+          `<span style="background: #3b82f6; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; margin-right: 0.5rem;">${obj.class} (${obj.confidence}%)</span>`
+        ).join('');
+      }
+      
+      content.innerHTML = `
+        <div style="margin-bottom: 0.5rem;">
+          <strong>Confidence:</strong> ${Math.round(analysis.confidence * 100)}%
+          <div class="confidence-bar">
+            <div class="confidence-fill" style="width: ${analysis.confidence * 100}%"></div>
+          </div>
+        </div>
+        
+        ${analysis.hazards && analysis.hazards.length > 0 ? `
+          <div style="margin-bottom: 0.5rem;">
+            <strong>🚨 Detected Hazards:</strong>
+            <div class="hazard-tags">${hazardTags}</div>
+          </div>
+        ` : ''}
+        
+        ${analysis.objects && analysis.objects.length > 0 ? `
+          <div style="margin-bottom: 0.5rem;">
+            <strong>🎯 Detected Objects:</strong>
+            <div style="margin-top: 0.5rem;">${objectTags}</div>
+          </div>
+        ` : ''}
+        
+        <div style="font-size: 0.85rem; color: #6b7280;">
+          Severity: ${analysis.severity}/10 | Processing: Client-side AI
+        </div>
+      `;
+    }
+
+    function updateRealtimeAnalysis() {
+      const panel = document.getElementById('realtimeAnalysis');
+      const severityIndicator = document.getElementById('severityIndicator');
+      const severityText = document.getElementById('severityText');
+      const sentimentAnalysis = document.getElementById('sentimentAnalysis');
+      const panicIndicator = document.getElementById('panicIndicator');
+      const recommendations = document.getElementById('aiRecommendations');
+      const recommendationsList = document.getElementById('recommendationsList');
+      
+      // Calculate comprehensive severity
+      let overallSeverity = 1;
+      let severityClass = 'severity-low';
+      let allRecommendations = [];
+      
+      if (currentImageAnalysis || currentTextAnalysis) {
+        const severity = window.EdgeAI.calculateSeverity(
+          currentImageAnalysis,
+          currentTextAnalysis,
+          {}
+        );
+        
+        overallSeverity = Math.round(severity.overall);
+        
+        // Set severity class
+        if (overallSeverity >= 8) severityClass = 'severity-critical';
+        else if (overallSeverity >= 6) severityClass = 'severity-high';
+        else if (overallSeverity >= 3) severityClass = 'severity-medium';
+        
+        // Generate recommendations
+        allRecommendations = window.EdgeAI.generateRecommendations({
+          imageAnalysis: currentImageAnalysis,
+          textAnalysis: currentTextAnalysis,
+          severity: severity
+        });
+      }
+      
+      // Update severity display
+      severityIndicator.className = `severity-indicator ${severityClass}`;
+      severityText.textContent = `${overallSeverity}/10`;
+      
+      // Update text analysis display
+      if (currentTextAnalysis) {
+        sentimentAnalysis.textContent = `Panic Level: ${currentTextAnalysis.panic_level}`;
+        
+        // Show panic indicator
+        const panicClass = `panic-${currentTextAnalysis.panic_level}`;
+        panicIndicator.className = `panic-indicator ${panicClass}`;
+        panicIndicator.textContent = currentTextAnalysis.panic_level.toUpperCase();
+        panicIndicator.style.display = 'inline';
+        
+        // Add emergency indicators to recommendations
+        if (currentTextAnalysis.emergency_indicators.length > 0) {
+          currentTextAnalysis.emergency_indicators.forEach(indicator => {
+            allRecommendations.unshift({
+              priority: 'immediate',
+              action: `Keyword detected: "${indicator.keyword}" - ${indicator.category} level alert`,
+              reason: 'Emergency language analysis'
+            });
+          });
+        }
+      } else {
+        sentimentAnalysis.textContent = 'Enter text for analysis';
+        panicIndicator.style.display = 'none';
+      }
+      
+      // Update recommendations
+      if (allRecommendations.length > 0) {
+        recommendationsList.innerHTML = allRecommendations.map(rec => 
+          `<li><strong>${rec.priority}:</strong> ${rec.action}</li>`
+        ).join('');
+        recommendations.style.display = 'block';
+      } else {
+        recommendations.style.display = 'none';
+      }
+      
+      // Show the panel
+      panel.classList.add('visible');
+    }
+
+    function hideRealtimeAnalysis() {
+      const panel = document.getElementById('realtimeAnalysis');
+      panel.classList.remove('visible');
+      currentTextAnalysis = null;
+    }
+
+    function hideImageAnalysis() {
+      const preview = document.getElementById('imageAnalysisPreview');
+      preview.classList.remove('visible');
+      currentImageAnalysis = null;
+    }
+
+    function showProcessingTime(time) {
+      const processingTimeEl = document.getElementById('processingTime');
+      processingTimeEl.textContent = `⚡ ${time.toFixed(1)}ms`;
+    }
 
     // Voice recording logic
     const recordBtn = document.getElementById('recordBtn');
@@ -212,6 +730,17 @@
           : "🔽 Detected Audio Hazards";
       });
     }
+
+    // Initialize AI status
+    updateAIStatus('loading', '🧠 Loading Edge AI models...');
+    
+    // Test Edge AI after a delay
+    setTimeout(() => {
+      if (window.EdgeAI && window.EdgeAI.isLoaded) {
+        console.log('🧪 Running Edge AI diagnostics...');
+        window.EdgeAI.runDiagnostics();
+      }
+    }, 3000);
   </script>
 </body>
 </html>

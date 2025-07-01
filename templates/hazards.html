@@ -5,6 +5,277 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hazard Detection</title>
   <link rel="stylesheet" href="/static/css/styles.css" />
+  <style>
+    /* Edge AI Integration Styles */
+    .ai-comparison-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .ai-analysis-card {
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 1rem;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
+    }
+    
+    .ai-analysis-card h3 {
+      margin: 0 0 1rem 0;
+      color: #1e40af;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .server-analysis-card {
+      border: 2px solid #16a34a;
+      border-radius: 12px;
+      padding: 1rem;
+      background: linear-gradient(135deg, rgba(22, 163, 74, 0.05), rgba(22, 163, 74, 0.1));
+    }
+    
+    .server-analysis-card h3 {
+      margin: 0 0 1rem 0;
+      color: #15803d;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .analysis-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .metric-item {
+      background: rgba(255, 255, 255, 0.7);
+      padding: 0.5rem;
+      border-radius: 6px;
+      text-align: center;
+    }
+    
+    .metric-value {
+      font-weight: bold;
+      font-size: 1.1em;
+      color: #1f2937;
+    }
+    
+    .metric-label {
+      font-size: 0.8em;
+      color: #6b7280;
+    }
+    
+    .hazard-comparison {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .hazard-item {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 0.5rem;
+      border-radius: 6px;
+      border-left: 4px solid #dc2626;
+    }
+    
+    .hazard-label {
+      flex: 1;
+      font-weight: 500;
+    }
+    
+    .hazard-confidence {
+      background: #dc2626;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    
+    .processing-status {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: none;
+    }
+    
+    .processing-status.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .processing-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .processing-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .status-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+    }
+    
+    .status-pending {
+      background: #fbbf24;
+      color: white;
+    }
+    
+    .status-processing {
+      background: #3b82f6;
+      color: white;
+      animation: pulse 1s infinite;
+    }
+    
+    .status-complete {
+      background: #10b981;
+      color: white;
+    }
+    
+    .status-error {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .performance-comparison {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .performance-chart {
+      display: flex;
+      align-items: end;
+      gap: 1rem;
+      height: 60px;
+      margin-top: 0.5rem;
+    }
+    
+    .perf-bar {
+      flex: 1;
+      background: linear-gradient(to top, #3b82f6, #60a5fa);
+      border-radius: 4px 4px 0 0;
+      position: relative;
+      min-height: 10px;
+    }
+    
+    .perf-bar.edge-ai {
+      background: linear-gradient(to top, #3b82f6, #60a5fa);
+    }
+    
+    .perf-bar.server-ai {
+      background: linear-gradient(to top, #16a34a, #4ade80);
+    }
+    
+    .perf-label {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.8rem;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+    
+    .perf-value {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #1f2937;
+    }
+    
+    .ai-toggle-panel {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+    
+    .ai-toggle-panel h3 {
+      margin: 0 0 1rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .toggle-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    
+    .toggle-option {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .toggle-option:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .toggle-option.active {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .toggle-option h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.1rem;
+    }
+    
+    .toggle-option p {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    
+    @media (max-width: 768px) {
+      .ai-comparison-panel {
+        grid-template-columns: 1fr;
+      }
+      
+      .toggle-options {
+        grid-template-columns: 1fr;
+      }
+      
+      .analysis-metrics {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
   <script defer src="/static/js/hazard_detection.js"></script>
 </head>
 <body>
@@ -21,6 +292,21 @@
   </header>
 
   <main class="container">
+    <!-- AI Processing Mode Toggle -->
+    <div class="ai-toggle-panel">
+      <h3>🧠 AI Processing Mode</h3>
+      <div class="toggle-options">
+        <div class="toggle-option active" id="edgeAIToggle" onclick="setProcessingMode('edge')">
+          <h4>🔒 Edge AI</h4>
+          <p>Privacy-first, offline-capable processing on your device</p>
+        </div>
+        <div class="toggle-option" id="serverAIToggle" onclick="setProcessingMode('server')">
+          <h4>☁️ Server AI</h4>
+          <p>High-performance cloud processing with larger models</p>
+        </div>
+      </div>
+    </div>
+
     <section class="form-section">
       <h2>📷 Upload Image</h2>
       <form id="hazardForm" aria-label="Hazard Detection Form">
@@ -32,6 +318,11 @@
           Show Bounding Boxes
         </label>
 
+        <label style="margin-top: 0.75rem; display: block;">
+          <input type="checkbox" id="enableComparison" />
+          🔄 Compare Edge AI vs Server AI
+        </label>
+
         <button id="runTestHazardBtn" type="button" style="margin-top: 0.75rem;">🧪 Run Hazard Detection Test</button>
 
         <div class="progress-wrapper" style="margin-top: 1rem; display: none;">
@@ -40,15 +331,120 @@
       </form>
 
       <div id="previewContainer" style="margin-top: 1rem;" aria-label="Image Preview"></div>
+
+      <!-- Processing Status Panel -->
+      <div class="processing-status" id="processingStatus">
+        <h4>🔄 Processing Pipeline</h4>
+        <div class="processing-item" id="statusImageLoad">
+          <div class="status-icon status-pending">⏳</div>
+          <span>Loading image for analysis</span>
+        </div>
+        <div class="processing-item" id="statusEdgeAI">
+          <div class="status-icon status-pending">🧠</div>
+          <span>Edge AI hazard detection</span>
+        </div>
+        <div class="processing-item" id="statusServerAI">
+          <div class="status-icon status-pending">☁️</div>
+          <span>Server AI validation</span>
+        </div>
+        <div class="processing-item" id="statusVisualization">
+          <div class="status-icon status-pending">🎨</div>
+          <span>Generating visualizations</span>
+        </div>
+      </div>
     </section>
 
     <section id="resultSection" class="result-card" style="display: none;" aria-label="Detection Results">
       <h2>🧠 Detection Results</h2>
-      <canvas id="resultCanvas" aria-label="Hazard Detection Canvas" role="img"></canvas>
-      <button id="downloadCanvasBtn" class="download-btn" style="margin-top: 1rem;">
-        📥 Download Image with Annotations
-      </button>      
-      <ul id="hazardList" aria-label="List of detected hazards"></ul>
+      
+      <!-- Single Analysis Display -->
+      <div id="singleAnalysisDisplay">
+        <canvas id="resultCanvas" aria-label="Hazard Detection Canvas" role="img"></canvas>
+        <button id="downloadCanvasBtn" class="download-btn" style="margin-top: 1rem;">
+          📥 Download Image with Annotations
+        </button>
+        <ul id="hazardList" aria-label="List of detected hazards"></ul>
+      </div>
+
+      <!-- Comparison Display -->
+      <div id="comparisonDisplay" style="display: none;">
+        <div class="ai-comparison-panel">
+          <!-- Edge AI Results -->
+          <div class="ai-analysis-card">
+            <h3>🔒 Edge AI Analysis</h3>
+            <div class="analysis-metrics">
+              <div class="metric-item">
+                <div class="metric-value" id="edgeProcessingTime">--ms</div>
+                <div class="metric-label">Processing Time</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="edgeConfidence">--%</div>
+                <div class="metric-label">Avg Confidence</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="edgeHazardCount">--</div>
+                <div class="metric-label">Hazards Found</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="edgePrivacy">🔒 100%</div>
+                <div class="metric-label">Privacy</div>
+              </div>
+            </div>
+            <div class="hazard-comparison" id="edgeHazardList"></div>
+          </div>
+
+          <!-- Server AI Results -->
+          <div class="server-analysis-card">
+            <h3>☁️ Server AI Analysis</h3>
+            <div class="analysis-metrics">
+              <div class="metric-item">
+                <div class="metric-value" id="serverProcessingTime">--ms</div>
+                <div class="metric-label">Processing Time</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="serverConfidence">--%</div>
+                <div class="metric-label">Avg Confidence</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="serverHazardCount">--</div>
+                <div class="metric-label">Hazards Found</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value" id="serverAccuracy">📊 High</div>
+                <div class="metric-label">Model Size</div>
+              </div>
+            </div>
+            <div class="hazard-comparison" id="serverHazardList"></div>
+          </div>
+        </div>
+
+        <!-- Performance Comparison Chart -->
+        <div class="performance-comparison">
+          <h4>⚡ Performance Comparison</h4>
+          <div class="performance-chart">
+            <div class="perf-bar edge-ai" id="edgePerfBar" style="height: 45%;">
+              <div class="perf-value" id="edgePerfValue">245ms</div>
+              <div class="perf-label">Edge AI</div>
+            </div>
+            <div class="perf-bar server-ai" id="serverPerfBar" style="height: 80%;">
+              <div class="perf-value" id="serverPerfValue">1.2s</div>
+              <div class="perf-label">Server AI</div>
+            </div>
+          </div>
+          <div style="margin-top: 2rem; font-size: 0.9rem; color: #6b7280; text-align: center;">
+            <strong>Key Insight:</strong> Edge AI provides <span style="color: #3b82f6; font-weight: bold;">instant privacy-first analysis</span> 
+            while Server AI offers <span style="color: #16a34a; font-weight: bold;">enhanced accuracy with larger models</span>
+          </div>
+        </div>
+
+        <!-- Combined Canvas Display -->
+        <div style="margin-top: 1rem;">
+          <canvas id="comparisonCanvas" aria-label="AI Comparison Canvas" role="img"></canvas>
+          <button id="downloadComparisonBtn" class="download-btn" style="margin-top: 1rem;">
+            📥 Download Comparison Analysis
+          </button>
+        </div>
+      </div>
     </section>
 
     <div id="toast" class="toast" style="display: none;" role="alert" aria-live="polite"></div>
@@ -74,10 +470,314 @@
       <label>
         <input type="checkbox" id="drawerSoundAlerts"> 🔊 Sound Alerts
       </label>
+      <label>
+        <input type="checkbox" id="drawerEnableEdgeAI" checked> 🧠 Enable Edge AI
+      </label>
+      <label>
+        <input type="checkbox" id="drawerShowMetrics" checked> 📊 Show Performance Metrics
+      </label>
     </div>
   </div>
 
   <!-- Floating Settings Button -->
   <button id="openDrawerBtn" class="floating-settings-btn">⚙️</button>
+
+  <!-- Load Edge AI Engine -->
+  <script src="/static/js/edge-ai.js"></script>
+
+  <script>
+    // Global variables for AI mode management
+    let currentProcessingMode = 'edge'; // 'edge' or 'server'
+    let comparisonMode = false;
+    let edgeAIResults = null;
+    let serverAIResults = null;
+
+    // Processing mode management
+    function setProcessingMode(mode) {
+      currentProcessingMode = mode;
+      
+      // Update UI
+      document.getElementById('edgeAIToggle').classList.toggle('active', mode === 'edge');
+      document.getElementById('serverAIToggle').classList.toggle('active', mode === 'server');
+      
+      console.log(`🔄 Processing mode set to: ${mode.toUpperCase()}`);
+    }
+
+    // Comparison mode toggle
+    document.getElementById('enableComparison').addEventListener('change', (e) => {
+      comparisonMode = e.target.checked;
+      console.log(`🔄 Comparison mode: ${comparisonMode ? 'enabled' : 'disabled'}`);
+    });
+
+    // Enhanced image analysis with AI mode selection
+    async function analyzeImageWithAI(imageElement, file) {
+      const processingStatus = document.getElementById('processingStatus');
+      processingStatus.classList.add('active');
+      
+      // Update status: Image loading
+      updateProcessingStatus('statusImageLoad', 'complete', 'Image loaded successfully');
+      
+      try {
+        if (comparisonMode) {
+          // Run both Edge AI and Server AI
+          await runComparisonAnalysis(imageElement, file);
+        } else if (currentProcessingMode === 'edge') {
+          // Run only Edge AI
+          await runEdgeAIAnalysis(imageElement);
+        } else {
+          // Run only Server AI
+          await runServerAIAnalysis(file);
+        }
+      } catch (error) {
+        console.error('❌ AI analysis failed:', error);
+        showToast('AI analysis failed. Please try again.');
+      } finally {
+        processingStatus.classList.remove('active');
+      }
+    }
+
+    async function runEdgeAIAnalysis(imageElement) {
+      updateProcessingStatus('statusEdgeAI', 'processing', 'Running Edge AI analysis...');
+      
+      const startTime = performance.now();
+      
+      try {
+        edgeAIResults = await window.EdgeAI.analyzeImage(imageElement);
+        const processingTime = performance.now() - startTime;
+        
+        edgeAIResults.processingTime = processingTime;
+        edgeAIResults.source = 'edge';
+        
+        updateProcessingStatus('statusEdgeAI', 'complete', `Edge AI complete (${processingTime.toFixed(1)}ms)`);
+        updateProcessingStatus('statusVisualization', 'processing', 'Generating visualizations...');
+        
+        // Display results
+        displaySingleAnalysis(edgeAIResults);
+        
+        updateProcessingStatus('statusVisualization', 'complete', 'Visualizations ready');
+        
+        console.log('🧠 Edge AI analysis complete:', edgeAIResults);
+      } catch (error) {
+        updateProcessingStatus('statusEdgeAI', 'error', 'Edge AI analysis failed');
+        throw error;
+      }
+    }
+
+    async function runServerAIAnalysis(file) {
+      updateProcessingStatus('statusServerAI', 'processing', 'Uploading to server...');
+      
+      const startTime = performance.now();
+      
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/detect-hazards', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const serverResults = await response.json();
+        const processingTime = performance.now() - startTime;
+        
+        serverAIResults = {
+          ...serverResults,
+          processingTime: processingTime,
+          source: 'server'
+        };
+        
+        updateProcessingStatus('statusServerAI', 'complete', `Server AI complete (${processingTime.toFixed(1)}ms)`);
+        updateProcessingStatus('statusVisualization', 'processing', 'Generating visualizations...');
+        
+        // Display results
+        displaySingleAnalysis(serverAIResults);
+        
+        updateProcessingStatus('statusVisualization', 'complete', 'Visualizations ready');
+        
+        console.log('☁️ Server AI analysis complete:', serverAIResults);
+      } catch (error) {
+        updateProcessingStatus('statusServerAI', 'error', 'Server AI analysis failed');
+        throw error;
+      }
+    }
+
+    async function runComparisonAnalysis(imageElement, file) {
+      // Run both analyses in parallel
+      const edgePromise = runEdgeAIAnalysis(imageElement);
+      const serverPromise = runServerAIAnalysis(file);
+      
+      await Promise.all([edgePromise, serverPromise]);
+      
+      // Display comparison
+      displayComparisonAnalysis();
+    }
+
+    function displaySingleAnalysis(results) {
+      const singleDisplay = document.getElementById('singleAnalysisDisplay');
+      const comparisonDisplay = document.getElementById('comparisonDisplay');
+      
+      singleDisplay.style.display = 'block';
+      comparisonDisplay.style.display = 'none';
+      
+      // Update hazard list
+      const hazardList = document.getElementById('hazardList');
+      hazardList.innerHTML = '';
+      
+      if (results.hazards && results.hazards.length > 0) {
+        results.hazards.forEach(hazard => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            🚨 <strong>${hazard.type.replace('_', ' ')}</strong> 
+            (${hazard.confidence}% confidence, severity: ${hazard.severity}/10)
+          `;
+          hazardList.appendChild(li);
+        });
+      } else {
+        const li = document.createElement('li');
+        li.textContent = '✅ No significant hazards detected';
+        li.style.color = '#16a34a';
+        hazardList.appendChild(li);
+      }
+      
+      // Show processing info
+      showToast(`Analysis complete in ${results.processingTime.toFixed(1)}ms using ${results.source.toUpperCase()} AI`);
+    }
+
+    function displayComparisonAnalysis() {
+      const singleDisplay = document.getElementById('singleAnalysisDisplay');
+      const comparisonDisplay = document.getElementById('comparisonDisplay');
+      
+      singleDisplay.style.display = 'none';
+      comparisonDisplay.style.display = 'block';
+      
+      // Update Edge AI metrics
+      if (edgeAIResults) {
+        document.getElementById('edgeProcessingTime').textContent = `${edgeAIResults.processingTime.toFixed(1)}ms`;
+        document.getElementById('edgeConfidence').textContent = `${Math.round(edgeAIResults.confidence * 100)}%`;
+        document.getElementById('edgeHazardCount').textContent = edgeAIResults.hazards?.length || 0;
+        
+        // Update Edge AI hazard list
+        const edgeHazardList = document.getElementById('edgeHazardList');
+        edgeHazardList.innerHTML = '';
+        
+        if (edgeAIResults.hazards && edgeAIResults.hazards.length > 0) {
+          edgeAIResults.hazards.forEach(hazard => {
+            const div = document.createElement('div');
+            div.className = 'hazard-item';
+            div.innerHTML = `
+              <span class="hazard-label">${hazard.type.replace('_', ' ')}</span>
+              <span class="hazard-confidence">${hazard.confidence}%</span>
+            `;
+            edgeHazardList.appendChild(div);
+          });
+        }
+      }
+      
+      // Update Server AI metrics  
+      if (serverAIResults) {
+        document.getElementById('serverProcessingTime').textContent = `${serverAIResults.processingTime.toFixed(1)}ms`;
+        
+        // Adapt server results format if needed
+        const serverHazards = serverAIResults.hazards_detected || serverAIResults.predictions || [];
+        const avgConfidence = serverHazards.length > 0 
+          ? Math.round(serverHazards.reduce((sum, h) => sum + (h.confidence || h.score || 0), 0) / serverHazards.length * 100)
+          : 0;
+        
+        document.getElementById('serverConfidence').textContent = `${avgConfidence}%`;
+        document.getElementById('serverHazardCount').textContent = serverHazards.length;
+        
+        // Update Server AI hazard list
+        const serverHazardList = document.getElementById('serverHazardList');
+        serverHazardList.innerHTML = '';
+        
+        if (serverHazards.length > 0) {
+          serverHazards.forEach(hazard => {
+            const div = document.createElement('div');
+            div.className = 'hazard-item';
+            div.innerHTML = `
+              <span class="hazard-label">${hazard.label || hazard.type || 'Unknown'}</span>
+              <span class="hazard-confidence">${Math.round((hazard.confidence || hazard.score || 0) * 100)}%</span>
+            `;
+            serverHazardList.appendChild(div);
+          });
+        }
+      }
+      
+      // Update performance comparison chart
+      updatePerformanceChart();
+      
+      showToast('🔄 Comparison analysis complete - Edge AI vs Server AI');
+    }
+
+    function updatePerformanceChart() {
+      if (!edgeAIResults || !serverAIResults) return;
+      
+      const edgeTime = edgeAIResults.processingTime;
+      const serverTime = serverAIResults.processingTime;
+      const maxTime = Math.max(edgeTime, serverTime);
+      
+      // Update bar heights (inverse relationship - faster = taller)
+      const edgeHeight = Math.max(20, 80 - (edgeTime / maxTime * 60));
+      const serverHeight = Math.max(20, 80 - (serverTime / maxTime * 60));
+      
+      document.getElementById('edgePerfBar').style.height = `${edgeHeight}%`;
+      document.getElementById('serverPerfBar').style.height = `${serverHeight}%`;
+      
+      document.getElementById('edgePerfValue').textContent = `${edgeTime.toFixed(1)}ms`;
+      document.getElementById('serverPerfValue').textContent = `${serverTime.toFixed(1)}ms`;
+    }
+
+    function updateProcessingStatus(elementId, status, message) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      
+      const statusIcon = element.querySelector('.status-icon');
+      const statusText = element.querySelector('span');
+      
+      // Update icon
+      statusIcon.className = `status-icon status-${status}`;
+      
+      // Update icon content
+      const iconMap = {
+        pending: '⏳',
+        processing: '🔄',
+        complete: '✅',
+        error: '❌'
+      };
+      statusIcon.textContent = iconMap[status] || '⏳';
+      
+      // Update text
+      statusText.textContent = message;
+    }
+
+    function showToast(message, duration = 3000) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.display = 'block';
+      toast.style.opacity = '1';
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.style.display = 'none', 500);
+      }, duration);
+    }
+
+    // Initialize processing status on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      // Reset all status indicators
+      updateProcessingStatus('statusImageLoad', 'pending', 'Waiting for image upload');
+      updateProcessingStatus('statusEdgeAI', 'pending', 'Edge AI ready');
+      updateProcessingStatus('statusServerAI', 'pending', 'Server AI ready');
+      updateProcessingStatus('statusVisualization', 'pending', 'Visualization engine ready');
+      
+      console.log('🧠 Enhanced Hazard Detection initialized with Edge AI integration');
+    });
+
+    // Edge AI ready handler
+    window.addEventListener('edgeai-ready', () => {
+      updateProcessingStatus('statusEdgeAI', 'complete', 'Edge AI models loaded and ready');
+      showToast('🧠 Edge AI models loaded - Privacy-first analysis ready!');
+    });
+  </script>
 </body>
 </html>

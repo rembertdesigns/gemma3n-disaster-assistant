@@ -142,6 +142,181 @@
       margin-bottom: 1rem;
       font-size: 0.9rem;
     }
+    
+    /* AI Analysis Panel Styles */
+    .ai-analysis-panel {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .ai-analysis-panel.visible {
+      display: block;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .ai-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-weight: bold;
+    }
+    
+    .ai-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .ai-metric {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    
+    .ai-metric-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+    
+    .ai-metric-label {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    
+    .ai-recommendations {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .ai-recommendations h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+    }
+    
+    .ai-recommendation-item {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .ai-recommendation-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .severity-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .ai-assist-toggle {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+    
+    .ai-assist-toggle:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+    
+    .ai-assist-toggle.active {
+      background: #16a34a;
+    }
+    
+    .processing-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      color: #6b7280;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    
+    .processing-indicator.active {
+      display: flex;
+    }
+    
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e5e7eb;
+      border-top: 2px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .panic-indicator {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-left: 0.5rem;
+    }
+    
+    .panic-calm { background: #dcfce7; color: #166534; }
+    .panic-concerned { background: #fef3c7; color: #92400e; }
+    .panic-elevated { background: #fecaca; color: #991b1b; }
+    .panic-critical { background: #dc2626; color: white; animation: blink 1s infinite; }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .confidence-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    
+    .confidence-fill {
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      transition: width 0.5s ease;
+    }
+    
+    @media (max-width: 768px) {
+      .ai-metrics {
+        grid-template-columns: 1fr;
+      }
+      
+      .severity-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
   </style>
   <script src="https://unpkg.com/idb-keyval@6/dist/idb-keyval-iife.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -160,6 +335,44 @@
       <button onclick="forceSyncQueue()" style="margin-left: 1rem; padding: 0.25rem 0.5rem;">🔄 Force Sync</button>
     </div>
 
+    <!-- AI Analysis Panel -->
+    <div class="ai-analysis-panel" id="aiAnalysisPanel">
+      <div class="ai-panel-header">
+        <span>🧠 Edge AI Analysis</span>
+        <div style="margin-left: auto; font-size: 0.8rem; opacity: 0.9;" id="aiProcessingTime">--ms</div>
+      </div>
+      
+      <div class="ai-metrics">
+        <div class="ai-metric">
+          <div class="ai-metric-value" id="aiSeverityValue">--</div>
+          <div class="ai-metric-label">AI Severity</div>
+        </div>
+        <div class="ai-metric">
+          <div class="ai-metric-value" id="aiConfidenceValue">--%</div>
+          <div class="ai-metric-label">Confidence</div>
+        </div>
+        <div class="ai-metric">
+          <div class="ai-metric-value" id="aiPanicValue">CALM</div>
+          <div class="ai-metric-label">Panic Level</div>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 1rem;">
+        <strong>Text Analysis:</strong>
+        <span id="textAnalysisResult">No text analyzed yet</span>
+        <span class="panic-indicator" id="panicIndicator" style="display: none;"></span>
+      </div>
+      
+      <div class="confidence-bar">
+        <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+      </div>
+      
+      <div class="ai-recommendations" id="aiRecommendations" style="display: none;">
+        <h4>💡 AI Recommendations</h4>
+        <div id="recommendationsList"></div>
+      </div>
+    </div>
+
     <details open>
       <summary>📍 Incident Details</summary>
       <button onclick="autofillGPS()">📍 Auto-Fill Location</button>
@@ -174,11 +387,24 @@
         <input type="text" id="hazards" />
       </label>
       <label>Severity:
-        <input type="number" id="severity" min="1" max="10" />
+        <div class="severity-controls">
+          <input type="number" id="severity" min="1" max="10" style="flex: 1;" />
+          <button class="ai-assist-toggle" id="aiAssistToggle" onclick="toggleAIAssist()">
+            🧠 AI Assist
+          </button>
+        </div>
         <span id="severityBadge" class="severity-badge"></span>
+        <div class="processing-indicator" id="severityProcessing">
+          <div class="spinner"></div>
+          <span>AI calculating severity...</span>
+        </div>
       </label>
       <label>Notes:
         <textarea id="notes" rows="3"></textarea>
+        <div class="processing-indicator" id="notesProcessing">
+          <div class="spinner"></div>
+          <span>Analyzing text for emergency indicators...</span>
+        </div>
       </label>
     </details>
 
@@ -222,6 +448,9 @@
     <iframe id="pdfFrame" title="Live PDF" width="100%" height="400px"></iframe>
   </div>
 
+  <!-- Load Edge AI Engine -->
+  <script src="/static/js/edge-ai.js"></script>
+
   <script>
     const inputs = ["location", "coordinates", "hazards", "severity", "notes", "image_url", "checklist"];
     const teamMembers = ["Unassigned", "Fire Chief", "Medic", "Safety Officer", "Search & Rescue"];
@@ -229,6 +458,13 @@
     let map, marker;
     let currentImageBlob = null;
     let currentImageMetadata = null;
+    let aiAssistEnabled = true;
+    let analysisTimeout = null;
+    let currentAIAnalysis = null;
+
+    // Edge AI Integration
+    let aiImageAnalysis = null;
+    let aiTextAnalysis = null;
 
     // IndexedDB Management for Images
     async function saveImageBlob(reportId, blob, metadata = {}) {
@@ -269,6 +505,169 @@
       }
     }
 
+    // AI Analysis Functions
+    function toggleAIAssist() {
+      aiAssistEnabled = !aiAssistEnabled;
+      const toggle = document.getElementById('aiAssistToggle');
+      
+      if (aiAssistEnabled) {
+        toggle.classList.add('active');
+        toggle.textContent = '🧠 AI Assist ON';
+        updateAISeverity();
+      } else {
+        toggle.classList.remove('active');
+        toggle.textContent = '🧠 AI Assist OFF';
+        hideAIAnalysis();
+      }
+    }
+
+    async function updateAISeverity() {
+      if (!aiAssistEnabled || !window.EdgeAI?.isLoaded) return;
+
+      const reportData = collectFormData();
+      
+      // Show processing indicator
+      const processingIndicator = document.getElementById('severityProcessing');
+      processingIndicator.classList.add('active');
+
+      try {
+        const startTime = performance.now();
+        
+        // Perform comprehensive AI analysis
+        currentAIAnalysis = await window.EdgeAI.processReportRealTime({
+          text: reportData.notes,
+          image: currentImageBlob,
+          context: {
+            location: reportData.location,
+            hazards: reportData.hazards,
+            timeOfDay: new Date().getHours() > 18 || new Date().getHours() < 6 ? 'night' : 'day'
+          }
+        });
+
+        const processingTime = performance.now() - startTime;
+        
+        // Update severity field with AI recommendation
+        if (currentAIAnalysis.severity && currentAIAnalysis.severity.overall) {
+          const aiSeverity = Math.round(currentAIAnalysis.severity.overall * 10) / 10;
+          document.getElementById('severity').value = aiSeverity;
+          updateSeverityBadge();
+        }
+
+        // Display AI analysis
+        displayAIAnalysis(currentAIAnalysis, processingTime);
+        
+        console.log('🧠 AI severity calculation complete:', currentAIAnalysis);
+      } catch (error) {
+        console.error('❌ AI severity calculation failed:', error);
+      } finally {
+        processingIndicator.classList.remove('active');
+      }
+    }
+
+    function displayAIAnalysis(analysis, processingTime) {
+      const panel = document.getElementById('aiAnalysisPanel');
+      panel.classList.add('visible');
+
+      // Update processing time
+      document.getElementById('aiProcessingTime').textContent = `${processingTime.toFixed(1)}ms`;
+
+      // Update metrics
+      if (analysis.severity) {
+        document.getElementById('aiSeverityValue').textContent = analysis.severity.overall.toFixed(1);
+        document.getElementById('aiConfidenceValue').textContent = `${Math.round(analysis.severity.confidence * 100)}%`;
+        
+        // Update confidence bar
+        const confidenceFill = document.getElementById('confidenceFill');
+        confidenceFill.style.width = `${analysis.severity.confidence * 100}%`;
+      }
+
+      // Update text analysis display
+      if (analysis.textAnalysis) {
+        const panicLevel = analysis.textAnalysis.panic_level;
+        document.getElementById('aiPanicValue').textContent = panicLevel.toUpperCase();
+        document.getElementById('textAnalysisResult').textContent = `Panic Level: ${panicLevel}`;
+        
+        // Show panic indicator
+        const panicIndicator = document.getElementById('panicIndicator');
+        panicIndicator.className = `panic-indicator panic-${panicLevel}`;
+        panicIndicator.textContent = panicLevel.toUpperCase();
+        panicIndicator.style.display = 'inline-block';
+      }
+
+      // Update recommendations
+      if (analysis.recommendations && analysis.recommendations.length > 0) {
+        const recommendationsDiv = document.getElementById('aiRecommendations');
+        const recommendationsList = document.getElementById('recommendationsList');
+        
+        recommendationsList.innerHTML = analysis.recommendations.map(rec => 
+          `<div class="ai-recommendation-item">
+            <strong>${rec.priority}:</strong> ${rec.action}
+          </div>`
+        ).join('');
+        
+        recommendationsDiv.style.display = 'block';
+      }
+    }
+
+    function hideAIAnalysis() {
+      const panel = document.getElementById('aiAnalysisPanel');
+      panel.classList.remove('visible');
+    }
+
+    // Text Analysis with Debouncing
+    async function analyzeTextInput() {
+      if (!aiAssistEnabled || !window.EdgeAI?.isLoaded) return;
+
+      const text = document.getElementById('notes').value.trim();
+      if (text.length < 10) {
+        hideAIAnalysis();
+        return;
+      }
+
+      // Show processing indicator
+      const processingIndicator = document.getElementById('notesProcessing');
+      processingIndicator.classList.add('active');
+
+      // Clear previous timeout
+      if (analysisTimeout) {
+        clearTimeout(analysisTimeout);
+      }
+
+      // Debounce analysis
+      analysisTimeout = setTimeout(async () => {
+        try {
+          aiTextAnalysis = window.EdgeAI.analyzeSentiment(text);
+          await updateAISeverity(); // Recalculate severity with new text
+        } catch (error) {
+          console.error('❌ Text analysis failed:', error);
+        } finally {
+          processingIndicator.classList.remove('active');
+        }
+      }, 800);
+    }
+
+    // Image Analysis
+    async function analyzeImageInput(file) {
+      if (!aiAssistEnabled || !window.EdgeAI?.isLoaded || !file) return;
+
+      try {
+        // Create image element for analysis
+        const img = new Image();
+        img.onload = async () => {
+          try {
+            aiImageAnalysis = await window.EdgeAI.analyzeImage(img);
+            await updateAISeverity(); // Recalculate severity with image data
+            console.log('📷 Image AI analysis complete:', aiImageAnalysis);
+          } catch (error) {
+            console.error('❌ Image AI analysis failed:', error);
+          }
+        };
+        img.src = URL.createObjectURL(file);
+      } catch (error) {
+        console.error('❌ Image analysis setup failed:', error);
+      }
+    }
+
     // Camera and Gallery Functions
     function capturePhoto() {
       const input = document.getElementById('camera_capture');
@@ -298,6 +697,9 @@
 
       // Update metadata display
       updateImageMetadata();
+      
+      // Perform AI analysis
+      await analyzeImageInput(file);
       
       // Update preview
       renderPreview();
@@ -465,7 +867,8 @@
         image_url: imageRef,
         checklist: checklistData,
         has_offline_image: !!currentImageBlob,
-        image_metadata: currentImageMetadata
+        image_metadata: currentImageMetadata,
+        ai_analysis: currentAIAnalysis // Include AI analysis in report data
       };
     }
 
@@ -616,6 +1019,14 @@
       updateConnectionStatus();
     });
 
+    // Edge AI ready handler
+    window.addEventListener('edgeai-ready', () => {
+      console.log('🧠 Edge AI ready for live report analysis');
+      if (aiAssistEnabled) {
+        updateAISeverity();
+      }
+    });
+
     // Image input handlers
     document.getElementById('camera_capture').addEventListener('change', (e) => {
       handleImageSelection(e.target.files[0]);
@@ -623,6 +1034,16 @@
 
     document.getElementById('gallery_select').addEventListener('change', (e) => {
       handleImageSelection(e.target.files[0]);
+    });
+
+    // Text analysis on notes input
+    document.getElementById('notes').addEventListener('input', () => {
+      analyzeTextInput();
+    });
+
+    // Severity manual change handler
+    document.getElementById('severity').addEventListener('input', () => {
+      updateSeverityBadge();
     });
 
     // Initialize on load
@@ -643,12 +1064,24 @@
       updateConnectionStatus();
       updateQueueDisplay();
 
+      // Initialize AI assist toggle
+      const toggle = document.getElementById('aiAssistToggle');
+      toggle.classList.add('active');
+      toggle.textContent = '🧠 AI Assist ON';
+
       // Auto-sync every 30 seconds when online
       setInterval(() => {
         if (navigator.onLine) {
           syncQueue();
         }
       }, 30000);
+
+      // Initial AI analysis if Edge AI is ready
+      setTimeout(() => {
+        if (window.EdgeAI?.isLoaded && aiAssistEnabled) {
+          updateAISeverity();
+        }
+      }, 1000);
     };
 
     inputs.forEach(id => {
@@ -660,6 +1093,15 @@
           const [lat, lng] = document.getElementById("coordinates").value.split(",").map(Number);
           if (!isNaN(lat) && !isNaN(lng)) marker.setLatLng([lat, lng]);
         }
+        
+        // Trigger AI analysis for relevant fields
+        if (aiAssistEnabled && (id === "notes" || id === "hazards" || id === "location")) {
+          if (analysisTimeout) clearTimeout(analysisTimeout);
+          analysisTimeout = setTimeout(() => {
+            updateAISeverity();
+          }, 1000);
+        }
+        
         renderPreview();
       });
     });
