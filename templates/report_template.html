@@ -113,6 +113,48 @@
         .priority-medium { color: #d97706; font-weight: bold; }
         .priority-low { color: #16a34a; font-weight: bold; }
         
+        /* NEW: Map-specific styles */
+        .map-container {
+            background: #f8fafc;
+            border: 2px solid #1e40af;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .map-image {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .map-metadata {
+            background: #eff6ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
+        }
+        
+        .map-metadata h4 {
+            color: #1e40af;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .map-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
         .coordinates-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -137,6 +179,86 @@
             color: #6b7280;
             display: block;
             margin-bottom: 4px;
+        }
+        
+        /* NEW: Emergency Resources styles */
+        .emergency-resources {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .emergency-resources h3 {
+            color: #92400e;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .resources-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .resource-category {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #f59e0b;
+        }
+        
+        .resource-category h4 {
+            color: #d97706;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: bold;
+            border-bottom: 1px solid #fde68a;
+            padding-bottom: 5px;
+        }
+        
+        .resource-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #fef3c7;
+            font-size: 12px;
+        }
+        
+        .resource-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .resource-name {
+            font-weight: 600;
+            color: #374151;
+            flex: 1;
+        }
+        
+        .resource-distance {
+            color: #6b7280;
+            font-size: 11px;
+            margin: 0 8px;
+        }
+        
+        .resource-time {
+            background: #d97706;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .resource-contact {
+            font-size: 10px;
+            color: #6b7280;
+            font-style: italic;
         }
         
         .gps-accuracy {
@@ -298,6 +420,48 @@
             margin-bottom: 0;
         }
         
+        /* NEW: Location Analysis styles */
+        .location-analysis {
+            background: #f0fdf4;
+            border: 2px solid #16a34a;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .location-analysis h3 {
+            color: #166534;
+            margin: 0 0 15px 0;
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .analysis-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #bbf7d0;
+            text-align: center;
+        }
+        
+        .analysis-item .analysis-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .analysis-item .analysis-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #166534;
+        }
+        
         .footer {
             margin-top: 40px;
             padding-top: 20px;
@@ -312,10 +476,23 @@
             gap: 20px;
         }
         
+        /* NEW: No-map fallback styles */
+        .no-map-notice {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            color: #92400e;
+            font-style: italic;
+        }
+        
         @media print {
             body { margin: 0; padding: 15px; }
             .section { page-break-inside: avoid; }
             .header { page-break-after: avoid; }
+            .map-container { page-break-inside: avoid; }
+            .emergency-resources { page-break-inside: avoid; }
         }
     </style>
 </head>
@@ -382,6 +559,35 @@
         </div>
     </div>
 
+    <!-- NEW: Static Map Section -->
+    {% if map_image and map_image.data_url %}
+    <div class="section">
+        <h2>🗺️ Incident Location Map</h2>
+        <div class="map-container">
+            <h3 style="color: #1e40af; margin: 0 0 15px 0;">📍 Emergency Response Location</h3>
+            <img class="map-image" src="{{ map_image.data_url }}" alt="Incident Location Map" />
+            
+            <div class="map-metadata">
+                <h4>Map Information</h4>
+                <div class="map-info">
+                    <div><strong>Zoom Level:</strong> {{ map_image.zoom }}</div>
+                    <div><strong>Map Service:</strong> {{ map_image.service }}</div>
+                    <div><strong>Resolution:</strong> {{ map_image.width }}x{{ map_image.height }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif latitude and longitude %}
+    <div class="section">
+        <h2>🗺️ Incident Location</h2>
+        <div class="no-map-notice">
+            <strong>📍 Location Coordinates Available</strong><br>
+            Map image could not be generated, but precise coordinates are provided below.<br>
+            <em>Lat: {{ latitude }}, Lng: {{ longitude }}</em>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Enhanced Timestamp Details -->
     <div class="timestamp-details">
         <strong>🕐 Detailed Timing Information</strong>
@@ -405,17 +611,140 @@
         </div>
     </div>
 
-    <!-- Coordinate Formats -->
+    <!-- Enhanced Coordinate Formats -->
     {% if coord_formats %}
     <div class="section">
         <h2>🗺️ Coordinate Reference Systems</h2>
         <div class="coordinates-grid">
             {% for format_name, format_value in coord_formats.items() %}
             <div class="coordinate-format">
-                <span class="format-label">{{ format_name|upper }}:</span>
+                <span class="format-label">{{ format_name|replace('_', ' ')|title }}:</span>
                 {{ format_value }}
             </div>
             {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- NEW: Emergency Resources Section -->
+    {% if emergency_resources %}
+    <div class="section">
+        <h2>🚑 Emergency Resources Proximity</h2>
+        <div class="emergency-resources">
+            <h3>Nearby Emergency Resources (within 25km)</h3>
+            
+            <div class="resources-grid">
+                <!-- Hospitals -->
+                {% set hospitals = emergency_resources|selectattr("type", "equalto", "hospital")|list %}
+                {% if hospitals %}
+                <div class="resource-category">
+                    <h4>🏥 Medical Facilities</h4>
+                    {% for hospital in hospitals[:3] %}
+                    <div class="resource-item">
+                        <div class="resource-name">{{ hospital.name }}</div>
+                        <div class="resource-distance">{{ hospital.distance_km|round(1) }}km</div>
+                        <div class="resource-time">{{ hospital.estimated_time }}</div>
+                    </div>
+                    {% if hospital.capacity %}
+                    <div class="resource-contact">{{ hospital.capacity }}</div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Fire Stations -->
+                {% set fire_stations = emergency_resources|selectattr("type", "equalto", "fire_station")|list %}
+                {% if fire_stations %}
+                <div class="resource-category">
+                    <h4>🚒 Fire & Rescue</h4>
+                    {% for station in fire_stations[:3] %}
+                    <div class="resource-item">
+                        <div class="resource-name">{{ station.name }}</div>
+                        <div class="resource-distance">{{ station.distance_km|round(1) }}km</div>
+                        <div class="resource-time">{{ station.estimated_time }}</div>
+                    </div>
+                    {% if station.capacity %}
+                    <div class="resource-contact">{{ station.capacity }}</div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Police -->
+                {% set police = emergency_resources|selectattr("type", "equalto", "police")|list %}
+                {% if police %}
+                <div class="resource-category">
+                    <h4>👮 Law Enforcement</h4>
+                    {% for station in police[:3] %}
+                    <div class="resource-item">
+                        <div class="resource-name">{{ station.name }}</div>
+                        <div class="resource-distance">{{ station.distance_km|round(1) }}km</div>
+                        <div class="resource-time">{{ station.estimated_time }}</div>
+                    </div>
+                    {% if station.capacity %}
+                    <div class="resource-contact">{{ station.capacity }}</div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Evacuation Routes -->
+                {% set evacuation = emergency_resources|selectattr("type", "equalto", "evacuation_route")|list %}
+                {% if evacuation %}
+                <div class="resource-category">
+                    <h4>🛣️ Evacuation Routes</h4>
+                    {% for route in evacuation[:3] %}
+                    <div class="resource-item">
+                        <div class="resource-name">{{ route.name }}</div>
+                        <div class="resource-distance">{{ route.distance_km|round(1) }}km</div>
+                        <div class="resource-time">{{ route.estimated_time }}</div>
+                    </div>
+                    {% if route.capacity %}
+                    <div class="resource-contact">{{ route.capacity }}</div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- NEW: Location Analysis Section -->
+    {% if location_metadata %}
+    <div class="section">
+        <h2>🔍 Location Analysis</h2>
+        <div class="location-analysis">
+            <h3>Emergency Response Factors</h3>
+            <div class="analysis-grid">
+                {% if location_metadata.location_analysis %}
+                <div class="analysis-item">
+                    <div class="analysis-label">Terrain Type</div>
+                    <div class="analysis-value">{{ location_metadata.location_analysis.terrain_type|default('Unknown')|title }}</div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-label">Accessibility</div>
+                    <div class="analysis-value">{{ location_metadata.location_analysis.accessibility|default('Unknown')|title }}</div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-label">Risk Level</div>
+                    <div class="analysis-value">{{ location_metadata.location_analysis.risk_factors[0]|default('Normal')|title }}</div>
+                </div>
+                {% else %}
+                <div class="analysis-item">
+                    <div class="analysis-label">Status</div>
+                    <div class="analysis-value">Analysis Available</div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-label">Resources</div>
+                    <div class="analysis-value">{{ emergency_resources|length }} Found</div>
+                </div>
+                <div class="analysis-item">
+                    <div class="analysis-label">Coordinates</div>
+                    <div class="analysis-value">Verified</div>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
     {% endif %}
@@ -516,26 +845,36 @@
     </div>
     {% endif %}
 
-    <!-- Report Footer -->
+    <!-- Enhanced Report Footer -->
     <div class="footer">
         <div class="footer-grid">
             <div>
                 <strong>Report Generation Details:</strong><br>
                 Generated: {{ generated_local }}<br>
                 System: {{ generated_by }}<br>
-                Version: {{ report_version }}
+                Version: {{ report_version }}<br>
+                {% if map_data_available %}
+                <strong>Map Data:</strong> Included<br>
+                <strong>Emergency Resources:</strong> {{ emergency_resources|length }} found
+                {% endif %}
             </div>
             <div>
                 <strong>Emergency Contact:</strong><br>
                 System ID: {{ pdf_metadata.emergency_id }}<br>
                 Priority: <span class="priority-{{ response_urgency }}">{{ response_urgency|upper }}</span><br>
-                GPS Source: {{ gps_source }}
+                GPS Source: {{ gps_source }}<br>
+                {% if coord_formats %}
+                <strong>Coordinate Systems:</strong> {{ coord_formats|length }} formats provided
+                {% endif %}
             </div>
         </div>
         
         <div style="margin-top: 15px; text-align: center; padding-top: 10px; border-top: 1px solid #e5e7eb;">
             <strong>⚠️ CONFIDENTIAL EMERGENCY DOCUMENT ⚠️</strong><br>
-            This report contains sensitive emergency response information. Handle according to your organization's security protocols.
+            This report contains sensitive emergency response information. Handle according to your organization's security protocols.<br>
+            {% if map_data_available %}
+            <em>📍 This report includes location data and emergency resource mapping for operational use.</em>
+            {% endif %}
         </div>
     </div>
 </body>

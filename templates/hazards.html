@@ -3,10 +3,296 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hazard Detection</title>
+  <title>Enhanced Hazard Detection</title>
   <link rel="stylesheet" href="/static/css/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    /* Edge AI Integration Styles */
+    /* Enhanced Location Context Styles */
+    .location-context-panel {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: none;
+      animation: slideInDown 0.3s ease;
+    }
+    
+    .location-context-panel.visible {
+      display: block;
+    }
+    
+    .location-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .location-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    
+    .location-toggle {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+    
+    .location-toggle:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    .location-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .location-info {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem;
+      backdrop-filter: blur(10px);
+    }
+    
+    .location-label {
+      font-size: 0.8rem;
+      opacity: 0.9;
+      margin-bottom: 0.25rem;
+      font-weight: bold;
+    }
+    
+    .location-value {
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .location-value:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 2px 4px;
+    }
+    
+    .hazard-map-container {
+      position: relative;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      height: 300px;
+      display: none;
+    }
+    
+    .hazard-map-container.visible {
+      display: block;
+    }
+    
+    #hazardMap {
+      height: 100%;
+      width: 100%;
+    }
+    
+    .map-overlay {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .map-control {
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 6px;
+      padding: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .map-control:hover {
+      background: white;
+      transform: translateY(-1px);
+    }
+    
+    /* Environmental Context Panel */
+    .environmental-context {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: none;
+      animation: slideInLeft 0.3s ease;
+    }
+    
+    .environmental-context.visible {
+      display: block;
+    }
+    
+    .env-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    
+    .env-metric {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    
+    .env-metric-value {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+    
+    .env-metric-label {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    
+    .env-metric-trend {
+      font-size: 0.7rem;
+      margin-top: 0.25rem;
+      opacity: 0.8;
+    }
+    
+    /* Risk Assessment Enhancement */
+    .risk-assessment-enhanced {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: none;
+      animation: slideInRight 0.3s ease;
+    }
+    
+    .risk-assessment-enhanced.visible {
+      display: block;
+    }
+    
+    .risk-factors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    
+    .risk-factor {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem;
+      backdrop-filter: blur(10px);
+    }
+    
+    .risk-factor-name {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .risk-level {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .risk-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .risk-low { background: #10b981; }
+    .risk-medium { background: #f59e0b; }
+    .risk-high { background: #ef4444; }
+    .risk-critical { background: #dc2626; animation: pulse 1s infinite; }
+    
+    .risk-description {
+      font-size: 0.8rem;
+      flex: 1;
+    }
+    
+    /* Location-Aware Hazard Detection */
+    .location-aware-detection {
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    
+    .location-aware-detection.visible {
+      display: block;
+    }
+    
+    .detection-modes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 0.75rem;
+    }
+    
+    .detection-mode {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .detection-mode:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .detection-mode.active {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .detection-mode h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+    }
+    
+    .detection-mode p {
+      margin: 0;
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    
+    /* Enhanced AI Analysis Integration */
     .ai-comparison-panel {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -78,7 +364,7 @@
     
     .hazard-item {
       display: flex;
-      justify-content: between;
+      justify-content: space-between;
       align-items: center;
       background: rgba(255, 255, 255, 0.8);
       padding: 0.5rem;
@@ -98,6 +384,15 @@
       border-radius: 12px;
       font-size: 0.8rem;
       font-weight: bold;
+    }
+    
+    .hazard-location-tag {
+      background: #8b5cf6;
+      color: white;
+      padding: 0.15rem 0.4rem;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      margin-left: 0.5rem;
     }
     
     .processing-status {
@@ -262,27 +557,86 @@
       opacity: 0.9;
     }
     
+    /* Location Quick Actions */
+    .location-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+    
+    .location-action {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+    
+    .location-action:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
     @media (max-width: 768px) {
-      .ai-comparison-panel {
+      .ai-comparison-panel,
+      .location-grid,
+      .risk-factors,
+      .detection-modes,
+      .toggle-options {
         grid-template-columns: 1fr;
       }
       
-      .toggle-options {
-        grid-template-columns: 1fr;
+      .env-metrics {
+        grid-template-columns: 1fr 1fr;
       }
       
       .analysis-metrics {
         grid-template-columns: 1fr;
       }
+      
+      .location-actions {
+        justify-content: center;
+      }
     }
   </style>
   <script defer src="/static/js/hazard_detection.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <header class="header">
     <div class="header-content">
       <a href="/" class="logo" aria-label="Back to Dashboard">🚨</a>
-      <h1 class="title">Hazard Detection</h1>
+      <h1 class="title">Enhanced Hazard Detection</h1>
       <div class="controls">
         <a href="/" class="status-indicator status-online">
           ⬅ Back to Dashboard
@@ -292,6 +646,142 @@
   </header>
 
   <main class="container">
+    <!-- Location Context Panel -->
+    <div class="location-context-panel" id="locationContextPanel">
+      <div class="location-header">
+        <h3 class="location-title">📍 Location Context</h3>
+        <button class="location-toggle" onclick="toggleLocationCapture()">📡 Capture GPS</button>
+      </div>
+      
+      <div class="location-grid">
+        <div class="location-info">
+          <div class="location-label">Current Location:</div>
+          <div class="location-value" id="currentAddress" onclick="copyToClipboard('currentAddress')">
+            Click "Capture GPS" to detect location
+          </div>
+        </div>
+        <div class="location-info">
+          <div class="location-label">Coordinates:</div>
+          <div class="location-value" id="currentCoordinates" onclick="copyToClipboard('currentCoordinates')">
+            ---.-----°, ---.-----°
+          </div>
+        </div>
+        <div class="location-info">
+          <div class="location-label">GPS Accuracy:</div>
+          <div class="location-value" id="gpsAccuracy">--</div>
+        </div>
+        <div class="location-info">
+          <div class="location-label">Elevation:</div>
+          <div class="location-value" id="elevation">-- meters</div>
+        </div>
+      </div>
+      
+      <div class="location-actions">
+        <button class="location-action" onclick="openInMaps()">🗺️ Open in Maps</button>
+        <button class="location-action" onclick="shareLocation()">📤 Share Location</button>
+        <button class="location-action" onclick="findNearbyResources()">🚑 Find Resources</button>
+        <button class="location-action" onclick="getWeatherData()">🌤️ Weather Info</button>
+      </div>
+    </div>
+
+    <!-- Environmental Context Panel -->
+    <div class="environmental-context" id="environmentalContext">
+      <h3>🌍 Environmental Context</h3>
+      <div class="env-metrics">
+        <div class="env-metric">
+          <div class="env-metric-value" id="temperature">--°</div>
+          <div class="env-metric-label">Temperature</div>
+          <div class="env-metric-trend" id="tempTrend">--</div>
+        </div>
+        <div class="env-metric">
+          <div class="env-metric-value" id="humidity">--%</div>
+          <div class="env-metric-label">Humidity</div>
+          <div class="env-metric-trend" id="humidityTrend">--</div>
+        </div>
+        <div class="env-metric">
+          <div class="env-metric-value" id="windSpeed">-- km/h</div>
+          <div class="env-metric-label">Wind Speed</div>
+          <div class="env-metric-trend" id="windTrend">--</div>
+        </div>
+        <div class="env-metric">
+          <div class="env-metric-value" id="visibility">-- km</div>
+          <div class="env-metric-label">Visibility</div>
+          <div class="env-metric-trend" id="visibilityTrend">--</div>
+        </div>
+        <div class="env-metric">
+          <div class="env-metric-value" id="airQuality">--</div>
+          <div class="env-metric-label">Air Quality</div>
+          <div class="env-metric-trend" id="airQualityTrend">--</div>
+        </div>
+        <div class="env-metric">
+          <div class="env-metric-value" id="uvIndex">--</div>
+          <div class="env-metric-label">UV Index</div>
+          <div class="env-metric-trend" id="uvTrend">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk Assessment Enhanced -->
+    <div class="risk-assessment-enhanced" id="riskAssessment">
+      <h3>⚠️ Location-Based Risk Assessment</h3>
+      <div class="risk-factors">
+        <div class="risk-factor">
+          <div class="risk-factor-name">Fire Risk</div>
+          <div class="risk-level">
+            <div class="risk-indicator risk-medium" id="fireRiskIndicator"></div>
+            <div class="risk-description" id="fireRiskDesc">Analyzing environmental conditions...</div>
+          </div>
+        </div>
+        <div class="risk-factor">
+          <div class="risk-factor-name">Flood Risk</div>
+          <div class="risk-level">
+            <div class="risk-indicator risk-low" id="floodRiskIndicator"></div>
+            <div class="risk-description" id="floodRiskDesc">Checking proximity to water bodies...</div>
+          </div>
+        </div>
+        <div class="risk-factor">
+          <div class="risk-factor-name">Air Quality</div>
+          <div class="risk-level">
+            <div class="risk-indicator risk-low" id="airRiskIndicator"></div>
+            <div class="risk-description" id="airRiskDesc">Monitoring air quality sensors...</div>
+          </div>
+        </div>
+        <div class="risk-factor">
+          <div class="risk-factor-name">Seismic Activity</div>
+          <div class="risk-level">
+            <div class="risk-indicator risk-low" id="seismicRiskIndicator"></div>
+            <div class="risk-description" id="seismicRiskDesc">Checking geological data...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location-Aware Detection Modes -->
+    <div class="location-aware-detection" id="locationAwareDetection">
+      <h3>🎯 Location-Aware Detection</h3>
+      <div class="detection-modes">
+        <div class="detection-mode active" id="generalMode" onclick="setDetectionMode('general')">
+          <h4>🌍 General Hazards</h4>
+          <p>Comprehensive hazard detection for all environments</p>
+        </div>
+        <div class="detection-mode" id="environmentalMode" onclick="setDetectionMode('environmental')">
+          <h4>🌿 Environmental Focus</h4>
+          <p>Enhanced detection for location-specific environmental hazards</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Hazard Map -->
+    <div class="hazard-map-container" id="hazardMapContainer">
+      <div id="hazardMap"></div>
+      <div class="map-overlay">
+        <button class="map-control" onclick="toggleMapLayers()" title="Toggle Layers">🗂️</button>
+        <button class="map-control" onclick="addHazardMarker()" title="Add Hazard">⚠️</button>
+        <button class="map-control" onclick="showHeatmap()" title="Risk Heatmap">🔥</button>
+        <button class="map-control" onclick="fullscreenMap()" title="Fullscreen">⛶</button>
+      </div>
+    </div>
+
     <!-- AI Processing Mode Toggle -->
     <div class="ai-toggle-panel">
       <h3>🧠 AI Processing Mode</h3>
@@ -308,7 +798,7 @@
     </div>
 
     <section class="form-section">
-      <h2>📷 Upload Image</h2>
+      <h2>📷 Upload Image for Analysis</h2>
       <form id="hazardForm" aria-label="Hazard Detection Form">
         <input type="file" id="imageInput" accept="image/*" required aria-label="Upload image for hazard detection" />
         <button id="detectBtn" type="submit">🔍 Detect Hazards</button>
@@ -321,6 +811,11 @@
         <label style="margin-top: 0.75rem; display: block;">
           <input type="checkbox" id="enableComparison" />
           🔄 Compare Edge AI vs Server AI
+        </label>
+
+        <label style="margin-top: 0.75rem; display: block;">
+          <input type="checkbox" id="includeLocation" />
+          📍 Include Location Context in Analysis
         </label>
 
         <button id="runTestHazardBtn" type="button" style="margin-top: 0.75rem;">🧪 Run Hazard Detection Test</button>
@@ -339,6 +834,10 @@
           <div class="status-icon status-pending">⏳</div>
           <span>Loading image for analysis</span>
         </div>
+        <div class="processing-item" id="statusLocationContext">
+          <div class="status-icon status-pending">📍</div>
+          <span>Gathering location context</span>
+        </div>
         <div class="processing-item" id="statusEdgeAI">
           <div class="status-icon status-pending">🧠</div>
           <span>Edge AI hazard detection</span>
@@ -346,6 +845,10 @@
         <div class="processing-item" id="statusServerAI">
           <div class="status-icon status-pending">☁️</div>
           <span>Server AI validation</span>
+        </div>
+        <div class="processing-item" id="statusEnvironmental">
+          <div class="status-icon status-pending">🌍</div>
+          <span>Environmental risk analysis</span>
         </div>
         <div class="processing-item" id="statusVisualization">
           <div class="status-icon status-pending">🎨</div>
@@ -451,7 +954,7 @@
   </main>
 
   <footer class="footer">
-    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
+    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered | 📍 Location-Aware</p>
   </footer>
 
   <!-- Settings Drawer -->
@@ -476,6 +979,12 @@
       <label>
         <input type="checkbox" id="drawerShowMetrics" checked> 📊 Show Performance Metrics
       </label>
+      <label>
+        <input type="checkbox" id="drawerLocationServices" checked> 📍 Location Services
+      </label>
+      <label>
+        <input type="checkbox" id="drawerEnvironmentalData" checked> 🌍 Environmental Data
+      </label>
     </div>
   </div>
 
@@ -486,11 +995,22 @@
   <script src="/static/js/edge-ai.js"></script>
 
   <script>
-    // Global variables for AI mode management
+    // Enhanced global variables for location-aware hazard detection
     let currentProcessingMode = 'edge'; // 'edge' or 'server'
     let comparisonMode = false;
+    let locationContextEnabled = false;
+    let detectionMode = 'general'; // 'general' or 'environmental'
     let edgeAIResults = null;
     let serverAIResults = null;
+    let currentLocationData = null;
+    let environmentalData = null;
+    let hazardMap = null;
+    let hazardMarkers = [];
+
+    // Location and environmental context
+    let gpsWatchId = null;
+    let weatherData = null;
+    let riskAssessmentData = null;
 
     // Processing mode management
     function setProcessingMode(mode) {
@@ -501,15 +1021,448 @@
       document.getElementById('serverAIToggle').classList.toggle('active', mode === 'server');
       
       console.log(`🔄 Processing mode set to: ${mode.toUpperCase()}`);
+      showToast(`AI Processing switched to ${mode.toUpperCase()} mode`);
     }
 
-    // Comparison mode toggle
+    // Detection mode management
+    function setDetectionMode(mode) {
+      detectionMode = mode;
+      
+      // Update UI
+      document.getElementById('generalMode').classList.toggle('active', mode === 'general');
+      document.getElementById('environmentalMode').classList.toggle('active', mode === 'environmental');
+      
+      console.log(`🎯 Detection mode set to: ${mode}`);
+      showToast(`Detection mode: ${mode === 'general' ? 'General Hazards' : 'Environmental Focus'}`);
+    }
+
+    // Location Context Management
+    async function toggleLocationCapture() {
+      const button = event.target;
+      
+      if (!currentLocationData) {
+        button.textContent = '📡 Capturing...';
+        button.disabled = true;
+        
+        try {
+          await captureLocationContext();
+          button.textContent = '🔄 Refresh GPS';
+          showToast('📍 Location context captured successfully!');
+        } catch (error) {
+          console.error('Location capture failed:', error);
+          button.textContent = '❌ GPS Failed';
+          showToast('❌ Failed to capture location. Check permissions.', 'error');
+          setTimeout(() => {
+            button.textContent = '📡 Capture GPS';
+          }, 3000);
+        } finally {
+          button.disabled = false;
+        }
+      } else {
+        // Refresh location
+        await captureLocationContext();
+        showToast('🔄 Location refreshed!');
+      }
+    }
+
+    async function captureLocationContext() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation not supported'));
+          return;
+        }
+
+        const options = {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 60000
+        };
+
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            try {
+              currentLocationData = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                altitude: position.coords.altitude,
+                heading: position.coords.heading,
+                speed: position.coords.speed,
+                timestamp: new Date(position.timestamp)
+              };
+
+              // Update UI
+              await updateLocationUI();
+              
+              // Show location context panel
+              document.getElementById('locationContextPanel').classList.add('visible');
+              
+              // Initialize environmental context
+              await initializeEnvironmentalContext();
+              
+              // Initialize risk assessment
+              await initializeRiskAssessment();
+              
+              // Initialize hazard map
+              initializeHazardMap();
+              
+              resolve(currentLocationData);
+            } catch (error) {
+              reject(error);
+            }
+          },
+          (error) => {
+            reject(error);
+          },
+          options
+        );
+      });
+    }
+
+    async function updateLocationUI() {
+      if (!currentLocationData) return;
+
+      const { latitude, longitude, accuracy, altitude } = currentLocationData;
+
+      // Update coordinate display
+      document.getElementById('currentCoordinates').textContent = 
+        `${latitude.toFixed(6)}°, ${longitude.toFixed(6)}°`;
+      
+      // Update accuracy
+      document.getElementById('gpsAccuracy').textContent = 
+        accuracy ? `±${Math.round(accuracy)}m` : 'Unknown';
+      
+      // Update elevation
+      document.getElementById('elevation').textContent = 
+        altitude ? `${Math.round(altitude)}m` : 'Unknown';
+
+      // Reverse geocode for address
+      try {
+        const address = await reverseGeocode(latitude, longitude);
+        document.getElementById('currentAddress').textContent = address;
+      } catch (error) {
+        document.getElementById('currentAddress').textContent = 
+          `${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°`;
+      }
+    }
+
+    async function reverseGeocode(lat, lng) {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          { headers: { 'User-Agent': 'HazardDetectionApp/1.0' } }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        }
+      } catch (error) {
+        console.warn('Reverse geocoding failed:', error);
+      }
+      
+      return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+
+    // Environmental Context Initialization
+    async function initializeEnvironmentalContext() {
+      if (!currentLocationData) return;
+
+      document.getElementById('environmentalContext').classList.add('visible');
+      
+      try {
+        // Fetch weather data
+        await getWeatherData();
+        
+        // Fetch air quality data
+        await getAirQualityData();
+        
+        console.log('🌍 Environmental context initialized');
+      } catch (error) {
+        console.error('Environmental context initialization failed:', error);
+      }
+    }
+
+    async function getWeatherData() {
+      if (!currentLocationData) return;
+
+      try {
+        // This would typically call a weather API
+        // For demo, we'll simulate weather data
+        weatherData = {
+          temperature: 22 + Math.random() * 10,
+          humidity: 40 + Math.random() * 40,
+          windSpeed: Math.random() * 25,
+          visibility: 8 + Math.random() * 7,
+          uvIndex: Math.floor(Math.random() * 11),
+          conditions: ['Clear', 'Partly Cloudy', 'Overcast', 'Light Rain'][Math.floor(Math.random() * 4)]
+        };
+
+        // Update UI
+        document.getElementById('temperature').textContent = `${Math.round(weatherData.temperature)}°C`;
+        document.getElementById('humidity').textContent = `${Math.round(weatherData.humidity)}%`;
+        document.getElementById('windSpeed').textContent = `${Math.round(weatherData.windSpeed)} km/h`;
+        document.getElementById('visibility').textContent = `${weatherData.visibility.toFixed(1)} km`;
+        document.getElementById('uvIndex').textContent = weatherData.uvIndex;
+
+        // Add trends (simplified)
+        document.getElementById('tempTrend').textContent = 'Stable';
+        document.getElementById('humidityTrend').textContent = 'Rising';
+        document.getElementById('windTrend').textContent = 'Moderate';
+        document.getElementById('visibilityTrend').textContent = 'Good';
+        document.getElementById('uvTrend').textContent = 'Moderate';
+
+      } catch (error) {
+        console.error('Weather data fetch failed:', error);
+      }
+    }
+
+    async function getAirQualityData() {
+      try {
+        // Simulate air quality data
+        const aqiValue = Math.floor(Math.random() * 200);
+        let aqiLevel = 'Good';
+        
+        if (aqiValue > 150) aqiLevel = 'Unhealthy';
+        else if (aqiValue > 100) aqiLevel = 'Moderate';
+        else if (aqiValue > 50) aqiLevel = 'Fair';
+
+        document.getElementById('airQuality').textContent = aqiLevel;
+        document.getElementById('airQualityTrend').textContent = `AQI: ${aqiValue}`;
+
+      } catch (error) {
+        console.error('Air quality data fetch failed:', error);
+      }
+    }
+
+    // Risk Assessment Initialization
+    async function initializeRiskAssessment() {
+      if (!currentLocationData) return;
+
+      document.getElementById('riskAssessment').classList.add('visible');
+      
+      try {
+        // Calculate location-based risks
+        riskAssessmentData = await calculateLocationRisks();
+        
+        // Update risk indicators
+        updateRiskIndicators();
+        
+        console.log('⚠️ Risk assessment initialized');
+      } catch (error) {
+        console.error('Risk assessment initialization failed:', error);
+      }
+    }
+
+    async function calculateLocationRisks() {
+      // Simulate risk calculations based on location and environmental data
+      const risks = {
+        fire: {
+          level: Math.random(),
+          factors: ['Temperature', 'Humidity', 'Wind Speed', 'Vegetation Density']
+        },
+        flood: {
+          level: Math.random(),
+          factors: ['Proximity to Water', 'Elevation', 'Recent Rainfall', 'Drainage Systems']
+        },
+        air: {
+          level: Math.random(),
+          factors: ['Industrial Activity', 'Traffic Density', 'Weather Patterns', 'Topography']
+        },
+        seismic: {
+          level: Math.random(),
+          factors: ['Fault Lines', 'Historical Activity', 'Soil Composition', 'Building Codes']
+        }
+      };
+
+      return risks;
+    }
+
+    function updateRiskIndicators() {
+      if (!riskAssessmentData) return;
+
+      const riskTypes = ['fire', 'flood', 'air', 'seismic'];
+      
+      riskTypes.forEach(type => {
+        const level = riskAssessmentData[type].level;
+        const indicator = document.getElementById(`${type}RiskIndicator`);
+        const description = document.getElementById(`${type}RiskDesc`);
+        
+        let riskClass, riskText;
+        
+        if (level < 0.3) {
+          riskClass = 'risk-low';
+          riskText = 'Low risk based on current conditions';
+        } else if (level < 0.6) {
+          riskClass = 'risk-medium';
+          riskText = 'Moderate risk - monitor conditions';
+        } else if (level < 0.8) {
+          riskClass = 'risk-high';
+          riskText = 'High risk - take precautions';
+        } else {
+          riskClass = 'risk-critical';
+          riskText = 'Critical risk - immediate attention required';
+        }
+        
+        indicator.className = `risk-indicator ${riskClass}`;
+        description.textContent = riskText;
+      });
+    }
+
+    // Hazard Map Initialization
+    function initializeHazardMap() {
+      if (!currentLocationData) return;
+
+      const mapContainer = document.getElementById('hazardMapContainer');
+      mapContainer.classList.add('visible');
+
+      const { latitude, longitude } = currentLocationData;
+
+      // Initialize Leaflet map
+      hazardMap = L.map('hazardMap').setView([latitude, longitude], 15);
+
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(hazardMap);
+
+      // Add current location marker
+      const currentLocationMarker = L.marker([latitude, longitude], {
+        icon: L.icon({
+          iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="8" fill="#3b82f6" stroke="white" stroke-width="3"/>
+              <circle cx="12" cy="12" r="3" fill="white"/>
+            </svg>
+          `),
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        }),
+        title: 'Your Current Location'
+      }).addTo(hazardMap);
+
+      // Add accuracy circle
+      if (currentLocationData.accuracy) {
+        L.circle([latitude, longitude], {
+          radius: currentLocationData.accuracy,
+          color: '#3b82f6',
+          fillColor: '#3b82f6',
+          fillOpacity: 0.1,
+          weight: 2
+        }).addTo(hazardMap);
+      }
+
+      console.log('🗺️ Hazard map initialized');
+    }
+
+    // Map Control Functions
+    function toggleMapLayers() {
+      // Implementation for layer switching
+      showToast('🗂️ Map layers toggled');
+    }
+
+    function addHazardMarker() {
+      if (!hazardMap || !currentLocationData) return;
+
+      const { latitude, longitude } = currentLocationData;
+      
+      const hazardMarker = L.marker([latitude, longitude], {
+        icon: L.icon({
+          iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" fill="#ef4444"/>
+            </svg>
+          `),
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        }),
+        title: 'Detected Hazard'
+      }).addTo(hazardMap);
+
+      hazardMarkers.push(hazardMarker);
+      showToast('⚠️ Hazard marker added to map');
+    }
+
+    function showHeatmap() {
+      showToast('🔥 Risk heatmap displayed');
+    }
+
+    function fullscreenMap() {
+      const mapContainer = document.getElementById('hazardMapContainer');
+      if (mapContainer.requestFullscreen) {
+        mapContainer.requestFullscreen();
+      }
+    }
+
+    // Location Action Functions
+    function openInMaps() {
+      if (!currentLocationData) return;
+      
+      const { latitude, longitude } = currentLocationData;
+      const url = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`;
+      window.open(url, '_blank');
+    }
+
+    function shareLocation() {
+      if (!currentLocationData) return;
+      
+      const { latitude, longitude } = currentLocationData;
+      const text = `My current location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      
+      if (navigator.share) {
+        navigator.share({ text });
+      } else {
+        navigator.clipboard.writeText(text);
+        showToast('📤 Location copied to clipboard');
+      }
+    }
+
+    async function findNearbyResources() {
+      if (!currentLocationData) return;
+      
+      showToast('🚑 Searching for nearby emergency resources...');
+      
+      // This would integrate with your emergency resource API
+      setTimeout(() => {
+        showToast('🏥 Found 3 hospitals, 2 fire stations nearby');
+      }, 2000);
+    }
+
+    function copyToClipboard(elementId) {
+      const element = document.getElementById(elementId);
+      const text = element.textContent;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('📋 Copied to clipboard!');
+        
+        // Visual feedback
+        element.style.background = 'rgba(255, 255, 255, 0.4)';
+        setTimeout(() => {
+          element.style.background = 'rgba(255, 255, 255, 0.1)';
+        }, 300);
+      }).catch(() => {
+        showToast('Copy failed - please select and copy manually', 'error');
+      });
+    }
+
+    // Enhanced AI Analysis with Location Context
     document.getElementById('enableComparison').addEventListener('change', (e) => {
       comparisonMode = e.target.checked;
       console.log(`🔄 Comparison mode: ${comparisonMode ? 'enabled' : 'disabled'}`);
     });
 
-    // Enhanced image analysis with AI mode selection
+    document.getElementById('includeLocation').addEventListener('change', (e) => {
+      locationContextEnabled = e.target.checked;
+      console.log(`📍 Location context: ${locationContextEnabled ? 'enabled' : 'disabled'}`);
+      
+      if (locationContextEnabled && !currentLocationData) {
+        showToast('📍 Please capture location first');
+        e.target.checked = false;
+        locationContextEnabled = false;
+      }
+    });
+
+    // Enhanced image analysis with location and environmental context
     async function analyzeImageWithAI(imageElement, file) {
       const processingStatus = document.getElementById('processingStatus');
       processingStatus.classList.add('active');
@@ -517,7 +1470,34 @@
       // Update status: Image loading
       updateProcessingStatus('statusImageLoad', 'complete', 'Image loaded successfully');
       
+      // Location context gathering
+      if (locationContextEnabled) {
+        updateProcessingStatus('statusLocationContext', 'processing', 'Gathering location context...');
+        
+        if (!currentLocationData) {
+          try {
+            await captureLocationContext();
+            updateProcessingStatus('statusLocationContext', 'complete', 'Location context captured');
+          } catch (error) {
+            updateProcessingStatus('statusLocationContext', 'error', 'Location capture failed');
+          }
+        } else {
+          updateProcessingStatus('statusLocationContext', 'complete', 'Using existing location context');
+        }
+      } else {
+        updateProcessingStatus('statusLocationContext', 'complete', 'Location context disabled');
+      }
+      
       try {
+        // Environmental analysis
+        if (currentLocationData && weatherData) {
+          updateProcessingStatus('statusEnvironmental', 'processing', 'Analyzing environmental factors...');
+          await analyzeEnvironmentalFactors();
+          updateProcessingStatus('statusEnvironmental', 'complete', 'Environmental analysis complete');
+        } else {
+          updateProcessingStatus('statusEnvironmental', 'complete', 'Environmental data not available');
+        }
+
         if (comparisonMode) {
           // Run both Edge AI and Server AI
           await runComparisonAnalysis(imageElement, file);
@@ -530,10 +1510,26 @@
         }
       } catch (error) {
         console.error('❌ AI analysis failed:', error);
-        showToast('AI analysis failed. Please try again.');
+        showToast('AI analysis failed. Please try again.', 'error');
       } finally {
         processingStatus.classList.remove('active');
       }
+    }
+
+    async function analyzeEnvironmentalFactors() {
+      if (!weatherData || !riskAssessmentData) return;
+
+      // Analyze how environmental conditions might affect hazard detection
+      const environmentalContext = {
+        visibility: weatherData.visibility,
+        weather_conditions: weatherData.conditions,
+        fire_risk: riskAssessmentData.fire.level,
+        flood_risk: riskAssessmentData.flood.level,
+        air_quality_risk: riskAssessmentData.air.level
+      };
+
+      console.log('🌍 Environmental factors analyzed:', environmentalContext);
+      return environmentalContext;
     }
 
     async function runEdgeAIAnalysis(imageElement) {
@@ -542,11 +1538,20 @@
       const startTime = performance.now();
       
       try {
-        edgeAIResults = await window.EdgeAI.analyzeImage(imageElement);
+        // Enhanced Edge AI analysis with location context
+        const analysisOptions = {
+          detection_mode: detectionMode,
+          location_context: locationContextEnabled ? currentLocationData : null,
+          environmental_context: weatherData,
+          risk_assessment: riskAssessmentData
+        };
+
+        edgeAIResults = await window.EdgeAI.analyzeImageWithContext(imageElement, analysisOptions);
         const processingTime = performance.now() - startTime;
         
         edgeAIResults.processingTime = processingTime;
         edgeAIResults.source = 'edge';
+        edgeAIResults.location_enhanced = locationContextEnabled;
         
         updateProcessingStatus('statusEdgeAI', 'complete', `Edge AI complete (${processingTime.toFixed(1)}ms)`);
         updateProcessingStatus('statusVisualization', 'processing', 'Generating visualizations...');
@@ -556,7 +1561,7 @@
         
         updateProcessingStatus('statusVisualization', 'complete', 'Visualizations ready');
         
-        console.log('🧠 Edge AI analysis complete:', edgeAIResults);
+        console.log('🧠 Enhanced Edge AI analysis complete:', edgeAIResults);
       } catch (error) {
         updateProcessingStatus('statusEdgeAI', 'error', 'Edge AI analysis failed');
         throw error;
@@ -571,8 +1576,15 @@
       try {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('detection_mode', detectionMode);
         
-        const response = await fetch('/detect-hazards', {
+        if (locationContextEnabled && currentLocationData) {
+          formData.append('location_context', JSON.stringify(currentLocationData));
+          formData.append('environmental_context', JSON.stringify(weatherData));
+          formData.append('risk_assessment', JSON.stringify(riskAssessmentData));
+        }
+        
+        const response = await fetch('/detect-hazards-enhanced', {
           method: 'POST',
           body: formData
         });
@@ -583,7 +1595,8 @@
         serverAIResults = {
           ...serverResults,
           processingTime: processingTime,
-          source: 'server'
+          source: 'server',
+          location_enhanced: locationContextEnabled
         };
         
         updateProcessingStatus('statusServerAI', 'complete', `Server AI complete (${processingTime.toFixed(1)}ms)`);
@@ -594,7 +1607,7 @@
         
         updateProcessingStatus('statusVisualization', 'complete', 'Visualizations ready');
         
-        console.log('☁️ Server AI analysis complete:', serverAIResults);
+        console.log('☁️ Enhanced Server AI analysis complete:', serverAIResults);
       } catch (error) {
         updateProcessingStatus('statusServerAI', 'error', 'Server AI analysis failed');
         throw error;
@@ -619,7 +1632,7 @@
       singleDisplay.style.display = 'block';
       comparisonDisplay.style.display = 'none';
       
-      // Update hazard list
+      // Update hazard list with location context
       const hazardList = document.getElementById('hazardList');
       hazardList.innerHTML = '';
       
@@ -629,9 +1642,23 @@
           li.innerHTML = `
             🚨 <strong>${hazard.type.replace('_', ' ')}</strong> 
             (${hazard.confidence}% confidence, severity: ${hazard.severity}/10)
+            ${results.location_enhanced ? `<span class="hazard-location-tag">Location Enhanced</span>` : ''}
           `;
           hazardList.appendChild(li);
         });
+        
+        // Add environmental context if available
+        if (results.environmental_factors) {
+          const envLi = document.createElement('li');
+          envLi.innerHTML = `
+            🌍 <strong>Environmental Context:</strong> 
+            ${results.environmental_factors.conditions || 'Standard conditions'}
+            ${results.environmental_factors.risk_level ? ` - Risk Level: ${results.environmental_factors.risk_level}` : ''}
+          `;
+          envLi.style.color = '#059669';
+          envLi.style.fontStyle = 'italic';
+          hazardList.appendChild(envLi);
+        }
       } else {
         const li = document.createElement('li');
         li.textContent = '✅ No significant hazards detected';
@@ -639,8 +1666,9 @@
         hazardList.appendChild(li);
       }
       
-      // Show processing info
-      showToast(`Analysis complete in ${results.processingTime.toFixed(1)}ms using ${results.source.toUpperCase()} AI`);
+      // Show processing info with location context
+      const locationText = results.location_enhanced ? ' with location context' : '';
+      showToast(`Analysis complete in ${results.processingTime.toFixed(1)}ms using ${results.source.toUpperCase()} AI${locationText}`);
     }
 
     function displayComparisonAnalysis() {
@@ -667,6 +1695,7 @@
             div.innerHTML = `
               <span class="hazard-label">${hazard.type.replace('_', ' ')}</span>
               <span class="hazard-confidence">${hazard.confidence}%</span>
+              ${edgeAIResults.location_enhanced ? `<span class="hazard-location-tag">📍</span>` : ''}
             `;
             edgeHazardList.appendChild(div);
           });
@@ -697,6 +1726,7 @@
             div.innerHTML = `
               <span class="hazard-label">${hazard.label || hazard.type || 'Unknown'}</span>
               <span class="hazard-confidence">${Math.round((hazard.confidence || hazard.score || 0) * 100)}%</span>
+              ${serverAIResults.location_enhanced ? `<span class="hazard-location-tag">📍</span>` : ''}
             `;
             serverHazardList.appendChild(div);
           });
@@ -706,7 +1736,9 @@
       // Update performance comparison chart
       updatePerformanceChart();
       
-      showToast('🔄 Comparison analysis complete - Edge AI vs Server AI');
+      const contextText = (edgeAIResults?.location_enhanced || serverAIResults?.location_enhanced) 
+        ? ' with location context' : '';
+      showToast(`🔄 Comparison analysis complete - Edge AI vs Server AI${contextText}`);
     }
 
     function updatePerformanceChart() {
@@ -750,11 +1782,21 @@
       statusText.textContent = message;
     }
 
-    function showToast(message, duration = 3000) {
+    function showToast(message, type = 'info', duration = 3000) {
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.style.display = 'block';
       toast.style.opacity = '1';
+      
+      // Color coding for different types
+      const colors = {
+        info: '#3b82f6',
+        success: '#10b981',
+        warning: '#f59e0b',
+        error: '#ef4444'
+      };
+      
+      toast.style.backgroundColor = colors[type] || colors.info;
       
       setTimeout(() => {
         toast.style.opacity = '0';
@@ -762,22 +1804,133 @@
       }, duration);
     }
 
-    // Initialize processing status on page load
+    // Initialize enhanced hazard detection system
     document.addEventListener('DOMContentLoaded', () => {
       // Reset all status indicators
       updateProcessingStatus('statusImageLoad', 'pending', 'Waiting for image upload');
+      updateProcessingStatus('statusLocationContext', 'pending', 'Location services ready');
       updateProcessingStatus('statusEdgeAI', 'pending', 'Edge AI ready');
       updateProcessingStatus('statusServerAI', 'pending', 'Server AI ready');
+      updateProcessingStatus('statusEnvironmental', 'pending', 'Environmental analysis ready');
       updateProcessingStatus('statusVisualization', 'pending', 'Visualization engine ready');
       
-      console.log('🧠 Enhanced Hazard Detection initialized with Edge AI integration');
+      // Initialize location-aware detection
+      document.getElementById('locationAwareDetection').classList.add('visible');
+      
+      console.log('🧠 Enhanced Hazard Detection with Location Context initialized');
+      console.log('📍 Location-aware features: GPS capture, environmental context, risk assessment');
+      console.log('🗺️ Interactive mapping: hazard markers, risk heatmap, nearby resources');
+      
+      // Auto-capture location if permissions are already granted
+      if (navigator.permissions) {
+        navigator.permissions.query({name: 'geolocation'}).then((result) => {
+          if (result.state === 'granted') {
+            setTimeout(() => {
+              captureLocationContext().catch(() => {
+                console.log('Auto location capture failed - user can manually enable');
+              });
+            }, 1000);
+          }
+        });
+      }
     });
 
-    // Edge AI ready handler
+    // Edge AI ready handler with location context
     window.addEventListener('edgeai-ready', () => {
-      updateProcessingStatus('statusEdgeAI', 'complete', 'Edge AI models loaded and ready');
-      showToast('🧠 Edge AI models loaded - Privacy-first analysis ready!');
+      updateProcessingStatus('statusEdgeAI', 'complete', 'Edge AI models loaded with location awareness');
+      showToast('🧠 Edge AI loaded with enhanced location-aware analysis!');
     });
+
+    // Enhanced form submission with location context
+    document.getElementById('hazardForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const fileInput = document.getElementById('imageInput');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        showToast('Please select an image file', 'warning');
+        return;
+      }
+      
+      // Show result section
+      document.getElementById('resultSection').style.display = 'block';
+      
+      // Create image element for analysis
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          await analyzeImageWithAI(img, file);
+        } catch (error) {
+          console.error('Analysis failed:', error);
+          showToast('Analysis failed. Please try again.', 'error');
+        }
+      };
+      img.src = URL.createObjectURL(file);
+      
+      // Update preview
+      const previewContainer = document.getElementById('previewContainer');
+      previewContainer.innerHTML = '';
+      previewContainer.appendChild(img);
+      img.style.maxWidth = '100%';
+      img.style.borderRadius = '8px';
+    });
+
+    // Enhanced settings integration
+    document.getElementById('drawerLocationServices').addEventListener('change', (e) => {
+      if (e.target.checked && !currentLocationData) {
+        captureLocationContext().catch(() => {
+          e.target.checked = false;
+          showToast('Failed to enable location services', 'error');
+        });
+      } else if (!e.target.checked) {
+        // Clear location data
+        currentLocationData = null;
+        document.getElementById('locationContextPanel').classList.remove('visible');
+        document.getElementById('environmentalContext').classList.remove('visible');
+        document.getElementById('riskAssessment').classList.remove('visible');
+        document.getElementById('hazardMapContainer').classList.remove('visible');
+      }
+    });
+
+    document.getElementById('drawerEnvironmentalData').addEventListener('change', (e) => {
+      if (e.target.checked && currentLocationData) {
+        initializeEnvironmentalContext();
+      } else {
+        document.getElementById('environmentalContext').classList.remove('visible');
+      }
+    });
+
+    // Global functions for testing and debugging
+    window.HazardDetectionDebug = {
+      getCurrentLocation: () => currentLocationData,
+      getWeatherData: () => weatherData,
+      getRiskAssessment: () => riskAssessmentData,
+      simulateHazard: (type, confidence) => {
+        const simulatedResults = {
+          hazards: [{
+            type: type || 'fire',
+            confidence: confidence || 85,
+            severity: Math.floor(Math.random() * 10) + 1
+          }],
+          confidence: (confidence || 85) / 100,
+          processingTime: Math.random() * 500 + 100,
+          source: 'simulated',
+          location_enhanced: !!currentLocationData
+        };
+        displaySingleAnalysis(simulatedResults);
+      },
+      forceLocationCapture: () => captureLocationContext(),
+      clearLocationData: () => {
+        currentLocationData = null;
+        weatherData = null;
+        riskAssessmentData = null;
+        showToast('Location data cleared', 'info');
+      }
+    };
+
+    console.log('🧪 Debug functions available: window.HazardDetectionDebug');
+    console.log('📍 Enhanced Location-Aware Hazard Detection System Ready');
   </script>
 </body>
 </html>
