@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Live Report Builder</title>
   <link rel="stylesheet" href="/static/styles.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -87,16 +88,77 @@
       color: white;
       padding: 0.5rem;
       text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .camera-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .camera-controls button {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .capture-btn {
+      background: #007bff;
+      color: white;
+    }
+    .gallery-btn {
+      background: #28a745;
+      color: white;
+    }
+    .offline-indicator {
+      background: #dc3545;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      margin-left: 0.5rem;
+    }
+    .online-indicator {
+      background: #28a745;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      margin-left: 0.5rem;
+    }
+    .image-metadata {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+    .sync-queue-info {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
     }
   </style>
   <script src="https://unpkg.com/idb-keyval@6/dist/idb-keyval-iife.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="/static/js/sync-queue.js"></script>
 </head>
 <body>
-  <div id="syncStatus">🔄 Sync Status: Unknown</div>
+  <div id="syncStatus">
+    🔄 Sync Status: <span id="connectionStatus">Checking...</span>
+    <span id="queueStatus" class="offline-indicator" style="display: none;">Queue: 0 reports</span>
+  </div>
+  
   <div class="editor">
     <h2>📝 Edit Report</h2>
+
+    <div class="sync-queue-info" id="syncInfo">
+      <strong>📊 Sync Queue:</strong> <span id="queueCount">0</span> reports pending
+      <button onclick="forceSyncQueue()" style="margin-left: 1rem; padding: 0.25rem 0.5rem;">🔄 Force Sync</button>
+    </div>
 
     <details open>
       <summary>📍 Incident Details</summary>
@@ -129,17 +191,28 @@
     </details>
 
     <details open>
-      <summary>🖼️ Hazard Images</summary>
-      <label>Image URL:
+      <summary>📸 Hazard Images & Camera</summary>
+      
+      <!-- Camera Controls for Mobile/PWA -->
+      <div class="camera-controls">
+        <button class="capture-btn" onclick="capturePhoto()">📸 Take Photo</button>
+        <button class="gallery-btn" onclick="selectFromGallery()">🖼️ From Gallery</button>
+      </div>
+
+      <!-- Hidden inputs for different capture methods -->
+      <input type="file" id="camera_capture" accept="image/*" capture="environment" style="display: none;" />
+      <input type="file" id="gallery_select" accept="image/*" style="display: none;" />
+      
+      <label>Image URL (optional):
         <input type="text" id="image_url" />
       </label>
-      <label>Upload Image:
-        <input type="file" id="image_file" accept="image/*" />
-      </label>
-      <img id="imagePreview" src="" alt="Image preview" />
+      
+      <img id="imagePreview" src="" alt="Image preview" style="display: none;" />
+      <div id="imageMetadata" class="image-metadata"></div>
     </details>
 
-    <button onclick="saveAndSyncReport()">💾 Save & Sync</button>
+    <button onclick="saveAndSyncReport()">💾 Save & Sync Report</button>
+    <button onclick="saveOfflineReport()">📴 Save Offline Only</button>
   </div>
 
   <div class="preview">
@@ -154,7 +227,127 @@
     const teamMembers = ["Unassigned", "Fire Chief", "Medic", "Safety Officer", "Search & Rescue"];
 
     let map, marker;
+    let currentImageBlob = null;
+    let currentImageMetadata = null;
 
+    // IndexedDB Management for Images
+    async function saveImageBlob(reportId, blob, metadata = {}) {
+      try {
+        await idbKeyval.set(`image_${reportId}`, blob);
+        await idbKeyval.set(`image_meta_${reportId}`, {
+          ...metadata,
+          timestamp: new Date().toISOString(),
+          size: blob.size,
+          type: blob.type
+        });
+        console.log(`✅ Image saved for report ${reportId}`);
+        return true;
+      } catch (error) {
+        console.error('❌ Failed to save image blob:', error);
+        return false;
+      }
+    }
+
+    async function getImageBlob(reportId) {
+      try {
+        const blob = await idbKeyval.get(`image_${reportId}`);
+        const metadata = await idbKeyval.get(`image_meta_${reportId}`);
+        return { blob, metadata };
+      } catch (error) {
+        console.error('❌ Failed to retrieve image blob:', error);
+        return { blob: null, metadata: null };
+      }
+    }
+
+    async function deleteImageBlob(reportId) {
+      try {
+        await idbKeyval.del(`image_${reportId}`);
+        await idbKeyval.del(`image_meta_${reportId}`);
+        console.log(`🗑️ Image deleted for report ${reportId}`);
+      } catch (error) {
+        console.error('❌ Failed to delete image blob:', error);
+      }
+    }
+
+    // Camera and Gallery Functions
+    function capturePhoto() {
+      const input = document.getElementById('camera_capture');
+      input.click();
+    }
+
+    function selectFromGallery() {
+      const input = document.getElementById('gallery_select');
+      input.click();
+    }
+
+    async function handleImageSelection(file) {
+      if (!file) return;
+
+      currentImageBlob = file;
+      currentImageMetadata = {
+        filename: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      };
+
+      // Show preview
+      const preview = document.getElementById('imagePreview');
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+
+      // Update metadata display
+      updateImageMetadata();
+      
+      // Update preview
+      renderPreview();
+    }
+
+    function updateImageMetadata() {
+      const metaDiv = document.getElementById('imageMetadata');
+      if (currentImageMetadata) {
+        const sizeKB = (currentImageMetadata.size / 1024).toFixed(1);
+        metaDiv.innerHTML = `
+          📎 <strong>${currentImageMetadata.filename}</strong><br>
+          📏 Size: ${sizeKB} KB | Type: ${currentImageMetadata.type}<br>
+          📴 <span style="color: orange;">Stored offline - will sync when online</span>
+        `;
+      } else {
+        metaDiv.innerHTML = '';
+      }
+    }
+
+    // Connection Status Management
+    function updateConnectionStatus() {
+      const statusSpan = document.getElementById('connectionStatus');
+      const queueSpan = document.getElementById('queueStatus');
+      
+      if (navigator.onLine) {
+        statusSpan.innerHTML = '<span class="online-indicator">🟢 Online</span>';
+        syncQueue(); // Auto-sync when back online
+      } else {
+        statusSpan.innerHTML = '<span class="offline-indicator">🔴 Offline</span>';
+      }
+      
+      updateQueueDisplay();
+    }
+
+    async function updateQueueDisplay() {
+      const queue = await idbKeyval.get("sync_queue") || [];
+      const queueCount = document.getElementById('queueCount');
+      const queueStatus = document.getElementById('queueStatus');
+      
+      queueCount.textContent = queue.length;
+      
+      if (queue.length > 0) {
+        queueStatus.style.display = 'inline';
+        queueStatus.textContent = `Queue: ${queue.length} reports`;
+      } else {
+        queueStatus.style.display = 'none';
+      }
+    }
+
+    // Map Functions
     function initMap() {
       const coords = document.getElementById("coordinates").value.split(",").map(Number);
       const lat = coords[0] || 30.2672;
@@ -228,15 +421,19 @@
     }
 
     function updateImagePreview() {
-      const fileInput = document.getElementById("image_file");
       const urlInput = document.getElementById("image_url");
       const preview = document.getElementById("imagePreview");
 
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        preview.src = URL.createObjectURL(file);
-      } else {
+      if (currentImageBlob) {
+        // Priority to current blob
+        return;
+      } else if (urlInput.value) {
         preview.src = urlInput.value;
+        preview.style.display = 'block';
+        document.getElementById('imageMetadata').innerHTML = '🌐 <em>External URL image</em>';
+      } else {
+        preview.style.display = 'none';
+        document.getElementById('imageMetadata').innerHTML = '';
       }
     }
 
@@ -248,19 +445,27 @@
         assigned_to: div.querySelector("select").value
       }));
 
-      const imageFile = document.getElementById("image_file").files[0];
-      const imageURL = document.getElementById("image_url").value;
+      const reportId = crypto.randomUUID();
+      let imageRef = null;
+
+      if (currentImageBlob) {
+        imageRef = `offline_blob://${reportId}`;
+      } else if (document.getElementById("image_url").value) {
+        imageRef = document.getElementById("image_url").value;
+      }
 
       return {
-        id: crypto.randomUUID(),
+        id: reportId,
         timestamp: new Date().toISOString(),
         location: document.getElementById("location").value,
         coordinates: document.getElementById("coordinates").value.split(",").map(Number),
         hazards: document.getElementById("hazards").value.split(",").map(h => h.trim()),
         severity: parseFloat(document.getElementById("severity").value),
         notes: document.getElementById("notes").value,
-        image_url: imageFile ? "offline_blob://" + imageFile.name : imageURL,
-        checklist: checklistData
+        image_url: imageRef,
+        checklist: checklistData,
+        has_offline_image: !!currentImageBlob,
+        image_metadata: currentImageMetadata
       };
     }
 
@@ -269,47 +474,117 @@
       document.getElementById("jsonPreview").textContent = JSON.stringify(data, null, 2);
     }
 
-    async function saveAndSyncReport() {
+    // Save Functions
+    async function saveOfflineReport() {
       const data = collectFormData();
-      const imageFile = document.getElementById("image_file").files[0];
-
-      if (imageFile) {
-        await idbKeyval.set(data.id, imageFile);
-        data.image_blob_id = data.id;
+      
+      // Save image blob if exists
+      if (currentImageBlob) {
+        await saveImageBlob(data.id, currentImageBlob, currentImageMetadata);
       }
 
+      // Save to local queue
       let queue = await idbKeyval.get("sync_queue") || [];
       queue.push(data);
       await idbKeyval.set("sync_queue", queue);
 
-      alert("✅ Report saved locally and queued for sync!");
+      alert("📴 Report saved offline! Will sync when connected.");
+      updateQueueDisplay();
       renderPreview();
+    }
+
+    async function saveAndSyncReport() {
+      const data = collectFormData();
+      
+      // Save image blob if exists
+      if (currentImageBlob) {
+        await saveImageBlob(data.id, currentImageBlob, currentImageMetadata);
+      }
+
+      if (navigator.onLine) {
+        // Try immediate sync
+        try {
+          await syncSingleReport(data);
+          alert("✅ Report uploaded successfully!");
+        } catch (error) {
+          // Fall back to offline queue
+          console.warn('Sync failed, saving offline:', error);
+          await saveOfflineReport();
+        }
+      } else {
+        // Save offline
+        await saveOfflineReport();
+      }
+    }
+
+    async function syncSingleReport(report) {
+      const formData = new FormData();
+      formData.append("json", JSON.stringify(report));
+      
+      if (report.has_offline_image) {
+        const { blob } = await getImageBlob(report.id);
+        if (blob) {
+          formData.append("file", blob, report.image_metadata?.filename || "image.jpg");
+        }
+      }
+
+      const response = await fetch("/generate-report", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Sync failed: ${response.status}`);
+      }
+
+      // Clean up local image storage after successful sync
+      if (report.has_offline_image) {
+        await deleteImageBlob(report.id);
+      }
+
+      return response;
     }
 
     async function syncQueue() {
       const queue = await idbKeyval.get("sync_queue") || [];
+      if (queue.length === 0) return;
+
       const remaining = [];
 
       for (const report of queue) {
-        const formData = new FormData();
-        formData.append("json", JSON.stringify(report));
-        if (report.image_blob_id) {
-          const blob = await idbKeyval.get(report.image_blob_id);
-          if (blob) formData.append("file", blob, "image.jpg");
-        }
-
         try {
-          const res = await fetch("/generate-report", {
-            method: "POST",
-            body: formData
-          });
-          if (!res.ok) throw new Error("Failed to upload");
-        } catch {
+          await syncSingleReport(report);
+          console.log(`✅ Synced report: ${report.id}`);
+        } catch (error) {
+          console.warn(`⚠️ Failed to sync report ${report.id}:`, error);
           remaining.push(report);
         }
       }
 
       await idbKeyval.set("sync_queue", remaining);
+      updateQueueDisplay();
+    }
+
+    async function forceSyncQueue() {
+      if (!navigator.onLine) {
+        alert("❌ Cannot sync while offline!");
+        return;
+      }
+
+      const queue = await idbKeyval.get("sync_queue") || [];
+      if (queue.length === 0) {
+        alert("✅ No reports to sync!");
+        return;
+      }
+
+      await syncQueue();
+      const remaining = await idbKeyval.get("sync_queue") || [];
+      
+      if (remaining.length === 0) {
+        alert("✅ All reports synced successfully!");
+      } else {
+        alert(`⚠️ ${remaining.length} reports failed to sync. Will retry automatically.`);
+      }
     }
 
     async function autofillGPS() {
@@ -332,8 +607,25 @@
       });
     }
 
-    window.addEventListener("online", syncQueue);
+    // Event Listeners
+    window.addEventListener("online", () => {
+      updateConnectionStatus();
+    });
 
+    window.addEventListener("offline", () => {
+      updateConnectionStatus();
+    });
+
+    // Image input handlers
+    document.getElementById('camera_capture').addEventListener('change', (e) => {
+      handleImageSelection(e.target.files[0]);
+    });
+
+    document.getElementById('gallery_select').addEventListener('change', (e) => {
+      handleImageSelection(e.target.files[0]);
+    });
+
+    // Initialize on load
     window.onload = () => {
       document.getElementById("location").value = "Austin, TX";
       document.getElementById("coordinates").value = "30.2672,-97.7431";
@@ -342,11 +634,21 @@
       document.getElementById("notes").value = "Smoke observed, no visible injuries";
       document.getElementById("image_url").value = "https://via.placeholder.com/300";
       document.getElementById("checklist").value = "Clear debris, Search for victims";
+      
       updateSeverityBadge();
       renderChecklist();
       updateImagePreview();
       renderPreview();
       initMap();
+      updateConnectionStatus();
+      updateQueueDisplay();
+
+      // Auto-sync every 30 seconds when online
+      setInterval(() => {
+        if (navigator.onLine) {
+          syncQueue();
+        }
+      }, 30000);
     };
 
     inputs.forEach(id => {
@@ -362,10 +664,16 @@
       });
     });
 
-    document.getElementById("image_file").addEventListener("change", () => {
-      updateImagePreview();
-      renderPreview();
-    });
+    // Register Service Worker for PWA capabilities
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/static/js/sw.js')
+        .then(registration => {
+          console.log('✅ Service Worker registered:', registration);
+        })
+        .catch(error => {
+          console.error('❌ Service Worker registration failed:', error);
+        });
+    }
   </script>
 </body>
 </html>
