@@ -82,11 +82,19 @@
       height: 300px;
       margin-bottom: 1rem;
     }
+    #syncStatus {
+      background: #222;
+      color: white;
+      padding: 0.5rem;
+      text-align: center;
+    }
   </style>
   <script src="https://unpkg.com/idb-keyval@6/dist/idb-keyval-iife.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="/static/js/sync-queue.js"></script>
 </head>
 <body>
+  <div id="syncStatus">🔄 Sync Status: Unknown</div>
   <div class="editor">
     <h2>📝 Edit Report</h2>
 
