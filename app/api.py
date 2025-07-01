@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
@@ -18,6 +18,20 @@ from app.db import (
     get_dashboard_stats
 )
 
+# NEW: Import map utilities
+from app.map_utils import (
+    map_utils,
+    generate_static_map,
+    get_coordinate_formats,
+    get_emergency_resources,
+    get_map_metadata,
+    MapConfig
+)
+from app.report_utils import (
+    generate_map_preview_data,
+    generate_static_map_endpoint
+)
+
 from weasyprint import HTML as WeasyHTML
 from datetime import datetime
 import shutil
@@ -26,8 +40,18 @@ import uuid
 import json
 import zipfile
 import io
+import base64
+import logging
 
-app = FastAPI()
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = FastAPI(
+    title="Disaster Response & Recovery Assistant",
+    description="AI-Powered Emergency Analysis & Support with Interactive Maps",
+    version="2.1.0"
+)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -37,7 +61,9 @@ OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ---------------- AUTH ----------------
+# ================================
+# EXISTING AUTH ROUTES (unchanged)
+# ================================
 
 @app.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -52,7 +78,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def read_current_user(user: dict = Depends(get_current_user)):
     return {"username": user["username"], "role": user["role"]}
 
-# ---------------- ROUTES ----------------
+# ================================
+# EXISTING PAGE ROUTES (unchanged)
+# ================================
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
@@ -74,7 +102,9 @@ async def serve_live_generate_page(request: Request):
 async def offline_page(request: Request):
     return templates.TemplateResponse("offline.html", {"request": request})
 
-# ---------------- ADMIN ----------------
+# ================================
+# EXISTING ADMIN ROUTES (unchanged)
+# ================================
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, user: dict = Depends(require_role(["admin"]))):
@@ -152,7 +182,263 @@ async def export_reports_zip(user: dict = Depends(require_role(["admin"]))):
         "Content-Disposition": "attachment; filename=report_archive.zip"
     })
 
-# ---------------- ANALYSIS & REPORTING ----------------
+# ================================
+# NEW: MAP API ROUTES
+# ================================
+
+@app.get("/api/static-map")
+async def api_static_map(
+    latitude: float,
+    longitude: float,
+    width: int = 600,
+    height: int = 400,
+    zoom: int = 15,
+    format: str = "png",
+    user: dict = Depends(require_role(["admin", "responder"]))  # Require auth for maps
+):
+    """
+    Generate static map image for given coordinates
+    
+    Query params:
+    - latitude: Incident latitude (-90 to 90)
+    - longitude: Incident longitude (-180 to 180)
+    - width: Map width in pixels (default: 600)
+    - height: Map height in pixels (default: 400)
+    - zoom: Map zoom level 1-20 (default: 15)
+    - format: Response format ('png', 'json', 'base64')
+    """
+    try:
+        # Validate coordinates
+        if not (-90 <= latitude <= 90):
+            raise HTTPException(status_code=400, detail="Invalid latitude (-90 to 90)")
+        if not (-180 <= longitude <= 180):
+            raise HTTPException(status_code=400, detail="Invalid longitude (-180 to 180)")
+        if not (1 <= zoom <= 20):
+            raise HTTPException(status_code=400, detail="Invalid zoom level (1 to 20)")
+        if not (100 <= width <= 2000) or not (100 <= height <= 2000):
+            raise HTTPException(status_code=400, detail="Invalid dimensions (100-2000px)")
+        
+        logger.info(f"Generating static map for {latitude}, {longitude} by user {user['username']}")
+        
+        # Generate map using our utilities
+        result = generate_static_map_endpoint(latitude, longitude, width, height, zoom)
+        
+        if not result['success']:
+            logger.warning(f"Map generation failed: {result.get('error')}")
+            raise HTTPException(status_code=500, detail=result.get('error', 'Map generation failed'))
+        
+        if format.lower() == 'json':
+            # Return JSON with base64 image data
+            return JSONResponse(content=result)
+        
+        elif format.lower() == 'base64':
+            # Return just base64 string
+            return {"image_data": result['image_data']}
+        
+        else:
+            # Return raw image bytes
+            try:
+                image_bytes = base64.b64decode(result['image_data'])
+                return Response(
+                    content=image_bytes,
+                    media_type="image/png",
+                    headers={
+                        "Content-Disposition": f"inline; filename=emergency_map_{latitude}_{longitude}.png",
+                        "Cache-Control": "public, max-age=3600"  # Cache for 1 hour
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Failed to decode map image: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to decode image: {e}")
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Static map API error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/map-preview")
+async def api_map_preview(
+    latitude: float, 
+    longitude: float,
+    user: dict = Depends(require_role(["admin", "responder"]))
+):
+    """
+    Get comprehensive map preview data for web interface
+    
+    Returns:
+    - Coordinate formats (decimal, DMS, UTM, MGRS, Plus Codes, etc.)
+    - Emergency resources within 25km
+    - Location analysis metadata
+    """
+    try:
+        # Validate coordinates
+        if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+            raise HTTPException(status_code=400, detail="Invalid coordinates")
+        
+        logger.info(f"Generating map preview for {latitude}, {longitude} by user {user['username']}")
+        
+        # Generate preview data using our utilities
+        preview_data = generate_map_preview_data(latitude, longitude)
+        
+        if not preview_data['success']:
+            logger.warning(f"Map preview failed: {preview_data.get('error')}")
+            raise HTTPException(status_code=500, detail=preview_data.get('error', 'Preview generation failed'))
+        
+        return JSONResponse(content=preview_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Map preview API error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/emergency-resources")
+async def api_emergency_resources(
+    latitude: float, 
+    longitude: float, 
+    radius: int = 25,
+    type_filter: str = None,
+    user: dict = Depends(require_role(["admin", "responder"]))
+):
+    """
+    Find emergency resources near coordinates
+    
+    Query params:
+    - latitude, longitude: Search center
+    - radius: Search radius in kilometers (1-100, default: 25)
+    - type_filter: Filter by resource type (hospital, fire_station, police, evacuation_route)
+    """
+    try:
+        if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+            raise HTTPException(status_code=400, detail="Invalid coordinates")
+        
+        if not (1 <= radius <= 100):
+            raise HTTPException(status_code=400, detail="Radius must be between 1 and 100 km")
+        
+        valid_types = ['hospital', 'fire_station', 'police', 'evacuation_route']
+        if type_filter and type_filter not in valid_types:
+            raise HTTPException(status_code=400, detail=f"Invalid type filter. Must be one of: {valid_types}")
+        
+        logger.info(f"Finding emergency resources near {latitude}, {longitude} within {radius}km by user {user['username']}")
+        
+        # Get emergency resources
+        resources = get_emergency_resources(latitude, longitude, radius)
+        
+        # Filter by type if specified
+        if type_filter:
+            resources = [r for r in resources if r.type == type_filter]
+        
+        # Convert to JSON-serializable format
+        resources_data = [
+            {
+                'name': resource.name,
+                'type': resource.type,
+                'latitude': resource.latitude,
+                'longitude': resource.longitude,
+                'distance_km': round(resource.distance_km, 2),
+                'estimated_time': resource.estimated_time,
+                'capacity': resource.capacity,
+                'contact': resource.contact
+            }
+            for resource in resources
+        ]
+        
+        return JSONResponse(content={
+            'success': True,
+            'search_center': {'latitude': latitude, 'longitude': longitude},
+            'search_radius_km': radius,
+            'type_filter': type_filter,
+            'total_found': len(resources_data),
+            'resources': resources_data,
+            'generated_by': user['username'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Emergency resources API error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/coordinate-formats")
+async def api_coordinate_formats(
+    latitude: float, 
+    longitude: float,
+    user: dict = Depends(require_role(["admin", "responder"]))
+):
+    """
+    Get coordinates in multiple formats
+    
+    Returns all supported coordinate system formats:
+    - Decimal Degrees, DMS, UTM, MGRS, Plus Codes, Emergency Grid
+    """
+    try:
+        if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+            raise HTTPException(status_code=400, detail="Invalid coordinates")
+        
+        logger.info(f"Generating coordinate formats for {latitude}, {longitude} by user {user['username']}")
+        
+        # Get coordinate formats using our utilities
+        formats = get_coordinate_formats(latitude, longitude)
+        
+        return JSONResponse(content={
+            'success': True,
+            'input_coordinates': {'latitude': latitude, 'longitude': longitude},
+            'formats': formats,
+            'generated_by': user['username'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Coordinate formats API error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/map-metadata")
+async def api_map_metadata(
+    latitude: float,
+    longitude: float, 
+    user: dict = Depends(require_role(["admin", "responder"]))
+):
+    """
+    Get comprehensive location metadata for emergency planning
+    
+    Returns:
+    - Coordinate formats
+    - Emergency resources
+    - Location analysis (terrain, accessibility, risk factors)
+    - Map service information
+    """
+    try:
+        if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+            raise HTTPException(status_code=400, detail="Invalid coordinates")
+        
+        logger.info(f"Generating map metadata for {latitude}, {longitude} by user {user['username']}")
+        
+        # Get comprehensive metadata
+        metadata = get_map_metadata(latitude, longitude)
+        
+        # Add user context
+        metadata['request_info'] = {
+            'generated_by': user['username'],
+            'user_role': user['role'],
+            'timestamp': datetime.now().isoformat(),
+            'map_service': map_utils.preferred_service.value
+        }
+        
+        return JSONResponse(content=metadata)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Map metadata API error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ================================
+# EXISTING ANALYSIS & REPORTING ROUTES (unchanged)
+# ================================
 
 @app.post("/analyze", response_class=HTMLResponse)
 async def analyze_input(
@@ -222,6 +508,9 @@ async def generate_report(
     file: UploadFile = File(None),
     user: dict = Depends(require_role(["admin", "responder"]))
 ):
+    """
+    ENHANCED: Generate PDF report with MAP integration
+    """
     content_type = request.headers.get("Content-Type", "")
 
     if "application/json" in content_type:
@@ -246,23 +535,46 @@ async def generate_report(
     else:
         return JSONResponse(content={"error": "Unsupported content type"}, status_code=415)
 
-    pdf_path = generate_report_pdf(payload)
+    # NEW: Enhanced PDF generation with maps
+    logger.info(f"Generating enhanced PDF report with maps for user {user['username']}")
+    
+    try:
+        pdf_path = generate_report_pdf(payload)
+        
+        # Enhanced metadata with map information
+        metadata = {
+            "id": str(uuid.uuid4()),
+            "timestamp": payload.get("timestamp", datetime.now().isoformat()),
+            "location": payload.get("location", "Unknown"),
+            "severity": payload.get("severity", "N/A"),
+            "filename": os.path.basename(pdf_path),
+            "user": user["username"],
+            "status": "submitted",
+            "image_url": payload.get("image_url"),
+            "checklist": payload.get("checklist", []),
+            # NEW: Map metadata
+            "has_coordinates": bool(payload.get("coordinates")),
+            "gps_accuracy": payload.get("gps_accuracy"),
+            "map_included": bool(payload.get("coordinates"))
+        }
+        
+        save_report_metadata(metadata)
+        
+        logger.info(f"PDF report generated successfully: {pdf_path}")
+        
+        return FileResponse(
+            pdf_path, 
+            media_type="application/pdf", 
+            filename="emergency_incident_report.pdf"
+        )
+        
+    except Exception as e:
+        logger.error(f"PDF generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
-    save_report_metadata({
-        "id": str(uuid.uuid4()),
-        "timestamp": payload.get("timestamp", datetime.now().isoformat()),
-        "location": payload.get("location", "Unknown"),
-        "severity": payload.get("severity", "N/A"),
-        "filename": os.path.basename(pdf_path),
-        "user": user["username"],
-        "status": "submitted",
-        "image_url": payload.get("image_url"),
-        "checklist": payload.get("checklist", [])
-    })
-
-    return FileResponse(pdf_path, media_type="application/pdf", filename="incident_report.pdf")
-
-# ---------------- HAZARD DETECTION ----------------
+# ================================
+# EXISTING HAZARD DETECTION (unchanged)
+# ================================
 
 @app.post("/detect-hazards")
 async def detect_hazards_api(
@@ -274,7 +586,103 @@ async def detect_hazards_api(
     try:
         image_bytes = await file.read()
         result = detect_hazards(image_bytes)
+        
+        # NEW: Log hazard detection with user info
+        logger.info(f"Hazard detection performed by user {user['username']}")
+        
         return JSONResponse(content=result)
     except Exception as e:
+        logger.error(f"Hazard detection failed: {e}")
         return JSONResponse(content={"error": f"Hazard detection failed: {str(e)}"}, status_code=500)
 
+# ================================
+# NEW: UTILITY ROUTES
+# ================================
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint with map service status"""
+    return {
+        "status": "healthy",
+        "service": "Disaster Response Assistant",
+        "version": "2.1.0",
+        "timestamp": datetime.now().isoformat(),
+        "features": {
+            "authentication": True,
+            "maps": True,
+            "emergency_resources": True,
+            "coordinate_formats": True,
+            "ai_analysis": True,
+            "hazard_detection": True,
+            "audio_transcription": True,
+            "pdf_generation": True
+        },
+        "map_service": {
+            "preferred": map_utils.preferred_service.value,
+            "available_services": [
+                service.value for service in map_utils.api_keys.keys() 
+                if map_utils.api_keys[service]
+            ]
+        }
+    }
+
+@app.get("/api/map-config")
+async def get_map_config(user: dict = Depends(require_role(["admin", "responder"]))):
+    """Get current map configuration"""
+    return {
+        "preferred_service": map_utils.preferred_service.value,
+        "available_services": [
+            service.value for service in map_utils.api_keys.keys() 
+            if map_utils.api_keys[service]
+        ],
+        "default_config": {
+            "width": map_utils.config.width,
+            "height": map_utils.config.height,
+            "zoom": map_utils.config.zoom,
+            "map_type": map_utils.config.map_type,
+            "marker_color": map_utils.config.marker_color
+        },
+        "user": user['username']
+    }
+
+# ================================
+# STARTUP EVENT
+# ================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup"""
+    logger.info("🚀 Starting Disaster Response Assistant API Server v2.1")
+    logger.info(f"📍 Map service: {map_utils.preferred_service.value}")
+    logger.info("🗺️ Map utilities initialized")
+    
+    # Create necessary directories
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    # Log available map services
+    available_services = [
+        service.value for service in map_utils.api_keys.keys() 
+        if map_utils.api_keys[service]
+    ]
+    logger.info(f"🔑 Available map services: {available_services or ['OpenStreetMap (free)']}")
+    logger.info("✅ API server ready with enhanced map capabilities")
+
+# ================================
+# ERROR HANDLERS
+# ================================
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={"error": "Endpoint not found", "path": str(request.url)}
+    )
+
+@app.exception_handler(500)
+async def server_error_handler(request: Request, exc):
+    logger.error(f"Server error: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error", "message": "Please try again later"}
+    )

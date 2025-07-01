@@ -1,3 +1,10 @@
+"""
+📄 Enhanced Report Utils with Map Integration
+
+Integrates map generation and enhanced location data into PDF reports.
+Builds on the existing report_utils.py functionality.
+"""
+
 from fastapi.responses import FileResponse
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
@@ -5,16 +12,31 @@ from datetime import datetime, timezone
 import os
 import uuid
 import json
+import base64
+import logging
+
+# Import our new map utilities
+from .map_utils import (
+    map_utils, 
+    generate_static_map, 
+    get_coordinate_formats, 
+    get_emergency_resources,
+    get_map_metadata,
+    MapConfig
+)
+
+logger = logging.getLogger(__name__)
 
 def generate_report_pdf(data: dict, output_path=None):
     """
-    Generate comprehensive PDF report with enhanced timestamp and GPS data
+    Generate comprehensive PDF report with enhanced timestamp, GPS data, and MAP INTEGRATION
     
-    Features:
-    - UTC timestamp embedding in PDF metadata
-    - GPS coordinates with accuracy indicators
-    - Timezone-aware timestamp display
-    - Enhanced metadata for emergency response
+    NEW FEATURES:
+    - Static map images embedded in PDFs
+    - Multiple coordinate system formats
+    - Emergency resource proximity data
+    - Enhanced location analysis
+    - Map metadata and accuracy indicators
     """
     env = Environment(loader=FileSystemLoader("app/templates"))
     template = env.get_template("report_template.html")
@@ -25,11 +47,11 @@ def generate_report_pdf(data: dict, output_path=None):
         timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         output_path = f"outputs/emergency_report_{timestamp_str}_{report_id}.pdf"
 
-    # Enhanced timestamp processing
+    # Enhanced timestamp processing (existing)
     timestamp_data = process_timestamps(data)
     
-    # Enhanced GPS processing
-    gps_data = process_gps_data(data)
+    # ENHANCED GPS processing with MAP INTEGRATION
+    gps_data = process_gps_data_with_maps(data)
     
     # Extract and process other data
     hazards_list = process_hazards(data.get("hazards", []))
@@ -54,14 +76,18 @@ def generate_report_pdf(data: dict, output_path=None):
         "gps_accuracy": gps_data['accuracy_string'],
         "response_priority": determine_priority(data.get("severity", 1)),
         "ai_analysis_included": str(bool(data.get("ai_analysis"))),
+        # NEW: Map metadata
+        "map_included": str(gps_data.get('map_data_available', False)),
+        "emergency_resources_count": str(len(gps_data.get('emergency_resources', []))),
+        "coordinate_formats": str(len(gps_data.get('coord_formats', {}))),
     }
 
-    # Render HTML with enhanced data
+    # Render HTML with enhanced data including MAP DATA
     html_content = template.render(
         # Timestamp data
         **timestamp_data,
         
-        # GPS and location data
+        # ENHANCED GPS and location data with MAPS
         **gps_data,
         
         # Core incident data
@@ -81,7 +107,7 @@ def generate_report_pdf(data: dict, output_path=None):
         # Report generation metadata
         report_id=data.get("id", str(uuid.uuid4())),
         generated_by="EdgeAI Disaster Response System",
-        report_version="2.0",
+        report_version="2.1",  # Updated version with map integration
     )
 
     # Ensure output directory exists
@@ -99,11 +125,241 @@ def generate_report_pdf(data: dict, output_path=None):
         compress=True
     )
     
-    # Log report generation
+    # Log report generation with map data
     log_report_generation(output_path, data, timestamp_data, gps_data)
     
     return output_path
 
+def process_gps_data_with_maps(data):
+    """
+    ENHANCED GPS processing with MAP INTEGRATION
+    
+    NEW FEATURES:
+    - Static map generation for PDF embedding
+    - Multiple coordinate system formats using map_utils
+    - Emergency resource proximity calculation
+    - Enhanced location metadata
+    """
+    
+    # Extract coordinates (existing logic)
+    coordinates = data.get("coordinates", [])
+    if isinstance(coordinates, str):
+        try:
+            lat, lng = map(float, coordinates.split(","))
+            coordinates = [lat, lng]
+        except:
+            coordinates = []
+    
+    latitude = coordinates[0] if len(coordinates) >= 1 else None
+    longitude = coordinates[1] if len(coordinates) >= 2 else None
+    
+    # GPS metadata from client (existing)
+    gps_accuracy = data.get("gps_accuracy")
+    gps_source = data.get("gps_source", "Unknown")
+    
+    # NEW: Generate coordinate strings using enhanced map utilities
+    if latitude and longitude:
+        coordinates_string = f"{latitude:.6f}, {longitude:.6f}"
+        coordinates_display = f"Lat: {latitude:.5f}, Lng: {longitude:.5f}"
+        
+        # NEW: Use map_utils for enhanced coordinate formats
+        try:
+            coord_formats = get_coordinate_formats(latitude, longitude)
+            logger.info(f"Generated coordinate formats for {latitude}, {longitude}")
+        except Exception as e:
+            logger.warning(f"Failed to generate coordinate formats: {e}")
+            coord_formats = {
+                'decimal_degrees': coordinates_display,
+                'dms': convert_to_dms(latitude, longitude),  # Fallback to existing
+            }
+        
+        # NEW: Generate static map for PDF
+        map_image_data = None
+        map_data_available = False
+        try:
+            # Configure map for PDF
+            map_config = MapConfig(
+                width=600,
+                height=400,
+                zoom=15,
+                map_type="roadmap",
+                marker_color="red"
+            )
+            
+            map_image_bytes = generate_static_map(latitude, longitude, map_config)
+            if map_image_bytes:
+                # Convert to base64 for HTML embedding
+                map_image_base64 = base64.b64encode(map_image_bytes).decode('utf-8')
+                map_image_data = {
+                    'data_url': f"data:image/png;base64,{map_image_base64}",
+                    'width': map_config.width,
+                    'height': map_config.height,
+                    'zoom': map_config.zoom,
+                    'service': map_utils.preferred_service.value
+                }
+                map_data_available = True
+                logger.info(f"Successfully generated static map for {latitude}, {longitude}")
+            else:
+                logger.warning(f"Failed to generate static map for {latitude}, {longitude}")
+        except Exception as e:
+            logger.error(f"Map generation error: {e}")
+            map_image_data = None
+        
+        # NEW: Find emergency resources
+        emergency_resources = []
+        try:
+            emergency_resources = get_emergency_resources(latitude, longitude, radius_km=25)
+            logger.info(f"Found {len(emergency_resources)} emergency resources")
+        except Exception as e:
+            logger.warning(f"Failed to find emergency resources: {e}")
+        
+        # NEW: Get comprehensive map metadata
+        location_metadata = {}
+        try:
+            location_metadata = get_map_metadata(latitude, longitude)
+            logger.info("Generated location metadata")
+        except Exception as e:
+            logger.warning(f"Failed to generate location metadata: {e}")
+        
+        # GPS accuracy assessment (existing + enhanced)
+        if gps_accuracy:
+            accuracy_string = f"±{gps_accuracy}m"
+            accuracy_level = get_accuracy_level(gps_accuracy)
+        else:
+            accuracy_string = "Unknown accuracy"
+            accuracy_level = "unknown"
+            
+        # Enhanced location display
+        display_location = data.get("location", coordinates_display)
+        
+    else:
+        # No coordinates available
+        coordinates_string = "Not available"
+        coordinates_display = "Location not specified"
+        accuracy_string = "N/A"
+        accuracy_level = "none"
+        display_location = data.get("location", "Unknown Location")
+        coord_formats = {}
+        map_image_data = None
+        map_data_available = False
+        emergency_resources = []
+        location_metadata = {}
+
+    # Return enhanced GPS data structure
+    return {
+        # Basic coordinate data (existing)
+        "coordinates": coordinates,
+        "latitude": latitude,
+        "longitude": longitude,
+        "coordinates_string": coordinates_string,
+        "coordinates_display": coordinates_display,
+        "display_location": display_location,
+        "gps_accuracy": gps_accuracy,
+        "accuracy_string": accuracy_string,
+        "accuracy_level": accuracy_level,
+        "gps_source": gps_source,
+        
+        # ENHANCED: Multiple coordinate formats
+        "coord_formats": coord_formats,
+        
+        # NEW: Map integration
+        "map_image": map_image_data,
+        "map_data_available": map_data_available,
+        
+        # NEW: Emergency resources
+        "emergency_resources": emergency_resources,
+        "nearest_hospital": emergency_resources[0] if emergency_resources and emergency_resources[0].type == 'hospital' else None,
+        "nearest_fire_station": next((r for r in emergency_resources if r.type == 'fire_station'), None),
+        "nearest_police": next((r for r in emergency_resources if r.type == 'police'), None),
+        
+        # NEW: Location analysis
+        "location_metadata": location_metadata,
+        
+        # Enhanced emergency grid reference
+        "emergency_grid_ref": generate_emergency_grid_ref(latitude, longitude) if latitude and longitude else "N/A",
+    }
+
+def generate_map_preview_data(latitude: float, longitude: float):
+    """
+    Generate map preview data for web interface
+    Used by main.py routes for live map updates
+    """
+    try:
+        map_metadata = get_map_metadata(latitude, longitude)
+        coordinate_formats = get_coordinate_formats(latitude, longitude)
+        emergency_resources = get_emergency_resources(latitude, longitude)
+        
+        return {
+            'success': True,
+            'coordinates': {
+                'latitude': latitude,
+                'longitude': longitude,
+                'formats': coordinate_formats
+            },
+            'emergency_resources': [
+                {
+                    'name': resource.name,
+                    'type': resource.type,
+                    'distance_km': round(resource.distance_km, 2),
+                    'estimated_time': resource.estimated_time,
+                    'coordinates': [resource.latitude, resource.longitude]
+                }
+                for resource in emergency_resources[:10]  # Limit to first 10
+            ],
+            'metadata': map_metadata
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate map preview data: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'coordinates': {'latitude': latitude, 'longitude': longitude}
+        }
+
+def generate_static_map_endpoint(latitude: float, longitude: float, 
+                               width: int = 600, height: int = 400, zoom: int = 15):
+    """
+    Generate static map for API endpoint
+    Used by main.py /api/static-map route
+    """
+    try:
+        config = MapConfig(
+            width=width,
+            height=height,
+            zoom=zoom,
+            map_type="roadmap"
+        )
+        
+        map_bytes = generate_static_map(latitude, longitude, config)
+        
+        if map_bytes:
+            return {
+                'success': True,
+                'image_data': base64.b64encode(map_bytes).decode('utf-8'),
+                'content_type': 'image/png',
+                'size': len(map_bytes),
+                'config': {
+                    'width': width,
+                    'height': height,
+                    'zoom': zoom,
+                    'service': map_utils.preferred_service.value
+                }
+            }
+        else:
+            return {
+                'success': False,
+                'error': 'Failed to generate map image',
+                'fallback_available': True
+            }
+    except Exception as e:
+        logger.error(f"Static map endpoint error: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'fallback_available': True
+        }
+
+# Keep all existing functions from the original report_utils.py
 def process_timestamps(data):
     """Process and enhance timestamp information"""
     
@@ -148,75 +404,6 @@ def process_timestamps(data):
         # Emergency response timing
         "response_urgency": calculate_response_urgency(incident_dt, utc_now),
         "golden_hour_remaining": calculate_golden_hour(incident_dt, utc_now),
-    }
-
-def process_gps_data(data):
-    """Process and enhance GPS coordinate information"""
-    
-    # Extract coordinates
-    coordinates = data.get("coordinates", [])
-    if isinstance(coordinates, str):
-        try:
-            lat, lng = map(float, coordinates.split(","))
-            coordinates = [lat, lng]
-        except:
-            coordinates = []
-    
-    latitude = coordinates[0] if len(coordinates) >= 1 else None
-    longitude = coordinates[1] if len(coordinates) >= 2 else None
-    
-    # GPS metadata from client
-    gps_accuracy = data.get("gps_accuracy")
-    gps_source = data.get("gps_source", "Unknown")
-    
-    # Generate coordinate strings
-    if latitude and longitude:
-        coordinates_string = f"{latitude:.6f}, {longitude:.6f}"
-        coordinates_dms = convert_to_dms(latitude, longitude)
-        coordinates_display = f"Lat: {latitude:.5f}, Lng: {longitude:.5f}"
-        
-        # GPS accuracy assessment
-        if gps_accuracy:
-            accuracy_string = f"±{gps_accuracy}m"
-            accuracy_level = get_accuracy_level(gps_accuracy)
-        else:
-            accuracy_string = "Unknown accuracy"
-            accuracy_level = "unknown"
-            
-        # Enhanced location display
-        display_location = data.get("location", coordinates_display)
-        
-        # Generate useful coordinate formats
-        coord_formats = {
-            "decimal": coordinates_display,
-            "dms": coordinates_dms,
-            "mgrs": convert_to_mgrs(latitude, longitude),  # Military Grid Reference
-            "plus_code": generate_plus_code(latitude, longitude),  # Google Plus Codes
-        }
-        
-    else:
-        coordinates_string = "Not available"
-        coordinates_dms = "Not available"
-        coordinates_display = "Location not specified"
-        accuracy_string = "N/A"
-        accuracy_level = "none"
-        display_location = data.get("location", "Unknown Location")
-        coord_formats = {}
-
-    return {
-        "coordinates": coordinates,
-        "latitude": latitude,
-        "longitude": longitude,
-        "coordinates_string": coordinates_string,
-        "coordinates_dms": coordinates_dms,
-        "coordinates_display": coordinates_display,
-        "display_location": display_location,
-        "gps_accuracy": gps_accuracy,
-        "accuracy_string": accuracy_string,
-        "accuracy_level": accuracy_level,
-        "gps_source": gps_source,
-        "coord_formats": coord_formats,
-        "emergency_grid_ref": generate_emergency_grid_ref(latitude, longitude) if latitude and longitude else "N/A",
     }
 
 def process_hazards(hazards_data):
@@ -314,7 +501,7 @@ def process_ai_analysis(ai_analysis_data):
         "analysis_timestamp": ai_analysis_data.get("timestamp", ""),
     }
 
-# Helper functions for coordinate conversions
+# Helper functions for coordinate conversions (FALLBACK - map_utils preferred)
 def convert_to_dms(latitude, longitude):
     """Convert decimal degrees to degrees, minutes, seconds format"""
     def decimal_to_dms(decimal_deg):
@@ -331,27 +518,6 @@ def convert_to_dms(latitude, longitude):
     lng_dir = "E" if longitude >= 0 else "W"
     
     return f"{lat_deg}°{lat_min}'{lat_sec:.2f}\"{lat_dir}, {lng_deg}°{lng_min}'{lng_sec:.2f}\"{lng_dir}"
-
-def convert_to_mgrs(latitude, longitude):
-    """Convert to Military Grid Reference System (simplified)"""
-    # This is a simplified version - in production use a proper MGRS library
-    try:
-        # Basic UTM zone calculation
-        zone = int((longitude + 180) / 6) + 1
-        return f"UTM Zone {zone} (simplified MGRS)"
-    except:
-        return "MGRS conversion unavailable"
-
-def generate_plus_code(latitude, longitude):
-    """Generate Google Plus Code (simplified)"""
-    # This is a placeholder - in production use the official Plus Codes library
-    try:
-        # Simplified Plus Code representation
-        lat_code = str(int((latitude + 90) * 8000))[:4]
-        lng_code = str(int((longitude + 180) * 8000))[:4]
-        return f"{lat_code}+{lng_code}"
-    except:
-        return "Plus Code unavailable"
 
 def generate_emergency_grid_ref(latitude, longitude):
     """Generate emergency services grid reference"""
@@ -455,7 +621,7 @@ def get_file_modified_time(file_path):
         return "Unknown"
 
 def log_report_generation(output_path, data, timestamp_data, gps_data):
-    """Log report generation for audit trail"""
+    """Log report generation for audit trail with MAP DATA"""
     log_entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "report_file": output_path,
@@ -464,30 +630,19 @@ def log_report_generation(output_path, data, timestamp_data, gps_data):
         "location": gps_data["display_location"],
         "coordinates": gps_data["coordinates_string"],
         "severity": data.get("severity"),
-        "generated_by": "EdgeAI System",
+        "generated_by": "EdgeAI System v2.1",
         "file_size": get_file_size(output_path) if os.path.exists(output_path) else "0 B",
+        # NEW: Map integration logging
+        "map_included": gps_data.get("map_data_available", False),
+        "emergency_resources_found": len(gps_data.get("emergency_resources", [])),
+        "coordinate_formats_generated": len(gps_data.get("coord_formats", {})),
     }
     
     # Write to log file
     log_file = "outputs/report_generation.log"
     try:
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
         with open(log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry) + "\n")
     except Exception as e:
-        print(f"Warning: Could not write to log file: {e}")
-
-# Enhanced template helper functions
-def format_severity_badge(severity):
-    """Format severity value with appropriate styling class"""
-    try:
-        sev = float(severity)
-        if sev >= 8:
-            return {"value": sev, "class": "sev-red", "label": "CRITICAL"}
-        elif sev >= 5:
-            return {"value": sev, "class": "sev-orange", "label": "HIGH"}
-        elif sev >= 3:
-            return {"value": sev, "class": "sev-yellow", "label": "MEDIUM"}
-        else:
-            return {"value": sev, "class": "sev-green", "label": "LOW"}
-    except:
-        return {"value": severity, "class": "sev-gray", "label": "UNKNOWN"}
+        logger.warning(f"Could not write to log file: {e}")

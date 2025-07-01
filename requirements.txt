@@ -10,3 +10,5 @@ fastapi
 uvicorn
 jinja2
 python-multipart
+requests>=2.31.0
+Pillow>=10.0.0  # For fallback map generation
