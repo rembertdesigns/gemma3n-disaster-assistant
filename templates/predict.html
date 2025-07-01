@@ -3,16 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <title>Disaster Risk Prediction</title>
+
+  <!-- Load risk engine -->
   <script src="{{ url_for('static', filename='js/weather-risk.js') }}" defer></script>
+
+  <!-- Load modules: broadcast polling + map -->
+  <script type="module">
+    import { startBroadcastListener } from "{{ url_for('static', filename='js/workers/broadcast.js') }}";
+    import { initBroadcastMap } from "{{ url_for('static', filename='js/workers/broadcast-map.js') }}";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initBroadcastMap();
+      startBroadcastListener();
+    });
+  </script>
+
+  <!-- Leaflet styles & script -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    defer
+  ></script>
+
+  <!-- App CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f9f9f9;
+    }
+    h1 {
+      color: #333;
+    }
+    #broadcast-alert {
+      display: none;
+      background-color: #ffcccc;
+      color: #990000;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+    .broadcast-section {
+      margin-top: 30px;
+    }
+    .broadcast-card {
+      background: #fff3f3;
+      border-left: 5px solid red;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    .map-section {
+      margin-top: 30px;
+    }
+    #broadcast-map {
+      height: 400px;
+      border-radius: 8px;
+    }
+    pre {
+      background-color: #eee;
+      padding: 10px;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
   <h1>🧠 Disaster Risk Prediction</h1>
-  
+
+  <!-- 🚨 Emergency Alert Banner -->
+  <div id="broadcast-alert">
+    🚨 Emergency broadcast triggered!
+  </div>
+
+  <!-- Prediction Results -->
   <div>
     <p id="risk-score">Risk Score: <strong>Loading...</strong></p>
     <p id="severity">Severity: <strong>Loading...</strong></p>
     <pre id="resources">Resources: Loading...</pre>
+  </div>
+
+  <!-- 📡 Broadcast Feed -->
+  <div class="broadcast-section">
+    <h2>📡 Nearby Emergency Broadcasts</h2>
+    <div id="broadcast-feed">Loading active broadcasts...</div>
+  </div>
+
+  <!-- 🗺️ Broadcast Map -->
+  <div class="map-section">
+    <h2>🗺️ Broadcast Map</h2>
+    <div id="broadcast-map"></div>
   </div>
 </body>
 </html>
