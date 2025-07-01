@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Live Report Builder</title>
   <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body {
       margin: 0;
@@ -77,8 +78,13 @@
       margin-top: 0.5rem;
       border: 1px solid #ccc;
     }
+    #map {
+      height: 300px;
+      margin-bottom: 1rem;
+    }
   </style>
   <script src="https://unpkg.com/idb-keyval@6/dist/idb-keyval-iife.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <div class="editor">
@@ -93,6 +99,7 @@
       <label>Coordinates (lat,lng):
         <input type="text" id="coordinates" placeholder="30.2672,-97.7431" />
       </label>
+      <div id="map"></div>
       <label>Hazards:
         <input type="text" id="hazards" />
       </label>
@@ -137,6 +144,29 @@
   <script>
     const inputs = ["location", "coordinates", "hazards", "severity", "notes", "image_url", "checklist"];
     const teamMembers = ["Unassigned", "Fire Chief", "Medic", "Safety Officer", "Search & Rescue"];
+
+    let map, marker;
+
+    function initMap() {
+      const coords = document.getElementById("coordinates").value.split(",").map(Number);
+      const lat = coords[0] || 30.2672;
+      const lng = coords[1] || -97.7431;
+
+      map = L.map('map').setView([lat, lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        const coordStr = `${pos.lat.toFixed(5)},${pos.lng.toFixed(5)}`;
+        document.getElementById("coordinates").value = coordStr;
+        document.getElementById("location").value = `Lat: ${pos.lat.toFixed(5)}, Lng: ${pos.lng.toFixed(5)}`;
+        renderPreview();
+      });
+    }
 
     function getSeverityClass(sev) {
       if (sev >= 8) return "sev-red";
@@ -281,9 +311,12 @@
       }
 
       navigator.geolocation.getCurrentPosition(pos => {
-        const coords = `${pos.coords.latitude.toFixed(5)},${pos.coords.longitude.toFixed(5)}`;
-        document.getElementById("coordinates").value = coords;
-        document.getElementById("location").value = `Lat: ${pos.coords.latitude.toFixed(5)}, Lng: ${pos.coords.longitude.toFixed(5)}`;
+        const lat = pos.coords.latitude.toFixed(5);
+        const lng = pos.coords.longitude.toFixed(5);
+        document.getElementById("coordinates").value = `${lat},${lng}`;
+        document.getElementById("location").value = `Lat: ${lat}, Lng: ${lng}`;
+        marker.setLatLng([lat, lng]);
+        map.setView([lat, lng], 13);
         renderPreview();
       }, err => {
         alert("Failed to get GPS location.");
@@ -305,6 +338,7 @@
       renderChecklist();
       updateImagePreview();
       renderPreview();
+      initMap();
     };
 
     inputs.forEach(id => {
@@ -312,6 +346,10 @@
         if (id === "checklist") renderChecklist();
         if (id === "image_url") updateImagePreview();
         if (id === "severity") updateSeverityBadge();
+        if (id === "coordinates") {
+          const [lat, lng] = document.getElementById("coordinates").value.split(",").map(Number);
+          if (!isNaN(lat) && !isNaN(lng)) marker.setLatLng([lat, lng]);
+        }
         renderPreview();
       });
     });
