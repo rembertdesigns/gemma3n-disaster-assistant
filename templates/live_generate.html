@@ -78,7 +78,6 @@
       border: 1px solid #ccc;
     }
   </style>
-  <!-- ✅ Include idb-keyval for offline image storage -->
   <script src="https://unpkg.com/idb-keyval@6/dist/idb-keyval-iife.min.js"></script>
 </head>
 <body>
@@ -87,6 +86,7 @@
 
     <details open>
       <summary>📍 Incident Details</summary>
+      <button onclick="autofillGPS()">📍 Auto-Fill Location</button>
       <label>Location:
         <input type="text" id="location" />
       </label>
@@ -235,13 +235,11 @@
       const data = collectFormData();
       const imageFile = document.getElementById("image_file").files[0];
 
-      // Save blob to IndexedDB if uploaded
       if (imageFile) {
         await idbKeyval.set(data.id, imageFile);
         data.image_blob_id = data.id;
       }
 
-      // Save the entire report to sync queue
       let queue = await idbKeyval.get("sync_queue") || [];
       queue.push(data);
       await idbKeyval.set("sync_queue", queue);
@@ -250,7 +248,6 @@
       renderPreview();
     }
 
-    // Sync logic when back online
     async function syncQueue() {
       const queue = await idbKeyval.get("sync_queue") || [];
       const remaining = [];
@@ -258,7 +255,6 @@
       for (const report of queue) {
         const formData = new FormData();
         formData.append("json", JSON.stringify(report));
-
         if (report.image_blob_id) {
           const blob = await idbKeyval.get(report.image_blob_id);
           if (blob) formData.append("file", blob, "image.jpg");
@@ -278,9 +274,25 @@
       await idbKeyval.set("sync_queue", remaining);
     }
 
+    async function autofillGPS() {
+      if (!navigator.geolocation) {
+        alert("Geolocation not supported.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const coords = `${pos.coords.latitude.toFixed(5)},${pos.coords.longitude.toFixed(5)}`;
+        document.getElementById("coordinates").value = coords;
+        document.getElementById("location").value = `Lat: ${pos.coords.latitude.toFixed(5)}, Lng: ${pos.coords.longitude.toFixed(5)}`;
+        renderPreview();
+      }, err => {
+        alert("Failed to get GPS location.");
+        console.error(err);
+      });
+    }
+
     window.addEventListener("online", syncQueue);
 
-    // Init default values
     window.onload = () => {
       document.getElementById("location").value = "Austin, TX";
       document.getElementById("coordinates").value = "30.2672,-97.7431";
@@ -308,34 +320,6 @@
       updateImagePreview();
       renderPreview();
     });
-
-    window.addEventListener('online', () => {
-      import('/static/js/sync-queue.js')
-        .then(module => module.trySyncQueuedReports())
-        .catch(err => console.error('Sync error', err));
-    });
-
-    async function updatePDF() {
-      const data = collectFormData();
-
-      if (!navigator.onLine) {
-        const syncModule = await import('/static/js/sync-queue.js');
-        await syncModule.queueReport(data);
-        alert('📥 Report saved offline. Will sync when back online.');
-        return;
-      }
-
-      fetch("/generate-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      })
-      .then(res => res.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        document.getElementById("pdfFrame").src = url;
-      });
-    }
   </script>
 </body>
 </html>
