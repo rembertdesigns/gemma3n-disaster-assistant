@@ -3,11 +3,14 @@
  * 
  * Privacy-first, offline-capable AI processing using TensorFlow.js
  * Perfect for Gemma 3n Challenge - on-device multimodal AI
+ * Enhanced with Mobile Geolocation Optimization
  * 
  * Features:
  * - Real-time hazard classification from images
  * - Text sentiment analysis for panic detection
- * - Multi-factor severity scoring
+ * - Multi-factor severity scoring with location context
+ * - Mobile-optimized GPS processing
+ * - Location-aware risk assessment
  * - Completely offline operation
  * - WebWorker support for non-blocking processing
  * - Fallback to main thread when workers unavailable
@@ -51,7 +54,7 @@ class EdgeAI {
       'safe_area'
     ];
     
-    console.log('🧠 EdgeAI initialized - ready for on-device processing');
+    console.log('🧠 EdgeAI initialized - ready for on-device processing with location awareness');
   }
 
   /**
@@ -265,6 +268,690 @@ class EdgeAI {
     // Can be upgraded to TF.js sentiment model later
     this.models.sentimentAnalyzer = 'rule-based';
     console.log('💭 Sentiment analyzer ready (rule-based)');
+  }
+
+  /**
+   * 🗺️ Enhanced location context for AI severity calculation
+   * @param {Object} locationData - GPS and location information
+   * @param {Object} incidentData - Incident details
+   * @returns {Object} Location-enhanced context
+   */
+  async processLocationContext(locationData, incidentData) {
+    const context = {
+      coordinates: locationData.coordinates || [],
+      accuracy: locationData.accuracy || null,
+      timestamp: locationData.timestamp || new Date().toISOString(),
+      source: locationData.source || 'unknown',
+      
+      // Risk assessment factors
+      locationRisk: await this.assessLocationRisk(locationData),
+      accessibilityFactors: this.calculateAccessibilityFactors(locationData),
+      environmentalFactors: this.assessEnvironmentalFactors(locationData, incidentData),
+      proximityFactors: await this.calculateProximityFactors(locationData),
+      
+      // Emergency response context
+      responseComplexity: this.calculateResponseComplexity(locationData, incidentData),
+      evacuationFactors: this.assessEvacuationFactors(locationData),
+      resourceAvailability: await this.estimateResourceAvailability(locationData),
+    };
+
+    return context;
+  }
+
+  /**
+   * 🎯 Assess location-based risk factors
+   */
+  async assessLocationRisk(locationData) {
+    if (!locationData.coordinates || locationData.coordinates.length < 2) {
+      return { level: 'unknown', factors: ['Location not available'] };
+    }
+
+    const [lat, lng] = locationData.coordinates;
+    const riskFactors = [];
+    let riskLevel = 'normal';
+
+    // GPS accuracy risk
+    if (locationData.accuracy > 100) {
+      riskFactors.push('Poor GPS accuracy - remote area likely');
+      riskLevel = 'elevated';
+    }
+
+    // Coordinate-based risk assessment
+    const coordinateRisks = this.assessCoordinateRisks(lat, lng);
+    riskFactors.push(...coordinateRisks.factors);
+    
+    if (coordinateRisks.level === 'high') {
+      riskLevel = 'high';
+    } else if (coordinateRisks.level === 'elevated' && riskLevel === 'normal') {
+      riskLevel = 'elevated';
+    }
+
+    // Time-based factors
+    const timeFactors = this.assessTimeBasedRisks();
+    riskFactors.push(...timeFactors.factors);
+    
+    return {
+      level: riskLevel,
+      factors: riskFactors,
+      confidence: this.calculateRiskConfidence(locationData)
+    };
+  }
+
+  /**
+   * 📍 Assess risks based on coordinates
+   */
+  assessCoordinateRisks(lat, lng) {
+    const factors = [];
+    let level = 'normal';
+
+    // Water body detection (simplified)
+    if (this.isNearWaterBody(lat, lng)) {
+      factors.push('Near water body - flooding/drowning risk');
+      level = 'elevated';
+    }
+
+    // Urban vs rural detection
+    const urbanDensity = this.estimateUrbanDensity(lat, lng);
+    if (urbanDensity === 'rural') {
+      factors.push('Rural area - extended response times');
+      level = 'elevated';
+    } else if (urbanDensity === 'dense_urban') {
+      factors.push('Dense urban area - evacuation complexity');
+    }
+
+    // Elevation-based risks
+    const elevation = this.estimateElevation(lat, lng);
+    if (elevation.risk) {
+      factors.push(elevation.risk);
+      if (elevation.level === 'high') level = 'high';
+    }
+
+    // International border proximity
+    if (this.isNearInternationalBorder(lat, lng)) {
+      factors.push('Near international border - jurisdiction considerations');
+    }
+
+    return { level, factors };
+  }
+
+  /**
+   * 🚗 Calculate accessibility factors
+   */
+  calculateAccessibilityFactors(locationData) {
+    const factors = {
+      roadAccess: 'unknown',
+      terrainDifficulty: 'unknown',
+      weatherImpact: 'unknown',
+      mobilityScore: 5, // 1-10 scale
+      estimatedResponseTime: 'unknown'
+    };
+
+    if (!locationData.coordinates) {
+      return factors;
+    }
+
+    const [lat, lng] = locationData.coordinates;
+
+    // Estimate road access based on coordinates
+    factors.roadAccess = this.estimateRoadAccess(lat, lng);
+    
+    // Terrain difficulty
+    factors.terrainDifficulty = this.estimateTerrainDifficulty(lat, lng);
+    
+    // Weather impact (if available)
+    factors.weatherImpact = this.assessWeatherImpact(locationData);
+    
+    // Calculate mobility score
+    factors.mobilityScore = this.calculateMobilityScore(factors);
+    
+    // Estimate response time
+    factors.estimatedResponseTime = this.estimateResponseTime(factors, locationData);
+
+    return factors;
+  }
+
+  /**
+   * 🌡️ Assess environmental factors
+   */
+  assessEnvironmentalFactors(locationData, incidentData) {
+    const factors = {
+      timeOfDay: this.getTimeOfDayRisk(),
+      seasonalFactors: this.getSeasonalRisks(),
+      weatherConditions: 'unknown',
+      naturalHazards: [],
+      industrialProximity: 'unknown'
+    };
+
+    if (locationData.coordinates) {
+      const [lat, lng] = locationData.coordinates;
+      
+      // Natural hazards in the area
+      factors.naturalHazards = this.identifyNaturalHazards(lat, lng);
+      
+      // Industrial proximity
+      factors.industrialProximity = this.assessIndustrialProximity(lat, lng);
+    }
+
+    // Weather conditions (simplified - could integrate with weather API)
+    factors.weatherConditions = this.estimateWeatherConditions(locationData);
+
+    return factors;
+  }
+
+  /**
+   * 🏥 Calculate proximity to emergency resources
+   */
+  async calculateProximityFactors(locationData) {
+    if (!locationData.coordinates) {
+      return {
+        nearestHospital: 'unknown',
+        nearestFireStation: 'unknown',
+        nearestPolice: 'unknown',
+        evacuationRoutes: 'unknown',
+        resourceScore: 3 // 1-10 scale
+      };
+    }
+
+    const [lat, lng] = locationData.coordinates;
+
+    return {
+      nearestHospital: this.estimateDistanceToHospital(lat, lng),
+      nearestFireStation: this.estimateDistanceToFireStation(lat, lng),
+      nearestPolice: this.estimateDistanceToPolice(lat, lng),
+      evacuationRoutes: this.assessEvacuationRoutes(lat, lng),
+      resourceScore: this.calculateResourceProximityScore(lat, lng)
+    };
+  }
+
+  /**
+   * 🚨 Calculate response complexity
+   */
+  calculateResponseComplexity(locationData, incidentData) {
+    let complexity = 1; // 1-10 scale
+    const factors = [];
+
+    // Location-based complexity
+    if (locationData.accuracy > 50) {
+      complexity += 1;
+      factors.push('Poor location accuracy increases search complexity');
+    }
+
+    // Incident type complexity
+    const hazards = incidentData.hazards || [];
+    if (hazards.length > 2) {
+      complexity += 1;
+      factors.push('Multiple hazards increase response complexity');
+    }
+
+    // Severity-based complexity
+    const severity = parseFloat(incidentData.severity) || 1;
+    if (severity >= 8) {
+      complexity += 2;
+      factors.push('High severity requires specialized response');
+    } else if (severity >= 5) {
+      complexity += 1;
+      factors.push('Moderate severity increases resource needs');
+    }
+
+    // Time-based complexity
+    const hour = new Date().getHours();
+    if (hour < 6 || hour > 20) {
+      complexity += 1;
+      factors.push('Night operations increase complexity');
+    }
+
+    return {
+      score: Math.min(10, complexity),
+      factors: factors,
+      level: complexity <= 3 ? 'low' : complexity <= 6 ? 'moderate' : 'high'
+    };
+  }
+
+  /**
+   * 🏃 Assess evacuation factors
+   */
+  assessEvacuationFactors(locationData) {
+    const factors = {
+      populationDensity: 'unknown',
+      evacuationRoutes: 'unknown',
+      shelterCapacity: 'unknown',
+      specialNeeds: 'unknown',
+      evacuationDifficulty: 'moderate'
+    };
+
+    if (locationData.coordinates) {
+      const [lat, lng] = locationData.coordinates;
+      
+      factors.populationDensity = this.estimatePopulationDensity(lat, lng);
+      factors.evacuationRoutes = this.assessEvacuationRoutes(lat, lng);
+      factors.shelterCapacity = this.estimateShelterCapacity(lat, lng);
+      factors.evacuationDifficulty = this.calculateEvacuationDifficulty(lat, lng);
+    }
+
+    return factors;
+  }
+
+  /**
+   * 📦 Estimate resource availability
+   */
+  async estimateResourceAvailability(locationData) {
+    const resources = {
+      medicalFacilities: 'unknown',
+      fireServices: 'unknown',
+      lawEnforcement: 'unknown',
+      searchRescue: 'unknown',
+      utilities: 'unknown',
+      communication: 'unknown',
+      availability: 'moderate'
+    };
+
+    if (locationData.coordinates) {
+      const [lat, lng] = locationData.coordinates;
+      
+      // Estimate based on coordinate patterns
+      const urbanLevel = this.estimateUrbanDensity(lat, lng);
+      
+      if (urbanLevel === 'dense_urban') {
+        resources.availability = 'high';
+        resources.medicalFacilities = 'multiple nearby';
+        resources.fireServices = 'well covered';
+        resources.lawEnforcement = 'readily available';
+      } else if (urbanLevel === 'rural') {
+        resources.availability = 'limited';
+        resources.medicalFacilities = 'distant';
+        resources.fireServices = 'volunteer/distant';
+        resources.lawEnforcement = 'limited coverage';
+      }
+    }
+
+    return resources;
+  }
+
+  // Helper methods for location analysis
+
+  isNearWaterBody(lat, lng) {
+    // Simplified water body detection
+    // In production, use geographic databases
+    return false; // Placeholder
+  }
+
+  estimateUrbanDensity(lat, lng) {
+    // Simplified urban density estimation
+    // Could use population density APIs or geographic data
+    const absLat = Math.abs(lat);
+    const absLng = Math.abs(lng);
+    
+    // Very rough heuristic - major city coordinate ranges
+    if ((absLat > 25 && absLat < 50) && (absLng > 70 && absLng < 125)) {
+      return 'dense_urban';
+    } else if ((absLat > 20 && absLat < 60) && (absLng > 60 && absLng < 140)) {
+      return 'suburban';
+    }
+    return 'rural';
+  }
+
+  estimateElevation(lat, lng) {
+    // Simplified elevation estimation
+    // In production, use elevation APIs
+    return { risk: null, level: 'normal' };
+  }
+
+  isNearInternationalBorder(lat, lng) {
+    // Simplified border detection
+    // In production, use border databases
+    return false;
+  }
+
+  estimateRoadAccess(lat, lng) {
+    const density = this.estimateUrbanDensity(lat, lng);
+    return density === 'dense_urban' ? 'excellent' : 
+           density === 'suburban' ? 'good' : 'limited';
+  }
+
+  estimateTerrainDifficulty(lat, lng) {
+    // Simplified terrain assessment
+    return 'moderate'; // Could be 'easy', 'moderate', 'difficult', 'extreme'
+  }
+
+  assessWeatherImpact(locationData) {
+    // Placeholder for weather impact assessment
+    // In production, integrate with weather APIs
+    return 'normal';
+  }
+
+  calculateMobilityScore(factors) {
+    let score = 5;
+    
+    if (factors.roadAccess === 'excellent') score += 2;
+    else if (factors.roadAccess === 'limited') score -= 2;
+    
+    if (factors.terrainDifficulty === 'easy') score += 1;
+    else if (factors.terrainDifficulty === 'difficult') score -= 2;
+    else if (factors.terrainDifficulty === 'extreme') score -= 3;
+    
+    return Math.max(1, Math.min(10, score));
+  }
+
+  estimateResponseTime(factors, locationData) {
+    const baseTime = factors.mobilityScore <= 3 ? '15-30 min' :
+                     factors.mobilityScore <= 6 ? '5-15 min' : '2-10 min';
+    
+    return baseTime;
+  }
+
+  getTimeOfDayRisk() {
+    const hour = new Date().getHours();
+    if (hour >= 22 || hour < 6) return 'high'; // Night
+    if (hour >= 18 || hour < 8) return 'elevated'; // Dawn/dusk
+    return 'normal';
+  }
+
+  getSeasonalRisks() {
+    const month = new Date().getMonth();
+    // Simplified seasonal assessment
+    if (month >= 11 || month <= 2) return 'winter_risks';
+    if (month >= 5 && month <= 8) return 'summer_risks';
+    return 'normal';
+  }
+
+  assessTimeBasedRisks() {
+    const factors = [];
+    const timeRisk = this.getTimeOfDayRisk();
+    
+    if (timeRisk === 'high') {
+      factors.push('Night time operations - reduced visibility and resource availability');
+    } else if (timeRisk === 'elevated') {
+      factors.push('Dawn/dusk operations - changing light conditions');
+    }
+    
+    const seasonRisk = this.getSeasonalRisks();
+    if (seasonRisk === 'winter_risks') {
+      factors.push('Winter conditions - weather-related complications');
+    } else if (seasonRisk === 'summer_risks') {
+      factors.push('Summer conditions - heat-related concerns');
+    }
+    
+    return { factors };
+  }
+
+  identifyNaturalHazards(lat, lng) {
+    // Simplified natural hazard identification
+    const hazards = [];
+    
+    // Example: coastal areas
+    if (Math.abs(lat) < 40 && this.isNearCoast(lat, lng)) {
+      hazards.push('storm_surge', 'flooding');
+    }
+    
+    // Example: seismic zones (very simplified)
+    if (this.isInSeismicZone(lat, lng)) {
+      hazards.push('earthquake');
+    }
+    
+    return hazards;
+  }
+
+  isNearCoast(lat, lng) {
+    // Simplified coastal detection
+    return false; // Placeholder
+  }
+
+  isInSeismicZone(lat, lng) {
+    // Simplified seismic zone detection
+    return false; // Placeholder
+  }
+
+  assessIndustrialProximity(lat, lng) {
+    // Simplified industrial proximity assessment
+    return 'low'; // Could be 'low', 'moderate', 'high'
+  }
+
+  estimateWeatherConditions(locationData) {
+    // Placeholder for weather estimation
+    // In production, integrate with weather APIs
+    return 'clear';
+  }
+
+  calculateRiskConfidence(locationData) {
+    let confidence = 0.5;
+    
+    if (locationData.accuracy <= 10) confidence += 0.3;
+    else if (locationData.accuracy <= 50) confidence += 0.2;
+    else confidence -= 0.1;
+    
+    if (locationData.coordinates && locationData.coordinates.length === 2) {
+      confidence += 0.2;
+    }
+    
+    return Math.max(0.1, Math.min(0.95, confidence));
+  }
+
+  estimateDistanceToHospital(lat, lng) {
+    const density = this.estimateUrbanDensity(lat, lng);
+    return density === 'dense_urban' ? '< 5 km' : 
+           density === 'suburban' ? '5-15 km' : '> 15 km';
+  }
+
+  estimateDistanceToFireStation(lat, lng) {
+    const density = this.estimateUrbanDensity(lat, lng);
+    return density === 'dense_urban' ? '< 3 km' : 
+           density === 'suburban' ? '3-10 km' : '> 10 km';
+  }
+
+  estimateDistanceToPolice(lat, lng) {
+    const density = this.estimateUrbanDensity(lat, lng);
+    return density === 'dense_urban' ? '< 2 km' : 
+           density === 'suburban' ? '2-8 km' : '> 8 km';
+  }
+
+  assessEvacuationRoutes(lat, lng) {
+    const density = this.estimateUrbanDensity(lat, lng);
+    return density === 'dense_urban' ? 'multiple routes available' : 
+           density === 'suburban' ? 'limited routes' : 'single route likely';
+  }
+
+  calculateResourceProximityScore(lat, lng) {
+    const density = this.estimateUrbanDensity(lat, lng);
+    return density === 'dense_urban' ? 8 : 
+           density === 'suburban' ? 5 : 2;
+  }
+
+  estimatePopulationDensity(lat, lng) {
+    return this.estimateUrbanDensity(lat, lng);
+  }
+
+  estimateShelterCapacity(lat, lng) {
+    const density = this.estimateUrbanDensity(lat, lng);
+    return density === 'dense_urban' ? 'high capacity' : 
+           density === 'suburban' ? 'moderate capacity' : 'limited capacity';
+  }
+
+  calculateEvacuationDifficulty(lat, lng) {
+    const density = this.estimateUrbanDensity(lat, lng);
+    return density === 'dense_urban' ? 'high' : 
+           density === 'suburban' ? 'moderate' : 'low';
+  }
+
+  /**
+   * 🎯 Enhanced severity calculation with location context
+   * Override the existing calculateSeverity method to include location factors
+   */
+  calculateSeverityWithLocation(imageAnalysis = {}, textAnalysis = {}, locationContext = {}) {
+    // Start with base severity calculation
+    const baseSeverity = this.calculateSeverity(imageAnalysis, textAnalysis, {});
+    
+    let adjustedSeverity = baseSeverity.overall;
+    const adjustmentFactors = [...baseSeverity.breakdown];
+    
+    // Location-based adjustments
+    if (locationContext.locationRisk) {
+      switch (locationContext.locationRisk.level) {
+        case 'high':
+          adjustedSeverity += 1.5;
+          adjustmentFactors.push('High-risk location (+1.5)');
+          break;
+        case 'elevated':
+          adjustedSeverity += 0.8;
+          adjustmentFactors.push('Elevated location risk (+0.8)');
+          break;
+      }
+    }
+    
+    // Accessibility adjustments
+    if (locationContext.accessibilityFactors) {
+      const mobility = locationContext.accessibilityFactors.mobilityScore;
+      if (mobility <= 3) {
+        adjustedSeverity += 1.0;
+        adjustmentFactors.push('Poor accessibility (+1.0)');
+      } else if (mobility <= 5) {
+        adjustedSeverity += 0.5;
+        adjustmentFactors.push('Limited accessibility (+0.5)');
+      }
+    }
+    
+    // Response complexity adjustments
+    if (locationContext.responseComplexity) {
+      if (locationContext.responseComplexity.level === 'high') {
+        adjustedSeverity += 0.7;
+        adjustmentFactors.push('Complex response scenario (+0.7)');
+      } else if (locationContext.responseComplexity.level === 'moderate') {
+        adjustedSeverity += 0.3;
+        adjustmentFactors.push('Moderate response complexity (+0.3)');
+      }
+    }
+    
+    // Resource availability adjustments
+    if (locationContext.resourceAvailability) {
+      if (locationContext.resourceAvailability.availability === 'limited') {
+        adjustedSeverity += 0.8;
+        adjustmentFactors.push('Limited resources available (+0.8)');
+      } else if (locationContext.resourceAvailability.availability === 'high') {
+        adjustedSeverity -= 0.3;
+        adjustmentFactors.push('Good resource availability (-0.3)');
+      }
+    }
+    
+    // Environmental factor adjustments
+    if (locationContext.environmentalFactors) {
+      if (locationContext.environmentalFactors.timeOfDay === 'high') {
+        adjustedSeverity += 0.5;
+        adjustmentFactors.push('Night time operations (+0.5)');
+      }
+      
+      if (locationContext.environmentalFactors.naturalHazards.length > 0) {
+        adjustedSeverity += 0.4;
+        adjustmentFactors.push('Natural hazards present (+0.4)');
+      }
+    }
+    
+    // Calculate final confidence
+    const locationConfidence = locationContext.locationRisk?.confidence || 0.5;
+    const finalConfidence = (baseSeverity.confidence + locationConfidence) / 2;
+    
+    return {
+      overall: Math.min(10, Math.max(1, adjustedSeverity)),
+      factors: {
+        ...baseSeverity.factors,
+        location: Math.min(10, adjustedSeverity - baseSeverity.overall)
+      },
+      confidence: finalConfidence,
+      breakdown: adjustmentFactors,
+      locationContext: locationContext
+    };
+  }
+
+  /**
+   * 📱 Mobile-optimized geolocation with enhanced options
+   */
+  async getMobileOptimizedLocation(options = {}) {
+    const defaultOptions = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 300000, // 5 minutes
+      // Mobile-specific optimizations
+      desiredAccuracy: 10, // meters
+      fallbackTimeout: 5000,
+      retryAttempts: 3,
+      progressCallback: null
+    };
+    
+    const finalOptions = { ...defaultOptions, ...options };
+    
+    try {
+      // Progressive accuracy approach for mobile
+      const position = await this.getLocationWithFallback(finalOptions);
+      
+      // Process location with context
+      const locationContext = await this.processLocationContext(
+        {
+          coordinates: [position.coords.latitude, position.coords.longitude],
+          accuracy: position.coords.accuracy,
+          timestamp: new Date(position.timestamp).toISOString(),
+          source: 'Mobile GPS'
+        },
+        {} // incident data can be passed here
+      );
+      
+      return {
+        position,
+        context: locationContext,
+        enhanced: true
+      };
+      
+    } catch (error) {
+      console.error('Mobile geolocation failed:', error);
+      throw error;
+    }
+  }
+
+  async getLocationWithFallback(options) {
+    // Try high accuracy first
+    try {
+      if (options.progressCallback) {
+        options.progressCallback('Acquiring high-accuracy GPS...');
+      }
+      
+      return await this.getCurrentPositionPromise({
+        enableHighAccuracy: true,
+        timeout: options.timeout,
+        maximumAge: 0
+      });
+    } catch (error) {
+      console.warn('High accuracy GPS failed, trying standard GPS');
+      
+      // Fallback to standard accuracy
+      try {
+        if (options.progressCallback) {
+          options.progressCallback('Trying standard GPS...');
+        }
+        
+        return await this.getCurrentPositionPromise({
+          enableHighAccuracy: false,
+          timeout: options.fallbackTimeout,
+          maximumAge: options.maximumAge
+        });
+      } catch (fallbackError) {
+        console.warn('Standard GPS failed, trying cached location');
+        
+        // Final fallback to cached location
+        return await this.getCurrentPositionPromise({
+          enableHighAccuracy: false,
+          timeout: 3000,
+          maximumAge: 600000 // 10 minutes
+        });
+      }
+    }
+  }
+
+  getCurrentPositionPromise(options) {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+    });
   }
 
   /**
@@ -676,12 +1363,31 @@ class EdgeAI {
       // Wait for all analyses to complete
       await Promise.all(promises);
 
-      // Calculate comprehensive severity
-      analysis.severity = this.calculateSeverity(
-        analysis.imageAnalysis,
-        analysis.textAnalysis,
-        reportData.context || {}
-      );
+      // Enhanced severity calculation with location context
+      if (reportData.context && reportData.context.coordinates) {
+        // Process location context for enhanced analysis
+        const locationContext = await this.processLocationContext(
+          reportData.context,
+          { 
+            hazards: reportData.hazards || [],
+            severity: reportData.severity || 1
+          }
+        );
+        
+        // Use location-enhanced severity calculation
+        analysis.severity = this.calculateSeverityWithLocation(
+          analysis.imageAnalysis,
+          analysis.textAnalysis,
+          locationContext
+        );
+      } else {
+        // Standard severity calculation
+        analysis.severity = this.calculateSeverity(
+          analysis.imageAnalysis,
+          analysis.textAnalysis,
+          reportData.context || {}
+        );
+      }
 
       // Generate recommendations
       analysis.recommendations = this.generateRecommendations(analysis);
@@ -754,7 +1460,7 @@ class EdgeAI {
     }
   }
 
-  // Helper methods (same as before)
+  // Helper methods
   _calculateImageSeverity(results) {
     if (!results.hazards || results.hazards.length === 0) return 1;
     
@@ -900,6 +1606,10 @@ class EdgeAI {
         objectDetector: !!this.models.objectDetector,
         sentimentAnalyzer: !!this.models.sentimentAnalyzer
       },
+      geolocation: {
+        supported: 'geolocation' in navigator,
+        permissions: 'permissions' in navigator ? 'available' : 'unavailable'
+      },
       performance: {},
       errors: []
     };
@@ -924,13 +1634,33 @@ class EdgeAI {
         }
       }
 
+      // Test location processing
+      if (navigator.geolocation) {
+        try {
+          const mockLocationData = {
+            coordinates: [30.2672, -97.7431],
+            accuracy: 10,
+            timestamp: new Date().toISOString(),
+            source: 'test'
+          };
+          
+          const locationStartTime = performance.now();
+          const locationContext = await this.processLocationContext(mockLocationData, {});
+          results.performance.locationProcessing = performance.now() - locationStartTime;
+          
+          console.log('✅ Location context processing test passed:', locationContext);
+        } catch (error) {
+          results.errors.push('Location processing failed: ' + error.message);
+        }
+      }
+
       // Test worker health check
       if (this.worker && this.workerReady) {
         this.checkWorkerHealth();
       }
 
     } catch (error) {
-      results.errors.push('Text analysis failed: ' + error.message);
+      results.errors.push('Diagnostics failed: ' + error.message);
     }
 
     // Performance comparison
@@ -954,7 +1684,8 @@ class EdgeAI {
       useWorker: this.useWorker,
       modelsLoaded: Object.keys(this.models).filter(key => this.models[key]).length,
       pendingWorkerCalls: this.workerCallbacks.size,
-      memoryUsage: this._getMemoryUsage()
+      memoryUsage: this._getMemoryUsage(),
+      geolocationSupported: 'geolocation' in navigator
     };
   }
 
@@ -994,6 +1725,13 @@ class EdgeAI {
 // Initialize global EdgeAI instance
 window.EdgeAI = new EdgeAI();
 
+// Export for use in live_generate.html - Mobile Geolocation Optimization
+window.MobileGeoOptimization = {
+  processLocationContext: (locationData, incidentData) => window.EdgeAI.processLocationContext(locationData, incidentData),
+  calculateSeverityWithLocation: (imageAnalysis, textAnalysis, locationContext) => window.EdgeAI.calculateSeverityWithLocation(imageAnalysis, textAnalysis, locationContext),
+  getMobileOptimizedLocation: (options) => window.EdgeAI.getMobileOptimizedLocation(options)
+};
+
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
@@ -1014,7 +1752,19 @@ window.EdgeAIDebug = {
   diagnostics: () => window.EdgeAI.runDiagnostics(),
   toggleWorker: (enabled) => window.EdgeAI.toggleWorkerUsage(enabled),
   workerHealth: () => window.EdgeAI.checkWorkerHealth(),
-  cleanup: () => window.EdgeAI.cleanup()
+  cleanup: () => window.EdgeAI.cleanup(),
+  testLocation: async () => {
+    try {
+      const result = await window.EdgeAI.getMobileOptimizedLocation({
+        progressCallback: (msg) => console.log('📍 GPS:', msg)
+      });
+      console.log('📍 Location test result:', result);
+      return result;
+    } catch (error) {
+      console.error('📍 Location test failed:', error);
+      return null;
+    }
+  }
 };
 
-console.log('🚀 Edge AI Engine loaded with Worker support - Perfect for Gemma 3n Challenge!');
+console.log('🚀 Enhanced Edge AI Engine loaded with Mobile Geolocation Optimization - Perfect for Gemma 3n Challenge!');

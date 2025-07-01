@@ -2,100 +2,541 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Incident Report</title>
+    <title>Emergency Incident Report - {{ incident_date }}</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
             line-height: 1.6;
             color: #333;
+            margin: 0;
+            padding: 20px;
+            background: #fff;
         }
-        h1 {
-            color: #d9534f;
-            margin-bottom: 1rem;
+        
+        .header {
+            border-bottom: 3px solid #dc2626;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
         }
-        .section {
-            margin-bottom: 20px;
-        }
-        .label {
+        
+        .header h1 {
+            color: #dc2626;
+            margin: 0 0 10px 0;
+            font-size: 24px;
             font-weight: bold;
         }
+        
+        .header .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .metadata-section {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .metadata-section h3 {
+            margin: 0 0 15px 0;
+            color: #1f2937;
+            font-size: 16px;
+            font-weight: bold;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+        
+        .metadata-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        
+        .metadata-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .metadata-label {
+            font-weight: 600;
+            color: #374151;
+            flex: 1;
+        }
+        
+        .metadata-value {
+            color: #1f2937;
+            flex: 2;
+            text-align: right;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .section h2 {
+            color: #dc2626;
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 2px solid #dc2626;
+            padding-bottom: 5px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .sev-green { background-color: #16a34a; }
+        .sev-yellow { background-color: #d97706; color: #000; }
+        .sev-orange { background-color: #ea580c; }
+        .sev-red { background-color: #dc2626; }
+        .sev-gray { background-color: #6b7280; }
+        
+        .priority-critical { color: #dc2626; font-weight: bold; }
+        .priority-high { color: #ea580c; font-weight: bold; }
+        .priority-medium { color: #d97706; font-weight: bold; }
+        .priority-low { color: #16a34a; font-weight: bold; }
+        
+        .coordinates-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        
+        .coordinate-format {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
+        }
+        
+        .coordinate-format .format-label {
+            font-weight: bold;
+            color: #6b7280;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .gps-accuracy {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        
+        .accuracy-excellent { color: #16a34a; }
+        .accuracy-good { color: #65a30d; }
+        .accuracy-moderate { color: #d97706; }
+        .accuracy-poor { color: #dc2626; }
+        
+        .timestamp-details {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .timestamp-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .timestamp-item {
+            text-align: center;
+        }
+        
+        .timestamp-item .time-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .timestamp-item .time-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e40af;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .urgency-indicator {
+            float: right;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .urgency-immediate { background: #dc2626; color: white; }
+        .urgency-urgent { background: #ea580c; color: white; }
+        .urgency-high { background: #d97706; color: white; }
+        .urgency-moderate { background: #16a34a; color: white; }
+        .urgency-routine { background: #6b7280; color: white; }
+        
         .image {
             max-width: 100%;
             height: auto;
-            border: 1px solid #ccc;
-            padding: 4px;
-        }
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
+            border: 2px solid #e5e7eb;
             border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            margin-left: 8px;
+            margin: 15px 0;
         }
-        .sev-green { background-color: green; }
-        .sev-yellow { background-color: gold; color: black; }
-        .sev-orange { background-color: orange; }
-        .sev-red { background-color: red; }
+        
+        .checklist {
+            background: #f9fafb;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+        
+        .checklist-item .checkbox {
+            font-size: 16px;
+            margin-right: 10px;
+            color: #16a34a;
+        }
+        
+        .checklist-item .task {
+            flex: 1;
+        }
+        
+        .checklist-item .assigned {
+            font-size: 12px;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .ai-analysis {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .ai-analysis h3 {
+            color: #1e40af;
+            margin: 0 0 15px 0;
+        }
+        
+        .ai-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .ai-metric {
+            text-align: center;
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #3b82f6;
+        }
+        
+        .ai-metric .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e40af;
+        }
+        
+        .ai-metric .metric-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        
+        .recommendations {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .recommendation {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid #3b82f6;
+            background: #f8fafc;
+        }
+        
+        .recommendation:last-child {
+            margin-bottom: 0;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media print {
+            body { margin: 0; padding: 15px; }
+            .section { page-break-inside: avoid; }
+            .header { page-break-after: avoid; }
+        }
     </style>
 </head>
 <body>
-    <h1>Disaster Incident Report</h1>
+    <!-- Report Header -->
+    <div class="header">
+        <h1>🚨 Emergency Incident Report</h1>
+        <p class="subtitle">Generated by EdgeAI Disaster Response System v{{ report_version }}</p>
+        <div class="urgency-indicator urgency-{{ response_urgency }}">
+            {{ response_urgency|upper }} Priority
+        </div>
+    </div>
 
+    <!-- Metadata Grid -->
+    <div class="metadata-grid">
+        <!-- Timing Information -->
+        <div class="metadata-section">
+            <h3>⏰ Incident Timing</h3>
+            <div class="metadata-item">
+                <span class="metadata-label">Incident Date:</span>
+                <span class="metadata-value">{{ formatted_date }}</span>
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-label">Incident Time:</span>
+                <span class="metadata-value">{{ formatted_time }}</span>
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-label">UTC Timestamp:</span>
+                <span class="metadata-value">{{ utc_timestamp }}</span>
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-label">Time Since:</span>
+                <span class="metadata-value">{{ time_since_incident }}</span>
+            </div>
+            {% if golden_hour_remaining %}
+            <div class="metadata-item">
+                <span class="metadata-label">Golden Hour:</span>
+                <span class="metadata-value">{{ golden_hour_remaining }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Location Information -->
+        <div class="metadata-section">
+            <h3>📍 Location Data</h3>
+            <div class="metadata-item">
+                <span class="metadata-label">Location:</span>
+                <span class="metadata-value">{{ display_location }}</span>
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-label">Coordinates:</span>
+                <span class="metadata-value">{{ coordinates_display }}</span>
+            </div>
+            {% if gps_accuracy %}
+            <div class="metadata-item">
+                <span class="metadata-label">GPS Accuracy:</span>
+                <span class="metadata-value accuracy-{{ accuracy_level }}">{{ accuracy_string }}</span>
+            </div>
+            {% endif %}
+            <div class="metadata-item">
+                <span class="metadata-label">Emergency Grid:</span>
+                <span class="metadata-value">{{ emergency_grid_ref }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Timestamp Details -->
+    <div class="timestamp-details">
+        <strong>🕐 Detailed Timing Information</strong>
+        <div class="timestamp-grid">
+            <div class="timestamp-item">
+                <div class="time-label">Incident Occurred</div>
+                <div class="time-value">{{ incident_datetime }}</div>
+            </div>
+            <div class="timestamp-item">
+                <div class="time-label">Report Generated</div>
+                <div class="time-value">{{ generated_utc }}</div>
+            </div>
+            <div class="timestamp-item">
+                <div class="time-label">Day/Time Context</div>
+                <div class="time-value">
+                    {{ day_of_week }}
+                    {% if is_night_time %} (Night){% endif %}
+                    {% if is_weekend %} (Weekend){% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coordinate Formats -->
+    {% if coord_formats %}
     <div class="section">
-        <p><span class="label">Date:</span> {{ date }}</p>
-        <p><span class="label">Location:</span> {{ location }}</p>
-        <p><span class="label">Coordinates:</span> {{ coordinates }}</p>
-        <p><span class="label">Hazards:</span> {{ hazards }}</p>
-        <p>
-            <span class="label">Severity Score:</span> {{ severity }}
-            {% if severity is number %}
-                <span class="badge
-                    {% if severity >= 8 %}
-                        sev-red
-                    {% elif severity >= 5 %}
-                        sev-orange
-                    {% elif severity >= 3 %}
-                        sev-yellow
-                    {% else %}
-                        sev-green
-                    {% endif %}
-                ">
+        <h2>🗺️ Coordinate Reference Systems</h2>
+        <div class="coordinates-grid">
+            {% for format_name, format_value in coord_formats.items() %}
+            <div class="coordinate-format">
+                <span class="format-label">{{ format_name|upper }}:</span>
+                {{ format_value }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Core Incident Data -->
+    <div class="section">
+        <h2>🚨 Incident Details</h2>
+        <div class="metadata-item">
+            <span class="metadata-label">Report ID:</span>
+            <span class="metadata-value">{{ report_id }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Severity Level:</span>
+            <span class="metadata-value">
+                {{ severity }}
+                {% if severity is number %}
+                <span class="badge {% if severity >= 8 %}sev-red{% elif severity >= 5 %}sev-orange{% elif severity >= 3 %}sev-yellow{% else %}sev-green{% endif %}">
                     SEV-{{ severity }}
                 </span>
-            {% endif %}
-        </p>
+                {% endif %}
+            </span>
+        </div>
+        {% if hazards %}
+        <div class="metadata-item">
+            <span class="metadata-label">Identified Hazards:</span>
+            <span class="metadata-value">{{ hazards }}</span>
+        </div>
+        {% endif %}
         {% if notes %}
-        <p><span class="label">Notes:</span> {{ notes }}</p>
+        <div class="metadata-item">
+            <span class="metadata-label">Situation Notes:</span>
+            <span class="metadata-value">{{ notes }}</span>
+        </div>
         {% endif %}
     </div>
 
-    {% if image_url %}
-    <div class="section">
-        <img class="image" src="{{ image_url }}" alt="Hazard Image">
+    <!-- AI Analysis Section -->
+    {% if ai_analysis %}
+    <div class="ai-analysis">
+        <h3>🧠 AI Analysis Results</h3>
+        <div class="ai-metrics">
+            <div class="ai-metric">
+                <div class="metric-value">{{ ai_analysis.severity_score }}</div>
+                <div class="metric-label">AI Severity</div>
+            </div>
+            <div class="ai-metric">
+                <div class="metric-value">{{ (ai_analysis.confidence * 100)|round }}%</div>
+                <div class="metric-label">Confidence</div>
+            </div>
+            <div class="ai-metric">
+                <div class="metric-value">{{ ai_analysis.processing_time|round }}ms</div>
+                <div class="metric-label">Processing</div>
+            </div>
+        </div>
+        
+        {% if ai_analysis.recommendations %}
+        <div class="recommendations">
+            <strong>💡 AI Recommendations:</strong>
+            {% for rec in ai_analysis.recommendations %}
+            <div class="recommendation">
+                <strong>{{ rec.priority|upper }}:</strong> {{ rec.action }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 
-    {% if checklist %}
+    <!-- Image Evidence -->
+    {% if image_data and image_data.url %}
     <div class="section">
-        <p><span class="label">Checklist:</span></p>
-        <ul>
-            {% for task in checklist %}
-                <li>
-                    {% if task.completed %}
-                        ✅
-                    {% else %}
-                        ☐
-                    {% endif %}
-                    {{ task.item }}
-                    {% if task.assigned_to and task.assigned_to != 'Unassigned' %}
-                        — <em>Assigned to: {{ task.assigned_to }}</em>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
+        <h2>📷 Visual Evidence</h2>
+        <img class="image" src="{{ image_data.url }}" alt="Incident Documentation" />
+        {% if image_data.size %}
+        <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+            Image size: {{ image_data.size }} | Type: {{ image_data.type }}
+            {% if image_data.modified %} | Modified: {{ image_data.modified }}{% endif %}
+        </p>
+        {% endif %}
     </div>
     {% endif %}
+
+    <!-- Response Checklist -->
+    {% if checklist %}
+    <div class="section">
+        <h2>✅ Response Checklist</h2>
+        <div class="checklist">
+            {% for item in checklist %}
+            <div class="checklist-item">
+                <span class="checkbox">{% if item.completed %}✅{% else %}☐{% endif %}</span>
+                <span class="task">{{ item.item }}</span>
+                {% if item.assigned_to and item.assigned_to != 'Unassigned' %}
+                <span class="assigned">→ {{ item.assigned_to }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Report Footer -->
+    <div class="footer">
+        <div class="footer-grid">
+            <div>
+                <strong>Report Generation Details:</strong><br>
+                Generated: {{ generated_local }}<br>
+                System: {{ generated_by }}<br>
+                Version: {{ report_version }}
+            </div>
+            <div>
+                <strong>Emergency Contact:</strong><br>
+                System ID: {{ pdf_metadata.emergency_id }}<br>
+                Priority: <span class="priority-{{ response_urgency }}">{{ response_urgency|upper }}</span><br>
+                GPS Source: {{ gps_source }}
+            </div>
+        </div>
+        
+        <div style="margin-top: 15px; text-align: center; padding-top: 10px; border-top: 1px solid #e5e7eb;">
+            <strong>⚠️ CONFIDENTIAL EMERGENCY DOCUMENT ⚠️</strong><br>
+            This report contains sensitive emergency response information. Handle according to your organization's security protocols.
+        </div>
+    </div>
 </body>
 </html>

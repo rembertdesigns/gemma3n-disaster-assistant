@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -306,6 +306,209 @@
       background: rgba(255, 255, 255, 0.8);
       transition: width 0.5s ease;
     }
+
+    /* GPS Enhancement Styles */
+    .gps-status-panel {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      animation: slideIn 0.3s ease;
+    }
+
+    .gps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-weight: bold;
+    }
+
+    .gps-indicator {
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.2);
+      animation: pulse 2s infinite;
+    }
+
+    .gps-indicator.locating {
+      background: #f59e0b;
+      animation: blink 1s infinite;
+    }
+
+    .gps-indicator.accurate {
+      background: #10b981;
+      animation: none;
+    }
+
+    .gps-indicator.low-accuracy {
+      background: #f97316;
+      animation: none;
+    }
+
+    .gps-indicator.error {
+      background: #ef4444;
+      animation: blink 1s infinite;
+    }
+
+    .gps-indicator.manual {
+      background: #6b7280;
+      animation: none;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    .gps-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .gps-metric {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.5rem;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .gps-label {
+      display: block;
+      font-size: 0.75rem;
+      opacity: 0.8;
+      margin-bottom: 0.25rem;
+    }
+
+    .gps-value {
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+
+    .gps-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .gps-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 120px;
+    }
+
+    .gps-btn.primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .gps-btn.secondary {
+      background: #10b981;
+      color: white;
+    }
+
+    .gps-btn.tertiary {
+      background: #6b7280;
+      color: white;
+    }
+
+    .gps-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .gps-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .location-suggestions {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      max-height: 150px;
+      overflow-y: auto;
+      position: absolute;
+      width: calc(100% - 2rem);
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .location-suggestion {
+      padding: 0.75rem;
+      cursor: pointer;
+      border-bottom: 1px solid #f3f4f6;
+      transition: background 0.2s ease;
+    }
+
+    .location-suggestion:hover {
+      background: #f9fafb;
+    }
+
+    .location-suggestion:last-child {
+      border-bottom: none;
+    }
+
+    .copy-btn {
+      margin-left: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      background: #6b7280;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .copy-btn:hover {
+      background: #4b5563;
+    }
+
+    .gps-accuracy-display {
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .accuracy-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .accuracy-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #f97316, #10b981);
+      transition: width 0.5s ease;
+      border-radius: 4px;
+    }
+
+    .accuracy-text {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
     
     @media (max-width: 768px) {
       .ai-metrics {
@@ -315,6 +518,19 @@
       .severity-controls {
         flex-direction: column;
         align-items: stretch;
+      }
+
+      .gps-details {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+      
+      .gps-controls {
+        flex-direction: column;
+      }
+      
+      .gps-btn {
+        min-width: auto;
       }
     }
   </style>
@@ -373,19 +589,71 @@
       </div>
     </div>
 
+    <!-- Enhanced GPS Incident Details Section -->
     <details open>
-      <summary>📍 Incident Details</summary>
-      <button onclick="autofillGPS()">📍 Auto-Fill Location</button>
+      <summary>📍 Incident Details & GPS</summary>
+      
+      <!-- GPS Status Panel -->
+      <div class="gps-status-panel" id="gpsStatusPanel">
+        <div class="gps-header">
+          <span>📡 GPS Status</span>
+          <span class="gps-indicator" id="gpsIndicator">🔍 Locating...</span>
+        </div>
+        <div class="gps-details" id="gpsDetails">
+          <div class="gps-metric">
+            <span class="gps-label">Accuracy:</span>
+            <span class="gps-value" id="gpsAccuracy">--</span>
+          </div>
+          <div class="gps-metric">
+            <span class="gps-label">Last Update:</span>
+            <span class="gps-value" id="gpsTimestamp">--</span>
+          </div>
+          <div class="gps-metric">
+            <span class="gps-label">Source:</span>
+            <span class="gps-value" id="gpsSource">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced GPS Controls -->
+      <div class="gps-controls">
+        <button onclick="captureHighAccuracyGPS()" class="gps-btn primary">
+          📍 High-Accuracy GPS
+        </button>
+        <button onclick="captureQuickGPS()" class="gps-btn secondary">
+          ⚡ Quick GPS
+        </button>
+        <button onclick="useManualLocation()" class="gps-btn tertiary">
+          ✏️ Manual Entry
+        </button>
+      </div>
+
       <label>Location:
-        <input type="text" id="location" />
+        <input type="text" id="location" placeholder="Auto-detected or manual entry..." />
+        <div class="location-suggestions" id="locationSuggestions" style="display: none;"></div>
       </label>
+
       <label>Coordinates (lat,lng):
-        <input type="text" id="coordinates" placeholder="30.2672,-97.7431" />
+        <input type="text" id="coordinates" placeholder="30.2672,-97.7431" readonly />
+        <button type="button" onclick="copyCoordinates()" class="copy-btn">📋 Copy</button>
       </label>
+
+      <!-- GPS Accuracy Visualization -->
+      <div class="gps-accuracy-display" id="gpsAccuracyDisplay" style="display: none;">
+        <div class="accuracy-bar">
+          <div class="accuracy-fill" id="accuracyFill"></div>
+        </div>
+        <div class="accuracy-text">
+          <span id="accuracyDescription">Determining accuracy...</span>
+        </div>
+      </div>
+
       <div id="map"></div>
+      
       <label>Hazards:
         <input type="text" id="hazards" />
       </label>
+      
       <label>Severity:
         <div class="severity-controls">
           <input type="number" id="severity" min="1" max="10" style="flex: 1;" />
@@ -399,6 +667,7 @@
           <span>AI calculating severity...</span>
         </div>
       </label>
+      
       <label>Notes:
         <textarea id="notes" rows="3"></textarea>
         <div class="processing-indicator" id="notesProcessing">
@@ -462,9 +731,336 @@
     let analysisTimeout = null;
     let currentAIAnalysis = null;
 
+    // GPS Enhancement Variables
+    let currentPosition = null;
+    let gpsWatchId = null;
+    let gpsAccuracyThreshold = 50; // meters
+    let lastGpsUpdate = null;
+
     // Edge AI Integration
     let aiImageAnalysis = null;
     let aiTextAnalysis = null;
+
+    // GPS capture functions
+    async function captureHighAccuracyGPS() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '📍 Acquiring...';
+      
+      updateGpsStatus('locating', 'High-accuracy location...');
+      
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 0
+      };
+      
+      try {
+        const position = await getCurrentPosition(options);
+        await processGpsPosition(position, 'High-Accuracy GPS');
+      } catch (error) {
+        handleGpsError(error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📍 High-Accuracy GPS';
+      }
+    }
+
+    async function captureQuickGPS() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '⚡ Locating...';
+      
+      updateGpsStatus('locating', 'Quick location...');
+      
+      const options = {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      };
+      
+      try {
+        const position = await getCurrentPosition(options);
+        await processGpsPosition(position, 'Quick GPS');
+      } catch (error) {
+        handleGpsError(error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⚡ Quick GPS';
+      }
+    }
+
+    function useManualLocation() {
+      updateGpsStatus('manual', 'Manual entry mode');
+      document.getElementById('location').readOnly = false;
+      document.getElementById('coordinates').readOnly = false;
+      document.getElementById('location').focus();
+    }
+
+    function getCurrentPosition(options) {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation not supported'));
+          return;
+        }
+        
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      });
+    }
+
+    async function processGpsPosition(position, source) {
+      currentPosition = position;
+      lastGpsUpdate = new Date();
+      
+      const { latitude, longitude, accuracy } = position.coords;
+      const timestamp = new Date(position.timestamp);
+      
+      // Update coordinates
+      document.getElementById('coordinates').value = `${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+      
+      // Update map marker
+      if (marker) {
+        marker.setLatLng([latitude, longitude]);
+        map.setView([latitude, longitude], 15);
+      }
+      
+      // Reverse geocode to get address
+      try {
+        const address = await reverseGeocode(latitude, longitude);
+        document.getElementById('location').value = address;
+      } catch (error) {
+        document.getElementById('location').value = `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`;
+      }
+      
+      // Update GPS status
+      updateGpsDetails(accuracy, timestamp, source);
+      updateAccuracyDisplay(accuracy);
+      
+      // Update AI context with location
+      if (aiAssistEnabled && window.EdgeAI?.isLoaded) {
+        updateAISeverityWithLocation({
+          latitude,
+          longitude,
+          accuracy,
+          timestamp: timestamp.toISOString()
+        });
+      }
+      
+      renderPreview();
+    }
+
+    async function reverseGeocode(lat, lng) {
+      try {
+        // Use a free geocoding service
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              'User-Agent': 'DisasterResponseApp/1.0'
+            }
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        }
+      } catch (error) {
+        console.warn('Reverse geocoding failed:', error);
+      }
+      
+      return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+
+    function updateGpsStatus(status, message) {
+      const indicator = document.getElementById('gpsIndicator');
+      indicator.className = `gps-indicator ${status}`;
+      indicator.textContent = message;
+    }
+
+    function updateGpsDetails(accuracy, timestamp, source) {
+      document.getElementById('gpsAccuracy').textContent = `±${Math.round(accuracy)}m`;
+      document.getElementById('gpsTimestamp').textContent = timestamp.toLocaleTimeString();
+      document.getElementById('gpsSource').textContent = source;
+      
+      // Update status based on accuracy
+      if (accuracy <= 10) {
+        updateGpsStatus('accurate', '🎯 Excellent');
+      } else if (accuracy <= 50) {
+        updateGpsStatus('accurate', '✅ Good');
+      } else {
+        updateGpsStatus('low-accuracy', '⚠️ Low Accuracy');
+      }
+    }
+
+    function updateAccuracyDisplay(accuracy) {
+      const display = document.getElementById('gpsAccuracyDisplay');
+      const fill = document.getElementById('accuracyFill');
+      const description = document.getElementById('accuracyDescription');
+      
+      display.style.display = 'block';
+      
+      // Calculate accuracy percentage (inverse - better accuracy = higher percentage)
+      const maxAccuracy = 100; // meters
+      const accuracyPercent = Math.max(0, Math.min(100, ((maxAccuracy - accuracy) / maxAccuracy) * 100));
+      
+      fill.style.width = `${accuracyPercent}%`;
+      
+      if (accuracy <= 5) {
+        description.textContent = `Excellent GPS accuracy (±${Math.round(accuracy)}m) - Perfect for emergency response`;
+      } else if (accuracy <= 15) {
+        description.textContent = `Good GPS accuracy (±${Math.round(accuracy)}m) - Suitable for field operations`;
+      } else if (accuracy <= 50) {
+        description.textContent = `Moderate GPS accuracy (±${Math.round(accuracy)}m) - Consider high-accuracy mode`;
+      } else {
+        description.textContent = `Low GPS accuracy (±${Math.round(accuracy)}m) - Try high-accuracy GPS or manual entry`;
+      }
+    }
+
+    function copyCoordinates() {
+      const coords = document.getElementById('coordinates').value;
+      if (coords) {
+        navigator.clipboard.writeText(coords).then(() => {
+          showToast('📋 Coordinates copied to clipboard!');
+        }).catch(() => {
+          // Fallback for older browsers
+          const input = document.getElementById('coordinates');
+          input.select();
+          document.execCommand('copy');
+          showToast('📋 Coordinates copied!');
+        });
+      }
+    }
+
+    function handleGpsError(error) {
+      console.error('GPS Error:', error);
+      
+      let message = 'GPS unavailable';
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          message = '❌ Location access denied';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          message = '❌ GPS unavailable';
+          break;
+        case error.TIMEOUT:
+          message = '⏱️ GPS timeout';
+          break;
+      }
+      
+      updateGpsStatus('error', message);
+      
+      // Offer manual entry
+      setTimeout(() => {
+        if (confirm('GPS failed. Would you like to enter location manually?')) {
+          useManualLocation();
+        }
+      }, 1000);
+    }
+
+    // Enhanced AI severity calculation with location context
+    async function updateAISeverityWithLocation(gpsData) {
+      if (!aiAssistEnabled || !window.EdgeAI?.isLoaded) return;
+
+      const reportData = {
+        text: document.getElementById('notes').value,
+        image: currentImageBlob,
+        context: {
+          location: document.getElementById('location').value,
+          coordinates: [gpsData.latitude, gpsData.longitude],
+          gpsAccuracy: gpsData.accuracy,
+          timestamp: gpsData.timestamp,
+          hazards: document.getElementById('hazards').value,
+          timeOfDay: new Date().getHours() > 18 || new Date().getHours() < 6 ? 'night' : 'day',
+          // Add location-based risk factors
+          locationRisk: calculateLocationRisk(gpsData.latitude, gpsData.longitude)
+        }
+      };
+
+      try {
+        const analysis = await window.EdgeAI.processReportRealTime(reportData);
+        
+        // Update severity with location-adjusted calculation
+        if (analysis.severity && analysis.severity.overall) {
+          const locationAdjustedSeverity = adjustSeverityForLocation(
+            analysis.severity.overall, 
+            reportData.context
+          );
+          
+          document.getElementById('severity').value = locationAdjustedSeverity.toFixed(1);
+          updateSeverityBadge();
+        }
+        
+        displayAIAnalysis(analysis, analysis.processingTime || 0);
+      } catch (error) {
+        console.error('❌ AI analysis with location failed:', error);
+      }
+    }
+
+    function calculateLocationRisk(lat, lng) {
+      // Placeholder for location-based risk assessment
+      // In production, this could check against:
+      // - Known hazard zones
+      // - Historical disaster data
+      // - Infrastructure density
+      // - Proximity to hospitals/fire stations
+      
+      return 'normal'; // normal, elevated, high
+    }
+
+    function adjustSeverityForLocation(baseSeverity, context) {
+      let adjustedSeverity = baseSeverity;
+      
+      // Night time increases severity slightly
+      if (context.timeOfDay === 'night') {
+        adjustedSeverity += 0.5;
+      }
+      
+      // Poor GPS accuracy might indicate remote location
+      if (context.gpsAccuracy > 100) {
+        adjustedSeverity += 0.3; // Remote areas are harder to reach
+      }
+      
+      // Location risk adjustment
+      if (context.locationRisk === 'high') {
+        adjustedSeverity += 1.0;
+      } else if (context.locationRisk === 'elevated') {
+        adjustedSeverity += 0.5;
+      }
+      
+      return Math.min(10, Math.max(1, adjustedSeverity));
+    }
+
+    function showToast(message, duration = 3000) {
+      // Create or update toast notification
+      let toast = document.getElementById('gpsToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'gpsToast';
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #10b981;
+          color: white;
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          z-index: 10000;
+          animation: slideInRight 0.3s ease;
+        `;
+        document.body.appendChild(toast);
+      }
+      
+      toast.textContent = message;
+      toast.style.display = 'block';
+      
+      setTimeout(() => {
+        if (toast && toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, duration);
+    }
 
     // IndexedDB Management for Images
     async function saveImageBlob(reportId, blob, metadata = {}) {
@@ -868,7 +1464,12 @@
         checklist: checklistData,
         has_offline_image: !!currentImageBlob,
         image_metadata: currentImageMetadata,
-        ai_analysis: currentAIAnalysis // Include AI analysis in report data
+        ai_analysis: currentAIAnalysis, // Include AI analysis in report data
+        gps_data: currentPosition ? {
+          accuracy: currentPosition.coords.accuracy,
+          timestamp: lastGpsUpdate?.toISOString(),
+          source: document.getElementById('gpsSource').textContent
+        } : null
       };
     }
 
@@ -990,24 +1591,9 @@
       }
     }
 
+    // Legacy GPS function for compatibility
     async function autofillGPS() {
-      if (!navigator.geolocation) {
-        alert("Geolocation not supported.");
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude.toFixed(5);
-        const lng = pos.coords.longitude.toFixed(5);
-        document.getElementById("coordinates").value = `${lat},${lng}`;
-        document.getElementById("location").value = `Lat: ${lat}, Lng: ${lng}`;
-        marker.setLatLng([lat, lng]);
-        map.setView([lat, lng], 13);
-        renderPreview();
-      }, err => {
-        alert("Failed to get GPS location.");
-        console.error(err);
-      });
+      await captureQuickGPS();
     }
 
     // Event Listeners
@@ -1044,6 +1630,19 @@
     // Severity manual change handler
     document.getElementById('severity').addEventListener('input', () => {
       updateSeverityBadge();
+    });
+
+    // Auto-capture GPS on page load
+    window.addEventListener('load', () => {
+      // Try quick GPS capture automatically
+      setTimeout(() => {
+        if (navigator.geolocation) {
+          captureQuickGPS();
+        } else {
+          updateGpsStatus('error', '❌ GPS not supported');
+          useManualLocation();
+        }
+      }, 1000);
     });
 
     // Initialize on load
