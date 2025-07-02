@@ -14,14 +14,20 @@
       color: #333;
     }
     .controls {
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
     label {
       margin-right: 0.5rem;
     }
-    select {
+    select, input {
       margin-right: 1rem;
-      padding: 4px;
+      padding: 4px 6px;
+    }
+    #report-count {
+      margin-top: -10px;
+      margin-bottom: 1rem;
+      font-style: italic;
+      color: #666;
     }
     .report-card {
       background: #fff;
@@ -29,7 +35,10 @@
       margin-bottom: 1rem;
       padding: 1rem;
       border-radius: 6px;
-      transition: all 0.2s ease;
+      transition: transform 0.2s ease;
+    }
+    .report-card:hover {
+      transform: scale(1.01);
     }
     .badge {
       font-weight: bold;
@@ -43,6 +52,10 @@
     .badge.Low { background: #52c41a; color: white; }
     .badge.Urgent { background: #f5222d; color: white; }
     .badge.Helpless { background: #722ed1; color: white; }
+    mark {
+      background-color: yellow;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -72,12 +85,20 @@
       <option value="desc">Newest First</option>
       <option value="asc">Oldest First</option>
     </select>
+
+    <label for="keyword-search">Search:</label>
+    <input type="text" id="keyword-search" placeholder="e.g. shelter, fire, flood">
   </div>
+
+  <p id="report-count"></p>
 
   <div id="reports-container">
     {% for report in reports %}
-      <div class="report-card" data-tone="{{ report.tone }}" data-escalation="{{ report.escalation }}">
-        <p><strong>{{ report.message }}</strong></p>
+      <div class="report-card"
+           data-tone="{{ report.tone }}"
+           data-escalation="{{ report.escalation }}"
+           data-message="{{ report.message | lower }}">
+        <p><strong class="message-text">{{ report.message }}</strong></p>
         <p>User: <em>{{ report.user }}</em></p>
         <p>🕒 {{ report.timestamp }}</p>
         <p>
@@ -85,7 +106,9 @@
           <span class="badge {{ report.tone }}">{{ report.tone }}</span>
           Escalation:
           <span class="badge {{ report.escalation }}">
-            {% if report.escalation == "Critical" %} 🚨 {% elif report.escalation == "High" %} ⚠️ {% endif %}
+            {% if report.escalation == "Critical" %} 🚨
+            {% elif report.escalation == "High" %} ⚠️
+            {% endif %}
             {{ report.escalation }}
           </span>
         </p>
@@ -97,44 +120,59 @@
     const toneFilter = document.getElementById("tone-filter");
     const escalationFilter = document.getElementById("escalation-filter");
     const sortOrder = document.getElementById("sort-order");
+    const keywordInput = document.getElementById("keyword-search");
+    const reportCount = document.getElementById("report-count");
     const container = document.getElementById("reports-container");
 
-    function applyFilters() {
+    function highlightText(text, keyword) {
+      if (!keyword) return text;
+      const regex = new RegExp(`(${keyword})`, "gi");
+      return text.replace(regex, "<mark>$1</mark>");
+    }
+
+    function applyFiltersAndSort() {
       const tone = toneFilter.value;
       const escalation = escalationFilter.value;
-      const cards = document.querySelectorAll(".report-card");
-
-      cards.forEach(card => {
-        const matchesTone = !tone || card.dataset.tone === tone;
-        const matchesEscalation = !escalation || card.dataset.escalation === escalation;
-        card.style.display = (matchesTone && matchesEscalation) ? "block" : "none";
-      });
-    }
-
-    function sortReports() {
-      const cards = Array.from(document.querySelectorAll(".report-card"));
+      const keyword = keywordInput.value.toLowerCase();
       const order = sortOrder.value;
 
-      cards.sort((a, b) => {
-        const timeA = new Date(a.querySelector("p:nth-child(3)").textContent.trim().slice(2));
-        const timeB = new Date(b.querySelector("p:nth-child(3)").textContent.trim().slice(2));
-        return order === "asc" ? timeA - timeB : timeB - timeA;
+      const cards = Array.from(container.querySelectorAll(".report-card"));
+
+      // Filter
+      const filtered = cards.filter(card => {
+        const matchesTone = !tone || card.dataset.tone === tone;
+        const matchesEscalation = !escalation || card.dataset.escalation === escalation;
+        const matchesKeyword = !keyword || card.dataset.message.includes(keyword);
+        return matchesTone && matchesEscalation && matchesKeyword;
       });
 
+      // Sort
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.querySelector("p:nth-child(3)").textContent.slice(2));
+        const dateB = new Date(b.querySelector("p:nth-child(3)").textContent.slice(2));
+        return order === "asc" ? dateA - dateB : dateB - dateA;
+      });
+
+      // Clear and re-render
       container.innerHTML = "";
-      cards.forEach(card => container.appendChild(card));
-      applyFilters(); // Reapply filters after sort
+      filtered.forEach(card => {
+        const msgElem = card.querySelector(".message-text");
+        msgElem.innerHTML = highlightText(card.dataset.message, keyword);
+        container.appendChild(card);
+      });
+
+      reportCount.textContent = `${filtered.length} report(s) shown`;
     }
 
-    toneFilter.addEventListener("change", applyFilters);
-    escalationFilter.addEventListener("change", applyFilters);
-    sortOrder.addEventListener("change", sortReports);
+    toneFilter.addEventListener("change", applyFiltersAndSort);
+    escalationFilter.addEventListener("change", applyFiltersAndSort);
+    sortOrder.addEventListener("change", applyFiltersAndSort);
+    keywordInput.addEventListener("input", applyFiltersAndSort);
 
-    // Initial sort on load
-    sortReports();
+    window.addEventListener("DOMContentLoaded", applyFiltersAndSort);
 
-    // 🔄 Auto-refresh every 15s
-    setInterval(() => window.location.reload(), 15000);
+    // Optional auto-refresh (disabled by default)
+    // setInterval(applyFiltersAndSort, 15000);
   </script>
 </body>
 </html>

@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, HTTPException, Body
+from fastapi import (
+    FastAPI, Request, Form, UploadFile, File, Depends, HTTPException,
+    Body, Query
+)
 from fastapi.responses import (
     HTMLResponse, FileResponse, JSONResponse, RedirectResponse,
     StreamingResponse, Response
@@ -6,6 +9,20 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
+
+from typing import Optional
+from datetime import datetime
+from pathlib import Path
+import shutil
+import os
+import uuid
+import json
+import zipfile
+import io
+import base64
+import logging
+
+from weasyprint import HTML as WeasyHTML
 
 from app.predictive_engine import calculate_risk_score
 from app.broadcast_utils import start_broadcast, discover_nearby_broadcasts
@@ -19,7 +36,12 @@ from app.report_utils import (
     generate_map_preview_data,
     generate_static_map_endpoint
 )
-from app.auth import authenticate_user, create_access_token, get_current_user, require_role
+from app.auth import (
+    authenticate_user,
+    create_access_token,
+    get_current_user,
+    require_role
+)
 from app.db import (
     get_db_connection,
     save_report_metadata,
@@ -35,18 +57,6 @@ from app.map_utils import (
     get_map_metadata,
     MapConfig
 )
-
-from weasyprint import HTML as WeasyHTML
-from datetime import datetime
-from pathlib import Path
-import shutil
-import os
-import uuid
-import json
-import zipfile
-import io
-import base64
-import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -130,6 +140,44 @@ async def view_reports(request: Request):
         "reports": reports
     })
 
+@app.get("/api/reports", response_class=JSONResponse)
+async def filtered_reports(
+    tone: Optional[str] = Query(None),
+    escalation: Optional[str] = Query(None),
+    keyword: Optional[str] = Query(None)
+):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM reports WHERE 1=1"
+    params = []
+
+    if tone:
+        query += " AND tone = ?"
+        params.append(tone)
+
+    if escalation:
+        query += " AND escalation = ?"
+        params.append(escalation)
+
+    if keyword:
+        query += " AND message LIKE ?"
+        params.append(f"%{keyword}%")
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    reports = [{
+        "id": row["id"],
+        "message": row["message"],
+        "tone": row["tone"],
+        "escalation": row["escalation"],
+        "timestamp": row["timestamp"],
+        "user": row["user"]
+    } for row in rows]
+
+    return JSONResponse(content={"reports": reports})
 # ================================
 # EXISTING ADMIN ROUTES (unchanged)
 # ================================
