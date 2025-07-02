@@ -23,11 +23,13 @@ def init_db():
             user TEXT,
             status TEXT,
             image_url TEXT,
-            checklist TEXT
+            checklist TEXT,
+            latitude REAL,          -- ✅ New
+            longitude REAL          -- ✅ New
         )
     """)
 
-    # NEW: Crowd reports table
+    # Crowd reports table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS crowd_reports (
             id TEXT PRIMARY KEY,
@@ -44,12 +46,28 @@ def init_db():
     conn.commit()
     conn.close()
 
+def run_migrations():
+    """Safely add latitude/longitude columns if they don't exist"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("ALTER TABLE reports ADD COLUMN latitude REAL;")
+        cursor.execute("ALTER TABLE reports ADD COLUMN longitude REAL;")
+        conn.commit()
+        print("✅ Added latitude and longitude columns to reports table.")
+    except Exception as e:
+        print(f"⚠️ Skipping migration (maybe already applied): {e}")
+    conn.close()
+
 def save_report_metadata(report_data: dict):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO reports (id, timestamp, location, severity, filename, user, status, image_url, checklist)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO reports (
+            id, timestamp, location, severity, filename,
+            user, status, image_url, checklist, latitude, longitude
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         report_data["id"],
         report_data["timestamp"],
@@ -59,7 +77,9 @@ def save_report_metadata(report_data: dict):
         report_data["user"],
         report_data["status"],
         report_data.get("image_url"),
-        ",".join(report_data.get("checklist", []))
+        ",".join(report_data.get("checklist", [])),
+        report_data.get("latitude"),     # ✅
+        report_data.get("longitude")     # ✅
     ))
     conn.commit()
     conn.close()

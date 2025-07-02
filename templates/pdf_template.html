@@ -7,14 +7,32 @@
     body { font-family: sans-serif; padding: 2rem; }
     h1 { color: #dc2626; }
     .report { margin-top: 2rem; }
+    img.map {
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 600px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
   <h1>Emergency Field Report</h1>
   <p>Date: {{ now().strftime('%Y-%m-%d %H:%M') }}</p>
+
+  {% if location %}
+    <p><strong>Location:</strong> {{ location }}</p>
+  {% endif %}
+
   <div class="report">
     <h2>Reported Situation:</h2>
     <p>{{ report_text }}</p>
   </div>
+
+  {% if map_image %}
+    <div class="map-section">
+      <h2>📍 Incident Location Map</h2>
+      <img src="data:image/png;base64,{{ map_image }}" class="map" alt="Static Map of Incident Location">
+    </div>
+  {% endif %}
 </body>
 </html>

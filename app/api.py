@@ -50,7 +50,8 @@ from app.db import (
     save_report_metadata,
     get_all_reports,
     get_report_by_id,
-    get_dashboard_stats
+    get_dashboard_stats, 
+    run_migrations
 )
 
 # Map-related tools
@@ -96,7 +97,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ================================
-# EXISTING AUTH ROUTES (unchanged)
+# EXISTING AUTH ROUTES
 # ================================
 
 @app.post("/login")
@@ -113,7 +114,7 @@ async def read_current_user(user: dict = Depends(get_current_user)):
     return {"username": user["username"], "role": user["role"]}
 
 # ================================
-# EXISTING PAGE ROUTES (unchanged)
+# EXISTING PAGE ROUTES
 # ================================
 
 @app.get("/", response_class=HTMLResponse)
@@ -148,6 +149,23 @@ async def view_reports(request: Request):
         "request": request,
         "reports": reports
     })
+
+@app.get("/submit-crowd-report", response_class=HTMLResponse)
+async def submit_crowd_report_form(request: Request):
+    return templates.TemplateResponse("submit-crowd-report.html", {"request": request})
+
+@app.get("/map-reports", response_class=HTMLResponse)
+async def map_reports_page(request: Request):
+    return templates.TemplateResponse("map_reports.html", {"request": request})
+
+@app.get("/crowd-reports", response_class=HTMLResponse)
+async def view_crowd_reports(request: Request, db: Session = Depends(get_db)):
+    reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).all()
+    return templates.TemplateResponse("crowd_reports.html", {"request": request, "reports": reports})
+
+# ================================
+# CROWD REPORTS API ROUTES
+# ================================
 
 @app.get("/api/reports", response_class=JSONResponse)
 async def filtered_reports(
@@ -187,10 +205,6 @@ async def filtered_reports(
     } for row in rows]
 
     return JSONResponse(content={"reports": reports})
-
-@app.get("/submit-crowd-report", response_class=HTMLResponse)
-async def submit_crowd_report_form(request: Request):
-    return templates.TemplateResponse("submit-crowd-report.html", {"request": request})
 
 @app.post("/api/submit-crowd-report")
 async def submit_crowd_report(
@@ -235,13 +249,32 @@ async def submit_crowd_report(
 
     return RedirectResponse(url="/view-reports", status_code=303)
 
-@app.get("/crowd-reports", response_class=HTMLResponse)
-async def view_crowd_reports(request: Request, db: Session = Depends(get_db)):
-    reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).all()
-    return templates.TemplateResponse("crowd_reports.html", {"request": request, "reports": reports})
+@app.get("/api/crowd-report-locations", response_class=JSONResponse)
+async def crowd_report_locations():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, message, user, timestamp, tone, escalation, location, latitude, longitude
+        FROM crowd_reports
+        WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    reports = [{
+        "id": row["id"],
+        "message": row["message"],
+        "user": row["user"],
+        "timestamp": row["timestamp"],
+        "tone": row["tone"],
+        "escalation": row["escalation"],
+        "location": row["location"],
+        "latitude": float(row["latitude"]),
+        "longitude": float(row["longitude"]),
+    } for row in rows]
+    return JSONResponse(content={"reports": reports})
 
 # ================================
-# EXISTING ADMIN ROUTES (unchanged)
+# EXISTING ADMIN ROUTES
 # ================================
 
 @app.get("/admin", response_class=HTMLResponse)
@@ -575,7 +608,7 @@ async def api_map_metadata(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ================================
-# EXISTING ANALYSIS & REPORTING ROUTES (unchanged)
+# EXISTING ANALYSIS & REPORTING ROUTES
 # ================================
 
 @app.post("/analyze", response_class=HTMLResponse)
@@ -711,7 +744,7 @@ async def generate_report(
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
 # ================================
-# EXISTING HAZARD DETECTION (unchanged)
+# EXISTING HAZARD DETECTION
 # ================================
 
 @app.post("/detect-hazards")
@@ -853,6 +886,10 @@ async def startup_event():
         if map_utils.api_keys[service]
     ]
     logger.info(f"🔑 Available map services: {available_services or ['OpenStreetMap (free)']}")
+    
+    # ✅ Run DB migrations
+    run_migrations()
+
     logger.info("✅ API server ready with enhanced map capabilities")
 
 # ================================

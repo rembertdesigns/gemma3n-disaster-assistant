@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Crowd Report Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 90vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">🗺️ Live Crowd Reports Map</h2>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([20, 0], 2);  // Global default view
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Fetch reports from API
+    fetch('/api/crowd-report-locations')
+      .then(response => response.json())
+      .then(data => {
+        data.reports.forEach(report => {
+          if (report.latitude && report.longitude) {
+            const marker = L.marker([report.latitude, report.longitude]).addTo(map);
+            marker.bindPopup(`
+              <strong>${report.user || 'Anonymous'}</strong><br/>
+              <em>${report.timestamp}</em><br/>
+              <p>${report.message}</p>
+              <small><b>Tone:</b> ${report.tone || 'N/A'} | <b>Escalation:</b> ${report.escalation}</small>
+            `);
+          }
+        });
+      });
+  </script>
+</body>
+</html>
