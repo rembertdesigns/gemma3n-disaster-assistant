@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="text-xl font-bold mb-4">✏️ Edit Patient - {{ patient.name }}</h2>
+
+<form method="post" action="/patients/{{ patient.id }}/update" class="space-y-4">
+
+  <div>
+    <label class="block">Name</label>
+    <input type="text" name="name" value="{{ patient.name }}" class="w-full p-2 border rounded">
+  </div>
+
+  <div>
+    <label class="block">Age</label>
+    <input type="number" name="age" value="{{ patient.age }}" class="w-full p-2 border rounded">
+  </div>
+
+  <div>
+    <label class="block">Injury Type</label>
+    <input type="text" name="injury_type" value="{{ patient.injury_type }}" class="w-full p-2 border rounded">
+  </div>
+
+  <div>
+    <label class="block">Severity</label>
+    <select name="severity" class="w-full p-2 border rounded">
+      <option value="Critical" {% if patient.severity == "Critical" %}selected{% endif %}>Critical</option>
+      <option value="Moderate" {% if patient.severity == "Moderate" %}selected{% endif %}>Moderate</option>
+      <option value="Stable" {% if patient.severity == "Stable" %}selected{% endif %}>Stable</option>
+    </select>
+  </div>
+
+  <div>
+    <label class="block">Vitals</label>
+    <input type="text" name="vitals" value="{{ patient.vitals }}" class="w-full p-2 border rounded">
+  </div>
+
+  <div>
+    <label class="block">Notes</label>
+    <textarea name="notes" class="w-full p-2 border rounded">{{ patient.notes }}</textarea>
+  </div>
+
+  <div>
+    <label class="block">Triage Color</label>
+    <input type="text" name="triage_color" value="{{ patient.triage_color }}" class="w-full p-2 border rounded">
+  </div>
+
+  <div>
+    <label class="block">Status</label>
+    <select name="status" class="w-full p-2 border rounded">
+      <option value="Under Observation" {% if patient.status == "Under Observation" %}selected{% endif %}>Under Observation</option>
+      <option value="Discharged" {% if patient.status == "Discharged" %}selected{% endif %}>Discharged</option>
+    </select>
+  </div>
+
+  <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">💾 Save Changes</button>
+</form>
+
+{% endblock %}

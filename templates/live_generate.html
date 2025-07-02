@@ -1,29 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Enhanced Live Report Builder</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   
-  <!-- Add offline recovery system -->
+  <!-- Offline Recovery System -->
   <script src="/static/js/offline-recovery.js"></script>
-  
+  <script src="https://unpkg.com/idb-keyval@6/dist/idb-keyval-iife.min.js"></script>
+
   <style>
-    body {
-      margin: 0;
+    /* Template-specific styles */
+    .main-content {
       display: flex;
-      height: 100vh;
-      font-family: sans-serif;
+      gap: 2rem;
+      margin-top: 2rem;
     }
+
     .editor, .preview {
       flex: 1;
-      padding: 1rem;
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       overflow-y: auto;
+      max-height: calc(100vh - 200px);
     }
-    .editor { border-right: 1px solid #ccc; }
-    
+
+    .editor {
+      border-right: 1px solid #e5e7eb;
+    }
+
     /* Enhanced Map Container */
     #mapContainer {
       position: relative;
@@ -323,75 +334,116 @@
       border-bottom: none;
     }
     
-    /* Existing styles from original file */
+    /* Form styling consistent with base template */
     details {
-      border: 1px solid #aaa;
-      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
       margin-bottom: 1rem;
       padding: 0.5rem;
-      background-color: #f9f9f9;
+      background-color: #f9fafb;
     }
+    
     summary {
       font-weight: bold;
       cursor: pointer;
       padding: 0.5rem;
-      background-color: #eee;
-      border-radius: 4px;
+      background-color: #f3f4f6;
+      border-radius: 6px;
       user-select: none;
     }
+    
     input, textarea, select {
       width: 100%;
       margin-top: 0.5rem;
       margin-bottom: 1rem;
-      padding: 0.5rem;
+      padding: 0.75rem;
       font-size: 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      transition: border-color 0.2s ease;
     }
-    label { display: block; margin-bottom: 0.5rem; }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    label { 
+      display: block; 
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: #374151;
+    }
+    
     button {
       margin-top: 0.5rem;
-      padding: 0.5rem 1rem;
+      padding: 0.75rem 1.5rem;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
+    
+    button:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+    
     pre {
-      background: #f0f0f0;
+      background: #f8fafc;
       padding: 1rem;
       overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
     }
+    
     .severity-badge {
       display: inline-block;
       padding: 0.25rem 0.75rem;
-      border-radius: 8px;
+      border-radius: 12px;
       color: white;
       font-weight: bold;
       margin-left: 0.5rem;
     }
-    .sev-green { background-color: green; }
-    .sev-yellow { background-color: gold; color: black; }
-    .sev-orange { background-color: orange; }
-    .sev-red { background-color: red; }
+    
+    .sev-green { background-color: #16a34a; }
+    .sev-yellow { background-color: #eab308; color: black; }
+    .sev-orange { background-color: #ea580c; }
+    .sev-red { background-color: #dc2626; }
+    
     .checklist-item {
       display: flex;
       gap: 0.5rem;
       align-items: center;
-      border: 1px solid #ccc;
-      padding: 0.25rem;
-      border-radius: 5px;
+      border: 1px solid #d1d5db;
+      padding: 0.5rem;
+      border-radius: 6px;
       background: #fff;
+      margin-bottom: 0.5rem;
     }
+    
     .checklist-label { flex: 1; }
+    
     #imagePreview {
       max-width: 100%;
       max-height: 200px;
       margin-top: 0.5rem;
-      border: 1px solid #ccc;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
     }
+    
     #syncStatus {
-      background: #222;
+      background: #1f2937;
       color: white;
-      padding: 0.5rem;
+      padding: 0.75rem;
       text-align: center;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-weight: 500;
     }
     
     @keyframes slideIn {
@@ -400,9 +452,8 @@
     }
     
     @media (max-width: 768px) {
-      body {
+      .main-content {
         flex-direction: column;
-        height: auto;
       }
       
       .coordinate-formats,
@@ -419,178 +470,279 @@
         height: 300px;
       }
     }
+
+    /* Dark theme support */
+    [data-theme="dark"] .editor,
+    [data-theme="dark"] .preview {
+      background: #1f2937;
+      color: #f9fafb;
+    }
+
+    [data-theme="dark"] details {
+      background-color: #374151;
+      border-color: #4b5563;
+    }
+
+    [data-theme="dark"] summary {
+      background-color: #4b5563;
+    }
+
+    [data-theme="dark"] input,
+    [data-theme="dark"] textarea,
+    [data-theme="dark"] select {
+      background: #374151;
+      border-color: #4b5563;
+      color: #f9fafb;
+    }
+
+    [data-theme="dark"] pre {
+      background: #374151;
+      border-color: #4b5563;
+      color: #f9fafb;
+    }
+
+    [data-theme="dark"] .checklist-item {
+      background: #374151;
+      border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .search-suggestions {
+      background: #374151;
+      border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .search-suggestion:hover {
+      background: #4b5563;
+    }
   </style>
-  <script src="https://unpkg.com/idb-keyval@6/dist/idb-keyval-iife.min.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-  <div id="syncStatus">
-    🔄 Sync Status: <span id="connectionStatus">Checking...</span>
-    <span id="queueStatus" class="offline-indicator" style="display: none;">Queue: 0 reports</span>
-  </div>
-  
-  <div class="editor">
-    <h2>📝 Enhanced Report Builder</h2>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">🗺️</div>
+      <div>
+        <h1 class="title">Enhanced Live Report Builder</h1>
+        <p class="subtitle">AI-Powered Field Reporting with Real-time Maps</p>
+      </div>
+      <div class="controls">
+        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
+        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
+        <div class="status-bar">
+          <div class="status-indicator status-offline">
+            <div class="status-dot"></div>
+            Offline Ready
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
 
-    <div class="sync-queue-info" id="syncInfo">
-      <strong>📊 Sync Queue:</strong> <span id="queueCount">0</span> reports pending
-      <button onclick="forceSyncQueue()" style="margin-left: 1rem; padding: 0.25rem 0.5rem;">🔄 Force Sync</button>
+  <main class="container">
+    <!-- Sync Status Bar -->
+    <div id="syncStatus">
+      🔄 Sync Status: <span id="connectionStatus">Checking...</span>
+      <span id="queueStatus" class="offline-indicator" style="display: none;">Queue: 0 reports</span>
     </div>
 
-    <!-- Enhanced GPS & Location Section -->
-    <details open>
-      <summary>🗺️ Enhanced Location & Mapping</summary>
-      
-      <!-- Location Search with Auto-complete -->
-      <div class="location-search-container">
-        <input type="text" 
-               class="location-search" 
-               id="location" 
-               placeholder="🔍 Search for location or enter manually..."
-               autocomplete="off" />
-        <div class="search-suggestions" id="searchSuggestions"></div>
-      </div>
+    <div class="main-content">
+      <div class="editor">
+        <h2>📝 Enhanced Report Builder</h2>
 
-      <!-- Enhanced GPS Controls -->
-      <div class="gps-controls-enhanced">
-        <button onclick="captureHighAccuracyGPS()" class="gps-btn-enhanced gps-btn-primary">
-          📍 High-Accuracy GPS
-        </button>
-        <button onclick="captureQuickGPS()" class="gps-btn-enhanced gps-btn-secondary">
-          ⚡ Quick GPS
-        </button>
-        <button onclick="useManualLocation()" class="gps-btn-enhanced gps-btn-tertiary">
-          ✏️ Manual Entry
-        </button>
-      </div>
-
-      <!-- Enhanced Interactive Map -->
-      <div id="mapContainer">
-        <div id="map"></div>
-        <div class="map-controls-overlay">
-          <button class="map-control-btn" onclick="toggleMapLayers()" title="Toggle Layers">🗂️</button>
-          <button class="map-control-btn" onclick="measureDistance()" title="Measure Distance">📏</button>
-          <button class="map-control-btn" onclick="addIncidentMarker()" title="Add Incident Marker">📍</button>
-          <button class="map-control-btn" onclick="toggleSatelliteView()" title="Satellite View">🛰️</button>
-          <button class="map-control-btn" onclick="findNearbyResources()" title="Find Resources">🚑</button>
+        <div class="sync-queue-info" id="syncInfo">
+          <strong>📊 Sync Queue:</strong> <span id="queueCount">0</span> reports pending
+          <button onclick="forceSyncQueue()" style="margin-left: 1rem; padding: 0.25rem 0.5rem;">🔄 Force Sync</button>
         </div>
+
+        <!-- Enhanced GPS & Location Section -->
+        <details open>
+          <summary>🗺️ Enhanced Location & Mapping</summary>
+          
+          <!-- Location Search with Auto-complete -->
+          <div class="location-search-container">
+            <input type="text" 
+                   class="location-search" 
+                   id="location" 
+                   placeholder="🔍 Search for location or enter manually..."
+                   autocomplete="off" />
+            <div class="search-suggestions" id="searchSuggestions"></div>
+          </div>
+
+          <!-- Enhanced GPS Controls -->
+          <div class="gps-controls-enhanced">
+            <button onclick="captureHighAccuracyGPS()" class="gps-btn-enhanced gps-btn-primary">
+              📍 High-Accuracy GPS
+            </button>
+            <button onclick="captureQuickGPS()" class="gps-btn-enhanced gps-btn-secondary">
+              ⚡ Quick GPS
+            </button>
+            <button onclick="useManualLocation()" class="gps-btn-enhanced gps-btn-tertiary">
+              ✏️ Manual Entry
+            </button>
+          </div>
+
+          <!-- Enhanced Interactive Map -->
+          <div id="mapContainer">
+            <div id="map"></div>
+            <div class="map-controls-overlay">
+              <button class="map-control-btn" onclick="toggleMapLayers()" title="Toggle Layers">🗂️</button>
+              <button class="map-control-btn" onclick="measureDistance()" title="Measure Distance">📏</button>
+              <button class="map-control-btn" onclick="addIncidentMarker()" title="Add Incident Marker">📍</button>
+              <button class="map-control-btn" onclick="toggleSatelliteView()" title="Satellite View">🛰️</button>
+              <button class="map-control-btn" onclick="findNearbyResources()" title="Find Resources">🚑</button>
+            </div>
+          </div>
+
+          <!-- Coordinate Formats Panel -->
+          <div class="coordinate-panel">
+            <h4>📐 Coordinate Formats</h4>
+            <div class="coordinate-formats">
+              <div class="coordinate-format">
+                <div class="coordinate-label">Decimal Degrees</div>
+                <div class="coordinate-value" id="coordDD" onclick="copyCoordinate('DD')">---.------°, ---.------°</div>
+              </div>
+              <div class="coordinate-format">
+                <div class="coordinate-label">DMS (Degrees Minutes Seconds)</div>
+                <div class="coordinate-value" id="coordDMS" onclick="copyCoordinate('DMS')">--°--'--"N, --°--'--"W</div>
+              </div>
+              <div class="coordinate-format">
+                <div class="coordinate-label">UTM (Universal Transverse Mercator)</div>
+                <div class="coordinate-value" id="coordUTM" onclick="copyCoordinate('UTM')">-- --- -------E -------N</div>
+              </div>
+              <div class="coordinate-format">
+                <div class="coordinate-label">MGRS (Military Grid Reference)</div>
+                <div class="coordinate-value" id="coordMGRS" onclick="copyCoordinate('MGRS')">-- --- ----- -----</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Emergency Resources Panel -->
+          <div class="emergency-panel" id="emergencyPanel">
+            <h4>🚨 Nearby Emergency Resources</h4>
+            <div class="resource-grid" id="resourceGrid">
+              <div class="resource-item">
+                <div class="resource-type">🚑 Hospitals</div>
+                <div class="resource-distance">Searching...</div>
+                <div class="resource-name">--</div>
+              </div>
+              <div class="resource-item">
+                <div class="resource-type">🚒 Fire Stations</div>
+                <div class="resource-distance">Searching...</div>
+                <div class="resource-name">--</div>
+              </div>
+              <div class="resource-item">
+                <div class="resource-type">👮 Police Stations</div>
+                <div class="resource-distance">Searching...</div>
+                <div class="resource-name">--</div>
+              </div>
+              <div class="resource-item">
+                <div class="resource-type">⛑️ Emergency Services</div>
+                <div class="resource-distance">Searching...</div>
+                <div class="resource-name">--</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Map Analysis Panel -->
+          <div class="map-analysis-panel" id="mapAnalysisPanel">
+            <h4>📊 Location Risk Analysis</h4>
+            <div class="analysis-metrics">
+              <div class="analysis-metric">
+                <div class="metric-value" id="populationDensity">--</div>
+                <div class="metric-label">Population Density</div>
+              </div>
+              <div class="analysis-metric">
+                <div class="metric-value" id="riskScore">--</div>
+                <div class="metric-label">Risk Score</div>
+              </div>
+              <div class="analysis-metric">
+                <div class="metric-value" id="responseTime">--</div>
+                <div class="metric-label">Est. Response Time</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hidden coordinate input for compatibility -->
+          <input type="hidden" id="coordinates" />
+          
+          <label>Hazards:
+            <input type="text" id="hazards" />
+          </label>
+          
+          <label>Severity:
+            <input type="number" id="severity" min="1" max="10" />
+            <span id="severityBadge" class="severity-badge"></span>
+          </label>
+          
+          <label>Notes:
+            <textarea id="notes" rows="3"></textarea>
+          </label>
+        </details>
+
+        <details open>
+          <summary>✅ Checklist</summary>
+          <label>Checklist Items (comma separated):
+            <input type="text" id="checklist" />
+          </label>
+          <div id="checklistDisplay"></div>
+        </details>
+
+        <details open>
+          <summary>📸 Hazard Images</summary>
+          <input type="file" id="image_upload" accept="image/*" />
+          <label>Image URL (optional):
+            <input type="text" id="image_url" />
+          </label>
+          <img id="imagePreview" src="" alt="Image preview" style="display: none;" />
+        </details>
+
+        <button onclick="saveAndSyncReport()">💾 Save & Sync Report</button>
+        <button onclick="saveOfflineReport()">📴 Save Offline Only</button>
       </div>
 
-      <!-- Coordinate Formats Panel -->
-      <div class="coordinate-panel">
-        <h4>📐 Coordinate Formats</h4>
-        <div class="coordinate-formats">
-          <div class="coordinate-format">
-            <div class="coordinate-label">Decimal Degrees</div>
-            <div class="coordinate-value" id="coordDD" onclick="copyCoordinate('DD')">---.------°, ---.------°</div>
-          </div>
-          <div class="coordinate-format">
-            <div class="coordinate-label">DMS (Degrees Minutes Seconds)</div>
-            <div class="coordinate-value" id="coordDMS" onclick="copyCoordinate('DMS')">--°--'--"N, --°--'--"W</div>
-          </div>
-          <div class="coordinate-format">
-            <div class="coordinate-label">UTM (Universal Transverse Mercator)</div>
-            <div class="coordinate-value" id="coordUTM" onclick="copyCoordinate('UTM')">-- --- -------E -------N</div>
-          </div>
-          <div class="coordinate-format">
-            <div class="coordinate-label">MGRS (Military Grid Reference)</div>
-            <div class="coordinate-value" id="coordMGRS" onclick="copyCoordinate('MGRS')">-- --- ----- -----</div>
-          </div>
-        </div>
+      <div class="preview">
+        <h2>📄 Live JSON Preview</h2>
+        <pre id="jsonPreview"></pre>
+        <h2>📄 Map Preview</h2>
+        <div id="mapPreview" style="height: 300px; border: 1px solid #ccc; margin-bottom: 1rem; border-radius: 8px;"></div>
       </div>
+    </div>
+  </main>
 
-      <!-- Emergency Resources Panel -->
-      <div class="emergency-panel" id="emergencyPanel">
-        <h4>🚨 Nearby Emergency Resources</h4>
-        <div class="resource-grid" id="resourceGrid">
-          <div class="resource-item">
-            <div class="resource-type">🚑 Hospitals</div>
-            <div class="resource-distance">Searching...</div>
-            <div class="resource-name">--</div>
-          </div>
-          <div class="resource-item">
-            <div class="resource-type">🚒 Fire Stations</div>
-            <div class="resource-distance">Searching...</div>
-            <div class="resource-name">--</div>
-          </div>
-          <div class="resource-item">
-            <div class="resource-type">👮 Police Stations</div>
-            <div class="resource-distance">Searching...</div>
-            <div class="resource-name">--</div>
-          </div>
-          <div class="resource-item">
-            <div class="resource-type">⛑️ Emergency Services</div>
-            <div class="resource-distance">Searching...</div>
-            <div class="resource-name">--</div>
-          </div>
-        </div>
-      </div>
+  <footer class="footer">
+    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
+  </footer>
 
-      <!-- Map Analysis Panel -->
-      <div class="map-analysis-panel" id="mapAnalysisPanel">
-        <h4>📊 Location Risk Analysis</h4>
-        <div class="analysis-metrics">
-          <div class="analysis-metric">
-            <div class="metric-value" id="populationDensity">--</div>
-            <div class="metric-label">Population Density</div>
-          </div>
-          <div class="analysis-metric">
-            <div class="metric-value" id="riskScore">--</div>
-            <div class="metric-label">Risk Score</div>
-          </div>
-          <div class="analysis-metric">
-            <div class="metric-value" id="responseTime">--</div>
-            <div class="metric-label">Est. Response Time</div>
-          </div>
-        </div>
-      </div>
+  <!-- Base scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-      <!-- Hidden coordinate input for compatibility -->
-      <input type="hidden" id="coordinates" />
-      
-      <label>Hazards:
-        <input type="text" id="hazards" />
-      </label>
-      
-      <label>Severity:
-        <input type="number" id="severity" min="1" max="10" />
-        <span id="severityBadge" class="severity-badge"></span>
-      </label>
-      
-      <label>Notes:
-        <textarea id="notes" rows="3"></textarea>
-      </label>
-    </details>
-
-    <details open>
-      <summary>✅ Checklist</summary>
-      <label>Checklist Items (comma separated):
-        <input type="text" id="checklist" />
-      </label>
-      <div id="checklistDisplay"></div>
-    </details>
-
-    <details open>
-      <summary>📸 Hazard Images</summary>
-      <input type="file" id="image_upload" accept="image/*" />
-      <label>Image URL (optional):
-        <input type="text" id="image_url" />
-      </label>
-      <img id="imagePreview" src="" alt="Image preview" style="display: none;" />
-    </details>
-
-    <button onclick="saveAndSyncReport()">💾 Save & Sync Report</button>
-    <button onclick="saveOfflineReport()">📴 Save Offline Only</button>
-  </div>
-
-  <div class="preview">
-    <h2>📄 Live JSON Preview</h2>
-    <pre id="jsonPreview"></pre>
-    <h2>📄 Map Preview</h2>
-    <div id="mapPreview" style="height: 300px; border: 1px solid #ccc; margin-bottom: 1rem;"></div>
-  </div>
-
+  <!-- Core functionality scripts -->
   <script>
+    // Theme toggle (from base template)
+    const themeBtn = document.getElementById('toggleThemeBtn');
+    themeBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // High contrast toggle (from base template)
+    const contrastBtn = document.getElementById("contrastToggleBtn");
+    contrastBtn.addEventListener("click", () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-contrast');
+      const next = current === 'high' ? 'normal' : 'high';
+      html.setAttribute('data-contrast', next);
+      localStorage.setItem('contrast', next);
+    });
+
+    const savedContrast = localStorage.getItem('contrast');
+    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
+
     // Enhanced mapping variables
     let map, marker, mapPreview, mapPreviewMarker;
     let currentLayers = {};

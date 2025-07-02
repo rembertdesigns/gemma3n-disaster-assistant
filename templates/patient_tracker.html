@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Tracker - Disaster Response{% endblock %}
+
+{% block page_title %}🩺 Patient Tracker{% endblock %}
+
+{% block ai_status %}
+<!-- Don't show AI status on patient tracker -->
+{% endblock %}
+
+{% block sync_queue %}
+<!-- Don't show sync queue on patient tracker -->
+{% endblock %}
+
+{% block mesh_pairing %}
+<!-- Don't show P2P on patient tracker -->
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  /* Patient-specific styling */
+  .patient-critical {
+    background-color: #fecaca !important;
+    border-left: 4px solid #dc2626;
+  }
+  
+  .patient-moderate {
+    background-color: #fef3c7 !important;
+    border-left: 4px solid #d97706;
+  }
+  
+  .patient-stable {
+    background-color: #dcfce7 !important;
+    border-left: 4px solid #16a34a;
+  }
+  
+  .patient-recent {
+    animation: pulse-blue 2s infinite;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+  
+  @keyframes pulse-blue {
+    0%, 100% { box-shadow: 0 0 0 2px #3b82f6; }
+    50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5); }
+  }
+  
+  .filter-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .filter-form select,
+  .filter-form button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  
+  .filter-form button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .filter-form button:hover {
+    background: #2563eb;
+  }
+  
+  .export-btn {
+    background: #16a34a;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+  }
+  
+  .export-btn:hover {
+    background: #15803d;
+  }
+  
+  .patient-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .patient-table th {
+    background: #374151;
+    color: white;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+  }
+  
+  .patient-table td {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .patient-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .patient-actions a,
+  .patient-actions button {
+    font-size: 0.8rem;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .edit-link {
+    color: #3b82f6;
+  }
+  
+  .discharge-btn {
+    color: #dc2626;
+  }
+  
+  .severity-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .severity-critical {
+    background: #dc2626;
+    color: white;
+  }
+  
+  .severity-moderate {
+    background: #d97706;
+    color: white;
+  }
+  
+  .severity-stable {
+    background: #16a34a;
+    color: white;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+  
+  .status-observation {
+    background: #fbbf24;
+    color: #92400e;
+  }
+  
+  .status-discharged {
+    background: #34d399;
+    color: #065f46;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-card">
+  <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; color: #1f2937;">
+    🩺 Patient Tracker
+  </h2>
+  
+  <!-- Filter + PDF Export Controls -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+    <form method="get" class="filter-form">
+      <select name="severity" aria-label="Filter by severity">
+        <option value="">All Severities</option>
+        <option value="Critical" {% if severity_filter == "Critical" %}selected{% endif %}>🔴 Critical</option>
+        <option value="Moderate" {% if severity_filter == "Moderate" %}selected{% endif %}>🟡 Moderate</option>
+        <option value="Stable" {% if severity_filter == "Stable" %}selected{% endif %}>🟢 Stable</option>
+      </select>
+      
+      <select name="status" aria-label="Filter by status">
+        <option value="">All Statuses</option>
+        <option value="Under Observation" {% if status_filter == "Under Observation" %}selected{% endif %}>👁️ Under Observation</option>
+        <option value="Discharged" {% if status_filter == "Discharged" %}selected{% endif %}>✅ Discharged</option>
+      </select>
+      
+      <button type="submit">🔍 Filter</button>
+    </form>
+    
+    <form method="get" action="/export-patients-pdf">
+      <button type="submit" class="export-btn">📄 Download PDF Report</button>
+    </form>
+  </div>
+  
+  <!-- Patient Count Summary -->
+  <div style="margin-bottom: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; border-left: 4px solid #3b82f6;">
+    <strong>📊 Total Patients:</strong> {{ patients|length }}
+    {% if severity_filter or status_filter %}
+      <span style="color: #6b7280;">(filtered view)</span>
+    {% endif %}
+  </div>
+  
+  <!-- Patient Table -->
+  {% if patients %}
+  <div style="overflow-x: auto;">
+    <table class="patient-table">
+      <thead>
+        <tr>
+          <th>👤 Name</th>
+          <th>🎂 Age</th>
+          <th>📋 Status</th>
+          <th>🚨 Severity</th>
+          <th>🕐 Last Updated</th>
+          <th>⚙️ Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for patient in patients %}
+        <tr class="
+          {% if patient.severity == 'Critical' %}patient-critical
+          {% elif patient.severity == 'Moderate' %}patient-moderate
+          {% elif patient.severity == 'Stable' %}patient-stable
+          {% endif %}
+          {% if (now - patient.timestamp).total_seconds() < 10800 %}patient-recent{% endif %}
+        ">
+          <td><strong>{{ patient.name }}</strong></td>
+          <td>{{ patient.age }}</td>
+          <td>
+            <span class="status-badge {% if patient.status == 'Discharged' %}status-discharged{% else %}status-observation{% endif %}">
+              {% if patient.status == 'Discharged' %}✅{% else %}👁️{% endif %} {{ patient.status }}
+            </span>
+          </td>
+          <td>
+            <span class="severity-badge severity-{{ patient.severity.lower() }}">
+              {% if patient.severity == 'Critical' %}🔴
+              {% elif patient.severity == 'Moderate' %}🟡
+              {% else %}🟢
+              {% endif %}
+              {{ patient.severity }}
+            </span>
+          </td>
+          <td>
+            {{ patient.timestamp.strftime('%Y-%m-%d %H:%M') }}
+            {% if (now - patient.timestamp).total_seconds() < 10800 %}
+              <span style="color: #3b82f6; font-size: 0.75rem;">(recent)</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="patient-actions">
+              <a href="/patients/{{ patient.id }}/edit" class="edit-link">✏️ Edit</a>
+              {% if patient.status != "Discharged" %}
+              <form method="post" action="/patients/{{ patient.id }}/discharge" 
+                    onsubmit="return confirm('Are you sure you want to discharge {{ patient.name }}?');" 
+                    style="display: inline;">
+                <button type="submit" class="discharge-btn">🏥 Discharge</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 2rem; color: #6b7280;">
+    <p style="font-size: 1.1rem;">📭 No patients found</p>
+    {% if severity_filter or status_filter %}
+    <p style="margin-top: 0.5rem;">
+      <a href="/patients" style="color: #3b82f6; text-decoration: underline;">Clear filters to see all patients</a>
+    </p>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Auto-refresh every 30 seconds for real-time updates
+  let autoRefresh = true;
+  
+  function toggleAutoRefresh() {
+    autoRefresh = !autoRefresh;
+    const btn = document.getElementById('autoRefreshBtn');
+    if (btn) {
+      btn.textContent = autoRefresh ? '⏸️ Pause Auto-Refresh' : '▶️ Resume Auto-Refresh';
+      btn.style.background = autoRefresh ? '#dc2626' : '#16a34a';
+    }
+  }
+  
+  function refreshPage() {
+    if (autoRefresh && !document.hidden) {
+      // Preserve current filters
+      const params = new URLSearchParams(window.location.search);
+      window.location.reload();
+    }
+  }
+  
+  // Set up auto-refresh
+  setInterval(refreshPage, 30000);
+  
+  // Pause auto-refresh when page is hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      console.log('Page hidden - pausing auto-refresh');
+    } else {
+      console.log('Page visible - resuming auto-refresh');
+    }
+  });
+  
+  // Add auto-refresh toggle button
+  window.addEventListener('load', () => {
+    const exportBtn = document.querySelector('.export-btn');
+    if (exportBtn) {
+      const autoBtn = document.createElement('button');
+      autoBtn.id = 'autoRefreshBtn';
+      autoBtn.type = 'button';
+      autoBtn.textContent = '⏸️ Pause Auto-Refresh';
+      autoBtn.style.cssText = `
+        background: #dc2626;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin-left: 0.5rem;
+      `;
+      autoBtn.onclick = toggleAutoRefresh;
+      exportBtn.parentNode.appendChild(autoBtn);
+    }
+  });
+</script>
+{% endblock %}

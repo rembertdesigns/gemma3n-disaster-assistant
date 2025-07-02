@@ -1,77 +1,414 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>👤 Admin Dashboard</title>
-  <link rel="stylesheet" href="/static/styles.css">
-  <style>
-    body {
-      padding: 2rem;
-      font-family: system-ui, sans-serif;
-    }
-    h1 {
-      margin-bottom: 1rem;
-      font-size: 1.75rem;
-    }
-    .info-section {
-      margin-bottom: 2rem;
-    }
-    .stats-box {
-      border: 1px solid #ccc;
-      padding: 1rem;
-      border-radius: 8px;
-      background: #f9f9f9;
-      max-width: 400px;
-      margin-bottom: 1.5rem;
-    }
-    .stats-box h2 {
-      margin-top: 0;
-      font-size: 1.2rem;
-    }
-    .stats-box p {
-      margin: 0.3rem 0;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    li {
-      margin: 0.4rem 0;
-    }
-    a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-  </style>
-</head>
-<body>
-  <h1>👤 Admin Panel</h1>
+{% extends "base.html" %}
 
-  <div class="info-section">
-    <p><strong>User:</strong> {{ username }}</p>
-    <p><strong>Role:</strong> {{ role }}</p>
+{% block title %}Admin Dashboard - Disaster Response{% endblock %}
+
+{% block page_title %}👤 Admin Dashboard{% endblock %}
+
+{% block subtitle %}Secure Administrative Controls{% endblock %}
+
+{% block header_actions %}
+<a href="/reports" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #16a34a; color: #fff; border-radius: 6px; text-decoration: none; margin-right: 0.5rem;">
+  📄 All Reports
+</a>
+<a href="/reports/export" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #dc2626; color: #fff; border-radius: 6px; text-decoration: none;">
+  📦 Export Archive
+</a>
+{% endblock %}
+
+{% block ai_status %}
+<!-- Don't show AI status on admin dashboard -->
+{% endblock %}
+
+{% block sync_queue %}
+<!-- Don't show sync queue on admin dashboard -->
+{% endblock %}
+
+{% block mesh_pairing %}
+<!-- Don't show P2P on admin dashboard -->
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  .admin-header {
+    background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .user-info {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .user-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .role-badge {
+    background: #fbbf24;
+    color: #92400e;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .stats-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .stats-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1e40af;
+    margin-bottom: 0.5rem;
+  }
+  
+  .stats-label {
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+  
+  .tools-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .tool-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  
+  .tool-card:hover {
+    background: #f3f4f6;
+    border-color: #3b82f6;
+  }
+  
+  .tool-card a {
+    text-decoration: none;
+    color: #374151;
+    display: block;
+  }
+  
+  .tool-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1e40af;
+  }
+  
+  .tool-description {
+    font-size: 0.85rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  
+  .category-header {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #374151;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .admin-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+  
+  .admin-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .admin-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    color: white;
+    text-decoration: none;
+  }
+  
+  .admin-btn.secondary {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  }
+  
+  .admin-btn.danger {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  }
+  
+  .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #dcfce7;
+    color: #166534;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    background: #16a34a;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+  <!-- Admin Header -->
+  <div class="admin-header">
+    <div class="user-info">
+      <div>
+        <h2 style="margin: 0 0 0.5rem 0;">Welcome, {{ username }}</h2>
+        <div class="user-badge">🔐 Administrator Access</div>
+      </div>
+      <div class="role-badge">{{ role }}</div>
+      <div class="status-indicator" style="margin-left: auto;">
+        <div class="status-dot"></div>
+        System Online
+      </div>
+    </div>
   </div>
 
-  <div class="stats-box">
-    <h2>📊 Dashboard Stats</h2>
-    <p><strong>Total Reports:</strong> {{ stats.total_reports }}</p>
-    <p><strong>Active Users:</strong> {{ stats.active_users }}</p>
-    <p><strong>Average Severity:</strong> {{ stats.avg_severity }}</p>
+  <!-- Dashboard Statistics -->
+  <div class="stats-grid">
+    <div class="stats-card">
+      <h3>📊 Total Reports</h3>
+      <div class="stats-number">{{ stats.total_reports }}</div>
+      <div class="stats-label">Emergency reports submitted</div>
+    </div>
+    
+    <div class="stats-card">
+      <h3>👥 Active Users</h3>
+      <div class="stats-number">{{ stats.active_users }}</div>
+      <div class="stats-label">Currently active responders</div>
+    </div>
+    
+    <div class="stats-card">
+      <h3>⚠️ Average Severity</h3>
+      <div class="stats-number">{{ "%.1f"|format(stats.avg_severity) }}</div>
+      <div class="stats-label">Risk assessment average</div>
+    </div>
+    
+    <div class="stats-card">
+      <h3>🕐 System Status</h3>
+      <div class="stats-number" style="font-size: 1.5rem; color: #16a34a;">✅ Online</div>
+      <div class="stats-label">All services operational</div>
+    </div>
   </div>
 
-  <div class="info-section">
-    <h2>🔐 Secure Tools</h2>
-    <ul>
-      <li><a href="/generate">📝 Generate PDF (form-based)</a></li>
-      <li><a href="/live-generate">🧠 Live Report Editor</a></li>
-      <li><a href="/hazards">📷 Hazard Detection Uploader</a></li>
-      <li><a href="/offline.html">🛰️ Offline Mode Simulation</a></li>
-      <li><a href="/reports">📄 View All Reports (DB)</a></li>
-      <li><a href="/reports/export">📦 Export Full Report Archive (.zip)</a></li>
-    </ul>
+  <!-- Administrative Tools -->
+  <div class="tools-section">
+    <h2 class="category-header">🛠️ Administrative Tools</h2>
+    
+    <div class="tools-grid">
+      <div class="tool-card">
+        <a href="/generate">
+          <div class="tool-title">📝 Generate PDF Report</div>
+          <div class="tool-description">Create structured PDF reports from form input with AI analysis and recommendations.</div>
+        </a>
+      </div>
+      
+      <div class="tool-card">
+        <a href="/live-generate">
+          <div class="tool-title">🧠 Live Report Editor</div>
+          <div class="tool-description">Interactive JSON-to-PDF editor with real-time preview and dynamic content generation.</div>
+        </a>
+      </div>
+      
+      <div class="tool-card">
+        <a href="/hazards">
+          <div class="tool-title">📷 Hazard Detection</div>
+          <div class="tool-description">AI-powered image analysis for identifying potential hazards and safety risks.</div>
+        </a>
+      </div>
+      
+      <div class="tool-card">
+        <a href="/offline.html">
+          <div class="tool-title">🛰️ Offline Mode</div>
+          <div class="tool-description">Test offline functionality and mesh networking capabilities for remote operations.</div>
+        </a>
+      </div>
+      
+      <div class="tool-card">
+        <a href="/patients">
+          <div class="tool-title">🩺 Patient Tracker</div>
+          <div class="tool-description">Real-time patient management system with triage tracking and status updates.</div>
+        </a>
+      </div>
+      
+      <div class="tool-card">
+        <a href="/triage">
+          <div class="tool-title">🚑 Triage Form</div>
+          <div class="tool-description">Emergency triage assessment form for rapid patient categorization and prioritization.</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="admin-actions">
+      <a href="/reports" class="admin-btn">
+        📄 View All Reports
+      </a>
+      <a href="/reports/export" class="admin-btn secondary">
+        📦 Export Archive
+      </a>
+      <a href="/crowd-reports" class="admin-btn">
+        📢 Crowd Reports
+      </a>
+      <a href="/map-reports" class="admin-btn">
+        🗺️ Map View
+      </a>
+    </div>
   </div>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Auto-refresh stats every 30 seconds
+  let statsRefreshInterval;
+  
+  function refreshStats() {
+    fetch('/api/dashboard-stats')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Update stats numbers
+          document.querySelector('.stats-grid .stats-number').textContent = data.total_reports;
+          // Update other stats as needed
+          console.log('📊 Dashboard stats refreshed');
+        }
+      })
+      .catch(error => {
+        console.warn('⚠️ Stats refresh failed:', error);
+      });
+  }
+  
+  // Start auto-refresh
+  function startStatsRefresh() {
+    statsRefreshInterval = setInterval(refreshStats, 30000);
+    console.log('🔄 Stats auto-refresh started');
+  }
+  
+  // Stop auto-refresh
+  function stopStatsRefresh() {
+    if (statsRefreshInterval) {
+      clearInterval(statsRefreshInterval);
+      console.log('⏸️ Stats auto-refresh stopped');
+    }
+  }
+  
+  // Pause refresh when page is hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopStatsRefresh();
+    } else {
+      startStatsRefresh();
+    }
+  });
+  
+  // Initialize on page load
+  window.addEventListener('load', () => {
+    startStatsRefresh();
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+          case 'r':
+            e.preventDefault();
+            window.location.href = '/reports';
+            break;
+          case 'p':
+            e.preventDefault();
+            window.location.href = '/patients';
+            break;
+          case 'h':
+            e.preventDefault();
+            window.location.href = '/hazards';
+            break;
+        }
+      }
+    });
+    
+    // Show keyboard shortcuts hint
+    console.log('⌨️ Keyboard shortcuts: Ctrl+R (Reports), Ctrl+P (Patients), Ctrl+H (Hazards)');
+  });
+  
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', stopStatsRefresh);
+</script>
+{% endblock %}

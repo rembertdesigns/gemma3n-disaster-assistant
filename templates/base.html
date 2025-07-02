@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Disaster Response & Recovery Assistant{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  
+  <!-- Block for additional CSS -->
+  {% block extra_css %}
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  {% endblock %}
+  
+  <!-- Block for additional head content -->
+  {% block extra_head %}{% endblock %}
+
+  <style>
+    /* Edge AI Status Indicators */
+    .ai-status-bar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .ai-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ff00;
+      animation: pulse 2s infinite;
+    }
+    
+    .ai-status-dot.loading {
+      background: #ffaa00;
+    }
+    
+    .ai-status-dot.error {
+      background: #ff0000;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+    
+    /* Real-time Analysis Panel */
+    .realtime-analysis {
+      background: rgba(37, 99, 235, 0.05);
+      border: 2px solid #2563eb;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: none;
+      transition: all 0.3s ease;
+    }
+    
+    .realtime-analysis.visible {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .analysis-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-weight: bold;
+      color: #1e40af;
+    }
+    
+    .severity-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: white;
+    }
+    
+    .severity-low { background: #16a34a; }
+    .severity-medium { background: #d97706; }
+    .severity-high { background: #dc2626; }
+    .severity-critical { background: #991b1b; animation: blink 1s infinite; }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .panic-indicator {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-left: 0.5rem;
+    }
+    
+    .panic-calm { background: #dcfce7; color: #166534; }
+    .panic-concerned { background: #fef3c7; color: #92400e; }
+    .panic-elevated { background: #fecaca; color: #991b1b; }
+    .panic-critical { background: #dc2626; color: white; animation: blink 1s infinite; }
+    
+    .ai-recommendations {
+      background: #f8fafc;
+      border-left: 4px solid #3b82f6;
+      padding: 0.75rem;
+      margin-top: 1rem;
+      border-radius: 0 8px 8px 0;
+    }
+    
+    .ai-recommendations h4 {
+      margin: 0 0 0.5rem 0;
+      color: #1e40af;
+      font-size: 0.9rem;
+    }
+    
+    .ai-recommendations ul {
+      margin: 0;
+      padding-left: 1.2rem;
+    }
+    
+    .ai-recommendations li {
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+      color: #374151;
+    }
+    
+    .processing-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      color: #6b7280;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    
+    .processing-indicator.active {
+      display: flex;
+    }
+    
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e5e7eb;
+      border-top: 2px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Image Analysis Preview */
+    .image-analysis-preview {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      display: none;
+    }
+    
+    .image-analysis-preview.visible {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .hazard-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    
+    .hazard-tag {
+      background: #dc2626;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    
+    .confidence-bar {
+      width: 100%;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #dc2626, #16a34a);
+      transition: width 0.5s ease;
+    }
+
+    /* Drone-specific styling */
+    .drone-section {
+      background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+    }
+    
+    .drone-section label {
+      color: white;
+      font-weight: bold;
+    }
+    
+    #droneImageAnalysisPreview {
+      background: rgba(14, 165, 233, 0.1);
+      border: 2px solid #0ea5e9;
+    }
+    
+    #droneImageAnalysisPreview h4 {
+      color: #0369a1;
+    }
+
+    /* Context selector styling */
+    .context-select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: white;
+    }
+
+    .context-select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  </style>
+
+  <!-- Block for additional styles - moved outside style tag -->
+  {% block extra_styles %}{% endblock %}
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">🆘</div>
+      <div>
+        <h1 class="title">{% block page_title %}Disaster Response & Recovery Assistant{% endblock %}</h1>
+        {% block header_actions %}
+        <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+          🧩 Live JSON → PDF Editor
+        </a>
+        {% endblock %}        
+        <p class="subtitle">{% block subtitle %}AI-Powered Emergency Analysis & Support{% endblock %}</p>
+      </div>
+      <div class="controls">
+        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
+        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
+        <div class="status-bar">
+          <div class="status-indicator status-offline">
+            <div class="status-dot"></div>
+            Offline Ready
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Edge AI Status Bar (only show on pages that use AI) -->
+    {% block ai_status %}
+    <div class="ai-status-bar" id="aiStatusBar">
+      <div class="ai-status-dot loading" id="aiStatusDot"></div>
+      <span id="aiStatusText">🧠 Loading Edge AI models...</span>
+      <button onclick="window.EdgeAI?.runDiagnostics()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-left: auto;">
+        🧪 Test AI
+      </button>
+    </div>
+    {% endblock %}
+
+    <!-- Main content block -->
+    {% block content %}{% endblock %}
+
+    <!-- Sync Queue UI (only show on pages that need it) -->
+    {% block sync_queue %}
+    <div class="sync-queue-card" id="syncQueueCard" style="display: none; margin-top: 2rem; padding: 1rem; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px;">
+      <h3 style="margin-bottom: 0.5rem;">📡 Offline Report Sync Queue</h3>
+      <ul id="syncQueueList" style="padding-left: 1rem; font-size: 0.9rem;"></ul>
+      <button id="syncNowBtn" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #16a34a; color: white; border: none; border-radius: 4px;">🔄 Sync Now</button>
+    </div>
+    {% endblock %}
+
+    <!-- Manual Mesh Pairing UI (only show on pages that need it) -->
+    {% block mesh_pairing %}
+    <div id="pairing-ui" style="margin-top: 2rem; padding: 1rem; background: #eef2ff; border: 1px solid #93c5fd; border-radius: 8px;">
+      <h3 style="margin-bottom: 0.5rem;">Manual Mesh Pairing (Offline Mode)</h3>
+      <canvas id="qr-code" style="display:block;margin:auto;"></canvas>
+      <pre id="signal-raw" style="background:#fff; padding:8px; font-size:0.8em; overflow-wrap:anywhere; border:1px dashed #ccc; margin-top:0.5rem;"></pre>
+      <input id="signal-input" placeholder="Paste peer signal here" style="width:100%; margin-top:0.5rem; padding:0.5rem; font-size:0.9em; border:1px solid #ccc; border-radius:4px;" />
+      <button onclick="handleManualSignal()" style="margin-top:0.5rem; padding:0.5rem 1rem; background:#3b82f6; color:white; border:none; border-radius:4px;">🔗 Connect Peer</button>
+    </div>
+    {% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
+  </footer>
+
+  <!-- Base scripts -->
+  {% block base_scripts %}
+  <!-- Load Edge AI Engine (only on pages that need it) -->
+  <script src="/static/js/edge-ai.js"></script>
+  
+  <!-- Leaflet JS (only on pages that need maps) -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  {% endblock %}
+
+  <!-- Core functionality scripts -->
+  <script>
+    // Theme toggle
+    const themeBtn = document.getElementById('toggleThemeBtn');
+    themeBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // High contrast toggle
+    const contrastBtn = document.getElementById("contrastToggleBtn");
+    contrastBtn.addEventListener("click", () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-contrast');
+      const next = current === 'high' ? 'normal' : 'high';
+      html.setAttribute('data-contrast', next);
+      localStorage.setItem('contrast', next);
+    });
+
+    const savedContrast = localStorage.getItem('contrast');
+    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
+
+    // Connection status
+    function updateConnectionStatus() {
+      const indicator = document.querySelector('.status-indicator');
+      if (navigator.onLine) {
+        indicator.innerHTML = '<div class="status-dot"></div>Online + Offline Ready';
+        indicator.className = 'status-indicator status-online';
+      } else {
+        indicator.innerHTML = '<div class="status-dot"></div>Offline Mode Active';
+        indicator.className = 'status-indicator status-offline';
+      }
+    }
+
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    updateConnectionStatus();
+
+    // Service Worker registration
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => console.log("✅ Service worker registered:", reg.scope))
+        .catch((err) => console.error("❌ Service worker registration failed:", err));
+    }
+
+    // Manual Signal Handler for P2P
+    function handleManualSignal() {
+      const val = document.getElementById('signal-input').value;
+      if (val) {
+        import('/static/js/p2p/fallback-webrtc.js').then(module => {
+          module.manualSignalInput(val);
+        });
+      }
+    }
+
+    // Sync Queue logic
+    function showSyncQueue() {
+      const queueCard = document.getElementById('syncQueueCard');
+      if (!queueCard) return; // Only run on pages that have sync queue
+      
+      const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+      const list = document.getElementById('syncQueueList');
+
+      if (queue.length > 0) {
+        list.innerHTML = queue.map((r, i) => `
+          <li>📥 Report #${i + 1} — "${r.message?.slice(0, 40) || 'No text'}..." (${r.priority || 'N/A'})</li>
+        `).join('');
+        queueCard.style.display = 'block';
+      } else {
+        queueCard.style.display = 'none';
+      }
+    }
+
+    // Sync Now button handler
+    const syncBtn = document.getElementById('syncNowBtn');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', async () => {
+        const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+        for (const report of queue) {
+          try {
+            const res = await fetch('/api/submit-crowd-report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(report),
+            });
+
+            if (res.ok) {
+              console.log('✅ Synced:', report);
+            } else {
+              throw new Error('Failed to sync');
+            }
+          } catch (err) {
+            console.error('❌ Sync failed:', err);
+            break;
+          }
+        }
+
+        localStorage.removeItem('syncQueue');
+        showSyncQueue();
+      });
+    }
+
+    window.addEventListener('online', showSyncQueue);
+    window.addEventListener('load', showSyncQueue);
+  </script>
+
+  <!-- Page-specific scripts -->
+  {% block scripts %}{% endblock %}
+
+  <!-- P2P Module loading (only on pages that need it) -->
+  {% block p2p_scripts %}
+  <script type="module">
+    import { manualSignalOffer } from '/static/js/p2p/fallback-webrtc.js';
+    manualSignalOffer(); // Run on page load to generate QR
+  </script>
+  {% endblock %}
+</body>
+</html>

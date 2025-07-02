@@ -25,6 +25,7 @@ import base64
 import logging
 
 from weasyprint import HTML as WeasyHTML
+from jinja2 import Environment, FileSystemLoader
 
 # Core app utilities
 from app.predictive_engine import calculate_risk_score
@@ -66,7 +67,11 @@ from app.map_utils import (
 
 # 🆕 Database session and models for crowd report queue
 from app.database import get_db  # Your SQLAlchemy session
-from app.models import CrowdReport  # SQLAlchemy model for crowd reports
+from app.models import CrowdReport, Patient
+
+# ================================
+# CONFIGURATION & SETUP
+# ================================
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -89,15 +94,15 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # ✅ Setup Jinja templates
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
+# Global storage and directories
 crowd_reports = []  # In-memory store; consider replacing with DB later
-
 UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ================================
-# EXISTING AUTH ROUTES
+# AUTHENTICATION ROUTES
 # ================================
 
 @app.post("/login")
@@ -114,12 +119,12 @@ async def read_current_user(user: dict = Depends(get_current_user)):
     return {"username": user["username"], "role": user["role"]}
 
 # ================================
-# EXISTING PAGE ROUTES
+# MAIN PAGE ROUTES
 # ================================
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "result": None})
+    return templates.TemplateResponse("home.html", {"request": request, "result": None})
 
 @app.get("/hazards", response_class=HTMLResponse)
 async def serve_hazard_page(request: Request):
@@ -163,9 +168,43 @@ async def view_crowd_reports(request: Request, db: Session = Depends(get_db)):
     reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).all()
     return templates.TemplateResponse("crowd_reports.html", {"request": request, "reports": reports})
 
+# ================================
+# TRIAGE & PATIENT MANAGEMENT ROUTES
+# ================================
+
 @app.get("/triage", response_class=HTMLResponse)
 async def triage_form_page(request: Request):
     return templates.TemplateResponse("triage_form.html", {"request": request})
+
+@app.get("/patients", response_class=HTMLResponse)
+async def get_patient_tracker(request: Request, severity: Optional[str] = None, status: Optional[str] = None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    query = "SELECT * FROM triage_patients WHERE 1=1"
+    params = []
+
+    if severity:
+        query += " AND severity = ?"
+        params.append(severity)
+
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+
+    query += " ORDER BY timestamp DESC"
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    now = datetime.utcnow()
+    return templates.TemplateResponse("patient_tracker.html", {
+        "request": request,
+        "patients": rows,
+        "now": now,
+        "severity_filter": severity,
+        "status_filter": status
+    })
 
 @app.post("/submit-triage")
 async def submit_triage_form(
@@ -192,6 +231,37 @@ async def submit_triage_form(
         "request": request,
         "message": f"Triage for {name} received successfully and saved."
     })
+
+@app.post("/patients/{patient_id}/discharge")
+async def discharge_patient(patient_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE triage_patients SET status = 'Discharged' WHERE id = ?", (patient_id,))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/patients", status_code=303)
+
+@app.get("/export-patients-pdf")
+async def export_patients_pdf():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM triage_patients ORDER BY timestamp DESC")
+    patients = cursor.fetchall()
+    conn.close()
+    
+    env = Environment(loader=FileSystemLoader("templates"))
+    template = env.get_template("patient_tracker.html")
+    html_out = template.render(
+        patients=patients, 
+        now=datetime.utcnow(), 
+        severity_filter=None, 
+        status_filter=None
+    )
+    
+    pdf_path = os.path.join("outputs", f"patients_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf")
+    WeasyHTML(string=html_out).write_pdf(pdf_path)
+    
+    return FileResponse(pdf_path, filename="patient_tracker.pdf", media_type="application/pdf")
 
 # ================================
 # CROWD REPORTS API ROUTES
@@ -319,8 +389,30 @@ async def crowd_report_locations(
 
     return JSONResponse(content={"reports": reports})
 
+@app.post("/api/submit-report")
+async def submit_crowd_report_api(payload: dict = Body(...)):
+    message = payload.get("message", "")
+    location = payload.get("location", {})
+    user = payload.get("user", "anonymous")
+
+    sentiment_result = analyze_sentiment(message)
+
+    report = {
+        "id": str(uuid.uuid4()),
+        "message": message,
+        "location": location,
+        "user": user,
+        "timestamp": datetime.now().isoformat(),
+        "sentiment": sentiment_result.get("sentiment"),
+        "tone": sentiment_result.get("tone"),
+        "escalation": sentiment_result.get("escalation"),
+    }
+
+    crowd_reports.append(report)
+    return JSONResponse(content={"success": True, "report": report})
+
 # ================================
-# EXISTING ADMIN ROUTES
+# ADMIN DASHBOARD ROUTES
 # ================================
 
 @app.get("/admin", response_class=HTMLResponse)
@@ -400,7 +492,7 @@ async def export_reports_zip(user: dict = Depends(require_role(["admin"]))):
     })
 
 # ================================
-# NEW: MAP API ROUTES
+# MAP API ROUTES
 # ================================
 
 @app.get("/api/static-map")
@@ -653,8 +745,27 @@ async def api_map_metadata(
         logger.error(f"Map metadata API error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/map-config")
+async def get_map_config(user: dict = Depends(require_role(["admin", "responder"]))):
+    """Get current map configuration"""
+    return {
+        "preferred_service": map_utils.preferred_service.value,
+        "available_services": [
+            service.value for service in map_utils.api_keys.keys() 
+            if map_utils.api_keys[service]
+        ],
+        "default_config": {
+            "width": map_utils.config.width,
+            "height": map_utils.config.height,
+            "zoom": map_utils.config.zoom,
+            "map_type": map_utils.config.map_type,
+            "marker_color": map_utils.config.marker_color
+        },
+        "user": user['username']
+    }
+
 # ================================
-# EXISTING ANALYSIS & REPORTING ROUTES
+# ANALYSIS & REPORTING ROUTES
 # ================================
 
 @app.post("/analyze", response_class=HTMLResponse)
@@ -790,7 +901,7 @@ async def generate_report(
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
 # ================================
-# EXISTING HAZARD DETECTION
+# HAZARD DETECTION ROUTES
 # ================================
 
 @app.post("/detect-hazards")
@@ -813,7 +924,38 @@ async def detect_hazards_api(
         return JSONResponse(content={"error": f"Hazard detection failed: {str(e)}"}, status_code=500)
 
 # ================================
-# NEW: UTILITY ROUTES
+# RISK PREDICTION ROUTES
+# ================================
+
+@app.post("/predict-risk")
+async def predict_risk_api(payload: dict = Body(...)):
+    location = payload.get("location", {})
+    weather = payload.get("weather", {})
+    hazard = payload.get("hazard_type", "unknown")
+
+    result = calculate_risk_score(location, weather, hazard)
+    return JSONResponse(content=result)
+
+# ================================
+# EMERGENCY BROADCAST ROUTES
+# ================================
+
+@app.post("/broadcast")
+async def trigger_broadcast(request: Request):
+    payload = await request.json()
+    message = payload.get("message", "Emergency Broadcast")
+    location = payload.get("location", {})
+    severity = payload.get("severity", "High")
+    result = start_broadcast(message, location, severity)
+    return JSONResponse(content=result)
+
+@app.get("/broadcasts")
+async def get_active_broadcasts():
+    result = discover_nearby_broadcasts(location={})  # Replace with real location filtering if needed
+    return JSONResponse(content=result)
+
+# ================================
+# UTILITY & HEALTH ROUTES
 # ================================
 
 @app.get("/health")
@@ -832,7 +974,8 @@ async def health_check():
             "ai_analysis": True,
             "hazard_detection": True,
             "audio_transcription": True,
-            "pdf_generation": True
+            "pdf_generation": True,
+            "patient_management": True
         },
         "map_service": {
             "preferred": map_utils.preferred_service.value,
@@ -843,76 +986,8 @@ async def health_check():
         }
     }
 
-@app.get("/api/map-config")
-async def get_map_config(user: dict = Depends(require_role(["admin", "responder"]))):
-    """Get current map configuration"""
-    return {
-        "preferred_service": map_utils.preferred_service.value,
-        "available_services": [
-            service.value for service in map_utils.api_keys.keys() 
-            if map_utils.api_keys[service]
-        ],
-        "default_config": {
-            "width": map_utils.config.width,
-            "height": map_utils.config.height,
-            "zoom": map_utils.config.zoom,
-            "map_type": map_utils.config.map_type,
-            "marker_color": map_utils.config.marker_color
-        },
-        "user": user['username']
-    }
-
-@app.post("/predict-risk")
-async def predict_risk_api(payload: dict = Body(...)):
-    location = payload.get("location", {})
-    weather = payload.get("weather", {})
-    hazard = payload.get("hazard_type", "unknown")
-
-    result = calculate_risk_score(location, weather, hazard)
-    return JSONResponse(content=result)
-
-@app.post("/api/submit-report")
-async def submit_crowd_report(payload: dict = Body(...)):
-    message = payload.get("message", "")
-    location = payload.get("location", {})
-    user = payload.get("user", "anonymous")
-
-    sentiment_result = analyze_sentiment(message)
-
-    report = {
-        "id": str(uuid.uuid4()),
-        "message": message,
-        "location": location,
-        "user": user,
-        "timestamp": datetime.now().isoformat(),
-        "sentiment": sentiment_result.get("sentiment"),
-        "tone": sentiment_result.get("tone"),
-        "escalation": sentiment_result.get("escalation"),
-    }
-
-    crowd_reports.append(report)
-    return JSONResponse(content={"success": True, "report": report})
-
 # ================================
-# PHASE 1: EMERGENCY BROADCAST ROUTES
-# ================================
-
-@app.post("/broadcast")
-async def trigger_broadcast(request: Request):
-    payload = await request.json()
-    message = payload.get("message", "Emergency Broadcast")
-    location = payload.get("location", {})
-    severity = payload.get("severity", "High")
-    result = start_broadcast(message, location, severity)
-    return JSONResponse(content=result)
-
-@app.get("/broadcasts")
-async def get_active_broadcasts():
-    result = discover_nearby_broadcasts(location={})  # Replace with real location filtering if needed
-    return JSONResponse(content=result)
-
-# ================================
-# STARTUP EVENT
+# STARTUP EVENT & ERROR HANDLERS
 # ================================
 
 @app.on_event("startup")
@@ -936,11 +1011,7 @@ async def startup_event():
     # ✅ Run DB migrations
     run_migrations()
 
-    logger.info("✅ API server ready with enhanced map capabilities")
-
-# ================================
-# ERROR HANDLERS
-# ================================
+    logger.info("✅ API server ready with enhanced map capabilities and patient management")
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):

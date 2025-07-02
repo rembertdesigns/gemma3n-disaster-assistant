@@ -1,125 +1,633 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>📄 Report Archive</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 2rem;
-    }
-    h1 {
-      font-size: 1.75rem;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    th, td {
-      padding: 0.5rem;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-      vertical-align: middle;
-    }
-    th.sortable {
-      cursor: pointer;
-    }
-    input, select, button {
-      padding: 0.4rem;
-      margin-right: 0.5rem;
-    }
-    .actions a, .actions form {
-      display: inline-block;
-      margin-right: 0.25rem;
-    }
-    form {
-      display: inline;
-    }
-  </style>
-</head>
-<body>
-  <h1>📄 Report Archive</h1>
+{% extends "base.html" %}
 
-  <div>
-    <label for="severityFilter">Severity:</label>
-    <select id="severityFilter" onchange="filterTable()">
-      <option value="">All</option>
-      <option value="low">Low</option>
-      <option value="moderate">Moderate</option>
-      <option value="high">High</option>
-      <option value="critical">Critical</option>
-    </select>
+{% block title %}Report Archive - Disaster Response{% endblock %}
 
-    <label for="userFilter">User:</label>
-    <input type="text" id="userFilter" placeholder="Filter by user..." onkeyup="filterTable()">
+{% block page_title %}📄 Report Archive{% endblock %}
+
+{% block subtitle %}Emergency Report Management System{% endblock %}
+
+{% block header_actions %}
+<a href="/admin" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #6b7280; color: #fff; border-radius: 6px; text-decoration: none; margin-right: 0.5rem;">
+  👤 Admin Dashboard
+</a>
+<a href="/reports/export" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #16a34a; color: #fff; border-radius: 6px; text-decoration: none;">
+  📦 Export All
+</a>
+{% endblock %}
+
+{% block ai_status %}
+<!-- Don't show AI status on reports page -->
+{% endblock %}
+
+{% block sync_queue %}
+<!-- Don't show sync queue on reports page -->
+{% endblock %}
+
+{% block mesh_pairing %}
+<!-- Don't show P2P on reports page -->
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .reports-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  .reports-header {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .reports-stats {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+  
+  .stat-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .filters-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: end;
+  }
+  
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .filter-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+  
+  .filter-input,
+  .filter-select {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  .filter-input:focus,
+  .filter-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .filter-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .clear-filters-btn {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+  }
+  
+  .clear-filters-btn:hover {
+    background: #4b5563;
+  }
+  
+  .reports-table-container {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .reports-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .reports-table th {
+    background: #f9fafb;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .reports-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background 0.2s;
+  }
+  
+  .reports-table th.sortable:hover {
+    background: #f3f4f6;
+  }
+  
+  .reports-table th.sortable::after {
+    content: '↕️';
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    opacity: 0.5;
+  }
+  
+  .reports-table th.sorted-asc::after {
+    content: '↑';
+    opacity: 1;
+    color: #3b82f6;
+  }
+  
+  .reports-table th.sorted-desc::after {
+    content: '↓';
+    opacity: 1;
+    color: #3b82f6;
+  }
+  
+  .reports-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+  }
+  
+  .reports-table tr:hover {
+    background: #f9fafb;
+  }
+  
+  .reports-table tr.hidden {
+    display: none;
+  }
+  
+  .severity-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .severity-low {
+    background: #dcfce7;
+    color: #166534;
+  }
+  
+  .severity-moderate {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .severity-high {
+    background: #fecaca;
+    color: #991b1b;
+  }
+  
+  .severity-critical {
+    background: #991b1b;
+    color: white;
+    animation: pulse 2s infinite;
+  }
+  
+  .status-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+  }
+  
+  .status-update-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+  }
+  
+  .status-update-btn:hover {
+    background: #2563eb;
+  }
+  
+  .action-links {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .view-link {
+    background: #16a34a;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+  }
+  
+  .view-link:hover {
+    background: #15803d;
+    color: white;
+    text-decoration: none;
+  }
+  
+  .table-info {
+    padding: 1rem;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+  }
+  
+  .empty-state h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+  }
+  
+  .bulk-actions {
+    padding: 1rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    display: none;
+  }
+  
+  .bulk-actions.active {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .select-all-checkbox {
+    margin-right: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+  <!-- Reports Header -->
+  <div class="reports-header">
+    <h2 style="margin: 0 0 0.5rem 0;">📄 Emergency Reports Archive</h2>
+    <p style="margin: 0; opacity: 0.9;">Comprehensive view of all submitted emergency reports</p>
+    <div class="reports-stats">
+      <div class="stat-item">📊 Total: {{ reports|length }} reports</div>
+      <div class="stat-item">🔄 Auto-refresh: ON</div>
+      <div class="stat-item" id="lastUpdated">🕐 Updated: Just now</div>
+    </div>
   </div>
 
-  <table id="reportsTable">
-    <thead>
-      <tr>
-        <th class="sortable" onclick="sortTable(0)">📄 Report ID</th>
-        <th class="sortable" onclick="sortTable(1)">📍 Location</th>
-        <th class="sortable" onclick="sortTable(2)">📊 Severity</th>
-        <th class="sortable" onclick="sortTable(3)">👤 User</th>
-        <th class="sortable" onclick="sortTable(4)">🕒 Timestamp</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for report in reports %}
-      <tr>
-        <td>{{ report.id }}</td>
-        <td>{{ report.location }}</td>
-        <td>{{ report.severity }}</td>
-        <td>{{ report.user }}</td>
-        <td>{{ report.timestamp }}</td>
-        <td>
-          <form method="post" action="/reports/{{ report.id }}/status">
-            <select name="new_status">
-              <option value="submitted" {% if report.status == "submitted" %}selected{% endif %}>Submitted</option>
-              <option value="reviewed" {% if report.status == "reviewed" %}selected{% endif %}>Reviewed</option>
-              <option value="resolved" {% if report.status == "resolved" %}selected{% endif %}>Resolved</option>
-            </select>
-            <button type="submit">Update</button>
-          </form>
-        </td>
-        <td class="actions">
-          <a href="/reports/{{ report.id }}" target="_blank">📥 View</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <h3 style="margin: 0 0 1rem 0; color: #374151;">🔍 Filter & Search Reports</h3>
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label class="filter-label" for="severityFilter">📊 Severity Level</label>
+        <select id="severityFilter" class="filter-select" onchange="filterTable()">
+          <option value="">All Severities</option>
+          <option value="low">🟢 Low</option>
+          <option value="moderate">🟡 Moderate</option>
+          <option value="high">🟠 High</option>
+          <option value="critical">🔴 Critical</option>
+        </select>
+      </div>
 
-  <script>
-    function filterTable() {
-      const severityFilter = document.getElementById('severityFilter').value.toLowerCase();
-      const userFilter = document.getElementById('userFilter').value.toLowerCase();
-      const rows = document.querySelectorAll("#reportsTable tbody tr");
+      <div class="filter-group">
+        <label class="filter-label" for="userFilter">👤 User</label>
+        <input type="text" id="userFilter" class="filter-input" placeholder="Search by user name..." onkeyup="filterTable()">
+      </div>
 
-      rows.forEach(row => {
-        const severity = row.children[2].textContent.toLowerCase();
-        const user = row.children[3].textContent.toLowerCase();
-        const matchesSeverity = !severityFilter || severity === severityFilter;
-        const matchesUser = !userFilter || user.includes(userFilter);
-        row.style.display = matchesSeverity && matchesUser ? "" : "none";
-      });
+      <div class="filter-group">
+        <label class="filter-label" for="locationFilter">📍 Location</label>
+        <input type="text" id="locationFilter" class="filter-input" placeholder="Search by location..." onkeyup="filterTable()">
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label" for="statusFilter">🔄 Status</label>
+        <select id="statusFilter" class="filter-select" onchange="filterTable()">
+          <option value="">All Statuses</option>
+          <option value="submitted">📝 Submitted</option>
+          <option value="reviewed">👁️ Reviewed</option>
+          <option value="resolved">✅ Resolved</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button type="button" class="clear-filters-btn" onclick="clearAllFilters()">🗑️ Clear Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports Table -->
+  <div class="reports-table-container">
+    <!-- Bulk Actions -->
+    <div class="bulk-actions" id="bulkActions">
+      <input type="checkbox" class="select-all-checkbox" id="selectAll" onchange="toggleSelectAll()">
+      <span>Select All</span>
+      <button type="button" class="status-update-btn" onclick="bulkUpdateStatus('reviewed')">Mark as Reviewed</button>
+      <button type="button" class="status-update-btn" onclick="bulkUpdateStatus('resolved')">Mark as Resolved</button>
+    </div>
+
+    {% if reports %}
+    <table class="reports-table" id="reportsTable">
+      <thead>
+        <tr>
+          <th>
+            <input type="checkbox" onchange="toggleBulkActions()">
+          </th>
+          <th class="sortable" onclick="sortTable(1)" data-column="1">📄 Report ID</th>
+          <th class="sortable" onclick="sortTable(2)" data-column="2">📍 Location</th>
+          <th class="sortable" onclick="sortTable(3)" data-column="3">📊 Severity</th>
+          <th class="sortable" onclick="sortTable(4)" data-column="4">👤 User</th>
+          <th class="sortable" onclick="sortTable(5)" data-column="5">🕒 Timestamp</th>
+          <th>🔄 Status</th>
+          <th>⚙️ Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+        <tr data-report-id="{{ report.id }}">
+          <td>
+            <input type="checkbox" class="row-checkbox" value="{{ report.id }}">
+          </td>
+          <td><strong>{{ report.id[:8] }}...</strong></td>
+          <td>{{ report.location }}</td>
+          <td>
+            <span class="severity-badge severity-{{ report.severity.lower() }}">
+              {% if report.severity.lower() == 'critical' %}🔴
+              {% elif report.severity.lower() == 'high' %}🟠
+              {% elif report.severity.lower() == 'moderate' %}🟡
+              {% else %}🟢
+              {% endif %}
+              {{ report.severity }}
+            </span>
+          </td>
+          <td>{{ report.user }}</td>
+          <td>
+            {{ report.timestamp }}
+            <div style="font-size: 0.75rem; color: #6b7280;">
+              {{ moment(report.timestamp).fromNow() if moment else '' }}
+            </div>
+          </td>
+          <td>
+            <form method="post" action="/reports/{{ report.id }}/status" style="display: flex; align-items: center; gap: 0.5rem;">
+              <select name="new_status" class="status-select">
+                <option value="submitted" {% if report.status == "submitted" %}selected{% endif %}>📝 Submitted</option>
+                <option value="reviewed" {% if report.status == "reviewed" %}selected{% endif %}>👁️ Reviewed</option>
+                <option value="resolved" {% if report.status == "resolved" %}selected{% endif %}>✅ Resolved</option>
+              </select>
+              <button type="submit" class="status-update-btn">Update</button>
+            </form>
+          </td>
+          <td>
+            <div class="action-links">
+              <a href="/reports/{{ report.id }}" target="_blank" class="view-link">👁️ View</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="table-info">
+      <div>
+        <span id="visibleCount">{{ reports|length }}</span> of {{ reports|length }} reports shown
+      </div>
+      <div>
+        Last updated: <span id="updateTime">{{ moment().format('HH:mm:ss') if moment else 'Now' }}</span>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <h3>📭 No Reports Found</h3>
+      <p>No emergency reports have been submitted yet.</p>
+      <a href="/admin" style="color: #3b82f6; text-decoration: underline;">Return to Admin Dashboard</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentSortColumn = null;
+  let currentSortDirection = 'asc';
+  
+  function filterTable() {
+    const severityFilter = document.getElementById('severityFilter').value.toLowerCase();
+    const userFilter = document.getElementById('userFilter').value.toLowerCase();
+    const locationFilter = document.getElementById('locationFilter').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    const rows = document.querySelectorAll("#reportsTable tbody tr");
+    
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const severity = row.children[3].textContent.toLowerCase();
+      const user = row.children[4].textContent.toLowerCase();
+      const location = row.children[2].textContent.toLowerCase();
+      const status = row.children[6].querySelector('select').value.toLowerCase();
+      
+      const matchesSeverity = !severityFilter || severity.includes(severityFilter);
+      const matchesUser = !userFilter || user.includes(userFilter);
+      const matchesLocation = !locationFilter || location.includes(locationFilter);
+      const matchesStatus = !statusFilter || status === statusFilter;
+      
+      const isVisible = matchesSeverity && matchesUser && matchesLocation && matchesStatus;
+      
+      if (isVisible) {
+        row.classList.remove('hidden');
+        visibleCount++;
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+    
+    // Update visible count
+    document.getElementById('visibleCount').textContent = visibleCount;
+  }
+
+  function sortTable(colIndex) {
+    const table = document.getElementById("reportsTable");
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.querySelectorAll('tr:not(.hidden)'));
+    
+    // Update sort direction
+    if (currentSortColumn === colIndex) {
+      currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentSortDirection = 'asc';
+      currentSortColumn = colIndex;
     }
+    
+    // Clear previous sort indicators
+    table.querySelectorAll('th').forEach(th => {
+      th.classList.remove('sorted-asc', 'sorted-desc');
+    });
+    
+    // Add sort indicator to current column
+    const currentHeader = table.querySelectorAll('th')[colIndex];
+    currentHeader.classList.add(currentSortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+    
+    // Sort rows
+    rows.sort((a, b) => {
+      const valA = a.cells[colIndex].textContent.trim().toLowerCase();
+      const valB = b.cells[colIndex].textContent.trim().toLowerCase();
+      
+      // Handle numeric sorting for timestamps
+      if (colIndex === 5) {
+        const dateA = new Date(valA);
+        const dateB = new Date(valB);
+        return currentSortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      
+      // Handle text sorting
+      const result = valA.localeCompare(valB);
+      return currentSortDirection === 'asc' ? result : -result;
+    });
 
-    function sortTable(colIndex) {
-      const table = document.getElementById("reportsTable");
-      const rows = Array.from(table.rows).slice(1); // skip header
-      const ascending = table.dataset.sortOrder !== "asc";
-      rows.sort((a, b) => {
-        const valA = a.cells[colIndex].textContent.trim().toLowerCase();
-        const valB = b.cells[colIndex].textContent.trim().toLowerCase();
-        return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
-      });
-
-      rows.forEach(row => table.tBodies[0].appendChild(row));
-      table.dataset.sortOrder = ascending ? "asc" : "desc";
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+  }
+  
+  function clearAllFilters() {
+    document.getElementById('severityFilter').value = '';
+    document.getElementById('userFilter').value = '';
+    document.getElementById('locationFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    filterTable();
+  }
+  
+  function toggleBulkActions() {
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    const bulkActions = document.getElementById('bulkActions');
+    const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+    
+    if (checkedCount > 0) {
+      bulkActions.classList.add('active');
+    } else {
+      bulkActions.classList.remove('active');
     }
-  </script>
-</body>
-</html>
+  }
+  
+  function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = selectAll.checked;
+    });
+    
+    toggleBulkActions();
+  }
+  
+  function bulkUpdateStatus(newStatus) {
+    const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+    const reportIds = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    if (reportIds.length === 0) {
+      alert('Please select reports to update');
+      return;
+    }
+    
+    if (confirm(`Update ${reportIds.length} reports to ${newStatus}?`)) {
+      // Implementation would depend on your backend API
+      console.log('Bulk updating reports:', reportIds, 'to status:', newStatus);
+      // You could make an AJAX call here to update multiple reports
+    }
+  }
+  
+  // Auto-refresh functionality
+  let refreshInterval;
+  
+  function startAutoRefresh() {
+    refreshInterval = setInterval(() => {
+      if (!document.hidden) {
+        // Update timestamp
+        const now = new Date().toLocaleTimeString();
+        document.getElementById('updateTime').textContent = now;
+        document.getElementById('lastUpdated').textContent = `🕐 Updated: ${now}`;
+        
+        // In a real implementation, you'd refresh the data here
+        console.log('🔄 Auto-refresh triggered');
+      }
+    }, 30000); // Refresh every 30 seconds
+  }
+  
+  function stopAutoRefresh() {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+    }
+  }
+  
+  // Event listeners
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopAutoRefresh();
+    } else {
+      startAutoRefresh();
+    }
+  });
+  
+  // Add event listeners to checkboxes
+  document.addEventListener('change', (e) => {
+    if (e.target.classList.contains('row-checkbox')) {
+      toggleBulkActions();
+    }
+  });
+  
+  // Initialize
+  window.addEventListener('load', () => {
+    startAutoRefresh();
+    console.log('📄 Reports page loaded with auto-refresh');
+  });
+  
+  // Cleanup
+  window.addEventListener('beforeunload', stopAutoRefresh);
+</script>
+{% endblock %}

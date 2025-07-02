@@ -1,131 +1,777 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Crowd Report Map</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- templates/map_reports.html -->
+{% extends "base.html" %}
+
+{% block title %}Live Crowd Reports Map - Disaster Response Assistant{% endblock %}
+{% block page_title %}🗺️ Live Crowd Reports Map{% endblock %}
+{% block subtitle %}Real-time Emergency Situation Mapping & Analysis{% endblock %}
+
+{% block header_actions %}
+<a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+  ⬅️ Back to Home
+</a>
+<a href="/crowd-reports" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #059669; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
+  📋 View Reports List
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .map-container {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    margin-top: 1rem;
+  }
   
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-
-  <style>
-    #map { height: 85vh; width: 100%; margin-top: 1em; }
-    .controls {
-      text-align: center;
-      margin-top: 1em;
+  #map { 
+    height: 75vh; 
+    width: 100%; 
+    border-radius: 12px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .map-controls {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .control-group label {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: white;
+    margin: 0;
+  }
+  
+  .control-select {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    color: #374151;
+    min-width: 120px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .control-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+  
+  .map-button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .map-button.primary {
+    background: #16a34a;
+    color: white;
+  }
+  
+  .map-button.primary:hover {
+    background: #15803d;
+    transform: translateY(-1px);
+  }
+  
+  .map-button.secondary {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .map-button.secondary:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+  }
+  
+  .map-button.danger {
+    background: #dc2626;
+    color: white;
+  }
+  
+  .map-button.danger:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+  }
+  
+  .map-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .stat-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    border-left: 4px solid #3b82f6;
+    transition: transform 0.2s ease;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .stat-card.critical {
+    border-left-color: #dc2626;
+  }
+  
+  .stat-card.urgent {
+    border-left-color: #f59e0b;
+  }
+  
+  .stat-card.low {
+    border-left-color: #16a34a;
+  }
+  
+  .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1e40af;
+    margin-bottom: 0.25rem;
+  }
+  
+  .stat-label {
+    color: #6b7280;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .map-legend {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .legend-icon {
+    font-size: 16px;
+  }
+  
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
+  }
+  
+  .loading-overlay.hidden {
+    display: none;
+  }
+  
+  .loading-content {
+    text-align: center;
+    color: #374151;
+  }
+  
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  
+  .map-error {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  
+  .map-error.visible {
+    display: block;
+  }
+  
+  /* Custom Leaflet Popup Styling */
+  .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+  
+  .report-popup {
+    max-width: 300px;
+    padding: 0.5rem;
+  }
+  
+  .popup-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .popup-user {
+    font-weight: bold;
+    color: #1e40af;
+  }
+  
+  .popup-timestamp {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+  
+  .popup-message {
+    margin: 0.5rem 0;
+    line-height: 1.4;
+  }
+  
+  .popup-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .popup-badge {
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .tone-neutral { background: #6b7280; }
+  .tone-concerned { background: #f59e0b; }
+  .tone-urgent { background: #dc2626; }
+  
+  .escalation-low { background: #16a34a; }
+  .escalation-medium { background: #f59e0b; }
+  .escalation-high { background: #dc2626; }
+  
+  @media (max-width: 768px) {
+    .map-controls {
+      flex-direction: column;
+      gap: 0.5rem;
     }
-    select, button {
-      padding: 0.5em;
-      margin: 0 0.5em;
-      font-size: 1em;
+    
+    .control-group {
+      width: 100%;
+      justify-content: space-between;
     }
-  </style>
-</head>
-<body>
-  <h2 style="text-align:center;">🗺️ Live Crowd Reports Map</h2>
+    
+    #map {
+      height: 60vh;
+    }
+    
+    .map-legend {
+      position: static;
+      margin-bottom: 1rem;
+    }
+    
+    .map-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media print {
+    .map-controls, .map-stats {
+      display: none;
+    }
+    
+    #map {
+      height: 80vh;
+    }
+  }
+</style>
+{% endblock %}
 
-  <!-- Filter + Export Controls -->
-  <div class="controls">
-    <label for="tone">Tone:</label>
-    <select id="tone">
-      <option value="">All</option>
-      <option value="neutral">Neutral</option>
-      <option value="concerned">Concerned</option>
-      <option value="urgent">Urgent</option>
-    </select>
+{% block content %}
+<!-- Map Statistics -->
+<div class="map-stats" id="mapStats">
+  <div class="stat-card">
+    <div class="stat-number" id="totalReports">0</div>
+    <div class="stat-label">Total Reports</div>
+  </div>
+  <div class="stat-card critical">
+    <div class="stat-number" id="highEscalation">0</div>
+    <div class="stat-label">High Priority</div>
+  </div>
+  <div class="stat-card urgent">
+    <div class="stat-number" id="mediumEscalation">0</div>
+    <div class="stat-label">Medium Priority</div>
+  </div>
+  <div class="stat-card low">
+    <div class="stat-number" id="lowEscalation">0</div>
+    <div class="stat-label">Low Priority</div>
+  </div>
+</div>
 
-    <label for="escalation">Escalation:</label>
-    <select id="escalation">
-      <option value="">All</option>
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-    </select>
+<!-- Error Display -->
+<div class="map-error" id="mapError">
+  <strong>⚠️ Error:</strong> <span id="errorMessage"></span>
+</div>
 
-    <button onclick="loadFilteredReports()">🔍 Filter</button>
-    <button onclick="window.print()">📄 Export PDF</button>
+<!-- Map Container -->
+<div class="map-container">
+  <!-- Map Controls -->
+  <div class="map-controls">
+    <div class="control-group">
+      <label for="tone">🎭 Tone:</label>
+      <select id="tone" class="control-select">
+        <option value="">All Tones</option>
+        <option value="neutral">Neutral</option>
+        <option value="concerned">Concerned</option>
+        <option value="urgent">Urgent</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="escalation">⚡ Priority:</label>
+      <select id="escalation" class="control-select">
+        <option value="">All Priorities</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="timeRange">📅 Time:</label>
+      <select id="timeRange" class="control-select">
+        <option value="">All Time</option>
+        <option value="1h">Last Hour</option>
+        <option value="24h">Last 24 Hours</option>
+        <option value="7d">Last 7 Days</option>
+      </select>
+    </div>
+
+    <button class="map-button primary" onclick="loadFilteredReports()">
+      🔍 Apply Filters
+    </button>
+    
+    <button class="map-button secondary" onclick="toggleHeatmap()">
+      🔥 Toggle Heatmap
+    </button>
+    
+    <button class="map-button secondary" onclick="window.print()">
+      📄 Export PDF
+    </button>
+    
+    <button class="map-button danger" onclick="clearFilters()">
+      🗑️ Clear All
+    </button>
   </div>
 
-  <!-- Map Container -->
+  <!-- Map -->
   <div id="map"></div>
+  
+  <!-- Map Legend -->
+  <div class="map-legend">
+    <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem;">🗺️ Legend</h4>
+    <div class="legend-item">
+      <span class="legend-icon" style="color: #dc2626;">🔴</span>
+      <span>High Priority</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-icon" style="color: #f59e0b;">🟡</span>
+      <span>Medium Priority</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-icon" style="color: #16a34a;">🟢</span>
+      <span>Low Priority</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-icon">🔥</span>
+      <span>Heatmap Layer</span>
+    </div>
+  </div>
+  
+  <!-- Loading Overlay -->
+  <div class="loading-overlay hidden" id="loadingOverlay">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <div>Loading reports...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
 
-  <!-- Leaflet JS + Plugins -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+{% block base_scripts %}
+<!-- Leaflet JS + Plugins -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+{% endblock %}
 
-  <script>
-    const map = L.map('map').setView([20, 0], 2);
+{% block scripts %}
+<script>
+// Initialize map
+const map = L.map('map').setView([20, 0], 2);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+// Add tile layer with dark theme support
+const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
 
-    const iconColors = {
-      high: 'red',
-      medium: 'orange',
-      low: 'green'
-    };
+// Icon configuration
+const iconColors = {
+  high: '#dc2626',
+  medium: '#f59e0b',
+  low: '#16a34a'
+};
 
-    const getIcon = (level) => {
-      return L.divIcon({
-        className: 'custom-icon',
-        html: `<span style="font-size: 20px; color:${iconColors[level] || 'gray'};">⚠️</span>`,
-        iconSize: [20, 20]
-      });
-    };
+const getIcon = (level) => {
+  const color = iconColors[level] || '#6b7280';
+  const emoji = level === 'high' ? '🔴' : level === 'medium' ? '🟡' : '🟢';
+  
+  return L.divIcon({
+    className: 'custom-map-icon',
+    html: `<div style="
+      background: ${color}; 
+      border: 3px solid white; 
+      border-radius: 50%; 
+      width: 20px; 
+      height: 20px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 10px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      animation: pulse 2s infinite;
+    ">${emoji}</div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
+};
 
-    const markers = L.markerClusterGroup();
-    let heat = null;
+// Map layers
+const markers = L.markerClusterGroup({
+  chunkedLoading: true,
+  maxClusterRadius: 50
+});
+let heat = null;
+let heatmapVisible = false;
 
-    function loadFilteredReports() {
-      const tone = document.getElementById('tone').value;
-      const escalation = document.getElementById('escalation').value;
-      const query = new URLSearchParams();
-      if (tone) query.append("tone", tone);
-      if (escalation) query.append("escalation", escalation);
+// State tracking
+let currentReports = [];
+let isLoading = false;
 
-      fetch('/api/crowd-report-locations?' + query.toString())
-        .then(response => response.json())
-        .then(data => {
-          markers.clearLayers();
-          if (heat) map.removeLayer(heat);
-          const heatPoints = [];
+// UI Elements
+const loadingOverlay = document.getElementById('loadingOverlay');
+const errorDiv = document.getElementById('mapError');
+const errorMessage = document.getElementById('errorMessage');
 
-          data.reports.forEach(report => {
-            if (report.latitude && report.longitude) {
-              const latLng = [report.latitude, report.longitude];
-              const marker = L.marker(latLng, {
-                icon: getIcon(report.escalation)
-              });
-              marker.bindPopup(`
-                <strong>${report.user || 'Anonymous'}</strong><br/>
-                <em>${report.timestamp}</em><br/>
-                <p>${report.message}</p>
-                <small><b>Tone:</b> ${report.tone || 'N/A'} | <b>Escalation:</b> ${report.escalation}</small>
-              `);
-              markers.addLayer(marker);
-              heatPoints.push([...latLng, 0.5]);
-            }
-          });
+// Show/hide loading
+function showLoading() {
+  isLoading = true;
+  loadingOverlay.classList.remove('hidden');
+}
 
-          map.addLayer(markers);
+function hideLoading() {
+  isLoading = false;
+  loadingOverlay.classList.add('hidden');
+}
 
-          heat = L.heatLayer(heatPoints, { radius: 25 });
-          const overlays = {
-            "Clustered Markers": markers,
-            "Heatmap": heat
-          };
-          L.control.layers(null, overlays, { collapsed: false }).addTo(map);
-        });
+// Show error
+function showError(message) {
+  errorMessage.textContent = message;
+  errorDiv.classList.add('visible');
+  setTimeout(() => errorDiv.classList.remove('visible'), 5000);
+}
+
+// Update statistics
+function updateStats(reports) {
+  const stats = {
+    total: reports.length,
+    high: reports.filter(r => r.escalation === 'high').length,
+    medium: reports.filter(r => r.escalation === 'medium').length,
+    low: reports.filter(r => r.escalation === 'low').length
+  };
+  
+  document.getElementById('totalReports').textContent = stats.total;
+  document.getElementById('highEscalation').textContent = stats.high;
+  document.getElementById('mediumEscalation').textContent = stats.medium;
+  document.getElementById('lowEscalation').textContent = stats.low;
+}
+
+// Create popup content
+function createPopupContent(report) {
+  return `
+    <div class="report-popup">
+      <div class="popup-header">
+        <div class="popup-user">👤 ${report.user || 'Anonymous'}</div>
+        <div class="popup-timestamp">${report.timestamp}</div>
+      </div>
+      <div class="popup-message">${report.message || 'No message provided'}</div>
+      <div class="popup-meta">
+        <span class="popup-badge tone-${report.tone || 'neutral'}">
+          ${(report.tone || 'neutral').toUpperCase()}
+        </span>
+        <span class="popup-badge escalation-${report.escalation || 'low'}">
+          ${(report.escalation || 'low').toUpperCase()}
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+// Load filtered reports
+async function loadFilteredReports() {
+  if (isLoading) return;
+  
+  showLoading();
+  
+  try {
+    const tone = document.getElementById('tone').value;
+    const escalation = document.getElementById('escalation').value;
+    const timeRange = document.getElementById('timeRange').value;
+    
+    const query = new URLSearchParams();
+    if (tone) query.append("tone", tone);
+    if (escalation) query.append("escalation", escalation);
+    if (timeRange) query.append("timeRange", timeRange);
+
+    const response = await fetch('/api/crowd-report-locations?' + query.toString());
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
+    
+    const data = await response.json();
+    currentReports = data.reports || [];
+    
+    // Clear existing markers
+    markers.clearLayers();
+    if (heat) map.removeLayer(heat);
+    
+    const heatPoints = [];
 
-    // Auto-load on first load
+    // Add new markers
+    currentReports.forEach(report => {
+      if (report.latitude && report.longitude) {
+        const latLng = [parseFloat(report.latitude), parseFloat(report.longitude)];
+        
+        const marker = L.marker(latLng, {
+          icon: getIcon(report.escalation)
+        });
+        
+        marker.bindPopup(createPopupContent(report), {
+          maxWidth: 300,
+          className: 'custom-popup'
+        });
+        
+        markers.addLayer(marker);
+        heatPoints.push([...latLng, report.escalation === 'high' ? 1 : report.escalation === 'medium' ? 0.6 : 0.3]);
+      }
+    });
+
+    map.addLayer(markers);
+    
+    // Create heatmap layer
+    if (heatPoints.length > 0) {
+      heat = L.heatLayer(heatPoints, { 
+        radius: 25,
+        blur: 15,
+        maxZoom: 17,
+        gradient: {
+          0.0: '#16a34a',
+          0.5: '#f59e0b', 
+          1.0: '#dc2626'
+        }
+      });
+      
+      if (heatmapVisible) {
+        map.addLayer(heat);
+      }
+    }
+    
+    // Update statistics
+    updateStats(currentReports);
+    
+    // Auto-fit bounds if we have markers
+    if (currentReports.length > 0) {
+      const group = new L.featureGroup(markers.getLayers());
+      map.fitBounds(group.getBounds().pad(0.1));
+    }
+    
+  } catch (error) {
+    console.error('Error loading reports:', error);
+    showError(`Failed to load reports: ${error.message}`);
+  } finally {
+    hideLoading();
+  }
+}
+
+// Toggle heatmap
+function toggleHeatmap() {
+  if (!heat) return;
+  
+  if (heatmapVisible) {
+    map.removeLayer(heat);
+    heatmapVisible = false;
+  } else {
+    map.addLayer(heat);
+    heatmapVisible = true;
+  }
+}
+
+// Clear all filters
+function clearFilters() {
+  document.getElementById('tone').value = '';
+  document.getElementById('escalation').value = '';
+  document.getElementById('timeRange').value = '';
+  loadFilteredReports();
+}
+
+// Auto-refresh functionality
+let autoRefreshInterval;
+
+function startAutoRefresh() {
+  autoRefreshInterval = setInterval(() => {
+    if (navigator.onLine && !isLoading) {
+      loadFilteredReports();
+    }
+  }, 30000); // 30 seconds
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+  }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Load initial data
+  loadFilteredReports();
+  
+  // Start auto-refresh
+  startAutoRefresh();
+  
+  // Handle online/offline events
+  window.addEventListener('online', () => {
+    startAutoRefresh();
     loadFilteredReports();
+  });
+  
+  window.addEventListener('offline', stopAutoRefresh);
+  
+  // Handle visibility change (pause when tab not visible)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopAutoRefresh();
+    } else {
+      startAutoRefresh();
+    }
+  });
+});
 
-    // Poll every 30s
-    setInterval(loadFilteredReports, 30000);
-  </script>
-</body>
-</html>
+// Handle map resize on window resize
+window.addEventListener('resize', () => {
+  setTimeout(() => map.invalidateSize(), 100);
+});
+
+// Geolocation functionality
+function getUserLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        map.setView([lat, lng], 12);
+        
+        L.marker([lat, lng], {
+          icon: L.divIcon({
+            html: '📍',
+            className: 'user-location-marker',
+            iconSize: [20, 20]
+          })
+        }).addTo(map).bindPopup('Your Location');
+      },
+      (error) => {
+        console.warn('Geolocation error:', error);
+      }
+    );
+  }
+}
+
+// Add user location button to map
+L.Control.UserLocation = L.Control.extend({
+  onAdd: function(map) {
+    const btn = L.DomUtil.create('button', 'leaflet-bar leaflet-control');
+    btn.innerHTML = '📍';
+    btn.title = 'Show my location';
+    btn.style.backgroundColor = 'white';
+    btn.style.border = 'none';
+    btn.style.padding = '8px';
+    btn.style.cursor = 'pointer';
+    
+    L.DomEvent.on(btn, 'click', getUserLocation);
+    
+    return btn;
+  }
+});
+
+new L.Control.UserLocation({ position: 'topleft' }).addTo(map);
+</script>
+{% endblock %}
+
+<!-- AI status not needed for map page -->
+{% block ai_status %}{% endblock %}

@@ -1,101 +1,408 @@
 <!-- templates/crowd_reports.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Crowd Reports Viewer</title>
-  <link rel="stylesheet" href="/static/css/styles.css" />
-  <style>
-    .crowd-report-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
+{% extends "base.html" %}
 
+{% block title %}Crowd Reports Viewer - Disaster Response Assistant{% endblock %}
+{% block page_title %}📋 Crowd Reports Viewer{% endblock %}
+{% block subtitle %}Real-time Community Emergency Reports{% endblock %}
+
+{% block header_actions %}
+<a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+  ⬅️ Back to Home
+</a>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .crowd-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .crowd-report-table th,
+  .crowd-report-table td {
+    border: 1px solid #e5e7eb;
+    padding: 0.75rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  
+  .crowd-report-table th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+  
+  .crowd-report-table tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+  }
+  
+  .crowd-report-table tbody tr:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .priority-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .priority-critical { 
+    background: #dc2626; 
+    animation: pulse 2s infinite;
+  }
+  .priority-urgent { background: #f59e0b; }
+  .priority-medium { background: #3b82f6; }
+  .priority-low { background: #10b981; }
+  
+  .report-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .stat-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #3b82f6;
+  }
+  
+  .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1e40af;
+    margin-bottom: 0.25rem;
+  }
+  
+  .stat-label {
+    color: #6b7280;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .message-preview {
+    max-width: 300px;
+    word-wrap: break-word;
+    line-height: 1.4;
+  }
+  
+  .media-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: #f3f4f6;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #374151;
+    font-size: 0.8rem;
+    transition: background-color 0.2s;
+  }
+  
+  .media-link:hover {
+    background: #e5e7eb;
+  }
+  
+  .audio-player {
+    width: 120px;
+    height: 30px;
+  }
+  
+  .timestamp {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+  
+  .user-badge {
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6b7280;
+  }
+  
+  .empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  
+  .refresh-button {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+    margin-left: 1rem;
+  }
+  
+  .refresh-button:hover {
+    background: #15803d;
+  }
+  
+  .filters {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .filter-select {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 768px) {
+    .crowd-report-table {
+      font-size: 0.8rem;
+    }
+    
     .crowd-report-table th,
     .crowd-report-table td {
-      border: 1px solid #e5e7eb;
-      padding: 0.75rem;
-      text-align: left;
+      padding: 0.5rem;
     }
-
-    .crowd-report-table th {
-      background-color: #f3f4f6;
-      font-weight: bold;
+    
+    .message-preview {
+      max-width: 200px;
     }
+  }
+</style>
+{% endblock %}
 
-    .priority-badge {
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      color: white;
+{% block content %}
+<!-- Statistics Cards -->
+<div class="report-stats">
+  <div class="stat-card">
+    <div class="stat-number">{{ reports|length }}</div>
+    <div class="stat-label">Total Reports</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">{{ reports|selectattr('priority', 'equalto', 'critical')|list|length }}</div>
+    <div class="stat-label">Critical Alerts</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">{{ reports|selectattr('image_path')|list|length }}</div>
+    <div class="stat-label">With Images</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">{{ reports|selectattr('audio_path')|list|length }}</div>
+    <div class="stat-label">With Audio</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+  <label for="priorityFilter">Filter by Priority:</label>
+  <select id="priorityFilter" class="filter-select">
+    <option value="">All Priorities</option>
+    <option value="critical">Critical</option>
+    <option value="urgent">Urgent</option>
+    <option value="medium">Medium</option>
+    <option value="low">Low</option>
+  </select>
+  
+  <label for="mediaFilter">Filter by Media:</label>
+  <select id="mediaFilter" class="filter-select">
+    <option value="">All Reports</option>
+    <option value="image">With Images</option>
+    <option value="audio">With Audio</option>
+    <option value="media">With Any Media</option>
+  </select>
+  
+  <button class="refresh-button" onclick="location.reload()">
+    🔄 Refresh
+  </button>
+</div>
+
+{% if reports %}
+<div style="overflow-x: auto;">
+  <table class="crowd-report-table" id="reportsTable">
+    <thead>
+      <tr>
+        <th>📄 Message</th>
+        <th>🎯 Priority</th>
+        <th>📆 Timestamp</th>
+        <th>🧑 User</th>
+        <th>🖼️ Image</th>
+        <th>🔊 Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for report in reports %}
+      <tr data-priority="{{ report.priority }}" data-has-image="{{ 'true' if report.image_path else 'false' }}" data-has-audio="{{ 'true' if report.audio_path else 'false' }}">
+        <td>
+          <div class="message-preview">
+            {{ report.message or '—' }}
+          </div>
+        </td>
+        <td>
+          <span class="priority-badge priority-{{ report.priority }}">
+            {% if report.priority == 'critical' %}🚨{% elif report.priority == 'urgent' %}⚠️{% elif report.priority == 'medium' %}📊{% else %}📝{% endif %}
+            {{ report.priority.capitalize() }}
+          </span>
+        </td>
+        <td>
+          <div class="timestamp">
+            {{ report.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+          </div>
+        </td>
+        <td>
+          <span class="user-badge">
+            👤 {{ report.user or 'Anonymous' }}
+          </span>
+        </td>
+        <td>
+          {% if report.image_path %}
+            <a href="{{ report.image_path }}" target="_blank" class="media-link">
+              🖼️ View Image
+            </a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          {% if report.audio_path %}
+            <audio controls src="{{ report.audio_path }}" class="audio-player"></audio>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">📭</div>
+  <h3>No Reports Yet</h3>
+  <p>When community members submit emergency reports, they'll appear here.</p>
+  <a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+    📝 Submit First Report
+  </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Real-time filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const priorityFilter = document.getElementById('priorityFilter');
+  const mediaFilter = document.getElementById('mediaFilter');
+  const table = document.getElementById('reportsTable');
+  
+  function filterReports() {
+    const selectedPriority = priorityFilter.value;
+    const selectedMedia = mediaFilter.value;
+    const rows = table ? table.querySelectorAll('tbody tr') : [];
+    
+    rows.forEach(row => {
+      const priority = row.dataset.priority;
+      const hasImage = row.dataset.hasImage === 'true';
+      const hasAudio = row.dataset.hasAudio === 'true';
+      
+      let showRow = true;
+      
+      // Priority filter
+      if (selectedPriority && priority !== selectedPriority) {
+        showRow = false;
+      }
+      
+      // Media filter
+      if (selectedMedia) {
+        switch (selectedMedia) {
+          case 'image':
+            if (!hasImage) showRow = false;
+            break;
+          case 'audio':
+            if (!hasAudio) showRow = false;
+            break;
+          case 'media':
+            if (!hasImage && !hasAudio) showRow = false;
+            break;
+        }
+      }
+      
+      row.style.display = showRow ? '' : 'none';
+    });
+  }
+  
+  if (priorityFilter) priorityFilter.addEventListener('change', filterReports);
+  if (mediaFilter) mediaFilter.addEventListener('change', filterReports);
+  
+  // Auto-refresh every 30 seconds
+  setInterval(() => {
+    if (navigator.onLine) {
+      location.reload();
     }
+  }, 30000);
+});
 
-    .priority-critical { background-color: #dc2626; }
-    .priority-urgent { background-color: #f59e0b; }
-    .priority-medium { background-color: #3b82f6; }
-    .priority-low { background-color: #10b981; }
+// Print functionality
+function printReports() {
+  window.print();
+}
 
-    .report-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-  </style>
-</head>
-<body>
-  <main class="container">
-    <div class="report-header">
-      <h1>📋 Submitted Crowd Reports</h1>
-      <a href="/" style="text-decoration: none; background: #1e40af; color: white; padding: 0.5rem 1rem; border-radius: 6px;">⬅️ Home</a>
-    </div>
+// Export functionality (if needed)
+function exportReports() {
+  const reports = Array.from(document.querySelectorAll('#reportsTable tbody tr')).map(row => {
+    const cells = row.querySelectorAll('td');
+    return {
+      message: cells[0].textContent.trim(),
+      priority: cells[1].textContent.trim(),
+      timestamp: cells[2].textContent.trim(),
+      user: cells[3].textContent.trim(),
+      hasImage: cells[4].textContent.trim() !== '—',
+      hasAudio: cells[5].textContent.trim() !== '—'
+    };
+  });
+  
+  const dataStr = JSON.stringify(reports, null, 2);
+  const dataBlob = new Blob([dataStr], {type: 'application/json'});
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `crowd-reports-${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}
 
-    {% if reports %}
-      <table class="crowd-report-table">
-        <thead>
-          <tr>
-            <th>📄 Message</th>
-            <th>🎯 Priority</th>
-            <th>📆 Timestamp</th>
-            <th>🧑 User</th>
-            <th>🖼️ Image</th>
-            <th>🔊 Audio</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for report in reports %}
-          <tr>
-            <td>{{ report.message or '—' }}</td>
-            <td>
-              <span class="priority-badge priority-{{ report.priority }}">
-                {{ report.priority.capitalize() }}
-              </span>
-            </td>
-            <td>{{ report.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            <td>{{ report.user or 'Anonymous' }}</td>
-            <td>
-              {% if report.image_path %}
-                <a href="{{ report.image_path }}" target="_blank">🖼️ View</a>
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td>
-              {% if report.audio_path %}
-                <audio controls src="{{ report.audio_path }}" style="width: 120px;"></audio>
-              {% else %}
-                —
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <p>No reports submitted yet.</p>
-    {% endif %}
-  </main>
-</body>
-</html>
+<!-- No AI status needed for this page -->
+{% block ai_status %}{% endblock %}
