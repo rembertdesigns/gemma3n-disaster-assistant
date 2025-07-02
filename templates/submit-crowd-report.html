@@ -48,7 +48,7 @@
 <body>
   <h1>📢 Submit a Crowd Report</h1>
 
-  <form action="/api/submit-crowd-report" method="post">
+  <form action="/api/submit-crowd-report" method="post" enctype="multipart/form-data">
     <label for="message">Report Message *</label>
     <textarea id="message" name="message" rows="4" required></textarea>
 
@@ -75,7 +75,23 @@
     <label for="location">Location (optional)</label>
     <input type="text" id="location" name="location" placeholder="City, GPS, or landmark">
 
+    <label for="image">Attach an Image (optional)</label>
+    <input type="file" id="image" name="image" accept="image/*">
+
     <button type="submit">📨 Submit Report</button>
   </form>
+
+  <script>
+    window.onload = () => {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const coords = `${position.coords.latitude},${position.coords.longitude}`;
+          document.getElementById("location").value = coords;
+        }, error => {
+          console.warn("Location access denied or unavailable.");
+        });
+      }
+    };
+  </script>
 </body>
 </html>

@@ -243,6 +243,12 @@
     </div>
 
     <div class="main-card">
+      <!-- Sync Queue UI -->
+<div class="sync-queue-card" id="syncQueueCard" style="display: none; margin-top: 2rem; padding: 1rem; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px;">
+  <h3 style="margin-bottom: 0.5rem;">📡 Offline Report Sync Queue</h3>
+  <ul id="syncQueueList" style="padding-left: 1rem; font-size: 0.9rem;"></ul>
+  <button id="syncNowBtn" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #16a34a; color: white; border: none; border-radius: 4px;">🔄 Sync Now</button>
+</div>
       <form id="analysisForm" method="post" action="/analyze" enctype="multipart/form-data">
         <div class="form-section">
           <label for="report_text">📝 Situation Description (Optional):</label>
@@ -742,5 +748,60 @@
       }
     }, 3000);
   </script>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => console.log("✅ Service worker registered:", reg.scope))
+      .catch((err) => console.error("❌ Service worker registration failed:", err));
+    }
+  </script>
+
+<script>
+  // Sync Queue logic
+  function showSyncQueue() {
+    const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+    const list = document.getElementById('syncQueueList');
+    const card = document.getElementById('syncQueueCard');
+
+    if (queue.length > 0) {
+      list.innerHTML = queue.map((r, i) => `
+        <li>📥 Report #${i + 1} — "${r.message?.slice(0, 40) || 'No text'}..." (${r.priority || 'N/A'})</li>
+      `).join('');
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  }
+
+  document.getElementById('syncNowBtn').addEventListener('click', async () => {
+    const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+    for (const report of queue) {
+      try {
+        const res = await fetch('/api/submit-crowd-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(report),
+        });
+
+        if (res.ok) {
+          console.log('✅ Synced:', report);
+        } else {
+          throw new Error('Failed to sync');
+        }
+      } catch (err) {
+        console.error('❌ Sync failed:', err);
+        break;
+      }
+    }
+
+    localStorage.removeItem('syncQueue');
+    showSyncQueue();
+  });
+
+  window.addEventListener('online', showSyncQueue);
+  window.addEventListener('load', showSyncQueue);
+</script>
 </body>
 </html>

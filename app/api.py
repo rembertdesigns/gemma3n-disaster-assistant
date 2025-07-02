@@ -190,21 +190,28 @@ async def submit_crowd_report(
     tone: Optional[str] = Form(None),
     escalation: str = Form(...),
     user: Optional[str] = Form("Anonymous"),
-    location: Optional[str] = Form(None)
+    location: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None)
 ):
-    # Auto-detect tone if not provided
     if not tone:
         tone = analyze_sentiment(message)
 
     timestamp = datetime.utcnow().isoformat()
+    image_path = None
+
+    if image and image.filename:
+        ext = os.path.splitext(image.filename)[1]
+        image_path = os.path.join("uploads", f"crowd_{uuid.uuid4().hex}{ext}")
+        with open(image_path, "wb") as f:
+            f.write(await image.read())
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO reports (message, tone, escalation, timestamp, user, location)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (message, tone, escalation, timestamp, user, location))
+            INSERT INTO reports (message, tone, escalation, timestamp, user, location, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (message, tone, escalation, timestamp, user, location, image_path))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -212,6 +219,12 @@ async def submit_crowd_report(
         raise HTTPException(status_code=500, detail="Error saving report")
 
     return RedirectResponse(url="/view-reports", status_code=303)
+
+@app.get("/crowd-reports", response_class=HTMLResponse)
+async def view_crowd_reports(request: Request, db: Session = Depends(get_db)):
+    reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).all()
+    return templates.TemplateResponse("crowd_reports.html", {"request": request, "reports": reports})
+
 # ================================
 # EXISTING ADMIN ROUTES (unchanged)
 # ================================

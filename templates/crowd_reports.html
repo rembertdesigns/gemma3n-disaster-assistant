@@ -1,0 +1,101 @@
+<!-- templates/crowd_reports.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Crowd Reports Viewer</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <style>
+    .crowd-report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .crowd-report-table th,
+    .crowd-report-table td {
+      border: 1px solid #e5e7eb;
+      padding: 0.75rem;
+      text-align: left;
+    }
+
+    .crowd-report-table th {
+      background-color: #f3f4f6;
+      font-weight: bold;
+    }
+
+    .priority-badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: white;
+    }
+
+    .priority-critical { background-color: #dc2626; }
+    .priority-urgent { background-color: #f59e0b; }
+    .priority-medium { background-color: #3b82f6; }
+    .priority-low { background-color: #10b981; }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <div class="report-header">
+      <h1>📋 Submitted Crowd Reports</h1>
+      <a href="/" style="text-decoration: none; background: #1e40af; color: white; padding: 0.5rem 1rem; border-radius: 6px;">⬅️ Home</a>
+    </div>
+
+    {% if reports %}
+      <table class="crowd-report-table">
+        <thead>
+          <tr>
+            <th>📄 Message</th>
+            <th>🎯 Priority</th>
+            <th>📆 Timestamp</th>
+            <th>🧑 User</th>
+            <th>🖼️ Image</th>
+            <th>🔊 Audio</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+          <tr>
+            <td>{{ report.message or '—' }}</td>
+            <td>
+              <span class="priority-badge priority-{{ report.priority }}">
+                {{ report.priority.capitalize() }}
+              </span>
+            </td>
+            <td>{{ report.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ report.user or 'Anonymous' }}</td>
+            <td>
+              {% if report.image_path %}
+                <a href="{{ report.image_path }}" target="_blank">🖼️ View</a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              {% if report.audio_path %}
+                <audio controls src="{{ report.audio_path }}" style="width: 120px;"></audio>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No reports submitted yet.</p>
+    {% endif %}
+  </main>
+</body>
+</html>
