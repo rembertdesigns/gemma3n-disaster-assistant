@@ -824,5 +824,10 @@ function handleManualSignal() {
   window.addEventListener('online', showSyncQueue);
   window.addEventListener('load', showSyncQueue);
 </script>
+
+<script type="module">
+  import { manualSignalOffer } from '/static/js/p2p/fallback-webrtc.js';
+  manualSignalOffer(); // Run on page load to generate QR
+</script>
 </body>
 </html>
