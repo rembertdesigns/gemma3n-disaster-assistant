@@ -8,16 +8,49 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  
+
   <style>
-    #map { height: 90vh; width: 100%; }
+    #map { height: 85vh; width: 100%; margin-top: 1em; }
+    .controls {
+      text-align: center;
+      margin-top: 1em;
+    }
+    select, button {
+      padding: 0.5em;
+      margin: 0 0.5em;
+      font-size: 1em;
+    }
   </style>
 </head>
 <body>
   <h2 style="text-align:center;">🗺️ Live Crowd Reports Map</h2>
+
+  <!-- Filter + Export Controls -->
+  <div class="controls">
+    <label for="tone">Tone:</label>
+    <select id="tone">
+      <option value="">All</option>
+      <option value="neutral">Neutral</option>
+      <option value="concerned">Concerned</option>
+      <option value="urgent">Urgent</option>
+    </select>
+
+    <label for="escalation">Escalation:</label>
+    <select id="escalation">
+      <option value="">All</option>
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select>
+
+    <button onclick="loadFilteredReports()">🔍 Filter</button>
+    <button onclick="window.print()">📄 Export PDF</button>
+  </div>
+
+  <!-- Map Container -->
   <div id="map"></div>
 
-  <!-- Leaflet JS -->
+  <!-- Leaflet JS + Plugins -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
@@ -29,7 +62,6 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Define marker colors by escalation
     const iconColors = {
       high: 'red',
       medium: 'orange',
@@ -45,43 +77,55 @@
     };
 
     const markers = L.markerClusterGroup();
-    const heatPoints = [];
+    let heat = null;
 
-    // Fetch and render
-    fetch('/api/crowd-report-locations')
-      .then(response => response.json())
-      .then(data => {
-        data.reports.forEach(report => {
-          if (report.latitude && report.longitude) {
-            const latLng = [report.latitude, report.longitude];
+    function loadFilteredReports() {
+      const tone = document.getElementById('tone').value;
+      const escalation = document.getElementById('escalation').value;
+      const query = new URLSearchParams();
+      if (tone) query.append("tone", tone);
+      if (escalation) query.append("escalation", escalation);
 
-            // Marker clustering with icon
-            const marker = L.marker(latLng, {
-              icon: getIcon(report.escalation)
-            });
-            marker.bindPopup(`
-              <strong>${report.user || 'Anonymous'}</strong><br/>
-              <em>${report.timestamp}</em><br/>
-              <p>${report.message}</p>
-              <small><b>Tone:</b> ${report.tone || 'N/A'} | <b>Escalation:</b> ${report.escalation}</small>
-            `);
-            markers.addLayer(marker);
+      fetch('/api/crowd-report-locations?' + query.toString())
+        .then(response => response.json())
+        .then(data => {
+          markers.clearLayers();
+          if (heat) map.removeLayer(heat);
+          const heatPoints = [];
 
-            // Heatmap point
-            heatPoints.push([...latLng, 0.5]);
-          }
+          data.reports.forEach(report => {
+            if (report.latitude && report.longitude) {
+              const latLng = [report.latitude, report.longitude];
+              const marker = L.marker(latLng, {
+                icon: getIcon(report.escalation)
+              });
+              marker.bindPopup(`
+                <strong>${report.user || 'Anonymous'}</strong><br/>
+                <em>${report.timestamp}</em><br/>
+                <p>${report.message}</p>
+                <small><b>Tone:</b> ${report.tone || 'N/A'} | <b>Escalation:</b> ${report.escalation}</small>
+              `);
+              markers.addLayer(marker);
+              heatPoints.push([...latLng, 0.5]);
+            }
+          });
+
+          map.addLayer(markers);
+
+          heat = L.heatLayer(heatPoints, { radius: 25 });
+          const overlays = {
+            "Clustered Markers": markers,
+            "Heatmap": heat
+          };
+          L.control.layers(null, overlays, { collapsed: false }).addTo(map);
         });
+    }
 
-        map.addLayer(markers);
+    // Auto-load on first load
+    loadFilteredReports();
 
-        // Optional: Add heatmap toggle
-        const heat = L.heatLayer(heatPoints, { radius: 25 });
-        const layers = {
-          "Clustered Markers": markers,
-          "Heatmap": heat
-        };
-        L.control.layers(null, layers, { collapsed: false }).addTo(map);
-      });
+    // Poll every 30s
+    setInterval(loadFilteredReports, 30000);
   </script>
 </body>
 </html>
