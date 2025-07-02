@@ -200,8 +200,14 @@ async def submit_crowd_report(
     escalation: str = Form(...),
     user: Optional[str] = Form("Anonymous"),
     location: Optional[str] = Form(None),
-    image: Optional[UploadFile] = File(None)
+    image: Optional[UploadFile] = File(None),
+    latitude: Optional[str] = Form(None),
+    longitude: Optional[str] = Form(None)
 ):
+    # Log lat/lon
+    if latitude and longitude:
+        logger.info(f"📍 Received crowd report from location: {latitude}, {longitude}")
+
     if not tone:
         tone = analyze_sentiment(message)
 

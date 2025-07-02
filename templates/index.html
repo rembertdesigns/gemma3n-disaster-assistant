@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Disaster Response & Recovery Assistant</title>
   <link rel="stylesheet" href="/static/css/styles.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     /* Edge AI Status Indicators */
     .ai-status-bar {
@@ -206,6 +210,45 @@
       background: linear-gradient(90deg, #dc2626, #16a34a);
       transition: width 0.5s ease;
     }
+
+    /* Drone-specific styling */
+    .drone-section {
+      background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+    }
+    
+    .drone-section label {
+      color: white;
+      font-weight: bold;
+    }
+    
+    #droneImageAnalysisPreview {
+      background: rgba(14, 165, 233, 0.1);
+      border: 2px solid #0ea5e9;
+    }
+    
+    #droneImageAnalysisPreview h4 {
+      color: #0369a1;
+    }
+
+    /* Context selector styling */
+    #contextSelect {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: white;
+    }
+
+    #contextSelect:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
   </style>
 </head>
 <body>
@@ -281,6 +324,27 @@
           </div>
         </div>
 
+        <!-- Scenario Context Selector -->
+        <div class="form-section">
+          <label for="contextSelect">🗺️ Scenario Context:</label>
+          <select id="contextSelect" name="context">
+            <option value="">-- Select Scenario --</option>
+            <option value="urban_fire">🔥 Urban Fire</option>
+            <option value="flooding">🌊 Flooding</option>
+            <option value="earthquake">🌎 Earthquake</option>
+            <option value="chemical_spill">☣️ Chemical Spill</option>
+            <option value="storm_damage">🌪️ Storm Damage</option>
+          </select>
+        </div>
+
+        <!-- Map Pin Drop -->
+        <div class="form-section" style="margin-top: 1rem;">
+          <label for="map">🗺️ Click on the map to tag location:</label>
+          <div id="reportMap" style="height: 300px; border-radius: 8px; margin-top: 0.5rem;"></div>
+          <input type="hidden" id="latitude" name="latitude">
+          <input type="hidden" id="longitude" name="longitude">
+        </div>
+
         <div class="form-section">
           <label for="file">📎 Upload Evidence (Image)</label>
           <input type="file" name="file" id="file" accept=".jpg,.jpeg,.png"
@@ -293,10 +357,25 @@
           <video id="webcamPreview" autoplay playsinline style="max-width:100%; margin-top: 0.5rem; border-radius: 8px; display:none;"></video>
         </div>
 
+          <!-- Drone Upload Option -->
+          <div class="drone-section">
+            <label>
+              <input type="checkbox" id="isDroneCheckbox" name="is_drone" />
+              🛰️ Image captured by drone
+            </label>
+            <input type="file" id="droneFileInput" accept="image/*" style="margin-top: 0.5rem; width: 100%;" />
+          </div>
+
           <!-- Image Analysis Preview -->
           <div class="image-analysis-preview" id="imageAnalysisPreview">
             <h4>🔍 AI Image Analysis</h4>
             <div id="imageAnalysisContent"></div>
+          </div>
+
+          <!-- Drone Image Analysis Preview -->
+          <div class="image-analysis-preview" id="droneImageAnalysisPreview">
+            <h4>🧠 Drone Image Analysis</h4>
+            <div id="droneImageAnalysisContent"></div>
           </div>
         </div>
 
@@ -405,7 +484,22 @@ function handleManualSignal() {
     // Global variables for AI integration
     let currentImageAnalysis = null;
     let currentTextAnalysis = null;
+    let currentDroneAnalysis = null;
     let analysisTimeout = null;
+
+    // Context selector management
+    const contextSelect = document.getElementById('contextSelect');
+    // Save context selection locally
+    contextSelect.addEventListener('change', () => {
+      localStorage.setItem('lastContext', contextSelect.value);
+    });
+    // Load context on page load if saved
+    window.addEventListener('load', () => {
+      const savedContext = localStorage.getItem('lastContext');
+      if (savedContext) {
+        contextSelect.value = savedContext;
+      }
+    });
 
     // Theme toggle
     const themeBtn = document.getElementById('toggleThemeBtn');
@@ -504,6 +598,57 @@ function handleManualSignal() {
       }
     });
 
+    // Drone Image Upload Analysis
+    const droneInput = document.getElementById('droneFileInput');
+    const droneCheckbox = document.getElementById('isDroneCheckbox');
+    const dronePreview = document.getElementById('droneImageAnalysisPreview');
+    const droneContent = document.getElementById('droneImageAnalysisContent');
+
+    droneInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        // Show spinner
+        droneContent.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div class="spinner"></div>
+            <span>Analyzing drone image...</span>
+          </div>
+        `;
+        dronePreview.classList.add('visible');
+        
+        const img = new Image();
+        img.onload = async () => {
+          try {
+            const context = document.getElementById('contextSelect').value;
+            const result = await window.EdgeAI.analyzeImage(img, { context });
+            currentDroneAnalysis = result;
+            
+            droneContent.innerHTML = `
+              <div style="margin-bottom: 0.5rem;">
+                <strong>🛰️ Aerial Analysis Complete</strong>
+                ${context ? `<span style="background: rgba(59, 130, 246, 0.1); color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">Context: ${context.replace('_', ' ')}</span>` : ''}
+              </div>
+              <p><strong>Hazards:</strong> ${result.hazards?.map(h => h.type).join(', ') || 'None detected'}</p>
+              <p><strong>Confidence:</strong> ${Math.round(result.confidence * 100)}%</p>
+              <p><strong>Objects:</strong> ${result.objects?.map(o => o.class).join(', ') || 'None detected'}</p>
+              <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(14, 165, 233, 0.1); border-radius: 4px; font-size: 0.8rem;">
+                <strong>📍 Drone Perspective Benefits:</strong> Enhanced coverage area, elevated hazard detection, improved situational awareness
+              </div>
+            `;
+            
+            // Update real-time analysis to include drone data
+            updateRealtimeAnalysis();
+            
+            console.log('🛰️ Drone image analysis complete:', result);
+          } catch (error) {
+            console.error('❌ Drone image analysis failed:', error);
+            droneContent.innerHTML = '<p style="color: #dc2626;">⚠️ Analysis failed. Please try again.</p>';
+          }
+        };
+        img.src = URL.createObjectURL(file);
+      }
+    });
+
     // Webcam Capture Logic
 const startWebcamBtn = document.getElementById('startWebcamBtn');
 const captureImageBtn = document.getElementById('captureImageBtn');
@@ -555,8 +700,11 @@ captureImageBtn.addEventListener('click', () => {
         img.onload = async () => {
           const startTime = performance.now();
           
-          // Perform AI analysis
-          currentImageAnalysis = await window.EdgeAI.analyzeImage(img);
+          // Get context for enhanced analysis
+          const context = document.getElementById('contextSelect').value;
+          
+          // Perform AI analysis with context
+          currentImageAnalysis = await window.EdgeAI.analyzeImage(img, { context });
           
           // Calculate processing time
           const processingTime = performance.now() - startTime;
@@ -595,6 +743,7 @@ captureImageBtn.addEventListener('click', () => {
       
       const content = document.getElementById('imageAnalysisContent');
       const analysis = currentImageAnalysis;
+      const context = document.getElementById('contextSelect').value;
       
       let hazardTags = '';
       if (analysis.hazards && analysis.hazards.length > 0) {
@@ -613,6 +762,7 @@ captureImageBtn.addEventListener('click', () => {
       content.innerHTML = `
         <div style="margin-bottom: 0.5rem;">
           <strong>Confidence:</strong> ${Math.round(analysis.confidence * 100)}%
+          ${context ? `<span style="background: rgba(59, 130, 246, 0.1); color: #1e40af; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">Context: ${context.replace('_', ' ')}</span>` : ''}
           <div class="confidence-bar">
             <div class="confidence-fill" style="width: ${analysis.confidence * 100}%"></div>
           </div>
@@ -647,31 +797,53 @@ captureImageBtn.addEventListener('click', () => {
       const recommendations = document.getElementById('aiRecommendations');
       const recommendationsList = document.getElementById('recommendationsList');
       
-      // Calculate comprehensive severity
+      // Calculate comprehensive severity including drone data
       let overallSeverity = 1;
       let severityClass = 'severity-low';
       let allRecommendations = [];
       
-      if (currentImageAnalysis || currentTextAnalysis) {
+      if (currentImageAnalysis || currentTextAnalysis || currentDroneAnalysis) {
         const severity = window.EdgeAI.calculateSeverity(
           currentImageAnalysis,
           currentTextAnalysis,
-          {}
+          { droneAnalysis: currentDroneAnalysis }
         );
         
         overallSeverity = Math.round(severity.overall);
+        
+        // Drone data can increase severity due to wider coverage
+        if (currentDroneAnalysis && currentDroneAnalysis.hazards?.length > 0) {
+          overallSeverity = Math.min(10, overallSeverity + 1);
+        }
         
         // Set severity class
         if (overallSeverity >= 8) severityClass = 'severity-critical';
         else if (overallSeverity >= 6) severityClass = 'severity-high';
         else if (overallSeverity >= 3) severityClass = 'severity-medium';
         
-        // Generate recommendations
+        // Generate recommendations including drone-specific ones
         allRecommendations = window.EdgeAI.generateRecommendations({
           imageAnalysis: currentImageAnalysis,
           textAnalysis: currentTextAnalysis,
+          droneAnalysis: currentDroneAnalysis,
           severity: severity
         });
+        
+        // Add drone-specific recommendations
+        if (currentDroneAnalysis) {
+          allRecommendations.unshift({
+            priority: 'high',
+            action: 'Drone imagery provides elevated perspective - consider expanding search area based on aerial view',
+            reason: 'Aerial surveillance advantage'
+          });
+        }
+
+        // Add context-specific recommendations
+        const context = document.getElementById('contextSelect').value;
+        if (context) {
+          const contextRecommendations = getContextSpecificRecommendations(context, overallSeverity);
+          allRecommendations = [...contextRecommendations, ...allRecommendations];
+        }
       }
       
       // Update severity display
@@ -715,6 +887,50 @@ captureImageBtn.addEventListener('click', () => {
       
       // Show the panel
       panel.classList.add('visible');
+    }
+
+    function getContextSpecificRecommendations(context, severity) {
+      const recommendations = [];
+      
+      switch(context) {
+        case 'urban_fire':
+          recommendations.push({
+            priority: 'immediate',
+            action: 'Evacuate immediately if in fire zone. Check for smoke inhalation risks.',
+            reason: 'Urban fire context'
+          });
+          break;
+        case 'flooding':
+          recommendations.push({
+            priority: 'high',
+            action: 'Move to higher ground. Avoid walking/driving through flood water.',
+            reason: 'Flooding context'
+          });
+          break;
+        case 'earthquake':
+          recommendations.push({
+            priority: 'immediate',
+            action: 'Drop, cover, and hold on. Check for structural damage and aftershocks.',
+            reason: 'Earthquake context'
+          });
+          break;
+        case 'chemical_spill':
+          recommendations.push({
+            priority: 'critical',
+            action: 'Evacuate upwind from spill. Seek immediate medical attention if exposed.',
+            reason: 'Chemical spill context'
+          });
+          break;
+        case 'storm_damage':
+          recommendations.push({
+            priority: 'high',
+            action: 'Avoid downed power lines. Check for structural damage and debris.',
+            reason: 'Storm damage context'
+          });
+          break;
+      }
+      
+      return recommendations;
     }
 
     function hideRealtimeAnalysis() {
@@ -816,6 +1032,27 @@ captureImageBtn.addEventListener('click', () => {
         window.EdgeAI.runDiagnostics();
       }
     }, 3000);
+  </script>
+
+  <script>
+    // Map setup
+    const map = L.map('reportMap').setView([37.7749, -122.4194], 10); // Default to SF
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '🗺️ OpenStreetMap',
+      maxZoom: 19,
+    }).addTo(map);
+    let marker = null;
+    map.on('click', function(e) {
+      const { lat, lng } = e.latlng;
+      if (marker) {
+        marker.setLatLng(e.latlng);
+      } else {
+        marker = L.marker(e.latlng).addTo(map);
+      }
+      // Update hidden form fields
+      document.getElementById('latitude').value = lat.toFixed(6);
+      document.getElementById('longitude').value = lng.toFixed(6);
+    });
   </script>
 
   <script>
