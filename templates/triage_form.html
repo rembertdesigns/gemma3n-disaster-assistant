@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🚑 Patient Triage Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    body { font-family: sans-serif; padding: 1em; max-width: 600px; margin: auto; }
+    label { display: block; margin-top: 1em; font-weight: bold; }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.5em;
+      font-size: 1em;
+      margin-top: 0.3em;
+    }
+    .triage-color {
+      margin-top: 1em;
+    }
+    .color-option {
+      display: inline-block;
+      padding: 0.5em 1em;
+      margin: 0.3em;
+      border-radius: 0.5em;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+    }
+    .red { background: red; }
+    .yellow { background: goldenrod; }
+    .green { background: green; }
+    .black { background: black; }
+    .selected { outline: 3px solid white; box-shadow: 0 0 5px black; }
+    button {
+      margin-top: 1.5em;
+      padding: 0.8em;
+      font-size: 1em;
+      background: #004080;
+      color: white;
+      border: none;
+      width: 100%;
+      border-radius: 0.4em;
+    }
+  </style>
+</head>
+<body>
+  <h2>🚑 Medical Triage Form</h2>
+  <form method="POST" action="/submit-triage">
+    <label for="name">Patient Name</label>
+    <input type="text" id="name" name="name" required />
+
+    <label for="age">Age</label>
+    <input type="number" id="age" name="age" min="0" max="120" />
+
+    <label for="injury_type">Injury Type</label>
+    <input type="text" id="injury_type" name="injury_type" />
+
+    <label for="severity">Severity</label>
+    <select id="severity" name="severity">
+      <option value="mild">Mild</option>
+      <option value="moderate">Moderate</option>
+      <option value="severe">Severe</option>
+      <option value="critical">Critical</option>
+    </select>
+
+    <label for="vitals">Vitals (HR/BP/RR)</label>
+    <input type="text" id="vitals" name="vitals" placeholder="e.g. HR: 92, BP: 120/80, RR: 18" />
+
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" rows="4"></textarea>
+
+    <label class="triage-color">Triage Color</label>
+    <div id="triage-colors">
+      <div class="color-option red" data-color="red">🔴 Red</div>
+      <div class="color-option yellow" data-color="yellow">🟡 Yellow</div>
+      <div class="color-option green" data-color="green">🟢 Green</div>
+      <div class="color-option black" data-color="black">⚫ Black</div>
+    </div>
+    <input type="hidden" id="triage_color" name="triage_color" value="" required />
+
+    <button type="submit">📝 Submit Triage Report</button>
+  </form>
+
+  <script>
+    const colorOptions = document.querySelectorAll('.color-option');
+    const hiddenInput = document.getElementById('triage_color');
+    colorOptions.forEach(el => {
+      el.addEventListener('click', () => {
+        colorOptions.forEach(opt => opt.classList.remove('selected'));
+        el.classList.add('selected');
+        hiddenInput.value = el.dataset.color;
+      });
+    });
+  </script>
+</body>
+</html>

@@ -163,6 +163,36 @@ async def view_crowd_reports(request: Request, db: Session = Depends(get_db)):
     reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).all()
     return templates.TemplateResponse("crowd_reports.html", {"request": request, "reports": reports})
 
+@app.get("/triage", response_class=HTMLResponse)
+async def triage_form_page(request: Request):
+    return templates.TemplateResponse("triage_form.html", {"request": request})
+
+@app.post("/submit-triage")
+async def submit_triage_form(
+    request: Request,
+    name: str = Form(...),
+    age: int = Form(...),
+    injury_type: str = Form(...),
+    severity: str = Form(...),
+    vitals: str = Form(...),
+    notes: str = Form(...),
+    triage_color: str = Form(...)
+):
+    logger.info(f"📋 Received triage: {name}, {injury_type}, {triage_color}")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO triage_patients (name, age, injury_type, severity, vitals, notes, triage_color, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    """, (name, age, injury_type, severity, vitals, notes, triage_color))
+    conn.commit()
+    conn.close()
+
+    return templates.TemplateResponse("submit-success.html", {
+        "request": request,
+        "message": f"Triage for {name} received successfully and saved."
+    })
+
 # ================================
 # CROWD REPORTS API ROUTES
 # ================================
@@ -250,16 +280,31 @@ async def submit_crowd_report(
     return RedirectResponse(url="/view-reports", status_code=303)
 
 @app.get("/api/crowd-report-locations", response_class=JSONResponse)
-async def crowd_report_locations():
+async def crowd_report_locations(
+    tone: Optional[str] = Query(None),
+    escalation: Optional[str] = Query(None)
+):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+
+    query = """
         SELECT id, message, user, timestamp, tone, escalation, location, latitude, longitude
         FROM crowd_reports
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-    """)
+    """
+    params = []
+
+    if tone:
+        query += " AND tone = ?"
+        params.append(tone)
+    if escalation:
+        query += " AND escalation = ?"
+        params.append(escalation)
+
+    cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
+
     reports = [{
         "id": row["id"],
         "message": row["message"],
@@ -271,6 +316,7 @@ async def crowd_report_locations():
         "latitude": float(row["latitude"]),
         "longitude": float(row["longitude"]),
     } for row in rows]
+
     return JSONResponse(content={"reports": reports})
 
 # ================================

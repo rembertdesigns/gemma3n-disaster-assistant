@@ -8,6 +8,10 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+# =========================
+# 🏗️ Schema Initialization
+# =========================
+
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -24,8 +28,8 @@ def init_db():
             status TEXT,
             image_url TEXT,
             checklist TEXT,
-            latitude REAL,          -- ✅ New
-            longitude REAL          -- ✅ New
+            latitude REAL,
+            longitude REAL
         )
     """)
 
@@ -43,11 +47,30 @@ def init_db():
         )
     """)
 
+    # 🆕 Triage patients table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS triage_patients (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            age INTEGER,
+            injury_type TEXT,
+            severity TEXT,
+            vitals TEXT,
+            notes TEXT,
+            triage_color TEXT,
+            timestamp TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
 
+# =========================
+# 🔁 Migrations
+# =========================
+
 def run_migrations():
-    """Safely add latitude/longitude columns if they don't exist"""
+    """Safely add missing columns to existing tables"""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -58,6 +81,10 @@ def run_migrations():
     except Exception as e:
         print(f"⚠️ Skipping migration (maybe already applied): {e}")
     conn.close()
+
+# =========================
+# 📝 Report Metadata
+# =========================
 
 def save_report_metadata(report_data: dict):
     conn = get_db_connection()
@@ -78,8 +105,8 @@ def save_report_metadata(report_data: dict):
         report_data["status"],
         report_data.get("image_url"),
         ",".join(report_data.get("checklist", [])),
-        report_data.get("latitude"),     # ✅
-        report_data.get("longitude")     # ✅
+        report_data.get("latitude"),
+        report_data.get("longitude")
     ))
     conn.commit()
     conn.close()
@@ -104,15 +131,17 @@ def get_dashboard_stats(conn):
     cursor.execute("SELECT AVG(CAST(severity AS REAL)) FROM reports")
     stats["avg_severity"] = round(cursor.fetchone()[0] or 0, 2)
 
-    cursor.execute("SELECT user, COUNT(*) as count FROM reports GROUP BY user")
+    cursor.execute("SELECT user, COUNT(*) FROM reports GROUP BY user")
     stats["reports_per_user"] = cursor.fetchall()
 
-    cursor.execute("SELECT status, COUNT(*) as count FROM reports GROUP BY status")
+    cursor.execute("SELECT status, COUNT(*) FROM reports GROUP BY status")
     stats["status_counts"] = cursor.fetchall()
 
     return stats
 
-# === NEW: Crowd Report Handling ===
+# =========================
+# 📣 Crowd Reports
+# =========================
 
 def save_crowd_report(report: dict):
     conn = get_db_connection()
@@ -172,5 +201,55 @@ def get_crowd_report_stats():
 
     cursor.execute("SELECT escalation, COUNT(*) FROM crowd_reports GROUP BY escalation")
     stats["escalation_distribution"] = cursor.fetchall()
+
+    return stats
+
+# =========================
+# 🏥 Triage Patients
+# =========================
+
+def save_triage_patient(data: dict):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO triage_patients (
+            id, name, age, injury_type, severity,
+            vitals, notes, triage_color, timestamp
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        data["id"],
+        data["name"],
+        data["age"],
+        data["injury_type"],
+        data["severity"],
+        data["vitals"],
+        data["notes"],
+        data["triage_color"],
+        data["timestamp"]
+    ))
+    conn.commit()
+    conn.close()
+
+def get_all_triage_patients():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM triage_patients ORDER BY timestamp DESC")
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+def get_triage_stats():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    stats = {}
+
+    cursor.execute("SELECT COUNT(*) FROM triage_patients")
+    stats["total_patients"] = cursor.fetchone()[0]
+
+    cursor.execute("SELECT triage_color, COUNT(*) FROM triage_patients GROUP BY triage_color")
+    stats["color_distribution"] = cursor.fetchall()
+
+    cursor.execute("SELECT severity, COUNT(*) FROM triage_patients GROUP BY severity")
+    stats["severity_distribution"] = cursor.fetchall()
 
     return stats
