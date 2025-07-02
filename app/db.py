@@ -1,15 +1,18 @@
 import sqlite3
+from datetime import datetime
 
 DB_PATH = "data/reports.db"
 
-def get_connection():
+def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    conn = get_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
+
+    # Primary reports table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS reports (
             id TEXT PRIMARY KEY,
@@ -23,11 +26,26 @@ def init_db():
             checklist TEXT
         )
     """)
+
+    # NEW: Crowd reports table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS crowd_reports (
+            id TEXT PRIMARY KEY,
+            message TEXT,
+            location TEXT,
+            user TEXT,
+            timestamp TEXT,
+            sentiment TEXT,
+            tone TEXT,
+            escalation TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
 
 def save_report_metadata(report_data: dict):
-    conn = get_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO reports (id, timestamp, location, severity, filename, user, status, image_url, checklist)
@@ -71,5 +89,68 @@ def get_dashboard_stats(conn):
 
     cursor.execute("SELECT status, COUNT(*) as count FROM reports GROUP BY status")
     stats["status_counts"] = cursor.fetchall()
+
+    return stats
+
+# === NEW: Crowd Report Handling ===
+
+def save_crowd_report(report: dict):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO crowd_reports (id, message, location, user, timestamp, sentiment, tone, escalation)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        report["id"],
+        report["message"],
+        report["location"],
+        report["user"],
+        report["timestamp"],
+        report["sentiment"],
+        report["tone"],
+        report["escalation"]
+    ))
+    conn.commit()
+    conn.close()
+
+def get_crowd_reports(filters: dict = None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM crowd_reports"
+    clauses = []
+    params = []
+
+    if filters:
+        if "tone" in filters:
+            clauses.append("tone = ?")
+            params.append(filters["tone"])
+        if "escalation" in filters:
+            clauses.append("escalation = ?")
+            params.append(filters["escalation"])
+
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+
+    query += " ORDER BY timestamp DESC"
+
+    cursor.execute(query, tuple(params))
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+def get_crowd_report_stats():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    stats = {}
+
+    cursor.execute("SELECT COUNT(*) FROM crowd_reports")
+    stats["total_crowd_reports"] = cursor.fetchone()[0]
+
+    cursor.execute("SELECT tone, COUNT(*) FROM crowd_reports GROUP BY tone")
+    stats["tone_distribution"] = cursor.fetchall()
+
+    cursor.execute("SELECT escalation, COUNT(*) FROM crowd_reports GROUP BY escalation")
+    stats["escalation_distribution"] = cursor.fetchall()
 
     return stats

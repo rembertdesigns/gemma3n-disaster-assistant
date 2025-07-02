@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📄 Crowd Reports Viewer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f8f9fa;
+    }
+    h1 {
+      color: #333;
+    }
+    .controls {
+      margin-bottom: 1rem;
+    }
+    label {
+      margin-right: 0.5rem;
+    }
+    select {
+      margin-right: 1rem;
+      padding: 4px;
+    }
+    .report-card {
+      background: #fff;
+      border-left: 6px solid #ccc;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+    .badge {
+      font-weight: bold;
+      padding: 3px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+    .badge.Critical { background: #ff4d4f; color: white; }
+    .badge.High { background: #fa8c16; color: white; }
+    .badge.Moderate { background: #faad14; color: white; }
+    .badge.Low { background: #52c41a; color: white; }
+    .badge.Urgent { background: #f5222d; color: white; }
+    .badge.Helpless { background: #722ed1; color: white; }
+  </style>
+</head>
+<body>
+  <h1>📄 Crowd Reports Viewer</h1>
+
+  <div class="controls">
+    <label for="tone-filter">Tone:</label>
+    <select id="tone-filter">
+      <option value="">All</option>
+      <option value="Urgent">Urgent</option>
+      <option value="Frantic">Frantic</option>
+      <option value="Helpless">Helpless</option>
+      <option value="Descriptive">Descriptive</option>
+    </select>
+
+    <label for="escalation-filter">Escalation:</label>
+    <select id="escalation-filter">
+      <option value="">All</option>
+      <option value="Critical">Critical</option>
+      <option value="High">High</option>
+      <option value="Moderate">Moderate</option>
+      <option value="Low">Low</option>
+    </select>
+
+    <label for="sort-order">Sort by:</label>
+    <select id="sort-order">
+      <option value="desc">Newest First</option>
+      <option value="asc">Oldest First</option>
+    </select>
+  </div>
+
+  <div id="reports-container">
+    {% for report in reports %}
+      <div class="report-card" data-tone="{{ report.tone }}" data-escalation="{{ report.escalation }}">
+        <p><strong>{{ report.message }}</strong></p>
+        <p>User: <em>{{ report.user }}</em></p>
+        <p>🕒 {{ report.timestamp }}</p>
+        <p>
+          Tone:
+          <span class="badge {{ report.tone }}">{{ report.tone }}</span>
+          Escalation:
+          <span class="badge {{ report.escalation }}">
+            {% if report.escalation == "Critical" %} 🚨 {% elif report.escalation == "High" %} ⚠️ {% endif %}
+            {{ report.escalation }}
+          </span>
+        </p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    const toneFilter = document.getElementById("tone-filter");
+    const escalationFilter = document.getElementById("escalation-filter");
+    const sortOrder = document.getElementById("sort-order");
+    const container = document.getElementById("reports-container");
+
+    function applyFilters() {
+      const tone = toneFilter.value;
+      const escalation = escalationFilter.value;
+      const cards = document.querySelectorAll(".report-card");
+
+      cards.forEach(card => {
+        const matchesTone = !tone || card.dataset.tone === tone;
+        const matchesEscalation = !escalation || card.dataset.escalation === escalation;
+        card.style.display = (matchesTone && matchesEscalation) ? "block" : "none";
+      });
+    }
+
+    function sortReports() {
+      const cards = Array.from(document.querySelectorAll(".report-card"));
+      const order = sortOrder.value;
+
+      cards.sort((a, b) => {
+        const timeA = new Date(a.querySelector("p:nth-child(3)").textContent.trim().slice(2));
+        const timeB = new Date(b.querySelector("p:nth-child(3)").textContent.trim().slice(2));
+        return order === "asc" ? timeA - timeB : timeB - timeA;
+      });
+
+      container.innerHTML = "";
+      cards.forEach(card => container.appendChild(card));
+      applyFilters(); // Reapply filters after sort
+    }
+
+    toneFilter.addEventListener("change", applyFilters);
+    escalationFilter.addEventListener("change", applyFilters);
+    sortOrder.addEventListener("change", sortReports);
+
+    // Initial sort on load
+    sortReports();
+
+    // 🔄 Auto-refresh every 15s
+    setInterval(() => window.location.reload(), 15000);
+  </script>
+</body>
+</html>

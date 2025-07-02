@@ -1,20 +1,24 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse, StreamingResponse, Response
+from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, HTTPException, Body
+from fastapi.responses import (
+    HTMLResponse, FileResponse, JSONResponse, RedirectResponse,
+    StreamingResponse, Response
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import Body
-from fastapi.responses import JSONResponse
-from predictive_engine import calculate_risk_score
+
+from app.predictive_engine import calculate_risk_score
 from app.broadcast_utils import start_broadcast, discover_nearby_broadcasts
 from app.sentiment_utils import analyze_sentiment
-
-
 from app.hazard_detection import detect_hazards
 from app.preprocessing import preprocess_input
 from app.inference import run_disaster_analysis
 from app.audio_transcription import transcribe_audio
-from app.report_utils import generate_report_pdf
+from app.report_utils import (
+    generate_report_pdf,
+    generate_map_preview_data,
+    generate_static_map_endpoint
+)
 from app.auth import authenticate_user, create_access_token, get_current_user, require_role
 from app.db import (
     get_db_connection,
@@ -23,8 +27,6 @@ from app.db import (
     get_report_by_id,
     get_dashboard_stats
 )
-
-# NEW: Import map utilities
 from app.map_utils import (
     map_utils,
     generate_static_map,
@@ -33,13 +35,10 @@ from app.map_utils import (
     get_map_metadata,
     MapConfig
 )
-from app.report_utils import (
-    generate_map_preview_data,
-    generate_static_map_endpoint
-)
 
 from weasyprint import HTML as WeasyHTML
 from datetime import datetime
+from pathlib import Path
 import shutil
 import os
 import uuid
@@ -53,14 +52,22 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ✅ Resolve static directory using absolute path
+BASE_DIR = Path(__file__).resolve().parent.parent
+STATIC_DIR = BASE_DIR / "static"
+
+# ✅ Initialize FastAPI app
 app = FastAPI(
     title="Disaster Response & Recovery Assistant",
     description="AI-Powered Emergency Analysis & Support with Interactive Maps",
     version="2.1.0"
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# ✅ Mount static files safely
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# ✅ Setup Jinja templates
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 crowd_reports = []  # In-memory store; consider replacing with DB later
 
@@ -113,6 +120,15 @@ async def offline_page(request: Request):
 @app.get("/submit-report", response_class=HTMLResponse)
 async def submit_report_page(request: Request):
     return templates.TemplateResponse("submit-report.html", {"request": request})
+
+@app.get("/view-reports", response_class=HTMLResponse)
+async def view_reports(request: Request):
+    conn = get_db_connection()
+    reports = get_all_reports(conn)
+    return templates.TemplateResponse("view-reports.html", {
+        "request": request,
+        "reports": reports
+    })
 
 # ================================
 # EXISTING ADMIN ROUTES (unchanged)
