@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: sans-serif; padding: 1rem; }
+    h1 { color: #1e3a8a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 8px; font-size: 0.9rem; }
+    th { background: #e0e7ff; }
+    .media-link { font-size: 0.8rem; color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>📋 Crowd Report Export</h1>
+  <p>Generated: {{ now().strftime('%Y-%m-%d %H:%M') }}</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Message</th>
+        <th>Priority</th>
+        <th>Timestamp</th>
+        <th>User</th>
+        <th>Image</th>
+        <th>Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reports %}
+      <tr>
+        <td>{{ r.message or '—' }}</td>
+        <td>{{ r.priority }}</td>
+        <td>{{ r.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ r.user or 'Anonymous' }}</td>
+        <td>{% if r.image_path %}<span class="media-link">{{ r.image_path }}</span>{% else %}—{% endif %}</td>
+        <td>{% if r.audio_path %}<span class="media-link">{{ r.audio_path }}</span>{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

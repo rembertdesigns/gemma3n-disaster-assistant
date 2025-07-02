@@ -24,8 +24,9 @@ import io
 import base64
 import logging
 
-from weasyprint import HTML as WeasyHTML
+from weasyprint import HTML, HTML as WeasyHTML
 from jinja2 import Environment, FileSystemLoader
+from io import BytesIO
 
 # Core app utilities
 from app.predictive_engine import calculate_risk_score
@@ -432,6 +433,40 @@ async def submit_crowd_report_api(payload: dict = Body(...)):
 
     crowd_reports.append(report)
     return JSONResponse(content={"success": True, "report": report})
+
+@app.post("/export-reports/pdf")
+async def export_reports_pdf(
+    request: Request,
+    tone: str = Form(None),
+    escalation: str = Form(None),
+    keyword: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(CrowdReport)
+
+    if tone:
+        query = query.filter(CrowdReport.tone == tone)
+    if escalation:
+        query = query.filter(CrowdReport.escalation == escalation)
+    if keyword:
+        query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+
+    reports = query.order_by(CrowdReport.timestamp.desc()).all()
+
+    html_content = templates.get_template("export_pdf.html").render({
+        "reports": reports
+    })
+
+    pdf_io = BytesIO()
+    HTML(string=html_content).write_pdf(pdf_io)
+    pdf_io.seek(0)
+
+    return StreamingResponse(
+        pdf_io,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "inline; filename=crowd_reports.pdf"}
+    )
+
 
 # ================================
 # ADMIN DASHBOARD ROUTES

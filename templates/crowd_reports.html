@@ -248,6 +248,15 @@
   <a href="/crowd-reports" class="refresh-button" style="background:#6b7280">♻️ Reset</a>
 </form>
 
+<form method="post" action="/export-reports/pdf" target="_blank" style="margin-top: 0.5rem;">
+  <input type="hidden" name="tone" value="{{ tone or '' }}">
+  <input type="hidden" name="escalation" value="{{ escalation or '' }}">
+  <input type="hidden" name="keyword" value="{{ keyword or '' }}">
+  <button type="submit" class="refresh-button" style="background: #1e3a8a;">
+    📄 Export as PDF
+  </button>
+</form>
+
 {% if reports %}
 <div style="overflow-x: auto;">
   <table class="crowd-report-table" id="reportsTable">
