@@ -4,66 +4,6 @@ A comprehensive, **offline-first AI assistant** powered by **Gemma 3n** and adva
 
 ---
 
-## 🚀 Core Features
-
-### 🧠 AI-Powered Analysis
-
-- 📷 **Computer Vision Hazard Detection**  
-  Upload photos to detect hazards, vehicles, people, and structural damage using pre-trained object detection models with confidence scoring and bounding box visualization.
-
-- 🎤 **Voice-to-Text Triage with Smart Hazard Detection**  
-  Record or upload voice notes that are transcribed via OpenAI Whisper and automatically scanned for emergency keywords ("help", "fire", "gunshot", "sirens", etc.).
-
-- 📝 **Natural Language Situation Analysis**  
-  Process free-form text reports to extract priority levels, damage types, and generate actionable recommendations using Gemma's language understanding.
-
-- 📍 **Geospatial AI with Escalation Mapping**  
-  AI-tagged crowd reports with location data can be filtered and visualized in real-time using Leaflet maps, cluster overlays, and severity heatmaps.
-
----
-
-### 📋 Advanced Reporting & Documentation
-
-- 📄 **Professional PDF Report Generation**  
-  Create field-ready incident reports with embedded images, GPS coordinates, severity scoring, checklists, and team assignments.
-
-- 🧩 **Live JSON-to-PDF Editor**  
-  Interactive report builder with real-time preview, GPS auto-fill, severity badges, team assignment, and checklist management.
-
-- 🗂️ **Hazard Warnings Panel**  
-  Automatically displays AI-detected threats from transcribed audio in an animated, collapsible interface with priority indicators.
-
-- 📊 **Admin Dashboard & Report Management**  
-  Complete report archive with filtering, status updates, bulk export, and analytics dashboard for administrators.
-
-- 🗺️ **Real-Time Crowd Report Map**  
-  Filter community-submitted reports by tone and escalation level, export current map view as PDF, and overlay severity-based clustering and heatmaps.
-
----
-
-### 🔄 Offline-First Architecture
-
-- 🌐 **Progressive Web App (PWA)**  
-  Fully functional offline mode with service worker caching, background sync queuing, and conflict resolution.
-
-- 💾 **Smart Sync Management**  
-  Priority-based synchronization, bandwidth-aware uploads, and automatic retry mechanisms for when connectivity returns.
-
-- 📱 **Mobile-Optimized Interface**  
-  Touch-friendly controls, responsive design, and optimized for use with gloves in field conditions.
-
----
-
-### 🔐 Security & Authentication
-
-- 👤 **Role-Based Access Control**  
-  Multi-tier user system (Admin, Responder, Viewer) with JWT authentication and secure endpoints.
-
-- 🔒 **Data Privacy & Security**  
-  Local processing for sensitive data, encrypted communications, and audit trail capabilities.
-
----
-
 ## ✅ Development Progress
 
 ### 🧩 Sprint 1 – Core AI & Analysis Engine ✅
@@ -73,7 +13,7 @@ A comprehensive, **offline-first AI assistant** powered by **Gemma 3n** and adva
 - ✅ Computer vision object detection with PyTorch/torchvision  
 - ✅ Gemma 3n text-based disaster analysis engine  
 - ✅ Severity scoring and priority classification  
-- ✅ Basic mobile-responsive UI foundation
+- ✅ Basic mobile-responsive UI foundation  
 
 ---
 
@@ -84,94 +24,127 @@ A comprehensive, **offline-first AI assistant** powered by **Gemma 3n** and adva
 - ✅ Canvas-based result downloads (annotated images)  
 - ✅ Service worker implementation for offline functionality  
 - ✅ PDF export system for text-based reports  
-- ✅ Comprehensive hazard detection testing suite
+- ✅ Comprehensive hazard detection testing suite  
 
 ---
 
 ### 🧩 Sprint 3 – Professional Reporting System ✅
 
-- ✅ Advanced JSON-to-PDF report generator with template engine  
+- ✅ Advanced JSON-to-PDF report generator with Jinja2 + WeasyPrint  
 - ✅ Interactive report builder with live preview  
-- ✅ GPS coordinate integration and mapping  
+- ✅ GPS coordinate integration and dynamic location mapping  
 - ✅ Team assignment and checklist management  
-- ✅ Professional PDF templates with severity badges and imagery
+- ✅ Professional PDF templates with severity badges and embedded imagery  
 
 ---
 
 ### 🧩 Sprint 4 – Administration & Data Management ✅
 
-- ✅ Comprehensive admin dashboard with analytics  
-- ✅ Report archive with advanced filtering and search  
-- ✅ Status tracking and workflow management  
-- ✅ Bulk export functionality (.zip archives with metadata)  
-- ✅ SQLite database integration for persistent storage  
-- ✅ Role-based authentication system
+- ✅ Admin dashboard with real-time report filtering  
+- ✅ Report archive with tone/escalation filters + keyword search  
+- ✅ SQLite + SQLAlchemy database for persistent storage  
+- ✅ Role-based authentication using JWT tokens  
+- ✅ Status tracking + update workflows  
 
 ---
 
 ### 🧩 Sprint 5 – Advanced Sync & Coordination ✅
 
-- ✅ Offline report queue using IndexedDB with auto-retry  
-- ✅ Background sync via Service Worker and SyncManager  
-- ✅ Broadcast alert queuing and recovery during network loss  
-- ✅ Leaflet-based broadcast map with geolocation pins  
-- ✅ WebRTC-based peer-to-peer broadcast fallback system  
-- ✅ Live broadcast polling with automatic UI refresh  
-- ✅ Risk-based conditional emergency alert triggering
+- ✅ Offline submission queue with IndexedDB  
+- ✅ Auto-sync via service workers + retry logic  
+- ✅ Real-time geolocation broadcast map (Leaflet)  
+- ✅ WebRTC fallback for peer-to-peer emergency broadcasting  
+- ✅ `/broadcast`, `/broadcasts` API for emergency alerts  
+- ✅ Sync queue viewer and recovery support  
 
 ---
 
 ### 🧩 Sprint 6 – Real-Time Risk & Resilience Features ✅
 
-- ✅ Predictive analytics engine with location, weather, and hazard inputs  
-- ✅ Risk scoring and severity classification with actionable outputs  
-- ✅ Conditional broadcast triggering based on threshold (risk_score ≥ 0.8)  
-- ✅ WebRTC-based P2P fallback for decentralized emergency messaging  
-- ✅ Emergency broadcast API with `/broadcast` and `/broadcasts` endpoints  
-- ✅ Live broadcast polling UI with auto-refresh and severity banners  
-- ✅ Leaflet map integration with broadcast pins and geolocation tracking  
-- ✅ Service Worker caching for offline viewing and sync  
-- ✅ IndexedDB queueing for alert storage and replay after reconnection  
-- ✅ Modular broadcast architecture: `broadcast.js`, `broadcast-map.js`, `fallback-webrtc.js`
+- ✅ Predictive risk scoring using weather/location inputs  
+- ✅ Broadcast triggering based on risk score threshold  
+- ✅ Geolocated broadcast pins with color-coded urgency  
+- ✅ Decentralized P2P broadcasting for offline resilience  
+- ✅ Modular broadcast system with mesh fallback  
 
 ---
 
 ### 🧩 Sprint 7 – Geospatial Intelligence & Map Reporting ✅
 
-- ✅ Leaflet-based map viewer for crowd-sourced reports  
-- ✅ Real-time filtering by tone & escalation via query params  
-- ✅ Marker clustering + dynamic heatmap overlay  
-- ✅ PDF export of current map view using browser-native `print()`  
-- ✅ Live auto-refresh every 30s for new crowd reports  
-- ✅ `/api/crowd-report-locations` endpoint with query filtering  
-- ✅ Map marker coloring based on escalation level  
+- ✅ Live Leaflet map for crowd reports  
+- ✅ Filtering by `tone`, `escalation`, and `keyword`  
+- ✅ Cluster markers + escalation-based coloring  
+- ✅ Dynamic heatmap overlays for report density  
+- ✅ Map snapshot export view using `map_snapshot.html`  
+- ✅ Real-time update polling  
+- ✅ `/api/crowd-report-locations` with smart query filters  
 
 ---
 
-### 🧩 Sprint 8 – Specialized Response Modules ⏳
+### 🧩 Sprint 8 – Specialized Response Modules ✅
 
-- ⏳ Medical emergency triage and patient tracking  
-- ⏳ Hospital capacity forecasting and integration  
-- ⏳ SAR enhancements: thermal imaging and GPS-based coordination  
-- ⏳ Live responder equipment tracking and task assignments
-
----
-
-### 🧩 Sprint 9 – Security, Resilience, and Deployment ⏳
-
-- ⏳ End-to-end encrypted communications  
-- ⏳ Blockchain-based audit trails for critical reports  
-- ⏳ Multi-region failover deployment  
-- ⏳ Edge computing for field deployments
+- ✅ Medical Triage UI with patient intake + color-coded severity  
+- ✅ Patient Tracker with filters, update/discharge buttons  
+- ✅ PDF export of triage status + patient logs  
+- ✅ Full Jinja2 template refactor using `base.html` + `home.html`  
+- ✅ Offline queue integration for medical reports  
 
 ---
 
-### 🧩 Sprint 10 – Training, Simulation & Accessibility ⏳
+### 🧩 Sprint 9 – Crowd Reports, Export & Map Snapshots ✅
 
-- ⏳ VR/AR disaster response training modules  
-- ⏳ Multi-language and voice command interfaces  
-- ⏳ Accessibility features for cognitive/visual support  
-- ⏳ Cultural and regional customization for global response
+- ✅ Filtering of crowd reports by tone, escalation, and keyword  
+- ✅ Export options for PDF, CSV, and JSON  
+- ✅ Enhanced PDF export with embedded image/audio links  
+- ✅ `export_pdf.html` template with styling + timestamp  
+- ✅ Bulk ZIP export for selected reports (PDFs + metadata)  
+- ✅ `map_snapshot.html` rendered Leaflet export for embedding  
+- ✅ Static map PDF snapshots based on coordinates  
+- ✅ CrowdReport model updated for full export support  
+
+---
+
+## 🔜 Upcoming Sprints
+
+### 🧩 Sprint 10 – Analytics Dashboards & Visual Insights 🔄
+- 📊 Report analytics (tone, severity, escalation over time)  
+- 📈 Timeline graphs, heatmaps, and keyword clouds  
+- 🧮 Per-user activity & top locations summary  
+- 📥 Export analytics as PNG/PDF  
+- 🧰 Built with Chart.js, Recharts, or Plotly  
+
+### 🧩 Sprint 11 – Full Incident Lifecycle 🔄
+- 🧾 Multi-stage report lifecycle: Submitted → Reviewed → Resolved  
+- 🏷️ Tagging, notes, and attachments per status  
+- 🔁 Workflow escalation: auto-prioritize follow-ups  
+- 📤 Export lifecycle history with metadata  
+
+### 🧩 Sprint 12 – Live Collaboration & Messaging 🔄
+- 💬 Internal responder chat per incident  
+- 📎 File and image sharing in chat  
+- ⏳ Typing indicators, seen/unseen markers  
+- 📲 Push notifications (PWA + desktop)  
+
+### 🧩 Sprint 13 – Simulation & Training 🔄
+- 🎓 Training mode with fake data playback  
+- 🕹️ Replay of past incident timelines  
+- 💻 VR/AR support hooks for future expansion  
+- 📘 Guided scenario checklists  
+
+### 🧩 Sprint 14 – Deployment, Hosting, and Monitoring 🔄
+- 🌍 Docker + Gunicorn deployment bundle  
+- 📡 Prometheus/Grafana metrics  
+- 🔐 Hardened OAuth2 & SSL setup  
+- ☁️ Multi-region deployment strategy  
+
+---
+
+## 🧠 Long-Term Features (Ideas Vault)
+- 🌐 Language translation + voice commands  
+- 🛰️ Satellite and drone imagery ingestion  
+- 🧬 Predictive health deterioration via vitals  
+- 🔗 Blockchain timestamping + report integrity  
+- 👁️‍🗨️ Facial recognition and missing persons matching  
 
 ---
 
