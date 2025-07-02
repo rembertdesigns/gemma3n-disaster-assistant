@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🚨 Submit Crowd Report</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f4f4f4;
+    }
+    h1 {
+      color: #333;
+    }
+    form {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin: 1rem 0 0.25rem;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      margin-top: 1rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>📢 Submit a Crowd Report</h1>
+
+  <form action="/api/submit-crowd-report" method="post">
+    <label for="message">Report Message *</label>
+    <textarea id="message" name="message" rows="4" required></textarea>
+
+    <label for="tone">Tone (optional)</label>
+    <select id="tone" name="tone">
+      <option value="">Auto-Detect</option>
+      <option value="Urgent">Urgent</option>
+      <option value="Frantic">Frantic</option>
+      <option value="Helpless">Helpless</option>
+      <option value="Descriptive">Descriptive</option>
+    </select>
+
+    <label for="escalation">Escalation Level *</label>
+    <select id="escalation" name="escalation" required>
+      <option value="Critical">Critical</option>
+      <option value="High">High</option>
+      <option value="Moderate">Moderate</option>
+      <option value="Low">Low</option>
+    </select>
+
+    <label for="user">Your Name (optional)</label>
+    <input type="text" id="user" name="user" placeholder="Anonymous">
+
+    <label for="location">Location (optional)</label>
+    <input type="text" id="location" name="location" placeholder="City, GPS, or landmark">
+
+    <button type="submit">📨 Submit Report</button>
+  </form>
+</body>
+</html>

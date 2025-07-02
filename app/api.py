@@ -1,6 +1,6 @@
 from fastapi import (
     FastAPI, Request, Form, UploadFile, File, Depends, HTTPException,
-    Body, Query
+    Body, Query, Form
 )
 from fastapi.responses import (
     HTMLResponse, FileResponse, JSONResponse, RedirectResponse,
@@ -178,6 +178,40 @@ async def filtered_reports(
     } for row in rows]
 
     return JSONResponse(content={"reports": reports})
+
+@app.get("/submit-crowd-report", response_class=HTMLResponse)
+async def submit_crowd_report_form(request: Request):
+    return templates.TemplateResponse("submit-crowd-report.html", {"request": request})
+
+@app.post("/api/submit-crowd-report")
+async def submit_crowd_report(
+    request: Request,
+    message: str = Form(...),
+    tone: Optional[str] = Form(None),
+    escalation: str = Form(...),
+    user: Optional[str] = Form("Anonymous"),
+    location: Optional[str] = Form(None)
+):
+    # Auto-detect tone if not provided
+    if not tone:
+        tone = analyze_sentiment(message)
+
+    timestamp = datetime.utcnow().isoformat()
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO reports (message, tone, escalation, timestamp, user, location)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (message, tone, escalation, timestamp, user, location))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to insert crowd report: {e}")
+        raise HTTPException(status_code=500, detail="Error saving report")
+
+    return RedirectResponse(url="/view-reports", status_code=303)
 # ================================
 # EXISTING ADMIN ROUTES (unchanged)
 # ================================
