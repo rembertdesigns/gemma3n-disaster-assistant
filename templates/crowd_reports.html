@@ -225,28 +225,28 @@
 </div>
 
 <!-- Filters -->
-<div class="filters">
-  <label for="priorityFilter">Filter by Priority:</label>
-  <select id="priorityFilter" class="filter-select">
-    <option value="">All Priorities</option>
-    <option value="critical">Critical</option>
-    <option value="urgent">Urgent</option>
-    <option value="medium">Medium</option>
-    <option value="low">Low</option>
+<form method="get" class="filters">
+  <label for="tone">Tone:</label>
+  <select name="tone" id="tone" class="filter-select">
+    <option value="">All Tones</option>
+    <option value="Calm" {% if tone == 'Calm' %}selected{% endif %}>Calm</option>
+    <option value="Urgent" {% if tone == 'Urgent' %}selected{% endif %}>Urgent</option>
+    <option value="Panic" {% if tone == 'Panic' %}selected{% endif %}>Panic</option>
   </select>
-  
-  <label for="mediaFilter">Filter by Media:</label>
-  <select id="mediaFilter" class="filter-select">
-    <option value="">All Reports</option>
-    <option value="image">With Images</option>
-    <option value="audio">With Audio</option>
-    <option value="media">With Any Media</option>
+
+  <label for="escalation">Escalation:</label>
+  <select name="escalation" id="escalation" class="filter-select">
+    <option value="">All Levels</option>
+    <option value="Low" {% if escalation == 'Low' %}selected{% endif %}>Low</option>
+    <option value="Medium" {% if escalation == 'Medium' %}selected{% endif %}>Medium</option>
+    <option value="High" {% if escalation == 'High' %}selected{% endif %}>High</option>
   </select>
-  
-  <button class="refresh-button" onclick="location.reload()">
-    🔄 Refresh
-  </button>
-</div>
+
+  <input type="text" name="keyword" placeholder="Search messages..." value="{{ keyword or '' }}" class="filter-select" />
+
+  <button type="submit" class="refresh-button">🔍 Filter</button>
+  <a href="/crowd-reports" class="refresh-button" style="background:#6b7280">♻️ Reset</a>
+</form>
 
 {% if reports %}
 <div style="overflow-x: auto;">

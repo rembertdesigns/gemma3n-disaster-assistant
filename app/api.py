@@ -164,9 +164,31 @@ async def map_reports_page(request: Request):
     return templates.TemplateResponse("map_reports.html", {"request": request})
 
 @app.get("/crowd-reports", response_class=HTMLResponse)
-async def view_crowd_reports(request: Request, db: Session = Depends(get_db)):
-    reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).all()
-    return templates.TemplateResponse("crowd_reports.html", {"request": request, "reports": reports})
+async def view_crowd_reports(
+    request: Request,
+    tone: Optional[str] = Query(None),
+    escalation: Optional[str] = Query(None),
+    keyword: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(CrowdReport)
+
+    if tone:
+        query = query.filter(CrowdReport.tone == tone)
+    if escalation:
+        query = query.filter(CrowdReport.escalation == escalation)
+    if keyword:
+        query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+
+    reports = query.order_by(CrowdReport.timestamp.desc()).all()
+
+    return templates.TemplateResponse("crowd_reports.html", {
+        "request": request,
+        "reports": reports,
+        "tone": tone,
+        "escalation": escalation,
+        "keyword": keyword
+    })
 
 # ================================
 # TRIAGE & PATIENT MANAGEMENT ROUTES
