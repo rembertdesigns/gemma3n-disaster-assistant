@@ -1,6 +1,6 @@
 from fastapi import (
     FastAPI, Request, Form, UploadFile, File, Depends, HTTPException,
-    Body, Query, Form
+    Body, Query
 )
 from fastapi.responses import (
     HTMLResponse, FileResponse, JSONResponse, RedirectResponse,
@@ -9,6 +9,8 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
+
+from sqlalchemy.orm import Session
 
 from typing import Optional
 from datetime import datetime
@@ -24,6 +26,7 @@ import logging
 
 from weasyprint import HTML as WeasyHTML
 
+# Core app utilities
 from app.predictive_engine import calculate_risk_score
 from app.broadcast_utils import start_broadcast, discover_nearby_broadcasts
 from app.sentiment_utils import analyze_sentiment
@@ -49,6 +52,8 @@ from app.db import (
     get_report_by_id,
     get_dashboard_stats
 )
+
+# Map-related tools
 from app.map_utils import (
     map_utils,
     generate_static_map,
@@ -57,6 +62,10 @@ from app.map_utils import (
     get_map_metadata,
     MapConfig
 )
+
+# 🆕 Database session and models for crowd report queue
+from app.database import get_db  # Your SQLAlchemy session
+from app.models import CrowdReport  # SQLAlchemy model for crowd reports
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
