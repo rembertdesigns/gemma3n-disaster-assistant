@@ -2,37 +2,284 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Emergency Report</title>
+  <title>Emergency Field Report - {{ now().strftime('%Y%m%d_%H%M') }}</title>
   <style>
-    body { font-family: sans-serif; padding: 2rem; }
-    h1 { color: #dc2626; }
-    .report { margin-top: 2rem; }
-    img.map {
-      margin-top: 1rem;
+    /* Print-optimized emergency report template */
+    @page {
+      margin: 1in;
+      size: A4;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body { 
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      line-height: 1.6;
+      color: #2d3748;
+      margin: 0;
+      padding: 0;
+      background: white;
+    }
+    
+    .header {
+      border-bottom: 3px solid #dc2626;
+      padding-bottom: 1rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    
+    .emergency-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: #dc2626;
+      color: white;
+      padding: 0.5rem 1rem;
+      font-weight: bold;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+    }
+    
+    h1 {
+      color: #dc2626;
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 0 0 0.5rem 0;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+    
+    .report-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f7fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      border-left: 4px solid #3182ce;
+    }
+    
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .meta-label {
+      font-size: 0.8rem;
+      color: #718096;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .meta-value {
+      font-size: 1rem;
+      color: #2d3748;
+      font-weight: 600;
+      margin-top: 0.25rem;
+    }
+    
+    .report-section {
+      margin-bottom: 2rem;
+      break-inside: avoid;
+    }
+    
+    .section-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      font-weight: bold;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .report-content {
+      background: white;
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0 0 8px 8px;
+      margin-top: -1px;
+    }
+    
+    .situation-text {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: #4a5568;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    
+    .map-container {
+      text-align: center;
+      background: #f7fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .map-image {
       width: 100%;
       max-width: 600px;
-      border: 1px solid #ccc;
+      height: auto;
+      border: 2px solid #cbd5e0;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .map-caption {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #718096;
+      font-style: italic;
+    }
+    
+    .footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
+      font-size: 0.8rem;
+      color: #718096;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .classification {
+      background: #fed7d7;
+      color: #c53030;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+    
+    .priority-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: #feb2b2;
+      color: #c53030;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-left: 1rem;
+    }
+    
+    /* Print-specific optimizations */
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .header,
+      .report-section {
+        break-inside: avoid;
+      }
+      
+      .map-container {
+        break-inside: avoid;
+      }
+    }
+    
+    /* Emergency-specific styling */
+    .urgent-notice {
+      background: #fed7d7;
+      border: 2px solid #fc8181;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .urgent-text {
+      color: #c53030;
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin: 0;
     }
   </style>
 </head>
 <body>
-  <h1>Emergency Field Report</h1>
-  <p>Date: {{ now().strftime('%Y-%m-%d %H:%M') }}</p>
-
-  {% if location %}
-    <p><strong>Location:</strong> {{ location }}</p>
-  {% endif %}
-
-  <div class="report">
-    <h2>Reported Situation:</h2>
-    <p>{{ report_text }}</p>
+  <!-- Header Section -->
+  <div class="header">
+    <div class="emergency-badge">🚨 EMERGENCY REPORT</div>
+    <h1>Emergency Field Report</h1>
   </div>
-
-  {% if map_image %}
-    <div class="map-section">
-      <h2>📍 Incident Location Map</h2>
-      <img src="data:image/png;base64,{{ map_image }}" class="map" alt="Static Map of Incident Location">
+  
+  <!-- Report Metadata -->
+  <div class="report-meta">
+    <div class="meta-item">
+      <span class="meta-label">📅 Report Date</span>
+      <span class="meta-value">{{ now().strftime('%Y-%m-%d %H:%M:%S UTC') }}</span>
     </div>
+    
+    {% if location %}
+    <div class="meta-item">
+      <span class="meta-label">📍 Location</span>
+      <span class="meta-value">{{ location }}</span>
+    </div>
+    {% endif %}
+    
+    <div class="meta-item">
+      <span class="meta-label">🆔 Report ID</span>
+      <span class="meta-value">{{ now().strftime('%Y%m%d_%H%M%S') }}</span>
+    </div>
+  </div>
+  
+  <!-- Urgent Notice -->
+  <div class="urgent-notice">
+    <p class="urgent-text">
+      ⚠️ CONFIDENTIAL EMERGENCY DOCUMENT - AUTHORIZED PERSONNEL ONLY
+    </p>
+  </div>
+  
+  <!-- Situation Report -->
+  <div class="report-section">
+    <div class="section-header">
+      📋 Reported Situation
+    </div>
+    <div class="report-content">
+      <div class="situation-text">{{ report_text or 'No situation details provided.' }}</div>
+    </div>
+  </div>
+  
+  <!-- Map Section -->
+  {% if map_image %}
+  <div class="report-section">
+    <div class="section-header">
+      🗺️ Incident Location Map
+    </div>
+    <div class="report-content">
+      <div class="map-container">
+        <img src="data:image/png;base64,{{ map_image }}" 
+             class="map-image" 
+             alt="Static Map of Incident Location">
+        <div class="map-caption">
+          Geographic location of reported emergency incident
+        </div>
+      </div>
+    </div>
+  </div>
   {% endif %}
+  
+  <!-- Footer -->
+  <div class="footer">
+    <div>
+      <span class="classification">EMERGENCY RESPONSE</span>
+      <span class="priority-indicator">🔴 HIGH PRIORITY</span>
+    </div>
+    <div>
+      Generated by Emergency Response System v1.0
+    </div>
+  </div>
 </body>
 </html>

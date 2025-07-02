@@ -1,122 +1,1065 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Disaster Risk Prediction</title>
+<!-- templates/predict.html -->
+{% extends "base.html" %}
 
-  <!-- Load risk engine -->
-  <script src="{{ url_for('static', filename='js/weather-risk.js') }}" defer></script>
+{% block title %}Disaster Risk Prediction - Emergency Response Assistant{% endblock %}
+{% block page_title %}🧠 AI-Powered Risk Prediction{% endblock %}
+{% block subtitle %}Real-time Emergency Risk Assessment & Forecasting{% endblock %}
 
-  <!-- P2P Fallback (WebRTC) -->
-  <script src="https://unpkg.com/simple-peer@latest/simplepeer.min.js"></script>
-  <script type="module">
-    import { initBroadcastMap } from "{{ url_for('static', filename='js/workers/broadcast-map.js') }}";
-    import { startBroadcastListener } from "{{ url_for('static', filename='js/workers/broadcast.js') }}";
-    import { initP2PFallback } from "{{ url_for('static', filename='js/p2p/fallback-webrtc.js') }}";
+{% block header_actions %}
+<a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+  ⬅️ Back to Home
+</a>
+<button id="emergencyBroadcast" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #dc2626; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-left: 0.5rem;">
+  🚨 Emergency Broadcast
+</button>
+{% endblock %}
 
-    document.addEventListener("DOMContentLoaded", () => {
-      initBroadcastMap();
-      startBroadcastListener();
-      initP2PFallback(); // 🚀 P2P fallback activated
-    });
-  </script>
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
 
-  <!-- Leaflet Map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-
-  <!-- Styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 2rem;
-      background: #f9f9f9;
+{% block extra_styles %}
+<style>
+  /* Emergency Alert System */
+  .alert-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(45deg, #dc2626, #b91c1c);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    z-index: 9999;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+    border-bottom: 3px solid #991b1b;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .alert-banner.active {
+    transform: translateY(0);
+    animation: pulse 2s infinite;
+  }
+  
+  .alert-banner.active + .container {
+    margin-top: 4rem;
+  }
+  
+  /* Risk Dashboard Grid */
+  .risk-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .risk-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border-left: 5px solid #3b82f6;
+  }
+  
+  .risk-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+  }
+  
+  .risk-card.critical {
+    border-left-color: #dc2626;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+  }
+  
+  .risk-card.high {
+    border-left-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+  }
+  
+  .risk-card.medium {
+    border-left-color: #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  }
+  
+  .risk-card.low {
+    border-left-color: #16a34a;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  }
+  
+  .card-header {
+    padding: 1.5rem 1.5rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .card-icon {
+    font-size: 2rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: rgba(59, 130, 246, 0.1);
+  }
+  
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #1e40af;
+    margin: 0;
+  }
+  
+  .card-content {
+    padding: 0.5rem 1.5rem 1.5rem;
+  }
+  
+  .metric-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+    display: block;
+  }
+  
+  .metric-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+  
+  .metric-description {
+    font-size: 0.85rem;
+    color: #4b5563;
+    line-height: 1.4;
+  }
+  
+  /* Risk Score Styling */
+  .risk-score-0-25 { color: #16a34a; }
+  .risk-score-26-50 { color: #3b82f6; }
+  .risk-score-51-75 { color: #f59e0b; }
+  .risk-score-76-100 { color: #dc2626; animation: pulse 2s infinite; }
+  
+  /* Sentiment Analysis Panel */
+  .sentiment-panel {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    border-left: 5px solid #7c3aed;
+  }
+  
+  .panel-header {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .panel-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  .sentiment-content {
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .sentiment-metric {
+    text-align: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .sentiment-score {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  
+  .sentiment-calm { color: #16a34a; }
+  .sentiment-concerned { color: #f59e0b; }
+  .sentiment-elevated { color: #dc2626; }
+  .sentiment-critical { color: #991b1b; animation: pulse 2s infinite; }
+  
+  /* Broadcast Feed */
+  .broadcast-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    border-left: 5px solid #dc2626;
+  }
+  
+  .broadcast-header {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .broadcast-content {
+    padding: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .broadcast-card {
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  .broadcast-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+  }
+  
+  .broadcast-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+  
+  .broadcast-priority {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+  
+  .priority-critical {
+    background: #dc2626;
+    color: white;
+  }
+  
+  .priority-high {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .priority-medium {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  /* Map Container */
+  .map-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    border-left: 5px solid #059669;
+  }
+  
+  .map-header {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  #broadcast-map {
+    height: 450px;
+    width: 100%;
+  }
+  
+  /* Resources Panel */
+  .resources-panel {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border-left: 5px solid #f59e0b;
+  }
+  
+  .resources-content {
+    padding: 1.5rem;
+  }
+  
+  .resources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .resource-item {
+    text-align: center;
+    padding: 1rem;
+    background: #fffbeb;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  .resource-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  }
+  
+  .resource-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  
+  .resource-label {
+    font-size: 0.8rem;
+    color: #92400e;
+    font-weight: bold;
+  }
+  
+  .resource-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1e40af;
+    margin-top: 0.25rem;
+  }
+  
+  /* Loading States */
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .risk-dashboard {
+      grid-template-columns: 1fr;
     }
-    h1 {
-      color: #333;
+    
+    .sentiment-content {
+      grid-template-columns: 1fr;
     }
-    #broadcast-alert {
-      display: none;
-      background-color: #ffcccc;
-      color: #990000;
-      padding: 10px 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-weight: bold;
+    
+    .resources-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
-    .broadcast-section {
-      margin-top: 30px;
-    }
-    .broadcast-card {
-      background: #fff3f3;
-      border-left: 5px solid red;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-    }
-    .map-section {
-      margin-top: 30px;
-    }
-    .sentiment-section {
-      margin-top: 25px;
-      background-color: #f1f1f1;
-      padding: 10px;
-      border-radius: 6px;
-    }
+    
     #broadcast-map {
-      height: 400px;
-      border-radius: 8px;
+      height: 300px;
     }
-    pre {
-      background-color: #eee;
-      padding: 10px;
-      border-radius: 4px;
+  }
+  
+  /* Real-time Updates Animation */
+  .updating {
+    animation: pulse 1s ease-in-out;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Emergency Alert Banner -->
+<div id="broadcast-alert" class="alert-banner">
+  🚨 EMERGENCY BROADCAST ACTIVE - IMMEDIATE ACTION REQUIRED
+</div>
+
+<!-- Risk Assessment Dashboard -->
+<div class="risk-dashboard">
+  <!-- Risk Score Card -->
+  <div class="risk-card" id="riskScoreCard">
+    <div class="card-header">
+      <div class="card-icon">⚠️</div>
+      <h3 class="card-title">Risk Assessment</h3>
+    </div>
+    <div class="card-content">
+      <div class="metric-label">Overall Risk Score</div>
+      <span class="metric-value" id="risk-score">
+        <span class="loading"></span>
+      </span>
+      <div class="metric-description" id="risk-description">
+        Analyzing current conditions...
+      </div>
+    </div>
+  </div>
+  
+  <!-- Severity Level Card -->
+  <div class="risk-card" id="severityCard">
+    <div class="card-header">
+      <div class="card-icon">📊</div>
+      <h3 class="card-title">Threat Severity</h3>
+    </div>
+    <div class="card-content">
+      <div class="metric-label">Current Level</div>
+      <span class="metric-value" id="severity">
+        <span class="loading"></span>
+      </span>
+      <div class="metric-description" id="severity-description">
+        Evaluating threat indicators...
+      </div>
+    </div>
+  </div>
+  
+  <!-- Active Threats Card -->
+  <div class="risk-card" id="threatsCard">
+    <div class="card-header">
+      <div class="card-icon">🎯</div>
+      <h3 class="card-title">Active Threats</h3>
+    </div>
+    <div class="card-content">
+      <div class="metric-label">Identified Risks</div>
+      <span class="metric-value" id="threat-count">
+        <span class="loading"></span>
+      </span>
+      <div class="metric-description" id="threats-list">
+        Scanning for potential threats...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Sentiment Analysis -->
+<div class="sentiment-panel">
+  <div class="panel-header">
+    <div class="card-icon">🧠</div>
+    <h3 class="panel-title">AI Panic Sentiment Analysis</h3>
+    <button onclick="refreshSentiment()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+      🔄 Refresh
+    </button>
+  </div>
+  <div class="sentiment-content">
+    <div class="sentiment-metric">
+      <div class="metric-label">Community Sentiment</div>
+      <span class="sentiment-score" id="sentiment-result">
+        <span class="loading"></span>
+      </span>
+      <div class="metric-description">Current emotional state</div>
+    </div>
+    <div class="sentiment-metric">
+      <div class="metric-label">Panic Level</div>
+      <span class="sentiment-score" id="escalation-level">
+        <span class="loading"></span>
+      </span>
+      <div class="metric-description">Escalation indicator</div>
+    </div>
+    <div class="sentiment-metric">
+      <div class="metric-label">Confidence</div>
+      <span class="sentiment-score" id="sentiment-confidence">
+        <span class="loading"></span>
+      </span>
+      <div class="metric-description">Analysis reliability</div>
+    </div>
+  </div>
+</div>
+
+<!-- Emergency Broadcasts -->
+<div class="broadcast-section">
+  <div class="broadcast-header">
+    <div>
+      <div class="card-icon">📡</div>
+      <h3 class="panel-title">Live Emergency Broadcasts</h3>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <button onclick="refreshBroadcasts()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+        🔄 Refresh
+      </button>
+      <button onclick="toggleAutoRefresh()" id="autoRefreshBtn" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+        ⏸️ Pause
+      </button>
+    </div>
+  </div>
+  <div class="broadcast-content" id="broadcast-feed">
+    <div style="text-align: center; padding: 2rem; color: #6b7280;">
+      <span class="loading"></span>
+      <div style="margin-top: 1rem;">Loading emergency broadcasts...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Interactive Risk Map -->
+<div class="map-container">
+  <div class="map-header">
+    <div class="card-icon">🗺️</div>
+    <h3 class="panel-title">Real-time Risk Map</h3>
+    <button onclick="centerMap()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+      📍 Center on Me
+    </button>
+  </div>
+  <div id="broadcast-map"></div>
+</div>
+
+<!-- Resource Allocation -->
+<div class="resources-panel">
+  <div class="panel-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+    <div class="card-icon">🚑</div>
+    <h3 class="panel-title">Emergency Resources</h3>
+  </div>
+  <div class="resources-content">
+    <div class="metric-label">Available Emergency Assets</div>
+    <div class="resources-grid" id="resources-grid">
+      <div class="resource-item">
+        <span class="resource-icon">🚑</span>
+        <div class="resource-label">Ambulances</div>
+        <div class="resource-value" id="ambulance-count">-</div>
+      </div>
+      <div class="resource-item">
+        <span class="resource-icon">🚒</span>
+        <div class="resource-label">Fire Units</div>
+        <div class="resource-value" id="fire-count">-</div>
+      </div>
+      <div class="resource-item">
+        <span class="resource-icon">👮</span>
+        <div class="resource-label">Police Units</div>
+        <div class="resource-value" id="police-count">-</div>
+      </div>
+      <div class="resource-item">
+        <span class="resource-icon">🏥</span>
+        <div class="resource-label">Hospitals</div>
+        <div class="resource-value" id="hospital-count">-</div>
+      </div>
+      <div class="resource-item">
+        <span class="resource-icon">🚁</span>
+        <div class="resource-label">Air Support</div>
+        <div class="resource-value" id="air-count">-</div>
+      </div>
+      <div class="resource-item">
+        <span class="resource-icon">⛑️</span>
+        <div class="resource-label">Shelters</div>
+        <div class="resource-value" id="shelter-count">-</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block base_scripts %}
+<!-- Weather Risk Engine -->
+<script src="{{ url_for('static', filename='js/weather-risk.js') }}" defer></script>
+<!-- P2P Fallback (WebRTC) -->
+<script src="https://unpkg.com/simple-peer@latest/simplepeer.min.js"></script>
+<!-- Leaflet Map -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+import { initBroadcastMap } from "{{ url_for('static', filename='js/workers/broadcast-map.js') }}";
+import { startBroadcastListener } from "{{ url_for('static', filename='js/workers/broadcast.js') }}";
+import { initP2PFallback } from "{{ url_for('static', filename='js/p2p/fallback-webrtc.js') }}";
+
+// Global state
+let autoRefreshEnabled = true;
+let refreshInterval;
+let map;
+
+// Initialize everything when DOM is ready
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Initializing Emergency Prediction Dashboard...");
+  
+  try {
+    // Initialize P2P and broadcast systems
+    await initBroadcastMap();
+    await startBroadcastListener();
+    await initP2PFallback();
+    
+    // Initialize map
+    initializeMap();
+    
+    // Load initial data
+    await loadRiskAssessment();
+    await loadSentimentAnalysis();
+    await loadBroadcasts();
+    await loadResources();
+    
+    // Start auto-refresh
+    startAutoRefresh();
+    
+    console.log("✅ Dashboard initialized successfully");
+  } catch (error) {
+    console.error("❌ Dashboard initialization failed:", error);
+    showError("Failed to initialize prediction dashboard");
+  }
+});
+
+// Risk Assessment Functions
+async function loadRiskAssessment() {
+  try {
+    // Simulate risk calculation (replace with actual API call)
+    const riskData = await calculateRiskScore();
+    
+    updateRiskScore(riskData.score, riskData.level);
+    updateSeverity(riskData.severity);
+    updateThreats(riskData.threats);
+    
+  } catch (error) {
+    console.error("Error loading risk assessment:", error);
+    document.getElementById('risk-score').innerHTML = '<span style="color: #dc2626;">Error</span>';
+  }
+}
+
+function updateRiskScore(score, level) {
+  const scoreElement = document.getElementById('risk-score');
+  const cardElement = document.getElementById('riskScoreCard');
+  const descElement = document.getElementById('risk-description');
+  
+  scoreElement.textContent = score + '%';
+  scoreElement.className = `metric-value risk-score-${Math.floor(score/25)*25}-${Math.floor(score/25)*25+25}`;
+  
+  cardElement.className = `risk-card ${level}`;
+  
+  const descriptions = {
+    low: "Conditions are stable with minimal immediate threats detected.",
+    medium: "Moderate risk factors present. Continue monitoring.",
+    high: "Elevated risk conditions. Prepare for potential emergency response.",
+    critical: "CRITICAL: Immediate emergency response may be required."
+  };
+  
+  descElement.textContent = descriptions[level] || "Risk assessment in progress...";
+}
+
+function updateSeverity(severity) {
+  const severityElement = document.getElementById('severity');
+  const cardElement = document.getElementById('severityCard');
+  const descElement = document.getElementById('severity-description');
+  
+  severityElement.textContent = severity.level.toUpperCase();
+  cardElement.className = `risk-card ${severity.level}`;
+  descElement.textContent = severity.description;
+}
+
+function updateThreats(threats) {
+  const countElement = document.getElementById('threat-count');
+  const listElement = document.getElementById('threats-list');
+  
+  countElement.textContent = threats.length;
+  
+  if (threats.length > 0) {
+    listElement.innerHTML = threats.map(threat => 
+      `<div style="margin-bottom: 0.25rem;">• ${threat}</div>`
+    ).join('');
+  } else {
+    listElement.textContent = "No immediate threats detected.";
+  }
+}
+
+// Sentiment Analysis Functions
+async function loadSentimentAnalysis() {
+  try {
+    const sentimentData = await analyzeSentiment();
+    
+    updateSentiment(sentimentData.sentiment, sentimentData.level, sentimentData.confidence);
+    
+  } catch (error) {
+    console.error("Error loading sentiment analysis:", error);
+    document.getElementById('sentiment-result').innerHTML = '<span style="color: #dc2626;">Error</span>';
+  }
+}
+
+function updateSentiment(sentiment, level, confidence) {
+  const sentimentElement = document.getElementById('sentiment-result');
+  const levelElement = document.getElementById('escalation-level');
+  const confidenceElement = document.getElementById('sentiment-confidence');
+  
+  sentimentElement.textContent = sentiment.toUpperCase();
+  sentimentElement.className = `sentiment-score sentiment-${level}`;
+  
+  levelElement.textContent = level.toUpperCase();
+  levelElement.className = `sentiment-score sentiment-${level}`;
+  
+  confidenceElement.textContent = confidence + '%';
+  confidenceElement.className = 'sentiment-score';
+}
+
+// Broadcast Functions
+async function loadBroadcasts() {
+  const feedElement = document.getElementById('broadcast-feed');
+  
+  try {
+    const broadcasts = await fetchBroadcasts();
+    
+    if (broadcasts.length === 0) {
+      feedElement.innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: #6b7280;">
+          📡 No active emergency broadcasts in your area
+        </div>
+      `;
+      return;
     }
-  </style>
-</head>
-<body>
-  <h1>🧠 Disaster Risk Prediction</h1>
+    
+    feedElement.innerHTML = broadcasts.map(broadcast => `
+      <div class="broadcast-card">
+        <div class="broadcast-meta">
+          <span>📍 ${broadcast.location || 'Unknown Location'}</span>
+          <span class="broadcast-priority priority-${broadcast.priority}">
+            ${broadcast.priority.toUpperCase()}
+          </span>
+        </div>
+        <div style="font-weight: bold; margin-bottom: 0.5rem;">
+          ${broadcast.title || 'Emergency Alert'}
+        </div>
+        <div style="color: #4b5563;">
+          ${broadcast.message}
+        </div>
+        <div style="font-size: 0.8rem; color: #9ca3af; margin-top: 0.5rem;">
+          ${broadcast.timestamp}
+        </div>
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    console.error("Error loading broadcasts:", error);
+    feedElement.innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: #dc2626;">
+        ⚠️ Error loading emergency broadcasts
+      </div>
+    `;
+  }
+}
 
-  <!-- 🚨 Alert Banner -->
-  <div id="broadcast-alert">
-    🚨 Emergency broadcast triggered!
-  </div>
+// Resource Functions
+async function loadResources() {
+  try {
+    const resources = await fetchResources();
+    
+    document.getElementById('ambulance-count').textContent = resources.ambulances || '0';
+    document.getElementById('fire-count').textContent = resources.fireUnits || '0';
+    document.getElementById('police-count').textContent = resources.policeUnits || '0';
+    document.getElementById('hospital-count').textContent = resources.hospitals || '0';
+    document.getElementById('air-count').textContent = resources.airSupport || '0';
+    document.getElementById('shelter-count').textContent = resources.shelters || '0';
+    
+  } catch (error) {
+    console.error("Error loading resources:", error);
+  }
+}
 
-  <!-- Risk Info -->
-  <div>
-    <p id="risk-score">Risk Score: <strong>Loading...</strong></p>
-    <p id="severity">Severity: <strong>Loading...</strong></p>
-    <pre id="resources">Resources: Loading...</pre>
-  </div>
+// Map Functions
+function initializeMap() {
+  map = L.map('broadcast-map').setView([40.7128, -74.0060], 10);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+  
+  // Add risk layers
+  addRiskLayers();
+}
 
-  <!-- 🧠 Sentiment Analysis UI -->
-  <div class="sentiment-section">
-    <h2>🧠 Panic Sentiment Analysis</h2>
-    <p id="sentiment-result">Sentiment: <strong>Loading...</strong></p>
-    <p id="escalation-level">Escalation Level: <strong>Loading...</strong></p>
-  </div>
+function addRiskLayers() {
+  // This would integrate with your broadcast map system
+  // Add markers for emergency broadcasts, risk zones, etc.
+}
 
-  <!-- 📡 Broadcast Feed -->
-  <div class="broadcast-section">
-    <h2>📡 Nearby Emergency Broadcasts</h2>
-    <div id="broadcast-feed">Loading active broadcasts...</div>
-  </div>
+function centerMap() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      map.setView([lat, lng], 12);
+      
+      L.marker([lat, lng])
+        .addTo(map)
+        .bindPopup('Your Location')
+        .openPopup();
+    });
+  }
+}
 
-  <!-- 🗺️ Broadcast Map -->
-  <div class="map-section">
-    <h2>🗺️ Broadcast Map</h2>
-    <div id="broadcast-map"></div>
-  </div>
-
-  <!-- ✅ Service Worker Registration -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then(() => console.log("✅ Service Worker registered"))
-        .catch((err) => console.error("❌ SW registration failed:", err));
+// Auto-refresh Functions
+function startAutoRefresh() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  
+  refreshInterval = setInterval(async () => {
+    if (autoRefreshEnabled && navigator.onLine) {
+      await refreshAllData();
     }
-  </script>
-</body>
-</html>
+  }, 30000); // 30 seconds
+}
+
+function toggleAutoRefresh() {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  const btn = document.getElementById('autoRefreshBtn');
+  btn.textContent = autoRefreshEnabled ? '⏸️ Pause' : '▶️ Resume';
+}
+
+async function refreshAllData() {
+  console.log("🔄 Refreshing dashboard data...");
+  
+  // Add updating animation
+  document.body.classList.add('updating');
+  
+  try {
+    await Promise.all([
+      loadRiskAssessment(),
+      loadSentimentAnalysis(),
+      loadBroadcasts(),
+      loadResources()
+    ]);
+  } catch (error) {
+    console.error("Error refreshing data:", error);
+  } finally {
+    document.body.classList.remove('updating');
+  }
+}
+
+// Manual refresh functions
+window.refreshSentiment = loadSentimentAnalysis;
+window.refreshBroadcasts = loadBroadcasts;
+window.centerMap = centerMap;
+
+// Emergency broadcast trigger
+document.getElementById('emergencyBroadcast').addEventListener('click', () => {
+  if (confirm('🚨 EMERGENCY BROADCAST\n\nThis will send an immediate alert to all connected devices in your area. Only use for genuine emergencies.\n\nProceed?')) {
+    triggerEmergencyBroadcast();
+  }
+});
+
+async function triggerEmergencyBroadcast() {
+  try {
+    // Show alert banner
+    const alertBanner = document.getElementById('broadcast-alert');
+    alertBanner.classList.add('active');
+    
+    // Send broadcast through P2P network
+    const broadcastData = {
+      type: 'emergency',
+      timestamp: new Date().toISOString(),
+      location: await getCurrentLocation(),
+      message: 'Emergency broadcast triggered',
+      priority: 'critical'
+    };
+    
+    // This would integrate with your P2P broadcast system
+    await sendEmergencyBroadcast(broadcastData);
+    
+    // Hide banner after 10 seconds
+    setTimeout(() => {
+      alertBanner.classList.remove('active');
+    }, 10000);
+    
+    console.log("✅ Emergency broadcast sent");
+  } catch (error) {
+    console.error("❌ Failed to send emergency broadcast:", error);
+    alert('Failed to send emergency broadcast. Please try again.');
+  }
+}
+
+// Mock data functions (replace with actual API calls)
+async function calculateRiskScore() {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Mock risk calculation
+  const score = Math.floor(Math.random() * 100);
+  let level, severity;
+  
+  if (score < 25) {
+    level = 'low';
+    severity = { level: 'low', description: 'Normal conditions with minimal risk factors.' };
+  } else if (score < 50) {
+    level = 'medium';
+    severity = { level: 'medium', description: 'Moderate risk conditions detected.' };
+  } else if (score < 75) {
+    level = 'high';
+    severity = { level: 'high', description: 'Elevated risk - enhanced monitoring active.' };
+  } else {
+    level = 'critical';
+    severity = { level: 'critical', description: 'CRITICAL ALERT - Immediate response required.' };
+  }
+  
+  const threats = [];
+  if (score > 30) threats.push('Severe Weather Conditions');
+  if (score > 50) threats.push('Infrastructure Vulnerability');
+  if (score > 70) threats.push('High Population Density');
+  if (score > 85) threats.push('Limited Evacuation Routes');
+  
+  return { score, level, severity, threats };
+}
+
+async function analyzeSentiment() {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  const sentiments = ['calm', 'concerned', 'elevated', 'critical'];
+  const randomSentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
+  const confidence = Math.floor(Math.random() * 30) + 70; // 70-100%
+  
+  const sentimentLabels = {
+    calm: 'Calm',
+    concerned: 'Concerned', 
+    elevated: 'Elevated',
+    critical: 'Critical'
+  };
+  
+  return {
+    sentiment: sentimentLabels[randomSentiment],
+    level: randomSentiment,
+    confidence
+  };
+}
+
+async function fetchBroadcasts() {
+  await new Promise(resolve => setTimeout(resolve, 600));
+  
+  // Mock broadcast data
+  const mockBroadcasts = [
+    {
+      id: '1',
+      title: 'Severe Weather Alert',
+      message: 'High winds and heavy rain expected in the downtown area. Residents advised to stay indoors.',
+      location: 'Downtown District',
+      priority: 'high',
+      timestamp: '2 minutes ago'
+    },
+    {
+      id: '2', 
+      title: 'Traffic Advisory',
+      message: 'Major highway closure due to emergency vehicle activity. Seek alternate routes.',
+      location: 'Highway 101',
+      priority: 'medium',
+      timestamp: '8 minutes ago'
+    },
+    {
+      id: '3',
+      title: 'Emergency Shelter Available',
+      message: 'Temporary shelter opened at Community Center for displaced residents.',
+      location: 'Community Center',
+      priority: 'medium',
+      timestamp: '15 minutes ago'
+    }
+  ];
+  
+  return mockBroadcasts;
+}
+
+async function fetchResources() {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  return {
+    ambulances: Math.floor(Math.random() * 20) + 5,
+    fireUnits: Math.floor(Math.random() * 15) + 3,
+    policeUnits: Math.floor(Math.random() * 30) + 10,
+    hospitals: Math.floor(Math.random() * 8) + 2,
+    airSupport: Math.floor(Math.random() * 5) + 1,
+    shelters: Math.floor(Math.random() * 12) + 3
+  };
+}
+
+async function getCurrentLocation() {
+  return new Promise((resolve) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        () => {
+          resolve({ lat: 40.7128, lng: -74.0060 }); // Default to NYC
+        }
+      );
+    } else {
+      resolve({ lat: 40.7128, lng: -74.0060 });
+    }
+  });
+}
+
+async function sendEmergencyBroadcast(data) {
+  // This would integrate with your actual P2P broadcast system
+  console.log('Broadcasting emergency alert:', data);
+  
+  // Simulate broadcast delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  return true;
+}
+
+function showError(message) {
+  const errorDiv = document.createElement('div');
+  errorDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #dc2626;
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 9999;
+    max-width: 300px;
+  `;
+  errorDiv.textContent = `⚠️ ${message}`;
+  
+  document.body.appendChild(errorDiv);
+  
+  setTimeout(() => {
+    errorDiv.remove();
+  }, 5000);
+}
+
+// Handle online/offline events
+window.addEventListener('online', () => {
+  console.log('🌐 Connection restored - resuming data refresh');
+  if (autoRefreshEnabled) {
+    refreshAllData();
+  }
+});
+
+window.addEventListener('offline', () => {
+  console.log('📴 Connection lost - operating in offline mode');
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+});
+
+</script>
+{% endblock %}
+
+<!-- AI status for prediction page -->
+{% block ai_status %}
+<div class="ai-status-bar" id="aiStatusBar">
+  <div class="ai-status-dot" id="aiStatusDot"></div>
+  <span id="aiStatusText">🧠 AI Risk Analysis Engine Active</span>
+  <button onclick="window.EdgeAI?.runDiagnostics()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-left: auto;">
+    🧪 Test AI Models
+  </button>
+</div>
+{% endblock %}

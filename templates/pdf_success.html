@@ -1,37 +1,151 @@
 <!-- templates/pdf_success.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>PDF Ready</title>
-  <script>
-    window.onload = () => {
-      // Trigger auto download
-      const link = document.createElement('a');
-      link.href = "{{ pdf_url }}";
-      link.download = "emergency_report.pdf";
-      document.body.appendChild(link);
-      link.click();
+{% extends "base.html" %}
 
-      // Show toast
-      const toast = document.createElement("div");
-      toast.textContent = "✅ Emergency report saved as PDF.";
-      toast.style.position = "fixed";
-      toast.style.bottom = "20px";
-      toast.style.right = "20px";
-      toast.style.background = "#16a34a";
-      toast.style.color = "#fff";
-      toast.style.padding = "1rem";
-      toast.style.borderRadius = "8px";
-      toast.style.boxShadow = "0 4px 8px rgba(0,0,0,0.2)";
-      toast.style.zIndex = "1000";
-      document.body.appendChild(toast);
+{% block title %}PDF Ready - Disaster Response Assistant{% endblock %}
+{% block page_title %}📄 PDF Generation Complete{% endblock %}
+{% block subtitle %}Emergency Report Download{% endblock %}
 
-      setTimeout(() => toast.remove(), 4000);
-    };
-  </script>
-</head>
-<body>
-  <p style="text-align: center; margin-top: 2rem;">Your PDF is downloading...</p>
-</body>
-</html>
+{% block extra_styles %}
+<style>
+  .download-container {
+    text-align: center;
+    padding: 3rem 1rem;
+    max-width: 500px;
+    margin: 2rem auto;
+  }
+  
+  .download-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: bounce 2s infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+  }
+  
+  .download-message {
+    font-size: 1.2rem;
+    color: #374151;
+    margin-bottom: 2rem;
+  }
+  
+  .manual-download {
+    display: none;
+    margin-top: 1rem;
+  }
+  
+  .download-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #16a34a;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  
+  .download-button:hover {
+    background: #15803d;
+    transform: translateY(-2px);
+  }
+  
+  .back-link {
+    margin-top: 2rem;
+    display: inline-block;
+    color: #6b7280;
+    text-decoration: none;
+  }
+  
+  .back-link:hover {
+    color: #374151;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="download-container">
+  <div class="download-icon">📥</div>
+  <div class="download-message">Your emergency report PDF is downloading...</div>
+  
+  <div class="manual-download" id="manualDownload">
+    <p style="color: #6b7280; margin-bottom: 1rem;">
+      Download didn't start automatically?
+    </p>
+    <a href="{{ pdf_url }}" download="emergency_report.pdf" class="download-button">
+      📄 Download PDF
+    </a>
+  </div>
+  
+  <a href="/" class="back-link">← Return to Home</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.onload = () => {
+  // Trigger auto download
+  const link = document.createElement('a');
+  link.href = "{{ pdf_url }}";
+  link.download = "emergency_report.pdf";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Show success toast
+  const toast = document.createElement("div");
+  toast.innerHTML = "✅ Emergency report saved as PDF";
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #16a34a;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    font-weight: 500;
+    animation: slideIn 0.3s ease;
+  `;
+  
+  // Add slide-in animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  document.body.appendChild(toast);
+  
+  // Remove toast after 4 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideIn 0.3s ease reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+  
+  // Show manual download option after 3 seconds if needed
+  setTimeout(() => {
+    document.getElementById('manualDownload').style.display = 'block';
+  }, 3000);
+  
+  // Auto-redirect after 8 seconds
+  setTimeout(() => {
+    if (confirm('Download complete. Return to home page?')) {
+      window.location.href = '/';
+    }
+  }, 8000);
+};
+</script>
+{% endblock %}
+
+<!-- No AI status needed for PDF success page -->
+{% block ai_status %}{% endblock %}
