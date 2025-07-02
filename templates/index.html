@@ -364,6 +364,27 @@
     </div>
     <script>document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });</script>
     {% endif %}
+
+    <!-- 🔗 Manual Mesh Pairing UI -->
+<div id="pairing-ui" style="margin-top: 2rem; padding: 1rem; background: #eef2ff; border: 1px solid #93c5fd; border-radius: 8px;">
+  <h3 style="margin-bottom: 0.5rem;">Manual Mesh Pairing (Offline Mode)</h3>
+  <canvas id="qr-code" style="display:block;margin:auto;"></canvas>
+  <pre id="signal-raw" style="background:#fff; padding:8px; font-size:0.8em; overflow-wrap:anywhere; border:1px dashed #ccc; margin-top:0.5rem;"></pre>
+  <input id="signal-input" placeholder="Paste peer signal here" style="width:100%; margin-top:0.5rem; padding:0.5rem; font-size:0.9em; border:1px solid #ccc; border-radius:4px;" />
+  <button onclick="handleManualSignal()" style="margin-top:0.5rem; padding:0.5rem 1rem; background:#3b82f6; color:white; border:none; border-radius:4px;">🔗 Connect Peer</button>
+</div>
+
+<script>
+function handleManualSignal() {
+  const val = document.getElementById('signal-input').value;
+  if (val) {
+    import('/static/js/p2p/fallback-webrtc.js').then(module => {
+      module.manualSignalInput(val);
+    });
+  }
+}
+</script>
+
   </main>
 
   <footer class="footer">

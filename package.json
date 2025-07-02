@@ -1,7 +1,29 @@
 {
-  "devDependencies": {
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.11"
-  }
+  "name": "disaster-assistant",
+  "version": "1.0.0",
+  "description": "Offline-first disaster response and recovery app with WebRTC mesh fallback.",
+  "main": "server/socket-server.js",
+  "type": "module",
+  "scripts": {
+    "start-signaling": "node server/socket-server.js",
+    "dev": "bash scripts/dev.sh"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4",
+    "simple-peer": "^9.11.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "keywords": [
+    "disaster",
+    "webrtc",
+    "mesh",
+    "offline",
+    "p2p",
+    "fastapi",
+    "crisis-response"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }
