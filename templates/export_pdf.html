@@ -5,38 +5,55 @@
   <style>
     body { font-family: sans-serif; padding: 1rem; }
     h1 { color: #1e3a8a; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ccc; padding: 8px; font-size: 0.9rem; }
-    th { background: #e0e7ff; }
-    .media-link { font-size: 0.8rem; color: #2563eb; }
+    .report-block {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: 6px;
+      page-break-inside: avoid;
+    }
+    .report-block h2 {
+      font-size: 1.1rem;
+      margin-top: 0;
+    }
+    .meta { font-size: 0.85rem; color: #444; margin-bottom: 0.5rem; }
+    .media-link { font-size: 0.8rem; color: #2563eb; word-break: break-all; }
+    .map-image {
+      margin-top: 1rem;
+      max-width: 100%;
+      border: 1px solid #999;
+    }
   </style>
 </head>
 <body>
   <h1>📋 Crowd Report Export</h1>
   <p>Generated: {{ now().strftime('%Y-%m-%d %H:%M') }}</p>
-  <table>
-    <thead>
-      <tr>
-        <th>Message</th>
-        <th>Priority</th>
-        <th>Timestamp</th>
-        <th>User</th>
-        <th>Image</th>
-        <th>Audio</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in reports %}
-      <tr>
-        <td>{{ r.message or '—' }}</td>
-        <td>{{ r.priority }}</td>
-        <td>{{ r.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td>{{ r.user or 'Anonymous' }}</td>
-        <td>{% if r.image_path %}<span class="media-link">{{ r.image_path }}</span>{% else %}—{% endif %}</td>
-        <td>{% if r.audio_path %}<span class="media-link">{{ r.audio_path }}</span>{% else %}—{% endif %}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+  {% for r in reports %}
+  <div class="report-block">
+    <h2>🧾 Report #{{ r.id }}</h2>
+    <p>{{ r.message or 'No message provided.' }}</p>
+
+    <div class="meta">
+      <strong>Priority:</strong> {{ r.priority or r.escalation or 'N/A' }}<br/>
+      <strong>Tone:</strong> {{ r.tone or '—' }}<br/>
+      <strong>User:</strong> {{ r.user or 'Anonymous' }}<br/>
+      <strong>Timestamp:</strong> {{ r.timestamp.strftime('%Y-%m-%d %H:%M') if r.timestamp else '—' }}<br/>
+      <strong>Location:</strong> {{ r.location or '—' }}
+    </div>
+
+    {% if r.image_path %}
+    <div><strong>Image:</strong> <span class="media-link">{{ r.image_path }}</span></div>
+    {% endif %}
+
+    {% if r.audio_path %}
+    <div><strong>Audio:</strong> <span class="media-link">{{ r.audio_path }}</span></div>
+    {% endif %}
+
+    {% if r.map_image_base64 %}
+    <img class="map-image" src="data:image/png;base64,{{ r.map_image_base64 }}" alt="Map Snapshot for Report {{ r.id }}" />
+    {% endif %}
+  </div>
+  {% endfor %}
 </body>
 </html>

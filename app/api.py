@@ -32,6 +32,7 @@ from io import BytesIO
 from app.predictive_engine import calculate_risk_score
 from app.broadcast_utils import start_broadcast, discover_nearby_broadcasts
 from app.sentiment_utils import analyze_sentiment
+from app.map_snapshot import generate_map_image
 from app.hazard_detection import detect_hazards
 from app.preprocessing import preprocess_input
 from app.inference import run_disaster_analysis
@@ -452,6 +453,20 @@ async def export_reports_pdf(
         query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
 
     reports = query.order_by(CrowdReport.timestamp.desc()).all()
+
+    # Inject base64 map images
+    for report in reports:
+        if hasattr(report, 'latitude') and hasattr(report, 'longitude'):
+            if report.latitude and report.longitude:
+                try:
+                    map_bytes = generate_map_image(report.latitude, report.longitude, str(report.id))
+                    report.map_image_base64 = base64.b64encode(map_bytes).decode("utf-8")
+                except Exception as e:
+                    report.map_image_base64 = None
+            else:
+                report.map_image_base64 = None
+        else:
+            report.map_image_base64 = None
 
     html_content = templates.get_template("export_pdf.html").render({
         "reports": reports

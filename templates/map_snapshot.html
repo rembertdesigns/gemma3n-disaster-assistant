@@ -1,0 +1,72 @@
+<!-- templates/map_snapshot.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Map Snapshot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+    }
+
+    #map {
+      width: 600px;
+      height: 400px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+    }
+
+    /* Print-safe rendering */
+    @media print {
+      #map {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+  const latitude = parseFloat("{{ latitude }}");
+  const longitude = parseFloat("{{ longitude }}");
+  const reportId = "{{ report_id }}";
+
+  const map = L.map('map', {
+    zoomControl: false,
+    attributionControl: true
+  }).setView([latitude, longitude], 13);
+
+  const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  });
+
+  tileLayer.on('load', () => {
+    document.body.setAttribute('data-map-loaded', 'true');
+  });
+
+  tileLayer.addTo(map);
+
+  L.marker([latitude, longitude])
+    .addTo(map)
+    .bindPopup("📍 Crowd Report " + reportId)
+    .openPopup();
+</script>
+
+</body>
+</html>

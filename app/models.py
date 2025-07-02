@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Float
 from datetime import datetime
 from app.database import Base
 
@@ -16,6 +16,8 @@ class CrowdReport(Base):
     user = Column(String)
     location = Column(String)
     timestamp = Column(String)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
 
 # ==========================
 # 🏥 Triage Patient Model
