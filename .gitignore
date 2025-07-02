@@ -192,3 +192,39 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Node
+node_modules/
+.env
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AI Model Files
+/models/*
+!models/*.js  # Keep socket-server.js or necessary code
+
+# Frontend Builds
+dist/
+build/
+
+# Service worker cache
+sw-cache/
+
+*.bak
+*.tmp
+*~
+
+*.pdf
+*.zip
+exports/
