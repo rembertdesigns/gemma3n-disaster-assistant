@@ -257,6 +257,15 @@
   </button>
 </form>
 
+<div class="export-buttons" style="margin-top: 0.5rem;">
+  <a href="/export-reports.csv?tone={{ tone }}&escalation={{ escalation }}&keyword={{ keyword }}" class="refresh-button" style="background: #6d28d9;">
+    📤 Export CSV
+  </a>
+  <a href="/export-reports.json?tone={{ tone }}&escalation={{ escalation }}&keyword={{ keyword }}" class="refresh-button" style="background: #334155;">
+    🧾 Export JSON
+  </a>
+</div>
+
 {% if reports %}
 <div style="overflow-x: auto;">
   <table class="crowd-report-table" id="reportsTable">

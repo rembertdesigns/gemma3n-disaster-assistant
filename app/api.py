@@ -467,6 +467,65 @@ async def export_reports_pdf(
         headers={"Content-Disposition": "inline; filename=crowd_reports.pdf"}
     )
 
+@app.get("/export-reports.csv")
+async def export_reports_csv(
+    tone: Optional[str] = Query(None),
+    escalation: Optional[str] = Query(None),
+    keyword: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(CrowdReport)
+
+    if tone:
+        query = query.filter(CrowdReport.tone == tone)
+    if escalation:
+        query = query.filter(CrowdReport.escalation == escalation)
+    if keyword:
+        query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+
+    reports = query.order_by(CrowdReport.timestamp.desc()).all()
+
+    # Build CSV
+    csv_data = "id,message,tone,escalation,timestamp,user,location,image_url\n"
+    for r in reports:
+        csv_data += f'"{r.id}","{r.message}","{r.tone}","{r.escalation}","{r.timestamp}","{r.user or ""}","{r.location or ""}","{r.image_url or ""}"\n'
+
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=crowd_reports.csv"}
+    )
+
+@app.get("/export-reports.json", response_class=JSONResponse)
+async def export_reports_json(
+    tone: Optional[str] = Query(None),
+    escalation: Optional[str] = Query(None),
+    keyword: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(CrowdReport)
+
+    if tone:
+        query = query.filter(CrowdReport.tone == tone)
+    if escalation:
+        query = query.filter(CrowdReport.escalation == escalation)
+    if keyword:
+        query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+
+    reports = query.order_by(CrowdReport.timestamp.desc()).all()
+
+    report_list = [{
+        "id": r.id,
+        "message": r.message,
+        "tone": r.tone,
+        "escalation": r.escalation,
+        "timestamp": r.timestamp,
+        "user": r.user,
+        "location": r.location,
+        "image_url": r.image_url
+    } for r in reports]
+
+    return {"reports": report_list}
 
 # ================================
 # ADMIN DASHBOARD ROUTES
