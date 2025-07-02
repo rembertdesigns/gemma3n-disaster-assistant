@@ -285,7 +285,14 @@
           <label for="file">📎 Upload Evidence (Image)</label>
           <input type="file" name="file" id="file" accept=".jpg,.jpeg,.png"
             aria-label="Upload image evidence" />
-          
+
+        <!-- Webcam Capture -->
+        <div style="margin-top: 1rem;">
+          <button id="startWebcamBtn" type="button">📷 Start Webcam</button>
+          <button id="captureImageBtn" type="button" disabled>📸 Capture</button>
+          <video id="webcamPreview" autoplay playsinline style="max-width:100%; margin-top: 0.5rem; border-radius: 8px; display:none;"></video>
+        </div>
+
           <!-- Image Analysis Preview -->
           <div class="image-analysis-preview" id="imageAnalysisPreview">
             <h4>🔍 AI Image Analysis</h4>
@@ -496,6 +503,47 @@ function handleManualSignal() {
         await performImageAnalysis(file);
       }
     });
+
+    // Webcam Capture Logic
+const startWebcamBtn = document.getElementById('startWebcamBtn');
+const captureImageBtn = document.getElementById('captureImageBtn');
+const webcamPreview = document.getElementById('webcamPreview');
+let webcamStream = null;
+
+startWebcamBtn.addEventListener('click', async () => {
+  try {
+    webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    webcamPreview.srcObject = webcamStream;
+    webcamPreview.style.display = 'block';
+    captureImageBtn.disabled = false;
+    startWebcamBtn.textContent = '🔌 Stop Webcam';
+  } catch (err) {
+    console.error('❌ Webcam error:', err);
+    alert('Webcam not available or permission denied');
+  }
+});
+
+captureImageBtn.addEventListener('click', () => {
+  if (!webcamStream) return;
+
+  const canvas = document.createElement('canvas');
+  const video = webcamPreview;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  canvas.toBlob(async blob => {
+    const file = new File([blob], 'webcam_capture.jpg', { type: 'image/jpeg' });
+    await performImageAnalysis(file);
+  }, 'image/jpeg');
+
+  // Optional: stop stream after capture
+  webcamStream.getTracks().forEach(t => t.stop());
+  webcamPreview.style.display = 'none';
+  captureImageBtn.disabled = true;
+  startWebcamBtn.textContent = '📷 Start Webcam';
+});
 
     async function performImageAnalysis(file) {
       try {
