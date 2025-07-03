@@ -1,97 +1,908 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>🚑 Patient Triage Form</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- templates/triage_form.html -->
+{% extends "base.html" %}
 
-  <link rel="stylesheet" href="/static/css/style.css" />
-  <style>
-    body { font-family: sans-serif; padding: 1em; max-width: 600px; margin: auto; }
-    label { display: block; margin-top: 1em; font-weight: bold; }
-    input, select, textarea {
-      width: 100%;
-      padding: 0.5em;
-      font-size: 1em;
-      margin-top: 0.3em;
+{% block title %}Medical Emergency Triage - Disaster Response Assistant{% endblock %}
+{% block page_title %}🚑 Medical Emergency Triage{% endblock %}
+{% block subtitle %}Rapid Patient Assessment & Prioritization System{% endblock %}
+
+{% block header_actions %}
+<a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #6b7280; color: #fff; border-radius: 6px; text-decoration: none;">
+  ⬅️ Back to Home
+</a>
+<a href="/triage-dashboard" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #dc2626; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
+  📊 Triage Dashboard
+</a>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .triage-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    align-items: start;
+  }
+  
+  .main-triage-form {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border-left: 6px solid #dc2626;
+  }
+  
+  .form-header {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+  }
+  
+  .form-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 20px,
+      rgba(255,255,255,0.05) 20px,
+      rgba(255,255,255,0.05) 40px
+    );
+    animation: medical-pulse 3s ease-in-out infinite;
+  }
+  
+  @keyframes medical-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  .emergency-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .form-title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 0 0.5rem 0;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .form-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .form-content {
+    padding: 2rem;
+  }
+  
+  .triage-sections {
+    display: grid;
+    gap: 2rem;
+  }
+  
+  .triage-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .triage-section:hover {
+    border-color: #dc2626;
+    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.1);
+  }
+  
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1e40af;
+  }
+  
+  .section-icon {
+    font-size: 1.8rem;
+    padding: 0.5rem;
+    background: rgba(220, 38, 38, 0.1);
+    border-radius: 8px;
+  }
+  
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .form-field {
+    position: relative;
+  }
+  
+  .field-label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .required-field {
+    color: #dc2626;
+    margin-left: 0.25rem;
+  }
+  
+  .field-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    background: white;
+  }
+  
+  .field-input:focus {
+    outline: none;
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  }
+  
+  .field-input.error {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  
+  .field-input.valid {
+    border-color: #16a34a;
+    background: #f0fdf4;
+  }
+  
+  .field-textarea {
+    min-height: 100px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+  
+  .vitals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+  }
+  
+  .vital-field {
+    text-align: center;
+  }
+  
+  .vital-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .vital-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  
+  .vital-input:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+  }
+  
+  .vital-normal { border-color: #16a34a; background: #f0fdf4; }
+  .vital-warning { border-color: #f59e0b; background: #fffbeb; }
+  .vital-critical { border-color: #dc2626; background: #fef2f2; }
+  
+  .severity-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+  
+  .severity-option {
+    position: relative;
+  }
+  
+  .severity-radio {
+    display: none;
+  }
+  
+  .severity-label {
+    display: block;
+    padding: 1rem;
+    text-align: center;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .severity-label::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s;
+  }
+  
+  .severity-radio:checked + .severity-label::before {
+    left: 100%;
+  }
+  
+  .severity-mild {
+    border-color: #16a34a;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    color: #15803d;
+  }
+  
+  .severity-radio:checked + .severity-mild {
+    background: #16a34a;
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(22, 163, 74, 0.3);
+  }
+  
+  .severity-moderate {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #92400e;
+  }
+  
+  .severity-radio:checked + .severity-moderate {
+    background: #f59e0b;
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  }
+  
+  .severity-severe {
+    border-color: #dc2626;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #991b1b;
+  }
+  
+  .severity-radio:checked + .severity-severe {
+    background: #dc2626;
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+  }
+  
+  .severity-critical {
+    border-color: #7f1d1d;
+    background: linear-gradient(135deg, #450a0a 0%, #991b1b 100%);
+    color: white;
+    animation: critical-pulse 2s infinite;
+  }
+  
+  @keyframes critical-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+  
+  .severity-radio:checked + .severity-critical {
+    background: #450a0a;
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(127, 29, 29, 0.5);
+  }
+  
+  .triage-color-section {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    color: white;
+    border: none;
+    margin-top: 2rem;
+  }
+  
+  .triage-color-section .section-header {
+    color: white;
+  }
+  
+  .triage-color-section .section-icon {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .triage-colors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .color-option {
+    padding: 1.5rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .color-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+  }
+  
+  .color-option.selected::before {
+    left: 100%;
+  }
+  
+  .color-red {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+  }
+  
+  .color-red.selected {
+    border-color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(220, 38, 38, 0.5);
+  }
+  
+  .color-yellow {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+  }
+  
+  .color-yellow.selected {
+    border-color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(245, 158, 11, 0.5);
+  }
+  
+  .color-green {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+  }
+  
+  .color-green.selected {
+    border-color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(22, 163, 74, 0.5);
+  }
+  
+  .color-black {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    box-shadow: 0 4px 15px rgba(55, 65, 81, 0.3);
+  }
+  
+  .color-black.selected {
+    border-color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(55, 65, 81, 0.5);
+  }
+  
+  .color-description {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    margin-top: 0.5rem;
+    line-height: 1.3;
+  }
+  
+  .submit-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    text-align: center;
+    margin-top: 2rem;
+  }
+  
+  .submit-button {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-width: 250px;
+  }
+  
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .submit-button:hover::before {
+    left: 100%;
+  }
+  
+  .submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(220, 38, 38, 0.4);
+  }
+  
+  .submit-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /* Sidebar */
+  .triage-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .info-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+  
+  .info-card-header {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    padding: 1rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .info-card-content {
+    padding: 1rem;
+  }
+  
+  .triage-guide {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .triage-guide li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+  
+  .triage-color-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+  
+  .indicator-red { background: #dc2626; }
+  .indicator-yellow { background: #f59e0b; }
+  .indicator-green { background: #16a34a; }
+  .indicator-black { background: #374151; }
+  
+  .quick-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  .stat-card {
+    text-align: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #dc2626;
+    display: block;
+  }
+  
+  .stat-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+  }
+  
+  .timestamp-display {
+    background: #1f2937;
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .status-message {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+    display: none;
+  }
+  
+  .status-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  
+  .status-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .triage-container {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
     }
-    .triage-color {
-      margin-top: 1em;
+    
+    .triage-sidebar {
+      order: -1;
     }
-    .color-option {
-      display: inline-block;
-      padding: 0.5em 1em;
-      margin: 0.3em;
-      border-radius: 0.5em;
-      cursor: pointer;
-      color: white;
-      font-weight: bold;
+  }
+  
+  @media (max-width: 768px) {
+    .form-content {
+      padding: 1rem;
     }
-    .red { background: red; }
-    .yellow { background: goldenrod; }
-    .green { background: green; }
-    .black { background: black; }
-    .selected { outline: 3px solid white; box-shadow: 0 0 5px black; }
-    button {
-      margin-top: 1.5em;
-      padding: 0.8em;
-      font-size: 1em;
-      background: #004080;
-      color: white;
-      border: none;
-      width: 100%;
-      border-radius: 0.4em;
+    
+    .form-grid {
+      grid-template-columns: 1fr;
     }
-  </style>
-</head>
-<body>
-  <h2>🚑 Medical Triage Form</h2>
-  <form method="POST" action="/submit-triage">
-    <label for="name">Patient Name</label>
-    <input type="text" id="name" name="name" required />
+    
+    .severity-selector,
+    .triage-colors {
+      grid-template-columns: 1fr 1fr;
+    }
+    
+    .vitals-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  /* Validation states */
+  .field-error {
+    color: #dc2626;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+  
+  .field-success {
+    color: #16a34a;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+</style>
+{% endblock %}
 
-    <label for="age">Age</label>
-    <input type="number" id="age" name="age" min="0" max="120" />
-
-    <label for="injury_type">Injury Type</label>
-    <input type="text" id="injury_type" name="injury_type" />
-
-    <label for="severity">Severity</label>
-    <select id="severity" name="severity">
-      <option value="mild">Mild</option>
-      <option value="moderate">Moderate</option>
-      <option value="severe">Severe</option>
-      <option value="critical">Critical</option>
-    </select>
-
-    <label for="vitals">Vitals (HR/BP/RR)</label>
-    <input type="text" id="vitals" name="vitals" placeholder="e.g. HR: 92, BP: 120/80, RR: 18" />
-
-    <label for="notes">Notes</label>
-    <textarea id="notes" name="notes" rows="4"></textarea>
-
-    <label class="triage-color">Triage Color</label>
-    <div id="triage-colors">
-      <div class="color-option red" data-color="red">🔴 Red</div>
-      <div class="color-option yellow" data-color="yellow">🟡 Yellow</div>
-      <div class="color-option green" data-color="green">🟢 Green</div>
-      <div class="color-option black" data-color="black">⚫ Black</div>
+{% block content %}
+<div class="triage-container">
+  <!-- Main Triage Form -->
+  <div class="main-triage-form">
+    <!-- Form Header -->
+    <div class="form-header">
+      <div class="emergency-badge">🚨 MEDICAL EMERGENCY</div>
+      <h1 class="form-title">Patient Triage Assessment</h1>
+      <p class="form-subtitle">Rapid medical prioritization for emergency response</p>
     </div>
-    <input type="hidden" id="triage_color" name="triage_color" value="" required />
-
-    <button type="submit">📝 Submit Triage Report</button>
-  </form>
-
-  <script>
-    const colorOptions = document.querySelectorAll('.color-option');
-    const hiddenInput = document.getElementById('triage_color');
-    colorOptions.forEach(el => {
-      el.addEventListener('click', () => {
-        colorOptions.forEach(opt => opt.classList.remove('selected'));
-        el.classList.add('selected');
-        hiddenInput.value = el.dataset.color;
-      });
-    });
-  </script>
-</body>
-</html>
+    
+    <!-- Form Content -->
+    <div class="form-content">
+      <form id="triage-form" method="POST" action="/submit-triage">
+        <div class="triage-sections">
+          
+          <!-- Patient Information Section -->
+          <div class="triage-section">
+            <div class="section-header">
+              <div class="section-icon">👤</div>
+              <span>Patient Information</span>
+            </div>
+            
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="name" class="field-label">
+                  Patient Name/ID
+                  <span class="required-field">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="name" 
+                  name="name" 
+                  class="field-input" 
+                  placeholder="Full name or patient identifier"
+                  required 
+                />
+                <div class="field-error" id="name-error"></div>
+              </div>
+              
+              <div class="form-field">
+                <label for="age" class="field-label">Age</label>
+                <input 
+                  type="number" 
+                  id="age" 
+                  name="age" 
+                  class="field-input" 
+                  min="0" 
+                  max="120"
+                  placeholder="Years"
+                />
+              </div>
+              
+              <div class="form-field">
+                <label for="gender" class="field-label">Gender</label>
+                <select id="gender" name="gender" class="field-input">
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </div>
+              
+              <div class="form-field">
+                <label for="medical_id" class="field-label">Medical ID/Bracelet</label>
+                <input 
+                  type="text" 
+                  id="medical_id" 
+                  name="medical_id" 
+                  class="field-input"
+                  placeholder="Medical alert information"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Medical Assessment Section -->
+          <div class="triage-section">
+            <div class="section-header">
+              <div class="section-icon">🩺</div>
+              <span>Medical Assessment</span>
+            </div>
+            
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="injury_type" class="field-label">
+                  Primary Injury/Condition
+                  <span class="required-field">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="injury_type" 
+                  name="injury_type" 
+                  class="field-input"
+                  placeholder="e.g., Chest pain, Fracture, Burns, etc."
+                  required
+                />
+              </div>
+              
+              <div class="form-field">
+                <label for="mechanism" class="field-label">Mechanism of Injury</label>
+                <select id="mechanism" name="mechanism" class="field-input">
+                  <option value="">Select mechanism</option>
+                  <option value="fall">Fall</option>
+                  <option value="mva">Motor Vehicle Accident</option>
+                  <option value="assault">Assault</option>
+                  <option value="medical">Medical Emergency</option>
+                  <option value="burn">Burn</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
+              <div class="form-field">
+                <label for="consciousness" class="field-label">
+                  Level of Consciousness
+                  <span class="required-field">*</span>
+                </label>
+                <select id="consciousness" name="consciousness" class="field-input" required>
+                  <option value="">Select level</option>
+                  <option value="alert">Alert & Oriented</option>
+                  <option value="verbal">Responds to Verbal</option>
+                  <option value="pain">Responds to Pain</option>
+                  <option value="unresponsive">Unresponsive</option>
+                </select>
+              </div>
+              
+              <div class="form-field">
+                <label for="breathing" class="field-label">
+                  Breathing Status
+                  <span class="required-field">*</span>
+                </label>
+                <select id="breathing" name="breathing" class="field-input" required>
+                  <option value="">Select status</option>
+                  <option value="normal">Normal</option>
+                  <option value="labored">Labored</option>
+                  <option value="shallow">Shallow</option>
+                  <option value="absent">Absent/Obstructed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Vital Signs Section -->
+          <div class="triage-section">
+            <div class="section-header">
+              <div class="section-icon">📊</div>
+              <span>Vital Signs</span>
+            </div>
+            
+            <div class="vitals-grid">
+              <div class="vital-field">
+                <label for="heart_rate" class="vital-label">Heart Rate</label>
+                <input 
+                  type="number" 
+                  id="heart_rate" 
+                  name="heart_rate" 
+                  class="vital-input"
+                  placeholder="BPM"
+                  min="0"
+                  max="300"
+                />
+              </div>
+              
+              <div class="vital-field">
+                <label for="bp_systolic" class="vital-label">BP Systolic</label>
+                <input 
+                  type="number" 
+                  id="bp_systolic" 
+                  name="bp_systolic" 
+                  class="vital-input"
+                  placeholder="mmHg"
+                  min="0"
+                  max="300"
+                />
+              </div>
+              
+              <div class="vital-field">
+                <label for="bp_diastolic" class="vital-label">BP Diastolic</label>
+                <input 
+                  type="number" 
+                  id="bp_diastolic" 
+                  name="bp_diastolic" 
+                  class="vital-input"
+                  placeholder="mmHg"
+                  min="0"
+                  max="200"
+                />
+              </div>
+              
+              <div class="vital-field">
+                <label for="respiratory_rate" class="vital-label">Resp. Rate</label>
+                <input 
+                  type="number" 
+                  id="respiratory_rate" 
+                  name="respiratory_rate" 
+                  class="vital-input"
+                  placeholder="/min"
+                  min="0"
+                  max="100"
+                />
+              </div>
+              
+              <div class="vital-field">
+                <label for="temperature" class="vital-label">Temperature</label>
+                <input 
+                  type="number" 
+                  id="temperature" 
+                  name="temperature" 
+                  class="vital-input"
+                  placeholder="°F"
+                  min="80"
+                  max="115"
+                  step="0.1"
+                />
+              </div>
+              
+              <div class="vital-field">
+                <label for="oxygen_sat" class="vital-label">O2 Sat</label>
+                <input 
+                  type="number" 
+                  id="oxygen_sat" 
+                  name="oxygen_sat" 
+                  class="vital-input"
+                  placeholder="%"
+                  min="0"
+                  max="100"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Severity Assessment Section -->
+          <div class="triage-section">
+            <div class="section-header">
+              <div class="section-icon">⚡</div>
+              <span>Severity Assessment</span>
+            </div>
+            
+            <div class="form-field">
+              <label class="field-label">
+                Overall Condition Severity
+                <span class="required-field">*</span>
+              </label>
+              <div class="severity-selector">
+                <div class="severity-option">
+                  <input type="radio" id="mild" name="severity" value="mild" class="severity-radio">
+                  <label for="mild" class="severity-label severity-mild">
+                    🟢 MILD<br>
+                    <small>Minor injuries</small>
+                  </label>
+                </div>
+                <div class="severity-option">
+                  <input type="radio" id="moderate" name="severity" value="moderate" class="severity-radio">
+                  <label for="moderate" class="severity-label severity-moderate">
+                    🟡 MODERATE<br>
+                    <small>Stable but urgent</small>
+                  </label>
+                </div>
+                <div class="severity-option">
+                  <input type="radio" id="severe" name="severity" value="severe" class="severity-radio">
+                  <label for="severe" class="severity-label severity-severe">
+                    🔴 SEVERE<br>
+                    <small>Life-threatening</small>
+                  </label>
+                </div>

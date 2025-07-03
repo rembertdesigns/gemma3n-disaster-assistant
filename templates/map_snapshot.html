@@ -1,72 +1,488 @@
 <!-- templates/map_snapshot.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Map Snapshot</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: white;
-    }
+{% extends "base.html" %}
 
+{% block title %}Map Snapshot - Report {{ report_id }}{% endblock %}
+{% block page_title %}📍 Location Map{% endblock %}
+{% block subtitle %}Report #{{ report_id }} - Geographic Context{% endblock %}
+
+{% block header_actions %}
+<a href="/crowd-reports" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #059669; color: #fff; border-radius: 6px; text-decoration: none;">
+  📋 Back to Reports
+</a>
+<button onclick="printMap()" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #6b7280; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-left: 0.5rem;">
+  🖨️ Print Map
+</button>
+{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .map-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border-left: 5px solid #3b82f6;
+  }
+  
+  .map-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  
+  .map-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .map-coords {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    opacity: 0.9;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    display: inline-block;
+  }
+  
+  .map-wrapper {
+    position: relative;
+    padding: 1.5rem;
+    background: #f8fafc;
+  }
+  
+  #map {
+    width: 100%;
+    height: 500px;
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .map-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 1000;
+  }
+  
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .map-controls {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .map-control-btn {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .map-control-btn:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+  }
+  
+  .map-info {
+    background: #f8fafc;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.9rem;
+    color: #6b7280;
+    text-align: center;
+  }
+  
+  .report-details {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .detail-label {
+    color: #6b7280;
+    font-weight: 500;
+  }
+  
+  .detail-value {
+    color: #374151;
+    font-weight: 600;
+  }
+  
+  /* Print styles */
+  @media print {
+    .map-container {
+      box-shadow: none;
+      border: 1px solid #000;
+      page-break-inside: avoid;
+    }
+    
     #map {
-      width: 600px;
       height: 400px;
-      margin: 0 auto;
-      border: 1px solid #ccc;
+      border: 1px solid #000;
     }
-
-    /* Print-safe rendering */
-    @media print {
-      #map {
-        width: 100vw;
-        height: 100vh;
-        border: none;
-      }
+    
+    .map-controls {
+      display: none;
     }
-  </style>
-</head>
-<body>
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .map-wrapper {
+      padding: 1rem;
+    }
+    
+    #map {
+      height: 350px;
+    }
+    
+    .report-details {
+      grid-template-columns: 1fr;
+    }
+    
+    .map-controls {
+      position: static;
+      flex-direction: row;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+  }
+</style>
+{% endblock %}
 
-  <div id="map"></div>
+{% block content %}
+<div class="map-container">
+  <!-- Map Header -->
+  <div class="map-header">
+    <h1 class="map-title">📍 Emergency Report Location</h1>
+    <div class="map-coords" id="coordinates">
+      Loading coordinates...
+    </div>
+  </div>
+  
+  <!-- Map Wrapper -->
+  <div class="map-wrapper">
+    <!-- Loading Indicator -->
+    <div class="map-loading" id="mapLoading">
+      <div class="loading-spinner"></div>
+      <span>Loading map...</span>
+    </div>
+    
+    <!-- Map Controls -->
+    <div class="map-controls">
+      <button class="map-control-btn" onclick="zoomIn()" title="Zoom In">➕</button>
+      <button class="map-control-btn" onclick="zoomOut()" title="Zoom Out">➖</button>
+      <button class="map-control-btn" onclick="centerMap()" title="Center Map">📍</button>
+      <button class="map-control-btn" onclick="toggleSatellite()" title="Toggle View">🛰️</button>
+    </div>
+    
+    <!-- Map Element -->
+    <div id="map"></div>
+  </div>
+  
+  <!-- Report Details -->
+  <div class="report-details">
+    <div class="detail-item">
+      <span class="detail-label">Report ID:</span>
+      <span class="detail-value">#{{ report_id }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Coordinates:</span>
+      <span class="detail-value" id="coordsDisplay">{{ latitude }}, {{ longitude }}</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Zoom Level:</span>
+      <span class="detail-value" id="zoomLevel">13</span>
+    </div>
+    <div class="detail-item">
+      <span class="detail-label">Map Type:</span>
+      <span class="detail-value" id="mapType">Street View</span>
+    </div>
+  </div>
+  
+  <!-- Map Info -->
+  <div class="map-info">
+    📌 This map shows the exact location where the emergency report was submitted.
+    Use the controls to explore the area and understand the geographic context.
+  </div>
+</div>
+{% endblock %}
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-  const latitude = parseFloat("{{ latitude }}");
-  const longitude = parseFloat("{{ longitude }}");
-  const reportId = "{{ report_id }}";
+{% block base_scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+{% endblock %}
 
-  const map = L.map('map', {
+{% block scripts %}
+<script>
+// Map configuration
+const latitude = parseFloat("{{ latitude }}");
+const longitude = parseFloat("{{ longitude }}");
+const reportId = "{{ report_id }}";
+
+let map;
+let currentMarker;
+let satelliteLayer;
+let isStandardView = true;
+
+// Initialize map when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  initializeMap();
+  updateCoordinatesDisplay();
+});
+
+function initializeMap() {
+  // Create map with custom options
+  map = L.map('map', {
     zoomControl: false,
-    attributionControl: true
+    attributionControl: true,
+    maxZoom: 18,
+    minZoom: 3
   }).setView([latitude, longitude], 13);
-
-  const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  
+  // Add standard tile layer
+  const standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
-
-  tileLayer.on('load', () => {
-    document.body.setAttribute('data-map-loaded', 'true');
+  
+  // Add satellite layer (alternative view)
+  satelliteLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17,
+    attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
   });
-
-  tileLayer.addTo(map);
-
-  L.marker([latitude, longitude])
+  
+  // Add standard layer by default
+  standardLayer.addTo(map);
+  
+  // Create custom marker icon
+  const customIcon = L.divIcon({
+    html: `
+      <div style="
+        background: #dc2626;
+        border: 3px solid white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 12px;
+      ">📍</div>
+    `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10]
+  });
+  
+  // Add marker
+  currentMarker = L.marker([latitude, longitude], { icon: customIcon })
     .addTo(map)
-    .bindPopup("📍 Crowd Report " + reportId)
+    .bindPopup(`
+      <div style="text-align: center; padding: 0.5rem;">
+        <strong>🚨 Emergency Report</strong><br>
+        <small>Report ID: #${reportId}</small><br>
+        <small>Coordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}</small>
+      </div>
+    `)
     .openPopup();
-</script>
+  
+  // Map event handlers
+  map.on('load', function() {
+    hideLoading();
+  });
+  
+  map.on('zoomend', function() {
+    updateZoomDisplay();
+  });
+  
+  map.on('moveend', function() {
+    updateCoordinatesDisplay();
+  });
+  
+  // Hide loading after a timeout (fallback)
+  setTimeout(hideLoading, 2000);
+}
 
-</body>
-</html>
+function hideLoading() {
+  const loading = document.getElementById('mapLoading');
+  if (loading) {
+    loading.style.display = 'none';
+  }
+}
+
+function updateCoordinatesDisplay() {
+  const center = map.getCenter();
+  const coordsElement = document.getElementById('coordinates');
+  const coordsDisplay = document.getElementById('coordsDisplay');
+  
+  if (coordsElement) {
+    coordsElement.textContent = `${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`;
+  }
+  
+  if (coordsDisplay) {
+    coordsDisplay.textContent = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  }
+}
+
+function updateZoomDisplay() {
+  const zoomElement = document.getElementById('zoomLevel');
+  if (zoomElement) {
+    zoomElement.textContent = map.getZoom();
+  }
+}
+
+function zoomIn() {
+  map.zoomIn();
+}
+
+function zoomOut() {
+  map.zoomOut();
+}
+
+function centerMap() {
+  map.setView([latitude, longitude], 13);
+  currentMarker.openPopup();
+}
+
+function toggleSatellite() {
+  const mapTypeElement = document.getElementById('mapType');
+  
+  if (isStandardView) {
+    // Switch to satellite/topo view
+    map.eachLayer(function(layer) {
+      if (layer instanceof L.TileLayer) {
+        map.removeLayer(layer);
+      }
+    });
+    satelliteLayer.addTo(map);
+    isStandardView = false;
+    
+    if (mapTypeElement) {
+      mapTypeElement.textContent = 'Topographic View';
+    }
+  } else {
+    // Switch back to standard view
+    map.eachLayer(function(layer) {
+      if (layer instanceof L.TileLayer) {
+        map.removeLayer(layer);
+      }
+    });
+    
+    const standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+    
+    standardLayer.addTo(map);
+    isStandardView = true;
+    
+    if (mapTypeElement) {
+      mapTypeElement.textContent = 'Street View';
+    }
+  }
+  
+  // Re-add marker after layer change
+  currentMarker.addTo(map);
+}
+
+function printMap() {
+  // Prepare map for printing
+  setTimeout(() => {
+    window.print();
+  }, 500);
+}
+
+// Handle window resize
+window.addEventListener('resize', function() {
+  if (map) {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+  switch(e.key) {
+    case '+':
+    case '=':
+      e.preventDefault();
+      zoomIn();
+      break;
+    case '-':
+      e.preventDefault();
+      zoomOut();
+      break;
+    case 'c':
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        centerMap();
+      }
+      break;
+    case 'p':
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        printMap();
+      }
+      break;
+  }
+});
+</script>
+{% endblock %}
+
+<!-- No AI status needed for map snapshot -->
+{% block ai_status %}{% endblock %}
