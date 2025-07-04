@@ -1,0 +1,729 @@
+<!-- templates/triage_dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Triage Dashboard - Disaster Response Assistant{% endblock %}
+{% block page_title %}📊 Emergency Triage Dashboard{% endblock %}
+{% block subtitle %}Real-time Patient Management & Critical Alert System{% endblock %}
+
+{% block header_actions %}
+<a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #6b7280; color: #fff; border-radius: 6px; text-decoration: none;">
+  ⬅️ Back to Home
+</a>
+<a href="/triage" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #16a34a; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
+  📝 New Triage
+</a>
+<a href="/patient-list" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #3b82f6; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
+  👥 Patient List
+</a>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .dashboard-layout {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: grid;
+    gap: 2rem;
+  }
+  
+  /* Top Stats Row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .stat-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--accent-color);
+  }
+  
+  .stat-content {
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    background: var(--accent-color);
+  }
+  
+  .stat-details h3 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .stat-details p {
+    margin: 0.25rem 0 0 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .stat-total { --accent-color: #3b82f6; }
+  .stat-active { --accent-color: #f59e0b; }
+  .stat-today { --accent-color: #16a34a; }
+  .stat-critical { --accent-color: #dc2626; }
+  
+  /* Main Dashboard Grid */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 350px;
+    gap: 2rem;
+  }
+  
+  .dashboard-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .card-header {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  .card-content {
+    padding: 1.5rem;
+  }
+  
+  /* Triage Breakdown Chart */
+  .triage-chart {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .triage-item {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 12px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .triage-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .triage-item:hover::before {
+    left: 100%;
+  }
+  
+  .triage-red { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
+  .triage-yellow { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+  .triage-green { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
+  .triage-black { background: linear-gradient(135deg, #374151 0%, #1f2937 100%); }
+  
+  .triage-count {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .triage-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+  
+  .triage-percentage {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    margin-top: 0.25rem;
+  }
+  
+  /* Severity Breakdown */
+  .severity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .severity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid var(--severity-color);
+  }
+  
+  .severity-critical { --severity-color: #dc2626; }
+  .severity-severe { --severity-color: #f59e0b; }
+  .severity-moderate { --severity-color: #3b82f6; }
+  .severity-mild { --severity-color: #16a34a; }
+  
+  .severity-info h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: #1f2937;
+    text-transform: capitalize;
+  }
+  
+  .severity-count {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--severity-color);
+  }
+  
+  /* Priority Queue */
+  .priority-queue {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .queue-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.2s ease;
+  }
+  
+  .queue-item:hover {
+    background: #f8fafc;
+  }
+  
+  .queue-item:last-child {
+    border-bottom: none;
+  }
+  
+  .queue-priority {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  
+  .priority-1 { background: #dc2626; }
+  .priority-2 { background: #f59e0b; }
+  .priority-3 { background: #16a34a; }
+  .priority-4 { background: #374151; }
+  
+  .queue-details {
+    flex: 1;
+  }
+  
+  .queue-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+  
+  .queue-info {
+    font-size: 0.8rem;
+    color: #6b7280;
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .queue-time {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    font-family: 'Courier New', monospace;
+  }
+  
+  /* Critical Alerts */
+  .critical-alerts {
+    margin-bottom: 2rem;
+  }
+  
+  .alert-item {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    animation: alert-pulse 2s infinite;
+  }
+  
+  @keyframes alert-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.01); }
+  }
+  
+  .alert-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+    color: #991b1b;
+    margin-bottom: 0.5rem;
+  }
+  
+  .alert-details {
+    font-size: 0.9rem;
+    color: #7f1d1d;
+  }
+  
+  /* Recent Activity */
+  .activity-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .activity-item:last-child {
+    border-bottom: none;
+  }
+  
+  .activity-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+  }
+  
+  .activity-content {
+    flex: 1;
+  }
+  
+  .activity-text {
+    font-size: 0.9rem;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+  
+  .activity-time {
+    font-size: 0.7rem;
+    color: #6b7280;
+    font-family: 'Courier New', monospace;
+  }
+  
+  /* Real-time Updates */
+  .live-indicator {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: #16a34a;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    animation: live-pulse 1s infinite;
+  }
+  
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  
+  /* Empty States */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+  
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  
+  .empty-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .empty-text {
+    font-size: 0.9rem;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1200px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .stats-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .triage-chart {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .stats-row {
+      grid-template-columns: 1fr;
+    }
+    
+    .triage-chart {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stat-content {
+      padding: 1.5rem;
+      gap: 1rem;
+    }
+    
+    .stat-icon {
+      width: 50px;
+      height: 50px;
+      font-size: 1.2rem;
+    }
+    
+    .stat-details h3 {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Live Indicator -->
+<div class="live-indicator">
+  <div class="live-dot"></div>
+  LIVE DASHBOARD
+</div>
+
+<div class="dashboard-layout">
+  <!-- Top Statistics Row -->
+  <div class="stats-row">
+    <div class="stat-card stat-total">
+      <div class="stat-content">
+        <div class="stat-icon">👥</div>
+        <div class="stat-details">
+          <h3>{{ stats.total_patients }}</h3>
+          <p>Total Patients</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stat-card stat-active">
+      <div class="stat-content">
+        <div class="stat-icon">🟡</div>
+        <div class="stat-details">
+          <h3>{{ stats.active_patients }}</h3>
+          <p>Currently Active</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stat-card stat-today">
+      <div class="stat-content">
+        <div class="stat-icon">📅</div>
+        <div class="stat-details">
+          <h3>{{ stats.patients_today }}</h3>
+          <p>Admitted Today</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stat-card stat-critical">
+      <div class="stat-content">
+        <div class="stat-icon">🚨</div>
+        <div class="stat-details">
+          <h3>{{ stats.critical_alerts }}</h3>
+          <p>Critical Alerts</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Main Dashboard Grid -->
+  <div class="dashboard-grid">
+    <!-- Triage Color Breakdown -->
+    <div class="dashboard-card">
+      <div class="card-header">
+        <span>🏷️</span>
+        <h3 class="card-title">Triage Color Breakdown</h3>
+      </div>
+      <div class="card-content">
+        <div class="triage-chart">
+          <div class="triage-item triage-red">
+            <div class="triage-count">{{ triage_breakdown.red.count }}</div>
+            <div class="triage-label">🔴 RED</div>
+            <div class="triage-percentage">{{ triage_breakdown.red.percentage }}%</div>
+          </div>
+          
+          <div class="triage-item triage-yellow">
+            <div class="triage-count">{{ triage_breakdown.yellow.count }}</div>
+            <div class="triage-label">🟡 YELLOW</div>
+            <div class="triage-percentage">{{ triage_breakdown.yellow.percentage }}%</div>
+          </div>
+          
+          <div class="triage-item triage-green">
+            <div class="triage-count">{{ triage_breakdown.green.count }}</div>
+            <div class="triage-label">🟢 GREEN</div>
+            <div class="triage-percentage">{{ triage_breakdown.green.percentage }}%</div>
+          </div>
+          
+          <div class="triage-item triage-black">
+            <div class="triage-count">{{ triage_breakdown.black.count }}</div>
+            <div class="triage-label">⚫ BLACK</div>
+            <div class="triage-percentage">{{ triage_breakdown.black.percentage }}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Severity Breakdown -->
+    <div class="dashboard-card">
+      <div class="card-header">
+        <span>⚡</span>
+        <h3 class="card-title">Severity Analysis</h3>
+      </div>
+      <div class="card-content">
+        <div class="severity-list">
+          <div class="severity-item severity-critical">
+            <div class="severity-info">
+              <h4>Critical</h4>
+            </div>
+            <div class="severity-count">{{ severity_breakdown.critical }}</div>
+          </div>
+          
+          <div class="severity-item severity-severe">
+            <div class="severity-info">
+              <h4>Severe</h4>
+            </div>
+            <div class="severity-count">{{ severity_breakdown.severe }}</div>
+          </div>
+          
+          <div class="severity-item severity-moderate">
+            <div class="severity-info">
+              <h4>Moderate</h4>
+            </div>
+            <div class="severity-count">{{ severity_breakdown.moderate }}</div>
+          </div>
+          
+          <div class="severity-item severity-mild">
+            <div class="severity-info">
+              <h4>Mild</h4>
+            </div>
+            <div class="severity-count">{{ severity_breakdown.mild }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right Sidebar with Priority Queue & Alerts -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <!-- Critical Alerts -->
+      {% if critical_vitals_patients %}
+      <div class="dashboard-card">
+        <div class="card-header" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);">
+          <span>🚨</span>
+          <h3 class="card-title">Critical Vitals Alert</h3>
+        </div>
+        <div class="card-content">
+          <div class="critical-alerts">
+            {% for patient in critical_vitals_patients %}
+            <div class="alert-item">
+              <div class="alert-header">
+                <span>⚠️</span>
+                <span>{{ patient.name }}</span>
+              </div>
+              <div class="alert-details">
+                Critical vital signs detected - requires immediate attention
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Priority Queue -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <span>📋</span>
+          <h3 class="card-title">Priority Queue</h3>
+        </div>
+        <div class="card-content">
+          <div class="priority-queue">
+            {% if priority_queue %}
+              {% for patient in priority_queue %}
+              <div class="queue-item">
+                <div class="queue-priority priority-{{ patient.priority_score }}">
+                  {{ patient.priority_score }}
+                </div>
+                <div class="queue-details">
+                  <div class="queue-name">{{ patient.name }}</div>
+                  <div class="queue-info">
+                    <span>{{ patient.injury_type }}</span>
+                    <span>{{ patient.severity }}</span>
+                    <span style="color: 
+                      {% if patient.triage_color == 'red' %}#dc2626
+                      {% elif patient.triage_color == 'yellow' %}#f59e0b
+                      {% elif patient.triage_color == 'green' %}#16a34a
+                      {% else %}#374151{% endif %};">
+                      {{ patient.triage_color.upper() }}
+                    </span>
+                  </div>
+                </div>
+                <div class="queue-time">
+                  {{ patient.created_at.strftime('%H:%M') }}
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div class="empty-title">No Active Patients</div>
+                <div class="empty-text">Priority queue is empty</div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Recent Activity -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <span>🕒</span>
+      <h3 class="card-title">Recent Activity</h3>
+    </div>
+    <div class="card-content">
+      <div class="activity-list">
+        {% if recent_patients %}
+          {% for patient in recent_patients %}
+          <div class="activity-item">
+            <div class="activity-icon">
+              {% if patient.triage_color == 'red' %}🔴
+              {% elif patient.triage_color == 'yellow' %}🟡
+              {% elif patient.triage_color == 'green' %}🟢
+              {% else %}⚫{% endif %}
+            </div>
+            <div class="activity-content">
+              <div class="activity-text">
+                <strong>{{ patient.name }}</strong> admitted with {{ patient.injury_type }}
+                <span style="color: 
+                  {% if patient.severity == 'critical' %}#dc2626
+                  {% elif patient.severity == 'severe' %}#f59e0b
+                  {% elif patient.severity == 'moderate' %}#3b82f6
+                  {% else %}#16a34a{% endif %};">
+                  ({{ patient.severity }})
+                </span>
+              </div>
+              <div class="activity-time">
+                {{ patient.created_at.strftime('%m/%d/%Y %H:%M:%S') }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-icon">🕒</div>
+            <div class="empty-title">No Recent Activity</div>
+            <div class="empty-text">No patients admitted recently</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh dashboard every 15 seconds
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    window.location.reload();
+  }
+}, 15000);
+
+// Real-time clock
+function updateClock() {
+  const now = new Date();
+  const timeString = now.toLocaleTimeString();
+  document.title = `[${timeString}] Triage Dashboard - Disaster Response Assistant`;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+{% endblock %}
+
+{% block ai_status %}
+<div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 1rem; border-radius: 8px; margin-top: 2rem; text-align: center;">
+  <div style="font-weight: bold; margin-bottom: 0.5rem;">🏥 Emergency Triage Control Center</div>
+  <div style="font-size: 0.9rem; opacity: 0.9;">
+    Real-time monitoring • Auto-refresh every 15s • Critical alert system active
+  </div>
+</div>
+{% endblock %}

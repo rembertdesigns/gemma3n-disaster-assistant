@@ -13,7 +13,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import shutil
 import os
@@ -231,30 +231,142 @@ async def get_patient_tracker(request: Request, severity: Optional[str] = None, 
     })
 
 @app.post("/submit-triage")
-async def submit_triage_form(
+async def submit_triage(
     request: Request,
-    name: str = Form(...),
-    age: int = Form(...),
-    injury_type: str = Form(...),
-    severity: str = Form(...),
-    vitals: str = Form(...),
-    notes: str = Form(...),
-    triage_color: str = Form(...)
+    db: Session = Depends(get_db),
+    # Patient Information
+    name: str = Form(...),  # Required
+    age: Optional[int] = Form(None),
+    gender: Optional[str] = Form(None),
+    medical_id: Optional[str] = Form(None),
+    # Medical Assessment
+    injury_type: str = Form(...),  # Required
+    mechanism: Optional[str] = Form(None),
+    consciousness: str = Form(...),  # Required
+    breathing: str = Form(...),  # Required
+    # Vital Signs
+    heart_rate: Optional[int] = Form(None),
+    bp_systolic: Optional[int] = Form(None),
+    bp_diastolic: Optional[int] = Form(None),
+    respiratory_rate: Optional[int] = Form(None),
+    temperature: Optional[float] = Form(None),
+    oxygen_sat: Optional[int] = Form(None),
+    # Assessment
+    severity: str = Form(...),  # Required
+    triage_color: str = Form(...),  # Required
+    # Additional Information
+    allergies: Optional[str] = Form(None),
+    medications: Optional[str] = Form(None),
+    medical_history: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    # Timestamp from form
+    assessment_timestamp: Optional[str] = Form(None)
 ):
-    logger.info(f"📋 Received triage: {name}, {injury_type}, {triage_color}")
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO triage_patients (name, age, injury_type, severity, vitals, notes, triage_color, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    """, (name, age, injury_type, severity, vitals, notes, triage_color))
-    conn.commit()
-    conn.close()
-
-    return templates.TemplateResponse("submit-success.html", {
-        "request": request,
-        "message": f"Triage for {name} received successfully and saved."
-    })
+    """
+    Submit a new triage assessment and save to database
+    """
+    try:
+        logger.info(f"🚑 Receiving triage submission for patient: {name}")
+        
+        # Validate required fields
+        if not name or not name.strip():
+            raise HTTPException(status_code=400, detail="Patient name is required")
+        if not injury_type or not injury_type.strip():
+            raise HTTPException(status_code=400, detail="Injury type is required")
+        if consciousness not in ["alert", "verbal", "pain", "unresponsive"]:
+            raise HTTPException(status_code=400, detail="Invalid consciousness level")
+        if breathing not in ["normal", "labored", "shallow", "absent"]:
+            raise HTTPException(status_code=400, detail="Invalid breathing status")
+        if severity not in ["mild", "moderate", "severe", "critical"]:
+            raise HTTPException(status_code=400, detail="Invalid severity level")
+        if triage_color not in ["red", "yellow", "green", "black"]:
+            raise HTTPException(status_code=400, detail="Invalid triage color")
+        
+        # Validate vital signs ranges (if provided)
+        if heart_rate is not None and (heart_rate < 0 or heart_rate > 300):
+            raise HTTPException(status_code=400, detail="Invalid heart rate")
+        if bp_systolic is not None and (bp_systolic < 0 or bp_systolic > 300):
+            raise HTTPException(status_code=400, detail="Invalid systolic blood pressure")
+        if bp_diastolic is not None and (bp_diastolic < 0 or bp_diastolic > 200):
+            raise HTTPException(status_code=400, detail="Invalid diastolic blood pressure")
+        if respiratory_rate is not None and (respiratory_rate < 0 or respiratory_rate > 100):
+            raise HTTPException(status_code=400, detail="Invalid respiratory rate")
+        if temperature is not None and (temperature < 80 or temperature > 115):
+            raise HTTPException(status_code=400, detail="Invalid temperature")
+        if oxygen_sat is not None and (oxygen_sat < 0 or oxygen_sat > 100):
+            raise HTTPException(status_code=400, detail="Invalid oxygen saturation")
+        if age is not None and (age < 0 or age > 120):
+            raise HTTPException(status_code=400, detail="Invalid age")
+        
+        # Create new triage patient record
+        new_patient = TriagePatient(
+            # Patient Information
+            name=name.strip(),
+            age=age,
+            gender=gender,
+            medical_id=medical_id,
+            # Medical Assessment
+            injury_type=injury_type.strip(),
+            mechanism=mechanism,
+            consciousness=consciousness,
+            breathing=breathing,
+            # Vital Signs
+            heart_rate=heart_rate,
+            bp_systolic=bp_systolic,
+            bp_diastolic=bp_diastolic,
+            respiratory_rate=respiratory_rate,
+            temperature=temperature,
+            oxygen_sat=oxygen_sat,
+            # Assessment
+            severity=severity,
+            triage_color=triage_color,
+            # Additional Information
+            allergies=allergies,
+            medications=medications,
+            medical_history=medical_history,
+            notes=notes,
+            # System fields
+            status="active",
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        # Save to database
+        db.add(new_patient)
+        db.commit()
+        db.refresh(new_patient)
+        
+        logger.info(f"✅ Triage patient saved: ID={new_patient.id}, Name={new_patient.name}, Color={new_patient.triage_color}")
+        
+        # Log critical cases for immediate attention
+        if triage_color == "red" or severity == "critical":
+            logger.warning(f"🚨 CRITICAL PATIENT ALERT: {name} - {triage_color.upper()} triage, {severity} severity")
+        
+        # Return success response
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "message": f"Triage assessment submitted successfully for {name}",
+                "patient_id": new_patient.id,
+                "triage_color": new_patient.triage_color,
+                "severity": new_patient.severity,
+                "priority_score": new_patient.priority_score,
+                "critical_vitals": new_patient.is_critical_vitals,
+                "timestamp": new_patient.created_at.isoformat()
+            }
+        )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (validation errors)
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error saving triage patient: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to save triage assessment: {str(e)}"
+        )
 
 @app.post("/patients/{patient_id}/discharge")
 async def discharge_patient(patient_id: int):
@@ -264,6 +376,188 @@ async def discharge_patient(patient_id: int):
     conn.commit()
     conn.close()
     return RedirectResponse(url="/patients", status_code=303)
+
+@app.get("/patient-list", response_class=HTMLResponse)
+async def patient_list_page(
+    request: Request,
+    triage_color: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    severity: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Enhanced patient list dashboard using SQLAlchemy
+    """
+    try:
+        # Query triage patients with filters
+        query = db.query(TriagePatient)
+        
+        # Apply filters
+        if triage_color:
+            query = query.filter(TriagePatient.triage_color == triage_color)
+        if status:
+            query = query.filter(TriagePatient.status == status)
+        if severity:
+            query = query.filter(TriagePatient.severity == severity)
+        
+        # Order by priority (red first, then by creation time)
+        patients = query.order_by(
+            TriagePatient.triage_color.desc(),  # This will need custom ordering
+            TriagePatient.created_at.desc()
+        ).all()
+        
+        # Custom sort by priority score (red=1, yellow=2, green=3, black=4)
+        patients = sorted(patients, key=lambda p: (p.priority_score, -p.id))
+        
+        # Calculate statistics
+        total_patients = len(patients)
+        active_patients = len([p for p in patients if p.status == "active"])
+        critical_patients = len([p for p in patients if p.triage_color == "red"])
+        
+        # Count by triage color
+        color_counts = {
+            "red": len([p for p in patients if p.triage_color == "red"]),
+            "yellow": len([p for p in patients if p.triage_color == "yellow"]),
+            "green": len([p for p in patients if p.triage_color == "green"]),
+            "black": len([p for p in patients if p.triage_color == "black"])
+        }
+        
+        # Count by status
+        status_counts = {
+            "active": len([p for p in patients if p.status == "active"]),
+            "in_treatment": len([p for p in patients if p.status == "in_treatment"]),
+            "treated": len([p for p in patients if p.status == "treated"]),
+            "discharged": len([p for p in patients if p.status == "discharged"])
+        }
+        
+        logger.info(f"📋 Patient list accessed: {total_patients} total, {active_patients} active, {critical_patients} critical")
+        
+        return templates.TemplateResponse("patient_list.html", {
+            "request": request,
+            "patients": patients,
+            "total_patients": total_patients,
+            "active_patients": active_patients,
+            "critical_patients": critical_patients,
+            "color_counts": color_counts,
+            "status_counts": status_counts,
+            "filters": {
+                "triage_color": triage_color,
+                "status": status,
+                "severity": severity
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading patient list: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load patient list: {str(e)}")
+
+@app.get("/triage-dashboard", response_class=HTMLResponse)
+async def triage_dashboard_page(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Comprehensive triage dashboard with real-time statistics
+    """
+    try:
+        # Get all active patients
+        all_patients = db.query(TriagePatient).all()
+        active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").all()
+        
+        # Calculate comprehensive statistics
+        stats = {
+            "total_patients": len(all_patients),
+            "active_patients": len(active_patients),
+            "patients_today": len([
+                p for p in all_patients 
+                if p.created_at.date() == datetime.utcnow().date()
+            ]),
+            "critical_alerts": len([
+                p for p in active_patients 
+                if p.triage_color == "red" or p.severity == "critical"
+            ])
+        }
+        
+        # Triage color breakdown
+        triage_breakdown = {
+            "red": {
+                "count": len([p for p in active_patients if p.triage_color == "red"]),
+                "percentage": 0
+            },
+            "yellow": {
+                "count": len([p for p in active_patients if p.triage_color == "yellow"]),
+                "percentage": 0
+            },
+            "green": {
+                "count": len([p for p in active_patients if p.triage_color == "green"]),
+                "percentage": 0
+            },
+            "black": {
+                "count": len([p for p in active_patients if p.triage_color == "black"]),
+                "percentage": 0
+            }
+        }
+        
+        # Calculate percentages
+        if stats["active_patients"] > 0:
+            for color in triage_breakdown:
+                triage_breakdown[color]["percentage"] = round(
+                    (triage_breakdown[color]["count"] / stats["active_patients"]) * 100, 1
+                )
+        
+        # Severity breakdown
+        severity_breakdown = {
+            "critical": len([p for p in active_patients if p.severity == "critical"]),
+            "severe": len([p for p in active_patients if p.severity == "severe"]),
+            "moderate": len([p for p in active_patients if p.severity == "moderate"]),
+            "mild": len([p for p in active_patients if p.severity == "mild"])
+        }
+        
+        # Critical vitals alerts
+        critical_vitals_patients = [p for p in active_patients if p.is_critical_vitals]
+        
+        # Recent patients (last 24 hours)
+        recent_patients = [
+            p for p in all_patients 
+            if (datetime.utcnow() - p.created_at).total_seconds() < 86400  # 24 hours
+        ]
+        recent_patients = sorted(recent_patients, key=lambda p: p.created_at, reverse=True)[:10]
+        
+        # Priority queue (active patients sorted by priority)
+        priority_queue = sorted(
+            active_patients, 
+            key=lambda p: (p.priority_score, -p.id)
+        )[:15]  # Top 15 priority patients
+        
+        # Hourly activity (last 24 hours)
+        hourly_activity = {}
+        now = datetime.utcnow()
+        for i in range(24):
+            hour_start = now - timedelta(hours=i+1)
+            hour_end = now - timedelta(hours=i)
+            hour_patients = len([
+                p for p in all_patients 
+                if hour_start <= p.created_at < hour_end
+            ])
+            hourly_activity[hour_start.strftime("%H:00")] = hour_patients
+        
+        logger.info(f"📊 Triage dashboard accessed: {stats['total_patients']} total, {stats['active_patients']} active")
+        
+        return templates.TemplateResponse("triage_dashboard.html", {
+            "request": request,
+            "stats": stats,
+            "triage_breakdown": triage_breakdown,
+            "severity_breakdown": severity_breakdown,
+            "critical_vitals_patients": critical_vitals_patients,
+            "recent_patients": recent_patients,
+            "priority_queue": priority_queue,
+            "hourly_activity": hourly_activity,
+            "current_time": datetime.utcnow()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading triage dashboard: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load dashboard: {str(e)}")
 
 @app.get("/export-patients-pdf")
 async def export_patients_pdf():

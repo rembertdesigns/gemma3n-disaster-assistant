@@ -1,0 +1,597 @@
+<!-- templates/patient_list.html -->
+{% extends "base.html" %}
+
+{% block title %}Patient List - Disaster Response Assistant{% endblock %}
+{% block page_title %}👥 Patient Management Dashboard{% endblock %}
+{% block subtitle %}Real-time Patient Queue & Status Monitoring{% endblock %}
+
+{% block header_actions %}
+<a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #6b7280; color: #fff; border-radius: 6px; text-decoration: none;">
+  ⬅️ Back to Home
+</a>
+<a href="/triage" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #16a34a; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
+  📝 New Triage
+</a>
+<a href="/triage-dashboard" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #3b82f6; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
+  📊 Dashboard
+</a>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .patient-dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+  
+  /* Stats Sidebar */
+  .stats-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: sticky;
+    top: 2rem;
+  }
+  
+  .stats-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+  
+  .stats-header {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    padding: 1rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .stats-content {
+    padding: 1.5rem;
+  }
+  
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .stat-item:last-child {
+    border-bottom: none;
+  }
+  
+  .stat-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+  
+  .stat-value {
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  
+  .stat-critical { color: #dc2626; }
+  .stat-warning { color: #f59e0b; }
+  .stat-success { color: #16a34a; }
+  .stat-info { color: #3b82f6; }
+  
+  .color-breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .color-stat {
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .color-red { background: #dc2626; }
+  .color-yellow { background: #f59e0b; }
+  .color-green { background: #16a34a; }
+  .color-black { background: #374151; }
+  
+  /* Filters */
+  .filters-section {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .filter-group {
+    margin-bottom: 1rem;
+  }
+  
+  .filter-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .filter-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  
+  .clear-filters {
+    width: 100%;
+    padding: 0.5rem;
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+  
+  /* Main Patient List */
+  .patients-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+  
+  .patients-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .patients-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  .patients-count {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .patients-list {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .patient-row {
+    display: grid;
+    grid-template-columns: 60px 200px 150px 120px 120px 100px 1fr 120px;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    align-items: center;
+    transition: background-color 0.2s ease;
+  }
+  
+  .patient-row:hover {
+    background: #f8fafc;
+  }
+  
+  .patient-header {
+    display: grid;
+    grid-template-columns: 60px 200px 150px 120px 120px 100px 1fr 120px;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: #f1f5f9;
+    font-weight: bold;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  .priority-indicator {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 0.8rem;
+  }
+  
+  .priority-1 { background: #dc2626; }
+  .priority-2 { background: #f59e0b; }
+  .priority-3 { background: #16a34a; }
+  .priority-4 { background: #374151; }
+  
+  .patient-name {
+    font-weight: 600;
+    color: #1f2937;
+  }
+  
+  .patient-injury {
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+  
+  .severity-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  
+  .severity-critical {
+    background: #dc2626;
+    color: white;
+  }
+  
+  .severity-severe {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .severity-moderate {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .severity-mild {
+    background: #16a34a;
+    color: white;
+  }
+  
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+  }
+  
+  .status-active {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .status-in_treatment {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  
+  .status-treated {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  
+  .status-discharged {
+    background: #f3f4f6;
+    color: #374151;
+  }
+  
+  .vitals-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+  }
+  
+  .vitals-normal { color: #16a34a; }
+  .vitals-warning { color: #f59e0b; }
+  .vitals-critical { color: #dc2626; }
+  
+  .patient-time {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .patient-actions {
+    display: flex;
+    gap: 0.25rem;
+  }
+  
+  .action-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .btn-view {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .btn-edit {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  .no-patients {
+    text-align: center;
+    padding: 4rem;
+    color: #6b7280;
+  }
+  
+  .no-patients-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1200px) {
+    .patient-dashboard {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .stats-sidebar {
+      order: 2;
+      position: static;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    
+    .patient-row, .patient-header {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    
+    .patient-row > div {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .patient-row > div::before {
+      content: attr(data-label);
+      font-weight: bold;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="patient-dashboard">
+  <!-- Stats Sidebar -->
+  <div class="stats-sidebar">
+    <!-- Summary Stats -->
+    <div class="stats-card">
+      <div class="stats-header">
+        <span>📊</span>
+        <span>Patient Summary</span>
+      </div>
+      <div class="stats-content">
+        <div class="stat-item">
+          <span class="stat-label">Total Patients</span>
+          <span class="stat-value stat-info">{{ total_patients }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Currently Active</span>
+          <span class="stat-value stat-warning">{{ active_patients }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Critical Cases</span>
+          <span class="stat-value stat-critical">{{ critical_patients }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Triage Color Breakdown -->
+    <div class="stats-card">
+      <div class="stats-header">
+        <span>🏷️</span>
+        <span>Triage Colors</span>
+      </div>
+      <div class="stats-content">
+        <div class="color-breakdown">
+          <div class="color-stat color-red">
+            <div>{{ color_counts.red }}</div>
+            <div style="font-size: 0.7rem;">RED</div>
+          </div>
+          <div class="color-stat color-yellow">
+            <div>{{ color_counts.yellow }}</div>
+            <div style="font-size: 0.7rem;">YELLOW</div>
+          </div>
+          <div class="color-stat color-green">
+            <div>{{ color_counts.green }}</div>
+            <div style="font-size: 0.7rem;">GREEN</div>
+          </div>
+          <div class="color-stat color-black">
+            <div>{{ color_counts.black }}</div>
+            <div style="font-size: 0.7rem;">BLACK</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="stats-card">
+      <div class="stats-header">
+        <span>🔍</span>
+        <span>Filters</span>
+      </div>
+      <div class="stats-content">
+        <form method="GET" action="/patient-list" class="filters-section">
+          <div class="filter-group">
+            <label class="filter-label">Triage Color</label>
+            <select name="triage_color" class="filter-select">
+              <option value="">All Colors</option>
+              <option value="red" {% if filters.triage_color == "red" %}selected{% endif %}>🔴 Red</option>
+              <option value="yellow" {% if filters.triage_color == "yellow" %}selected{% endif %}>🟡 Yellow</option>
+              <option value="green" {% if filters.triage_color == "green" %}selected{% endif %}>🟢 Green</option>
+              <option value="black" {% if filters.triage_color == "black" %}selected{% endif %}>⚫ Black</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label class="filter-label">Status</label>
+            <select name="status" class="filter-select">
+              <option value="">All Statuses</option>
+              <option value="active" {% if filters.status == "active" %}selected{% endif %}>Active</option>
+              <option value="in_treatment" {% if filters.status == "in_treatment" %}selected{% endif %}>In Treatment</option>
+              <option value="treated" {% if filters.status == "treated" %}selected{% endif %}>Treated</option>
+              <option value="discharged" {% if filters.status == "discharged" %}selected{% endif %}>Discharged</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label class="filter-label">Severity</label>
+            <select name="severity" class="filter-select">
+              <option value="">All Severities</option>
+              <option value="critical" {% if filters.severity == "critical" %}selected{% endif %}>Critical</option>
+              <option value="severe" {% if filters.severity == "severe" %}selected{% endif %}>Severe</option>
+              <option value="moderate" {% if filters.severity == "moderate" %}selected{% endif %}>Moderate</option>
+              <option value="mild" {% if filters.severity == "mild" %}selected{% endif %}>Mild</option>
+            </select>
+          </div>
+          
+          <button type="submit" style="width: 100%; padding: 0.5rem; background: #3b82f6; color: white; border: none; border-radius: 6px; margin-bottom: 0.5rem;">Apply Filters</button>
+          <a href="/patient-list" class="clear-filters" style="display: block; text-align: center; text-decoration: none; color: white;">Clear Filters</a>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Main Patient List -->
+  <div class="patients-container">
+    <div class="patients-header">
+      <h2 class="patients-title">👥 Patient Queue</h2>
+      <div class="patients-count">{{ patients|length }} patients</div>
+    </div>
+    
+    <div class="patients-list">
+      {% if patients %}
+        <div class="patient-header">
+          <div>Priority</div>
+          <div>Patient Name</div>
+          <div>Injury Type</div>
+          <div>Severity</div>
+          <div>Triage Color</div>
+          <div>Status</div>
+          <div>Vitals</div>
+          <div>Time</div>
+        </div>
+        
+        {% for patient in patients %}
+          <div class="patient-row">
+            <div data-label="Priority">
+              <div class="priority-indicator priority-{{ patient.priority_score }}">
+                {{ patient.priority_score }}
+              </div>
+            </div>
+            
+            <div data-label="Name">
+              <div>
+                <div class="patient-name">{{ patient.name }}</div>
+                {% if patient.age %}<div style="font-size: 0.8rem; color: #6b7280;">Age: {{ patient.age }}</div>{% endif %}
+              </div>
+            </div>
+            
+            <div data-label="Injury" class="patient-injury">
+              {{ patient.injury_type }}
+            </div>
+            
+            <div data-label="Severity">
+              <span class="severity-badge severity-{{ patient.severity }}">
+                {{ patient.severity }}
+              </span>
+            </div>
+            
+            <div data-label="Triage">
+              <span class="severity-badge severity-{{ patient.triage_color }}">
+                {% if patient.triage_color == "red" %}🔴 RED
+                {% elif patient.triage_color == "yellow" %}🟡 YELLOW
+                {% elif patient.triage_color == "green" %}🟢 GREEN
+                {% elif patient.triage_color == "black" %}⚫ BLACK
+                {% endif %}
+              </span>
+            </div>
+            
+            <div data-label="Status">
+              <span class="status-badge status-{{ patient.status }}">
+                {{ patient.status.replace('_', ' ').title() }}
+              </span>
+            </div>
+            
+            <div data-label="Vitals">
+              <div class="vitals-indicator {% if patient.is_critical_vitals %}vitals-critical{% else %}vitals-normal{% endif %}">
+                {% if patient.is_critical_vitals %}
+                  ⚠️ Critical
+                {% else %}
+                  ✅ Stable
+                {% endif %}
+              </div>
+            </div>
+            
+            <div data-label="Time" class="patient-time">
+              {{ patient.created_at.strftime('%m/%d %H:%M') }}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="no-patients">
+          <div class="no-patients-icon">👥</div>
+          <h3>No Patients Found</h3>
+          <p>No patients match your current filters.</p>
+          <a href="/triage" style="display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #16a34a; color: white; text-decoration: none; border-radius: 8px;">
+            📝 Add First Patient
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh every 30 seconds
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    window.location.reload();
+  }
+}, 30000);
+</script>
+{% endblock %}
+
+{% block ai_status %}
+<div style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 1rem; border-radius: 8px; margin-top: 2rem; text-align: center;">
+  <div style="font-weight: bold; margin-bottom: 0.5rem;">🏥 Patient Management System</div>
+  <div style="font-size: 0.9rem; opacity: 0.9;">
+    Real-time patient queue • Auto-refresh enabled • Priority-based sorting
+  </div>
+</div>
+{% endblock %}

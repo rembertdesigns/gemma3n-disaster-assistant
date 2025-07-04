@@ -906,3 +906,223 @@
                     <small>Life-threatening</small>
                   </label>
                 </div>
+                <div class="severity-option">
+                  <input type="radio" id="critical" name="severity" value="critical" class="severity-radio">
+                  <label for="critical" class="severity-label severity-critical">
+                    ⚫ CRITICAL<br>
+                    <small>Immediate care</small>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Triage Color Assignment Section -->
+          <div class="triage-section triage-color-section">
+            <div class="section-header">
+              <div class="section-icon">🏷️</div>
+              <span>Triage Color Assignment</span>
+            </div>
+            
+            <div class="form-field">
+              <label class="field-label">
+                Assign Triage Color
+                <span class="required-field">*</span>
+              </label>
+              <div class="triage-colors">
+                <div class="color-option color-red" data-color="red">
+                  🔴 RED<br>
+                  <div class="color-description">Immediate<br>Life-threatening</div>
+                </div>
+                <div class="color-option color-yellow" data-color="yellow">
+                  🟡 YELLOW<br>
+                  <div class="color-description">Urgent<br>2-4 hours</div>
+                </div>
+                <div class="color-option color-green" data-color="green">
+                  🟢 GREEN<br>
+                  <div class="color-description">Delayed<br>4+ hours</div>
+                </div>
+                <div class="color-option color-black" data-color="black">
+                  ⚫ BLACK<br>
+                  <div class="color-description">Expectant<br>Palliative care</div>
+                </div>
+              </div>
+              <input type="hidden" id="triage_color" name="triage_color" required>
+            </div>
+          </div>
+          
+          <!-- Additional Notes Section -->
+          <div class="triage-section">
+            <div class="section-header">
+              <div class="section-icon">📝</div>
+              <span>Additional Information</span>
+            </div>
+            
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="allergies" class="field-label">Known Allergies</label>
+                <input 
+                  type="text" 
+                  id="allergies" 
+                  name="allergies" 
+                  class="field-input"
+                  placeholder="Drug allergies, food allergies, etc."
+                />
+              </div>
+              
+              <div class="form-field">
+                <label for="medications" class="field-label">Current Medications</label>
+                <input 
+                  type="text" 
+                  id="medications" 
+                  name="medications" 
+                  class="field-input"
+                  placeholder="Current prescriptions"
+                />
+              </div>
+              
+              <div class="form-field">
+                <label for="medical_history" class="field-label">Medical History</label>
+                <textarea 
+                  id="medical_history" 
+                  name="medical_history" 
+                  class="field-input field-textarea"
+                  placeholder="Relevant medical conditions, surgeries, etc."
+                ></textarea>
+              </div>
+              
+              <div class="form-field">
+                <label for="notes" class="field-label">Assessment Notes</label>
+                <textarea 
+                  id="notes" 
+                  name="notes" 
+                  class="field-input field-textarea"
+                  placeholder="Additional observations, treatment given, etc."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Submit Section -->
+          <div class="submit-section">
+            <button type="submit" class="submit-button" id="submit-btn">
+              🚑 Submit Triage Assessment
+            </button>
+            <div class="status-message" id="status-message"></div>
+          </div>
+          
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Sidebar -->
+  <div class="triage-sidebar">
+    <!-- Current Time -->
+    <div class="timestamp-display">
+      <div style="font-size: 0.8rem; opacity: 0.8;">Assessment Time</div>
+      <div id="current-time" style="font-size: 1.1rem; font-weight: bold;"></div>
+    </div>
+    
+    <!-- Triage Guide -->
+    <div class="info-card">
+      <div class="info-card-header">
+        <span>📋</span>
+        <span>Triage Color Guide</span>
+      </div>
+      <div class="info-card-content">
+        <ul class="triage-guide">
+          <li>
+            <div class="triage-color-indicator indicator-red"></div>
+            <div>
+              <strong>RED - Immediate</strong><br>
+              Life-threatening injuries requiring immediate care
+            </div>
+          </li>
+          <li>
+            <div class="triage-color-indicator indicator-yellow"></div>
+            <div>
+              <strong>YELLOW - Urgent</strong><br>
+              Serious injuries that can wait 2-4 hours
+            </div>
+          </li>
+          <li>
+            <div class="triage-color-indicator indicator-green"></div>
+            <div>
+              <strong>GREEN - Delayed</strong><br>
+              Minor injuries that can wait 4+ hours
+            </div>
+          </li>
+          <li>
+            <div class="triage-color-indicator indicator-black"></div>
+            <div>
+              <strong>BLACK - Expectant</strong><br>
+              Injuries incompatible with survival
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="info-card">
+      <div class="info-card-header">
+        <span>📊</span>
+        <span>Today's Statistics</span>
+      </div>
+      <div class="info-card-content">
+        <div class="quick-stats">
+          <div class="stat-card">
+            <span class="stat-number">24</span>
+            <div class="stat-label">Total Patients</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number">3</span>
+            <div class="stat-label">Critical</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number">8</span>
+            <div class="stat-label">Urgent</div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number">13</span>
+            <div class="stat-label">Stable</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="info-card">
+      <div class="info-card-header">
+        <span>⚡</span>
+        <span>Quick Actions</span>
+      </div>
+      <div class="info-card-content">
+        <a href="/triage-dashboard" style="display: block; padding: 0.75rem; background: #dc2626; color: white; text-decoration: none; border-radius: 6px; text-align: center; margin-bottom: 0.5rem;">
+          📊 View Dashboard
+        </a>
+        <a href="/patient-list" style="display: block; padding: 0.75rem; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; text-align: center; margin-bottom: 0.5rem;">
+          👥 Patient List
+        </a>
+        <a href="/emergency-protocols" style="display: block; padding: 0.75rem; background: #f59e0b; color: white; text-decoration: none; border-radius: 6px; text-align: center;">
+          📖 Protocols
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/triage-form.js"></script>
+{% endblock %}
+
+{% block ai_status %}
+<div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 1rem; border-radius: 8px; margin-top: 2rem; text-align: center;">
+  <div style="font-weight: bold; margin-bottom: 0.5rem;">🤖 AI Medical Assistant</div>
+  <div style="font-size: 0.9rem; opacity: 0.9;">
+    AI-powered triage recommendations based on input data • Always verify with medical professional
+  </div>
+</div>
+{% endblock %}
