@@ -773,11 +773,9 @@ Export Type: Complete Archive
         raise HTTPException(status_code=500, detail=f"Archive export failed: {str(e)}")
 
 @app.get("/api/dashboard-stats", response_class=JSONResponse)
-async def dashboard_stats_api(user: dict = Depends(require_role(["admin", "responder"]))):
-    """API endpoint for real-time dashboard stats refresh"""
+async def dashboard_stats_api(db: Session = Depends(get_db)):
+    """API endpoint for real-time dashboard stats refresh - DEMO MODE (No Auth)"""
     try:
-        db = next(get_db())
-        
         all_reports = db.query(CrowdReport).all()
         all_patients = db.query(TriagePatient).all()
         active_patients = [p for p in all_patients if p.status == "active"]
@@ -811,7 +809,7 @@ async def dashboard_stats_api(user: dict = Depends(require_role(["admin", "respo
         return JSONResponse(content={
             "success": True,
             "stats": stats,
-            "generated_by": user["username"],
+            "generated_by": "Demo User",  # Remove user dependency
             "timestamp": datetime.utcnow().isoformat()
         })
         
@@ -1481,6 +1479,218 @@ async def export_reports_json(
 # PATIENT EXPORT ROUTES - SQLAlchemy
 # ================================
 
+@app.get("/patients/{patient_id}/edit", response_class=HTMLResponse)
+async def edit_patient_form(
+    patient_id: int, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    """Render patient edit form"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        
+        if not patient:
+            logger.warning(f"❌ Patient not found for edit: ID={patient_id}")
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        logger.info(f"📝 Rendering edit form for patient: ID={patient_id}, Name={patient.name}")
+        
+        return templates.TemplateResponse("edit_patient.html", {
+            "request": request, 
+            "patient": patient
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error loading patient edit form: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load edit form: {str(e)}")
+
+@app.post("/patients/{patient_id}/update")
+async def update_patient(
+    patient_id: int, 
+    request: Request, 
+    db: Session = Depends(get_db),
+    name: str = Form(...),
+    age: Optional[int] = Form(None),
+    gender: Optional[str] = Form(None),
+    medical_id: Optional[str] = Form(None),
+    injury_type: str = Form(...),
+    mechanism: Optional[str] = Form(None),
+    consciousness: str = Form(...),
+    breathing: str = Form(...),
+    heart_rate: Optional[int] = Form(None),
+    bp_systolic: Optional[int] = Form(None),
+    bp_diastolic: Optional[int] = Form(None),
+    respiratory_rate: Optional[int] = Form(None),
+    temperature: Optional[float] = Form(None),
+    oxygen_sat: Optional[int] = Form(None),
+    severity: str = Form(...),
+    triage_color: str = Form(...),
+    allergies: Optional[str] = Form(None),
+    medications: Optional[str] = Form(None),
+    medical_history: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    status: str = Form(...)
+):
+    """Update patient information with enhanced feedback"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        
+        if not patient:
+            logger.warning(f"❌ Patient not found for update: ID={patient_id}")
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        # Validation
+        if not name or not name.strip():
+            raise HTTPException(status_code=400, detail="Patient name is required")
+        if not injury_type or not injury_type.strip():
+            raise HTTPException(status_code=400, detail="Injury type is required")
+        if consciousness not in ["alert", "verbal", "pain", "unresponsive"]:
+            raise HTTPException(status_code=400, detail="Invalid consciousness level")
+        if breathing not in ["normal", "labored", "shallow", "absent"]:
+            raise HTTPException(status_code=400, detail="Invalid breathing status")
+        if severity not in ["mild", "moderate", "severe", "critical"]:
+            raise HTTPException(status_code=400, detail="Invalid severity level")
+        if triage_color not in ["red", "yellow", "green", "black"]:
+            raise HTTPException(status_code=400, detail="Invalid triage color")
+        if status not in ["active", "in_treatment", "treated", "discharged"]:
+            raise HTTPException(status_code=400, detail="Invalid status")
+            
+        # Store original values for change tracking
+        original_values = {
+            "severity": patient.severity,
+            "triage_color": patient.triage_color,
+            "status": patient.status,
+            "heart_rate": patient.heart_rate,
+            "consciousness": patient.consciousness
+        }
+        
+        # Update all patient fields
+        patient.name = name.strip()
+        patient.age = age
+        patient.gender = gender
+        patient.medical_id = medical_id
+        patient.injury_type = injury_type.strip()
+        patient.mechanism = mechanism
+        patient.consciousness = consciousness
+        patient.breathing = breathing
+        patient.heart_rate = heart_rate
+        patient.bp_systolic = bp_systolic
+        patient.bp_diastolic = bp_diastolic
+        patient.respiratory_rate = respiratory_rate
+        patient.temperature = temperature
+        patient.oxygen_sat = oxygen_sat
+        patient.severity = severity
+        patient.triage_color = triage_color
+        patient.allergies = allergies
+        patient.medications = medications
+        patient.medical_history = medical_history
+        patient.notes = notes
+        patient.status = status
+        patient.updated_at = datetime.utcnow()
+        
+        # Commit changes
+        db.commit()
+        db.refresh(patient)
+        
+        # Track significant changes
+        changes = []
+        if original_values["severity"] != severity:
+            changes.append(f"severity: {original_values['severity']} → {severity}")
+        if original_values["triage_color"] != triage_color:
+            changes.append(f"triage: {original_values['triage_color']} → {triage_color}")
+        if original_values["status"] != status:
+            changes.append(f"status: {original_values['status']} → {status}")
+        
+        change_summary = ", ".join(changes) if changes else "general updates"
+        logger.info(f"✅ Patient updated: ID={patient_id}, Name={patient.name}, Changes=({change_summary})")
+        
+        # Log critical status changes
+        if triage_color == "red" or severity == "critical":
+            logger.warning(f"🚨 CRITICAL PATIENT UPDATED: {patient.name} - {triage_color.upper()} triage, {severity} severity")
+        
+        # Create success message
+        success_message = f"Patient {patient.name} updated successfully!"
+        if changes:
+            success_message += f" Key changes: {change_summary}"
+        
+        # Return to patient list with success message
+        return RedirectResponse(
+            url=f"/patient-list?success={success_message.replace(' ', '+')}", 
+            status_code=303
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error updating patient: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update patient: {str(e)}")
+
+# Also make sure you have the patient view route properly formatted:
+@app.get("/patients/{patient_id}/view", response_class=HTMLResponse)
+async def view_patient_details(
+    patient_id: int, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    """View detailed patient information"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        
+        if not patient:
+            logger.warning(f"❌ Patient not found for view: ID={patient_id}")
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        logger.info(f"👀 Viewing patient details: ID={patient_id}, Name={patient.name}")
+        
+        return templates.TemplateResponse("patient_details.html", {
+            "request": request, 
+            "patient": patient,
+            "current_time": datetime.utcnow()
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error loading patient details: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load patient details: {str(e)}")
+
+@app.delete("/patients/{patient_id}")
+async def delete_patient(
+    patient_id: int, 
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_role(["admin"]))  # Only admins can delete
+):
+    """Delete patient record (admin only)"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        
+        if not patient:
+            logger.warning(f"❌ Patient not found for deletion: ID={patient_id}")
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        patient_name = patient.name
+        db.delete(patient)
+        db.commit()
+        
+        logger.warning(f"🗑️ Patient deleted by admin {user['username']}: ID={patient_id}, Name={patient_name}")
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": f"Patient {patient_name} has been deleted",
+            "deleted_by": user["username"],
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error deleting patient: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete patient: {str(e)}")
+
 @app.get("/export-patients-pdf")
 async def export_patients_pdf(db: Session = Depends(get_db)):
     """Export patients as PDF using SQLAlchemy"""
@@ -1896,6 +2106,168 @@ async def get_active_broadcasts():
     """Get active emergency broadcasts"""
     result = discover_nearby_broadcasts(location={})
     return JSONResponse(content=result)
+
+# ================================
+# DEBUG ROUTES (ADD THIS SECTION)
+# ================================
+
+@app.get("/debug/patients")
+async def debug_patients(db: Session = Depends(get_db)):
+    """Debug endpoint to see all patients in database"""
+    try:
+        patients = db.query(TriagePatient).all()
+        
+        patient_data = []
+        for p in patients:
+            patient_data.append({
+                "id": p.id,
+                "name": p.name,
+                "injury_type": p.injury_type,
+                "severity": p.severity,
+                "triage_color": p.triage_color,
+                "status": p.status,
+                "created_at": p.created_at.isoformat() if p.created_at else None
+            })
+        
+        return JSONResponse(content={
+            "total_patients": len(patients),
+            "patients": patient_data,
+            "message": f"Found {len(patients)} patients in database"
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Debug patients error: {str(e)}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/debug/create-test-patients-get")
+async def create_test_patients_browser_friendly(db: Session = Depends(get_db)):
+    """Browser-friendly GET version of create test patients"""
+    try:
+        # Check if patients already exist
+        existing_count = db.query(TriagePatient).count()
+        if existing_count > 0:
+            return HTMLResponse(content=f"""
+            <html>
+            <head><title>Test Patients</title></head>
+            <body style="font-family: Arial; padding: 20px;">
+                <h2>✅ Patients Already Exist</h2>
+                <p>Found {existing_count} patients in database.</p>
+                <p><a href="/debug/patients">View existing patients</a></p>
+                <p><a href="/patient-list">Go to patient list</a></p>
+                <p><a href="/patients/1/edit">Edit first patient</a></p>
+            </body>
+            </html>
+            """)
+        
+        # Create test patients (same logic as POST route)
+        test_patients = [
+            {
+                "name": "John Smith",
+                "age": 35,
+                "gender": "Male",
+                "injury_type": "Chest trauma",
+                "consciousness": "alert",
+                "breathing": "labored",
+                "heart_rate": 120,
+                "bp_systolic": 90,
+                "bp_diastolic": 60,
+                "severity": "critical",
+                "triage_color": "red",
+                "status": "active",
+                "notes": "Motor vehicle accident victim, possible internal bleeding"
+            },
+            {
+                "name": "Sarah Johnson",
+                "age": 28,
+                "gender": "Female", 
+                "injury_type": "Broken arm",
+                "consciousness": "alert",
+                "breathing": "normal",
+                "heart_rate": 85,
+                "bp_systolic": 120,
+                "bp_diastolic": 80,
+                "severity": "moderate",
+                "triage_color": "yellow",
+                "status": "active",
+                "notes": "Fall from ladder, stable vital signs"
+            },
+            {
+                "name": "Mike Wilson",
+                "age": 45,
+                "gender": "Male",
+                "injury_type": "Minor cuts",
+                "consciousness": "alert", 
+                "breathing": "normal",
+                "heart_rate": 75,
+                "bp_systolic": 125,
+                "bp_diastolic": 82,
+                "severity": "mild",
+                "triage_color": "green",
+                "status": "treated",
+                "notes": "Glass cuts from broken window, cleaned and bandaged"
+            }
+        ]
+        
+        created_patients = []
+        for patient_data in test_patients:
+            new_patient = TriagePatient(
+                **patient_data,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            db.add(new_patient)
+            db.flush()  # Get the ID
+            created_patients.append({
+                "id": new_patient.id,
+                "name": new_patient.name,
+                "triage_color": new_patient.triage_color
+            })
+        
+        db.commit()
+        
+        logger.info(f"✅ Created {len(created_patients)} test patients")
+        
+        # Return HTML response for browser
+        patient_links = ""
+        for patient in created_patients:
+            patient_links += f'<li><a href="/patients/{patient["id"]}/edit">Edit {patient["name"]} ({patient["triage_color"]} priority)</a></li>'
+        
+        return HTMLResponse(content=f"""
+        <html>
+        <head><title>Test Patients Created</title></head>
+        <body style="font-family: Arial; padding: 20px;">
+            <h2>✅ Test Patients Created Successfully!</h2>
+            <p>Created {len(created_patients)} test patients.</p>
+            
+            <h3>Quick Links:</h3>
+            <ul>
+                {patient_links}
+            </ul>
+            
+            <h3>Other Actions:</h3>
+            <ul>
+                <li><a href="/debug/patients">View all patients (JSON)</a></li>
+                <li><a href="/patient-list">Patient List Dashboard</a></li>
+                <li><a href="/triage-dashboard">Triage Dashboard</a></li>
+                <li><a href="/admin">Admin Dashboard</a></li>
+            </ul>
+        </body>
+        </html>
+        """)
+        
+    except Exception as e:
+        logger.error(f"❌ Error creating test patients: {str(e)}")
+        db.rollback()
+        return HTMLResponse(content=f"""
+        <html>
+        <head><title>Error</title></head>
+        <body style="font-family: Arial; padding: 20px;">
+            <h2>❌ Error Creating Test Patients</h2>
+            <p>Error: {str(e)}</p>
+            <p><a href="/debug/patients">Check existing patients</a></p>
+        </body>
+        </html>
+        """, status_code=500)
 
 # ================================
 # UTILITY & HEALTH ROUTES

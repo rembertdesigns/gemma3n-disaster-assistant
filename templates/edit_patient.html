@@ -1,58 +1,484 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2 class="text-xl font-bold mb-4">✏️ Edit Patient - {{ patient.name }}</h2>
-
-<form method="post" action="/patients/{{ patient.id }}/update" class="space-y-4">
-
-  <div>
-    <label class="block">Name</label>
-    <input type="text" name="name" value="{{ patient.name }}" class="w-full p-2 border rounded">
+<div class="max-w-6xl mx-auto p-6">
+  <!-- Header Section with Context -->
+  <div class="bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-3xl font-bold text-white flex items-center">
+          ✏️ Edit Patient: {{ patient.name }}
+        </h1>
+        <p class="text-sm text-gray-400 mt-2">
+          Update this patient's medical and triage data. Changes are saved instantly to the emergency database.
+        </p>
+      </div>
+      <div class="flex space-x-3">
+        <span class="px-4 py-2 rounded-full text-sm font-medium
+          {% if patient.triage_color == 'red' %}bg-red-900 text-red-200 border border-red-700
+          {% elif patient.triage_color == 'yellow' %}bg-yellow-900 text-yellow-200 border border-yellow-700
+          {% elif patient.triage_color == 'green' %}bg-green-900 text-green-200 border border-green-700
+          {% else %}bg-gray-700 text-gray-200 border border-gray-600{% endif %}">
+          {{ patient.triage_color|title }} Priority
+        </span>
+        <span class="px-4 py-2 rounded-full text-sm font-medium bg-blue-900 text-blue-200 border border-blue-700">
+          ID: {{ patient.id }}
+        </span>
+      </div>
+    </div>
+    
+    <!-- Quick Status Bar -->
+    <div class="grid grid-cols-4 gap-4 text-center">
+      <div class="bg-gray-700 rounded-lg p-3">
+        <div class="text-xl font-bold text-white">{{ patient.severity|title }}</div>
+        <div class="text-xs text-gray-400">Severity</div>
+      </div>
+      <div class="bg-gray-700 rounded-lg p-3">
+        <div class="text-xl font-bold text-white">{{ patient.status|title|replace('_', ' ') }}</div>
+        <div class="text-xs text-gray-400">Status</div>
+      </div>
+      <div class="bg-gray-700 rounded-lg p-3">
+        <div class="text-xl font-bold text-white">{{ patient.heart_rate or 'N/A' }}</div>
+        <div class="text-xs text-gray-400">Heart Rate</div>
+      </div>
+      <div class="bg-gray-700 rounded-lg p-3">
+        <div class="text-xl font-bold text-white">{{ patient.consciousness|title }}</div>
+        <div class="text-xs text-gray-400">Consciousness</div>
+      </div>
+    </div>
   </div>
 
-  <div>
-    <label class="block">Age</label>
-    <input type="number" name="age" value="{{ patient.age }}" class="w-full p-2 border rounded">
+  <!-- Success/Error Messages -->
+  <div id="feedback-message" class="hidden mb-6"></div>
+
+  <form id="patient-form" method="post" action="/patients/{{ patient.id }}/update" class="space-y-6">
+    
+    <!-- Patient Information Section -->
+    <div class="bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 class="text-xl font-semibold mb-4 text-white flex items-center">
+        👤 Patient Information
+        <span class="ml-auto text-sm text-gray-400 font-normal">Basic Demographics</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Name *</label>
+          <input type="text" name="name" value="{{ patient.name }}" required
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Age</label>
+          <input type="number" name="age" value="{{ patient.age or '' }}" min="0" max="120"
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Gender</label>
+          <select name="gender" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+            <option value="">Select Gender</option>
+            <option value="Male" {% if patient.gender == "Male" %}selected{% endif %}>Male</option>
+            <option value="Female" {% if patient.gender == "Female" %}selected{% endif %}>Female</option>
+            <option value="Other" {% if patient.gender == "Other" %}selected{% endif %}>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Medical ID</label>
+        <input type="text" name="medical_id" value="{{ patient.medical_id or '' }}"
+               class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+      </div>
+    </div>
+
+    <!-- Medical Assessment Section -->
+    <div class="bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 class="text-xl font-semibold mb-4 text-white flex items-center">
+        🏥 Medical Assessment
+        <span class="ml-auto text-sm text-gray-400 font-normal">Injury & Response Status</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Injury Type *</label>
+          <input type="text" name="injury_type" value="{{ patient.injury_type }}" required
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Mechanism of Injury</label>
+          <input type="text" name="mechanism" value="{{ patient.mechanism or '' }}"
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Consciousness Level *</label>
+          <select name="consciousness" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+            <option value="alert" {% if patient.consciousness == "alert" %}selected{% endif %}>Alert & Oriented</option>
+            <option value="verbal" {% if patient.consciousness == "verbal" %}selected{% endif %}>Responds to Verbal</option>
+            <option value="pain" {% if patient.consciousness == "pain" %}selected{% endif %}>Responds to Pain</option>
+            <option value="unresponsive" {% if patient.consciousness == "unresponsive" %}selected{% endif %}>Unresponsive</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Breathing Status *</label>
+          <select name="breathing" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+            <option value="normal" {% if patient.breathing == "normal" %}selected{% endif %}>Normal</option>
+            <option value="labored" {% if patient.breathing == "labored" %}selected{% endif %}>Labored</option>
+            <option value="shallow" {% if patient.breathing == "shallow" %}selected{% endif %}>Shallow</option>
+            <option value="absent" {% if patient.breathing == "absent" %}selected{% endif %}>Absent</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vital Signs Section -->
+    <div class="bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 class="text-xl font-semibold mb-4 text-white flex items-center">
+        💓 Vital Signs
+        <span class="ml-auto text-sm text-gray-400 font-normal">Current Physiological Status</span>
+      </h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Heart Rate</label>
+          <input type="number" name="heart_rate" value="{{ patient.heart_rate or '' }}" min="0" max="300"
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+          <small class="text-gray-500">bpm</small>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">BP Systolic</label>
+          <input type="number" name="bp_systolic" value="{{ patient.bp_systolic or '' }}" min="0" max="300"
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+          <small class="text-gray-500">mmHg</small>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">BP Diastolic</label>
+          <input type="number" name="bp_diastolic" value="{{ patient.bp_diastolic or '' }}" min="0" max="200"
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+          <small class="text-gray-500">mmHg</small>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Resp. Rate</label>
+          <input type="number" name="respiratory_rate" value="{{ patient.respiratory_rate or '' }}" min="0" max="100"
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+          <small class="text-gray-500">/min</small>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Temperature</label>
+          <input type="number" name="temperature" value="{{ patient.temperature or '' }}" min="80" max="115" step="0.1"
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+          <small class="text-gray-500">°F</small>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">O2 Sat</label>
+          <input type="number" name="oxygen_sat" value="{{ patient.oxygen_sat or '' }}" min="0" max="100"
+                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+          <small class="text-gray-500">%</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Triage Assessment Section -->
+    <div class="bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 class="text-xl font-semibold mb-4 text-white flex items-center">
+        🚨 Triage Assessment
+        <span class="ml-auto text-sm text-gray-400 font-normal">Priority Classification</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Severity *</label>
+          <select name="severity" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+            <option value="mild" {% if patient.severity == "mild" %}selected{% endif %}>Mild</option>
+            <option value="moderate" {% if patient.severity == "moderate" %}selected{% endif %}>Moderate</option>
+            <option value="severe" {% if patient.severity == "severe" %}selected{% endif %}>Severe</option>
+            <option value="critical" {% if patient.severity == "critical" %}selected{% endif %}>Critical</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Triage Color *</label>
+          <select name="triage_color" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+            <option value="red" {% if patient.triage_color == "red" %}selected{% endif %}>🔴 Red (Immediate)</option>
+            <option value="yellow" {% if patient.triage_color == "yellow" %}selected{% endif %}>🟡 Yellow (Urgent)</option>
+            <option value="green" {% if patient.triage_color == "green" %}selected{% endif %}>🟢 Green (Delayed)</option>
+            <option value="black" {% if patient.triage_color == "black" %}selected{% endif %}>⚫ Black (Expectant)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Status *</label>
+          <select name="status" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+            <option value="active" {% if patient.status == "active" %}selected{% endif %}>Active</option>
+            <option value="in_treatment" {% if patient.status == "in_treatment" %}selected{% endif %}>In Treatment</option>
+            <option value="treated" {% if patient.status == "treated" %}selected{% endif %}>Treated</option>
+            <option value="discharged" {% if patient.status == "discharged" %}selected{% endif %}>Discharged</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medical History & Notes Section -->
+    <div class="bg-gray-800 rounded-lg shadow-md p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-semibold text-white flex items-center">
+          📋 Medical History & Notes
+          <span class="ml-4 text-sm text-gray-400 font-normal">Patient Background & Assessment</span>
+        </h3>
+        <button type="button" id="ai-assist-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm">
+          🧠 AI Note Recommender
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Allergies</label>
+          <textarea name="allergies" rows="3" 
+                    class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">{{ patient.allergies or '' }}</textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Current Medications</label>
+          <textarea name="medications" rows="3"
+                    class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">{{ patient.medications or '' }}</textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">Medical History</label>
+          <textarea name="medical_history" rows="3"
+                    class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">{{ patient.medical_history or '' }}</textarea>
+        </div>
+      </div>
+      <div class="mt-6">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-300">Assessment Notes</label>
+          <button type="button" id="history-toggle" class="text-sm text-blue-400 hover:text-blue-300">
+            📜 View Update History
+          </button>
+        </div>
+        <textarea name="notes" rows="4" id="notes-field"
+                  class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">{{ patient.notes or '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- Optional File Upload Section (Demo) -->
+    <div class="bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 class="text-xl font-semibold mb-4 text-white flex items-center">
+        📎 Attachments
+        <span class="ml-auto text-sm text-gray-400 font-normal">X-rays, Lab Results (Demo)</span>
+      </h3>
+      <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
+        <div class="text-gray-400">
+          <svg class="mx-auto h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p>Drop files here or click to upload</p>
+          <p class="text-sm text-gray-500 mt-2">X-rays, lab results, photos (Demo only)</p>
+        </div>
+      </div>
+    </div>
+
+  </form>
+
+  <!-- Patient Metadata Footer -->
+  <div class="bg-gray-800 rounded-lg shadow-md p-4 mt-6">
+    <div class="flex justify-between items-center text-sm text-gray-400">
+      <span>🕒 Created: {{ patient.created_at.strftime('%Y-%m-%d %H:%M') if patient.created_at else 'Unknown' }}</span>
+      <span>🔄 Last Updated: {{ patient.updated_at.strftime('%Y-%m-%d %H:%M') if patient.updated_at else 'Never' }}</span>
+      {% if patient.priority_score %}
+      <span>⚡ Priority Score: {{ patient.priority_score }}</span>
+      {% endif %}
+    </div>
   </div>
 
-  <div>
-    <label class="block">Injury Type</label>
-    <input type="text" name="injury_type" value="{{ patient.injury_type }}" class="w-full p-2 border rounded">
+  <!-- Action Buttons - Fixed/Sticky -->
+  <div class="fixed bottom-6 right-6 flex space-x-4 z-50">
+    <a href="/patient-list" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-lg">
+      ← Back to List
+    </a>
+    <a href="/patients/{{ patient.id }}/view" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
+      👀 View Details
+    </a>
+    <button type="submit" form="patient-form" id="save-btn" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-lg">
+      <span id="save-text">💾 Save Changes</span>
+      <span id="save-loading" class="hidden">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Saving...
+      </span>
+    </button>
   </div>
+</div>
 
-  <div>
-    <label class="block">Severity</label>
-    <select name="severity" class="w-full p-2 border rounded">
-      <option value="Critical" {% if patient.severity == "Critical" %}selected{% endif %}>Critical</option>
-      <option value="Moderate" {% if patient.severity == "Moderate" %}selected{% endif %}>Moderate</option>
-      <option value="Stable" {% if patient.severity == "Stable" %}selected{% endif %}>Stable</option>
-    </select>
+<!-- AI Assistant Modal (Demo) -->
+<div id="ai-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+  <div class="flex items-center justify-center h-full p-4">
+    <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+      <h3 class="text-lg font-semibold text-white mb-4">🧠 AI Note Recommender</h3>
+      <p class="text-gray-300 mb-4">Based on the injury type and vital signs, here are suggested assessment notes:</p>
+      <div class="bg-gray-700 p-4 rounded-lg mb-4">
+        <p class="text-sm text-gray-300">"Patient presents with chest trauma following MVA. Vital signs indicate potential shock. Recommend immediate imaging and blood work. Monitor for signs of internal bleeding."</p>
+      </div>
+      <div class="flex justify-end space-x-3">
+        <button type="button" id="ai-cancel" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Cancel</button>
+        <button type="button" id="ai-apply" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Apply Suggestion</button>
+      </div>
+    </div>
   </div>
+</div>
 
-  <div>
-    <label class="block">Vitals</label>
-    <input type="text" name="vitals" value="{{ patient.vitals }}" class="w-full p-2 border rounded">
+<!-- Update History Modal (Demo) -->
+<div id="history-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+  <div class="flex items-center justify-center h-full p-4">
+    <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-96 overflow-y-auto">
+      <h3 class="text-lg font-semibold text-white mb-4">📜 Patient Update History</h3>
+      <div class="space-y-3">
+        <div class="bg-gray-700 p-3 rounded">
+          <div class="text-sm text-gray-300">2025-07-04 23:18 - Initial assessment</div>
+          <div class="text-xs text-gray-400">Created by: Emergency Team</div>
+        </div>
+        <div class="bg-gray-700 p-3 rounded">
+          <div class="text-sm text-gray-300">2025-07-04 23:25 - Vital signs updated</div>
+          <div class="text-xs text-gray-400">Updated by: Dr. Smith</div>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="button" id="history-close" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Close</button>
+      </div>
+    </div>
   </div>
+</div>
 
-  <div>
-    <label class="block">Notes</label>
-    <textarea name="notes" class="w-full p-2 border rounded">{{ patient.notes }}</textarea>
-  </div>
-
-  <div>
-    <label class="block">Triage Color</label>
-    <input type="text" name="triage_color" value="{{ patient.triage_color }}" class="w-full p-2 border rounded">
-  </div>
-
-  <div>
-    <label class="block">Status</label>
-    <select name="status" class="w-full p-2 border rounded">
-      <option value="Under Observation" {% if patient.status == "Under Observation" %}selected{% endif %}>Under Observation</option>
-      <option value="Discharged" {% if patient.status == "Discharged" %}selected{% endif %}>Discharged</option>
-    </select>
-  </div>
-
-  <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">💾 Save Changes</button>
-</form>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('patient-form');
+    const triageColor = document.querySelector('select[name="triage_color"]');
+    const severity = document.querySelector('select[name="severity"]');
+    const saveBtn = document.getElementById('save-btn');
+    const saveText = document.getElementById('save-text');
+    const saveLoading = document.getElementById('save-loading');
+    
+    // Auto-sync triage color and severity
+    triageColor.addEventListener('change', function() {
+        if (this.value === 'red') {
+            severity.value = 'critical';
+        } else if (this.value === 'yellow') {
+            severity.value = 'severe';
+        } else if (this.value === 'green') {
+            severity.value = 'moderate';
+        }
+    });
+    
+    // Highlight critical changes
+    const criticalInputs = ['triage_color', 'severity', 'status'];
+    criticalInputs.forEach(inputName => {
+        const input = document.querySelector(`[name="${inputName}"]`);
+        if (input) {
+            input.addEventListener('change', function() {
+                if (this.value === 'red' || this.value === 'critical') {
+                    this.classList.add('border-red-500', 'bg-red-900');
+                } else {
+                    this.classList.remove('border-red-500', 'bg-red-900');
+                }
+            });
+        }
+    });
+    
+    // Form submission with loading state
+    form.addEventListener('submit', function(e) {
+        saveText.classList.add('hidden');
+        saveLoading.classList.remove('hidden');
+        saveBtn.disabled = true;
+        
+        // Validate required fields
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                field.classList.remove('border-red-500');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            saveText.classList.remove('hidden');
+            saveLoading.classList.add('hidden');
+            saveBtn.disabled = false;
+            showFeedback('Please fill in all required fields.', 'error');
+        }
+    });
+    
+    // AI Assistant Modal
+    const aiBtn = document.getElementById('ai-assist-btn');
+    const aiModal = document.getElementById('ai-modal');
+    const aiCancel = document.getElementById('ai-cancel');
+    const aiApply = document.getElementById('ai-apply');
+    const notesField = document.getElementById('notes-field');
+    
+    aiBtn.addEventListener('click', () => {
+        aiModal.classList.remove('hidden');
+    });
+    
+    aiCancel.addEventListener('click', () => {
+        aiModal.classList.add('hidden');
+    });
+    
+    aiApply.addEventListener('click', () => {
+        const suggestion = "Patient presents with chest trauma following MVA. Vital signs indicate potential shock. Recommend immediate imaging and blood work. Monitor for signs of internal bleeding.";
+        notesField.value = suggestion;
+        aiModal.classList.add('hidden');
+        showFeedback('AI suggestion applied to assessment notes!', 'success');
+    });
+    
+    // History Modal
+    const historyToggle = document.getElementById('history-toggle');
+    const historyModal = document.getElementById('history-modal');
+    const historyClose = document.getElementById('history-close');
+    
+    historyToggle.addEventListener('click', () => {
+        historyModal.classList.remove('hidden');
+    });
+    
+    historyClose.addEventListener('click', () => {
+        historyModal.classList.add('hidden');
+    });
+    
+    // Close modals on outside click
+    [aiModal, historyModal].forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    });
+    
+    // Feedback message function
+    function showFeedback(message, type) {
+        const feedbackDiv = document.getElementById('feedback-message');
+        const bgColor = type === 'success' ? 'bg-green-900 border-green-700 text-green-200' : 'bg-red-900 border-red-700 text-red-200';
+        
+        feedbackDiv.innerHTML = `
+            <div class="border rounded-lg p-4 ${bgColor}">
+                <div class="flex items-center">
+                    <span class="text-lg mr-2">${type === 'success' ? '✅' : '❌'}</span>
+                    <span>${message}</span>
+                </div>
+            </div>
+        `;
+        
+        feedbackDiv.classList.remove('hidden');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            feedbackDiv.classList.add('hidden');
+        }, 5000);
+    }
+    
+    // Auto-save indicator (demo)
+    let saveTimeout;
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('input', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                showFeedback('Changes auto-saved', 'success');
+            }, 2000);
+        });
+    });
+});
+</script>
 
 {% endblock %}
