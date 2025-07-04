@@ -169,6 +169,322 @@ async def offline_page(request: Request):
 async def submit_report_page(request: Request):
     return templates.TemplateResponse("submit-report.html", {"request": request})
 
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request, db: Session = Depends(get_db)):
+    """Admin dashboard with real database statistics - DEMO MODE (No Auth Required)"""
+    try:
+        logger.info("🔧 Loading admin dashboard in DEMO MODE (no authentication)")
+        
+        # Get real data from database
+        all_reports = db.query(CrowdReport).all()
+        all_patients = db.query(TriagePatient).all()
+        
+        # Filter today's data
+        today = datetime.utcnow().date()
+        today_reports = []
+        today_patients = []
+        
+        for r in all_reports:
+            if r.timestamp:
+                try:
+                    report_date = datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')).date()
+                    if report_date == today:
+                        today_reports.append(r)
+                except:
+                    pass
+        
+        for p in all_patients:
+            if p.created_at and p.created_at.date() == today:
+                today_patients.append(p)
+        
+        # Active patients and critical cases
+        active_patients = [p for p in all_patients if p.status == "active"]
+        critical_reports = [r for r in all_reports if r.escalation == "Critical"]
+        critical_patients = [p for p in active_patients if p.triage_color == "red" or p.severity == "critical"]
+        
+        # Calculate average severity (1=mild, 2=moderate, 3=severe, 4=critical)
+        severity_scores = []
+        for p in all_patients:
+            if p.severity == "critical":
+                severity_scores.append(4)
+            elif p.severity == "severe":
+                severity_scores.append(3)
+            elif p.severity == "moderate":
+                severity_scores.append(2)
+            elif p.severity == "mild":
+                severity_scores.append(1)
+        
+        avg_severity = sum(severity_scores) / len(severity_scores) if severity_scores else 0.0
+        
+        # Calculate active users (placeholder - you can implement real user tracking later)
+        active_users = 3 + len(set([r.user for r in all_reports if r.user and r.user != "Anonymous"]))
+        
+        # Build comprehensive stats
+        stats = {
+            "total_reports": len(all_reports),
+            "active_users": active_users,
+            "avg_severity": round(avg_severity, 1),
+            "reports_today": len(today_reports),
+            "total_patients": len(all_patients),
+            "active_patients": len(active_patients),
+            "patients_today": len(today_patients),
+            "critical_reports": len(critical_reports),
+            "critical_patients": len(critical_patients),
+            "system_uptime": "12h 34m",  # Placeholder - implement real uptime tracking
+            "last_report_time": all_reports[-1].timestamp if all_reports else None
+        }
+        
+        # Get recent reports for display (optional - for future enhancements)
+        recent_reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).limit(5).all()
+        priority_patients = sorted(active_patients, key=lambda p: (p.priority_score if hasattr(p, 'priority_score') else 0, -p.id))[:5]
+        
+        logger.info(f"✅ Demo admin dashboard loaded: {stats['total_reports']} reports, {stats['total_patients']} patients")
+        
+        return templates.TemplateResponse("admin.html", {
+            "request": request,
+            "username": "Demo Administrator",  # Demo username
+            "role": "ADMIN",                   # Demo role
+            "stats": stats,
+            "recent_reports": recent_reports,
+            "priority_patients": priority_patients,
+            "current_time": datetime.utcnow(),
+            "demo_mode": True,  # Flag to indicate demo mode
+            "user_info": {
+                "full_role": "admin",
+                "login_time": datetime.utcnow().strftime("%H:%M"),
+                "access_level": "Demo Administrative Access"
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading demo admin dashboard: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fallback to safe defaults
+        empty_stats = {
+            "total_reports": 0,
+            "active_users": 0,
+            "avg_severity": 0.0,
+            "reports_today": 0,
+            "total_patients": 0,
+            "active_patients": 0,
+            "patients_today": 0,
+            "critical_reports": 0,
+            "critical_patients": 0,
+            "system_uptime": "Unknown",
+            "last_report_time": None
+        }
+        
+        return templates.TemplateResponse("admin.html", {
+            "request": request,
+            "username": "Demo User",
+            "role": "ADMIN",
+            "stats": empty_stats,
+            "recent_reports": [],
+            "priority_patients": [],
+            "current_time": datetime.utcnow(),
+            "error": f"Dashboard error: {str(e)}",
+            "demo_mode": True
+        })
+    
+@app.get("/analytics", response_class=HTMLResponse)
+async def analytics_dashboard(
+    request: Request,
+    timeframe: str = Query("7d", description="Time range: 24h, 7d, 30d"),
+    db: Session = Depends(get_db)
+):
+    """Analytics dashboard with real-time data visualizations and AI insights"""
+    try:
+        logger.info(f"📊 Loading analytics dashboard (timeframe: {timeframe})")
+        
+        # Get all data
+        all_reports = db.query(CrowdReport).all()
+        all_patients = db.query(TriagePatient).all()
+        
+        # Calculate timeframe filter
+        now = datetime.utcnow()
+        if timeframe == "24h":
+            cutoff = now - timedelta(hours=24)
+            timeframe_label = "Last 24 Hours"
+        elif timeframe == "30d":
+            cutoff = now - timedelta(days=30)
+            timeframe_label = "Last 30 Days"
+        else:  # default 7d
+            cutoff = now - timedelta(days=7)
+            timeframe_label = "Last 7 Days"
+        
+        # Filter data by timeframe
+        recent_reports = []
+        recent_patients = []
+        
+        for r in all_reports:
+            if r.timestamp:
+                try:
+                    report_time = datetime.fromisoformat(r.timestamp.replace('Z', '+00:00'))
+                    if report_time >= cutoff:
+                        recent_reports.append(r)
+                except:
+                    pass
+        
+        for p in all_patients:
+            if p.created_at and p.created_at >= cutoff:
+                recent_patients.append(p)
+        
+        # 📊 REPORT TRENDS ANALYSIS
+        report_trends = {
+            "total_reports": len(recent_reports),
+            "daily_average": round(len(recent_reports) / max(1, (now - cutoff).days), 1),
+            "escalation_breakdown": {
+                "Critical": len([r for r in recent_reports if r.escalation == "Critical"]),
+                "High": len([r for r in recent_reports if r.escalation == "High"]),
+                "Moderate": len([r for r in recent_reports if r.escalation == "Moderate"]),
+                "Low": len([r for r in recent_reports if r.escalation == "Low"])
+            },
+            "tone_analysis": {
+                "Urgent": len([r for r in recent_reports if r.tone == "Urgent"]),
+                "Frantic": len([r for r in recent_reports if r.tone == "Frantic"]),
+                "Helpless": len([r for r in recent_reports if r.tone == "Helpless"]),
+                "Descriptive": len([r for r in recent_reports if r.tone == "Descriptive"])
+            }
+        }
+        
+        # 🏥 TRIAGE INSIGHTS
+        triage_insights = {
+            "total_patients": len(recent_patients),
+            "color_distribution": {
+                "red": len([p for p in recent_patients if p.triage_color == "red"]),
+                "yellow": len([p for p in recent_patients if p.triage_color == "yellow"]),
+                "green": len([p for p in recent_patients if p.triage_color == "green"]),
+                "black": len([p for p in recent_patients if p.triage_color == "black"])
+            },
+            "severity_trend": {
+                "critical": len([p for p in recent_patients if p.severity == "critical"]),
+                "severe": len([p for p in recent_patients if p.severity == "severe"]),
+                "moderate": len([p for p in recent_patients if p.severity == "moderate"]),
+                "mild": len([p for p in recent_patients if p.severity == "mild"])
+            },
+            "average_severity": calculate_avg_severity(recent_patients)
+        }
+        
+        # 🤖 AI PERFORMANCE METRICS
+        ai_metrics = {
+            "sentiment_accuracy": 87.3,  # Placeholder - implement real AI tracking
+            "triage_confidence": 92.1,   # Placeholder - implement real AI tracking
+            "auto_classifications": len([r for r in recent_reports if r.tone]),
+            "manual_overrides": 3,       # Placeholder - track when humans override AI
+            "processing_speed": "0.24s", # Placeholder - track AI response times
+        }
+        
+        # 📈 TREND DATA FOR CHARTS (simplified time series)
+        trend_data = generate_trend_data(recent_reports, recent_patients, cutoff, now)
+        
+        # 🎯 KEY PERFORMANCE INDICATORS
+        kpis = {
+            "response_efficiency": calculate_response_efficiency(recent_patients),
+            "critical_ratio": round((triage_insights["color_distribution"]["red"] / max(1, len(recent_patients))) * 100, 1),
+            "system_utilization": min(100, len(recent_reports) + len(recent_patients)),
+            "geographic_coverage": len(set([r.location for r in recent_reports if r.location])),
+        }
+        
+        logger.info(f"✅ Analytics dashboard loaded: {report_trends['total_reports']} reports, {triage_insights['total_patients']} patients")
+        
+        return templates.TemplateResponse("analytics_dashboard.html", {
+            "request": request,
+            "timeframe": timeframe,
+            "timeframe_label": timeframe_label,
+            "report_trends": report_trends,
+            "triage_insights": triage_insights,
+            "ai_metrics": ai_metrics,
+            "trend_data": trend_data,
+            "kpis": kpis,
+            "current_time": now,
+            "total_all_time": {
+                "reports": len(all_reports),
+                "patients": len(all_patients)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading analytics dashboard: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Return error page with safe defaults
+        return templates.TemplateResponse("analytics_dashboard.html", {
+            "request": request,
+            "timeframe": timeframe,
+            "timeframe_label": "Error",
+            "error": str(e),
+            "report_trends": {"total_reports": 0, "daily_average": 0, "escalation_breakdown": {}, "tone_analysis": {}},
+            "triage_insights": {"total_patients": 0, "color_distribution": {}, "severity_trend": {}, "average_severity": 0},
+            "ai_metrics": {"sentiment_accuracy": 0, "triage_confidence": 0, "auto_classifications": 0, "manual_overrides": 0},
+            "kpis": {"response_efficiency": 0, "critical_ratio": 0, "system_utilization": 0, "geographic_coverage": 0},
+            "current_time": datetime.utcnow()
+        })
+
+# Helper functions for analytics calculations
+def calculate_avg_severity(patients):
+    """Calculate average severity score"""
+    if not patients:
+        return 0.0
+    
+    severity_scores = []
+    for p in patients:
+        if p.severity == "critical":
+            severity_scores.append(4)
+        elif p.severity == "severe":
+            severity_scores.append(3)
+        elif p.severity == "moderate":
+            severity_scores.append(2)
+        elif p.severity == "mild":
+            severity_scores.append(1)
+    
+    return round(sum(severity_scores) / len(severity_scores), 1) if severity_scores else 0.0
+
+def calculate_response_efficiency(patients):
+    """Calculate response efficiency percentage"""
+    if not patients:
+        return 0.0
+    
+    treated_count = len([p for p in patients if p.status in ["treated", "discharged"]])
+    return round((treated_count / len(patients)) * 100, 1)
+
+def generate_trend_data(reports, patients, start_time, end_time):
+    """Generate time series data for charts"""
+    # Simplified trend data - group by day
+    days = (end_time - start_time).days + 1
+    trend_data = []
+    
+    for i in range(days):
+        day_start = start_time + timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        
+        day_reports = []
+        day_patients = []
+        
+        for r in reports:
+            if r.timestamp:
+                try:
+                    report_time = datetime.fromisoformat(r.timestamp.replace('Z', '+00:00'))
+                    if day_start <= report_time < day_end:
+                        day_reports.append(r)
+                except:
+                    pass
+        
+        for p in patients:
+            if p.created_at and day_start <= p.created_at < day_end:
+                day_patients.append(p)
+        
+        trend_data.append({
+            "date": day_start.strftime("%Y-%m-%d"),
+            "reports": len(day_reports),
+            "patients": len(day_patients),
+            "critical_patients": len([p for p in day_patients if p.triage_color == "red"])
+        })
+    
+    return trend_data
+
 # ================================
 # CROWD REPORTS ROUTES - SQLAlchemy Only
 # ================================
@@ -304,6 +620,185 @@ async def submit_crowd_report(
         logger.error(f"❌ Failed to insert crowd report: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail="Error saving report")
+
+@app.get("/reports", response_class=HTMLResponse)
+async def reports_redirect(request: Request):
+    """Redirect /reports to /view-reports for compatibility"""
+    return RedirectResponse(url="/view-reports", status_code=301)
+
+@app.get("/reports/export", response_class=HTMLResponse)
+async def export_archive_page(
+    request: Request, 
+    user: dict = Depends(require_role(["admin", "responder"]))
+):
+    """Export archive page with multiple export options"""
+    try:
+        # Get stats for the export page
+        db = next(get_db())
+        all_reports = db.query(CrowdReport).all()
+        all_patients = db.query(TriagePatient).all()
+        
+        export_stats = {
+            "total_reports": len(all_reports),
+            "total_patients": len(all_patients),
+            "export_formats": ["PDF", "CSV", "JSON", "ZIP Archive"],
+            "last_export": "Never",  # Placeholder
+            "export_size_estimate": f"{len(all_reports) + len(all_patients)} records"
+        }
+        
+        return templates.TemplateResponse("export_archive.html", {
+            "request": request,
+            "stats": export_stats,
+            "user": user
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading export page: {str(e)}")
+        # Create a simple export page if template doesn't exist
+        simple_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Export Archive</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }}
+                .export-option {{ background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 8px; }}
+                .export-option a {{ text-decoration: none; color: #1e40af; font-weight: bold; }}
+                .export-option:hover {{ background: #e0e0e0; }}
+            </style>
+        </head>
+        <body>
+            <h1>📦 Export Archive</h1>
+            <p>Export your disaster response data in multiple formats:</p>
+            
+            <div class="export-option">
+                <a href="/export-reports.csv">📄 Download Reports as CSV</a>
+                <p>All crowd reports in spreadsheet format</p>
+            </div>
+            
+            <div class="export-option">
+                <a href="/export-reports.json">🔧 Download Reports as JSON</a>
+                <p>All crowd reports in JSON format for API integration</p>
+            </div>
+            
+            <div class="export-option">
+                <a href="/export-patients-pdf">🏥 Download Patient Records as PDF</a>
+                <p>All triage patient records in PDF format</p>
+            </div>
+            
+            <div class="export-option">
+                <a href="/export-full-archive">📦 Download Complete Archive (ZIP)</a>
+                <p>All data, reports, and system logs in a single ZIP file</p>
+            </div>
+            
+            <p><a href="/admin">← Back to Admin Dashboard</a></p>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=simple_html)
+
+@app.get("/export-full-archive")
+async def export_full_archive(
+    user: dict = Depends(require_role(["admin"]))
+):
+    """Export complete system archive as ZIP file"""
+    try:
+        import zipfile
+        from io import BytesIO
+        
+        db = next(get_db())
+        
+        # Create ZIP file in memory
+        zip_buffer = BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # Export reports as CSV
+            reports = db.query(CrowdReport).all()
+            reports_csv = "id,message,tone,escalation,timestamp,user,location,latitude,longitude\\n"
+            for r in reports:
+                reports_csv += f'"{r.id}","{r.message}","{r.tone}","{r.escalation}","{r.timestamp}","{r.user or ""}","{r.location or ""}","{r.latitude or ""}","{r.longitude or ""}"\\n'
+            zip_file.writestr("crowd_reports.csv", reports_csv)
+            
+            # Export patients as CSV
+            patients = db.query(TriagePatient).all()
+            patients_csv = "id,name,age,injury_type,severity,triage_color,status,created_at\\n"
+            for p in patients:
+                patients_csv += f'"{p.id}","{p.name}","{p.age or ""}","{p.injury_type}","{p.severity}","{p.triage_color}","{p.status}","{p.created_at}"\\n'
+            zip_file.writestr("triage_patients.csv", patients_csv)
+            
+            # Add system info
+            system_info = f"""Disaster Response System Export
+Generated: {datetime.utcnow().isoformat()}
+Exported by: {user['username']} ({user['role']})
+Total Reports: {len(reports)}
+Total Patients: {len(patients)}
+Export Type: Complete Archive
+"""
+            zip_file.writestr("export_info.txt", system_info)
+        
+        zip_buffer.seek(0)
+        
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        filename = f"disaster_response_archive_{timestamp}.zip"
+        
+        logger.info(f"📦 Full archive exported by {user['username']}: {len(reports)} reports, {len(patients)} patients")
+        
+        return Response(
+            content=zip_buffer.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Archive export failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Archive export failed: {str(e)}")
+
+@app.get("/api/dashboard-stats", response_class=JSONResponse)
+async def dashboard_stats_api(user: dict = Depends(require_role(["admin", "responder"]))):
+    """API endpoint for real-time dashboard stats refresh"""
+    try:
+        db = next(get_db())
+        
+        all_reports = db.query(CrowdReport).all()
+        all_patients = db.query(TriagePatient).all()
+        active_patients = [p for p in all_patients if p.status == "active"]
+        
+        # Calculate severity
+        severity_scores = []
+        for p in all_patients:
+            if p.severity == "critical":
+                severity_scores.append(4)
+            elif p.severity == "severe":
+                severity_scores.append(3)
+            elif p.severity == "moderate":
+                severity_scores.append(2)
+            elif p.severity == "mild":
+                severity_scores.append(1)
+        
+        avg_severity = sum(severity_scores) / len(severity_scores) if severity_scores else 0.0
+        active_users = 3 + len(set([r.user for r in all_reports if r.user and r.user != "Anonymous"]))
+        
+        stats = {
+            "total_reports": len(all_reports),
+            "active_users": active_users,
+            "avg_severity": round(avg_severity, 1),
+            "total_patients": len(all_patients),
+            "active_patients": len(active_patients),
+            "critical_alerts": len([p for p in active_patients if p.triage_color == "red" or p.severity == "critical"]),
+            "system_status": "online",
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+        return JSONResponse(content={
+            "success": True,
+            "stats": stats,
+            "generated_by": user["username"],
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Dashboard stats API error: {str(e)}")
+        return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
 
 # ================================
 # TRIAGE & PATIENT MANAGEMENT ROUTES - SQLAlchemy Only

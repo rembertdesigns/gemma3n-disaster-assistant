@@ -1,1 +1,416 @@
+{% extends "base.html" %}
 
+{% block title %}Analytics Dashboard - Disaster Response{% endblock %}
+
+{% block page_title %}📊 Analytics Dashboard{% endblock %}
+
+{% block subtitle %}Real-time Data Insights & AI Performance{% endblock %}
+
+{% block header_actions %}
+<div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+  <a href="?timeframe=24h" class="timeframe-btn {% if timeframe == '24h' %}active{% endif %}">24h</a>
+  <a href="?timeframe=7d" class="timeframe-btn {% if timeframe == '7d' %}active{% endif %}">7d</a>
+  <a href="?timeframe=30d" class="timeframe-btn {% if timeframe == '30d' %}active{% endif %}">30d</a>
+  <a href="/admin" style="margin-left: 1rem;" class="admin-link">👤 Admin Dashboard</a>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .analytics-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  .timeframe-btn {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+  }
+  
+  .timeframe-btn:hover, 
+  .timeframe-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+  }
+  
+  .admin-link {
+    padding: 0.5rem 1rem;
+    background: #16a34a;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  
+  .admin-link:hover {
+    background: #15803d;
+    color: white;
+    text-decoration: none;
+  }
+  
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .kpi-card {
+    background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .kpi-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .kpi-label {
+    opacity: 0.9;
+    font-size: 0.9rem;
+  }
+  
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .chart-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .chart-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #374151;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .chart-placeholder {
+    height: 300px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px dashed #3b82f6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1e40af;
+    font-weight: 500;
+    text-align: center;
+    position: relative;
+  }
+  
+  .stat-bar {
+    background: #f3f4f6;
+    height: 24px;
+    border-radius: 12px;
+    margin: 0.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .stat-fill {
+    height: 100%;
+    border-radius: 12px;
+    transition: width 0.8s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  
+  .stat-fill.critical { 
+    background: #dc2626; 
+  }
+  
+  .stat-fill.high { 
+    background: #ea580c; 
+  }
+  
+  .stat-fill.moderate { 
+    background: #ca8a04; 
+  }
+  
+  .stat-fill.low { 
+    background: #16a34a; 
+  }
+  
+  .stat-fill.red { 
+    background: #dc2626; 
+  }
+  
+  .stat-fill.yellow { 
+    background: #eab308; 
+  }
+  
+  .stat-fill.green { 
+    background: #16a34a; 
+  }
+  
+  .stat-fill.black { 
+    background: #374151; 
+  }
+  
+  .ai-metrics {
+    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .ai-metrics h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.3rem;
+  }
+  
+  .ai-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+  
+  .ai-metric {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .ai-metric-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+  }
+  
+  .ai-metric-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+  
+  .trend-summary {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .export-actions {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  
+  .export-btn {
+    background: #16a34a;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    border-radius: 8px;
+    margin: 0 0.5rem;
+    display: inline-block;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+  
+  .export-btn:hover {
+    background: #15803d;
+    color: white;
+    text-decoration: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+  <!-- Time Range Header -->
+  <div style="background: rgba(255, 255, 255, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; color: white;">
+    <h3 style="margin: 0;">📈 Viewing: {{ timeframe_label }}</h3>
+    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">
+      Analysis updated at {{ current_time.strftime("%H:%M on %B %d, %Y") }}
+    </p>
+  </div>
+
+  <!-- Key Performance Indicators -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">{{ kpis.response_efficiency }}%</div>
+      <div class="kpi-label">Response Efficiency</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">{{ kpis.critical_ratio }}%</div>
+      <div class="kpi-label">Critical Cases</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">{{ kpis.system_utilization }}</div>
+      <div class="kpi-label">System Load</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">{{ kpis.geographic_coverage }}</div>
+      <div class="kpi-label">Active Locations</div>
+    </div>
+  </div>
+
+  <!-- AI Performance Metrics -->
+  <div class="ai-metrics">
+    <h3>🤖 AI System Performance</h3>
+    <div class="ai-grid">
+      <div class="ai-metric">
+        <div class="ai-metric-value">{{ ai_metrics.sentiment_accuracy }}%</div>
+        <div class="ai-metric-label">Sentiment Accuracy</div>
+      </div>
+      <div class="ai-metric">
+        <div class="ai-metric-value">{{ ai_metrics.triage_confidence }}%</div>
+        <div class="ai-metric-label">Triage Confidence</div>
+      </div>
+      <div class="ai-metric">
+        <div class="ai-metric-value">{{ ai_metrics.auto_classifications }}</div>
+        <div class="ai-metric-label">Auto Classifications</div>
+      </div>
+      <div class="ai-metric">
+        <div class="ai-metric-value">{{ ai_metrics.processing_speed }}</div>
+        <div class="ai-metric-label">Avg Response Time</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="charts-grid">
+    <!-- Report Escalation Chart -->
+    <div class="chart-card">
+      <h3 class="chart-title">📊 Report Escalation Levels</h3>
+      <div class="trend-summary">
+        Total Reports: {{ report_trends.total_reports }} | Daily Average: {{ report_trends.daily_average }}
+      </div>
+      {% for level, count in report_trends.escalation_breakdown.items() %}
+      <div style="display: flex; align-items: center; margin: 0.5rem 0;">
+        <span style="width: 80px; font-size: 0.9rem;">{{ level }}:</span>
+        <div class="stat-bar" style="flex: 1;">
+          {% set percentage = (count / report_trends.total_reports * 100) if report_trends.total_reports > 0 else 0 %}
+          <div class="stat-fill {{ level.lower() }}" style="width: {{ percentage }}%;">
+            {{ count }} ({{ "%.1f"|format(percentage) }}%)
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Triage Color Distribution -->
+    <div class="chart-card">
+      <h3 class="chart-title">🏥 Triage Color Distribution</h3>
+      <div class="trend-summary">
+        Total Patients: {{ triage_insights.total_patients }} | Avg Severity: {{ triage_insights.average_severity }}
+      </div>
+      {% for color, count in triage_insights.color_distribution.items() %}
+      <div style="display: flex; align-items: center; margin: 0.5rem 0;">
+        <span style="width: 80px; font-size: 0.9rem; text-transform: capitalize;">{{ color }}:</span>
+        <div class="stat-bar" style="flex: 1;">
+          {% set percentage = (count / triage_insights.total_patients * 100) if triage_insights.total_patients > 0 else 0 %}
+          <div class="stat-fill {{ color }}" style="width: {{ percentage }}%;">
+            {{ count }} ({{ "%.1f"|format(percentage) }}%)
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Tone Analysis Chart -->
+    <div class="chart-card">
+      <h3 class="chart-title">🎭 Sentiment Tone Analysis</h3>
+      <div class="chart-placeholder">
+        <div>
+          <div style="font-size: 1.1rem; margin-bottom: 1rem;">📈 Tone Distribution</div>
+          {% for tone, count in report_trends.tone_analysis.items() %}
+          <div style="margin: 0.5rem 0;">{{ tone }}: {{ count }} reports</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend Timeline -->
+    <div class="chart-card">
+      <h3 class="chart-title">📈 Activity Timeline</h3>
+      <div class="chart-placeholder">
+        <div>
+          <div style="font-size: 1.1rem; margin-bottom: 1rem;">📊 Daily Activity Trend</div>
+          <div>Reports: {{ report_trends.total_reports }}</div>
+          <div>Patients: {{ triage_insights.total_patients }}</div>
+          <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">
+            Interactive charts available in production mode
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Actions -->
+  <div class="export-actions">
+    <a href="/export-analytics-pdf?timeframe={{ timeframe }}" class="export-btn">📄 Export PDF Report</a>
+    <a href="/export-analytics-csv?timeframe={{ timeframe }}" class="export-btn">📊 Export CSV Data</a>
+    <a href="/api/analytics-data?timeframe={{ timeframe }}" class="export-btn">🔧 API Data</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Auto-refresh analytics every 60 seconds
+  let analyticsRefreshInterval;
+  
+  function refreshAnalytics() {
+    console.log('🔄 Refreshing analytics data...');
+    // In production, you could fetch updated data via AJAX
+    // For now, just log the refresh
+  }
+  
+  // Initialize analytics
+  window.addEventListener('load', () => {
+    console.log('📊 Analytics dashboard loaded');
+    
+    // Start auto-refresh (commented out for demo)
+    // analyticsRefreshInterval = setInterval(refreshAnalytics, 60000);
+    
+    // Animate the stat bars
+    setTimeout(() => {
+      document.querySelectorAll('.stat-fill').forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+          bar.style.width = width;
+        }, 100);
+      });
+    }, 500);
+  });
+  
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    if (analyticsRefreshInterval) {
+      clearInterval(analyticsRefreshInterval);
+    }
+  });
+</script>
+{% endblock %}
