@@ -1,4 +1,4 @@
-<!-- templates/crowd_reports.html -->
+<!-- Enhanced templates/crowd_reports.html -->
 {% extends "base.html" %}
 
 {% block title %}Crowd Reports Viewer - Disaster Response Assistant{% endblock %}
@@ -13,60 +13,6 @@
 
 {% block extra_styles %}
 <style>
-  .crowd-report-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-  
-  .crowd-report-table th,
-  .crowd-report-table td {
-    border: 1px solid #e5e7eb;
-    padding: 0.75rem;
-    text-align: left;
-    vertical-align: top;
-  }
-  
-  .crowd-report-table th {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    font-weight: bold;
-    font-size: 0.9rem;
-  }
-  
-  .crowd-report-table tbody tr:nth-child(even) {
-    background-color: #f9fafb;
-  }
-  
-  .crowd-report-table tbody tr:hover {
-    background-color: #f3f4f6;
-  }
-  
-  .priority-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: white;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-  
-  .priority-critical { 
-    background: #dc2626; 
-    animation: pulse 2s infinite;
-  }
-  .priority-urgent { background: #f59e0b; }
-  .priority-medium { background: #3b82f6; }
-  .priority-low { background: #10b981; }
-  
   .report-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -80,6 +26,7 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border-left: 4px solid #3b82f6;
+    text-align: center;
   }
   
   .stat-number {
@@ -94,77 +41,6 @@
     font-size: 0.875rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-  }
-  
-  .message-preview {
-    max-width: 300px;
-    word-wrap: break-word;
-    line-height: 1.4;
-  }
-  
-  .media-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    background: #f3f4f6;
-    border-radius: 4px;
-    text-decoration: none;
-    color: #374151;
-    font-size: 0.8rem;
-    transition: background-color 0.2s;
-  }
-  
-  .media-link:hover {
-    background: #e5e7eb;
-  }
-  
-  .audio-player {
-    width: 120px;
-    height: 30px;
-  }
-  
-  .timestamp {
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-    color: #6b7280;
-  }
-  
-  .user-badge {
-    background: #e0e7ff;
-    color: #3730a3;
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-  
-  .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: #6b7280;
-  }
-  
-  .empty-state-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-  }
-  
-  .refresh-button {
-    background: #16a34a;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.2s;
-    margin-left: 1rem;
-  }
-  
-  .refresh-button:hover {
-    background: #15803d;
   }
   
   .filters {
@@ -186,24 +62,208 @@
     font-size: 0.9rem;
   }
   
-  @media (max-width: 768px) {
-    .crowd-report-table {
-      font-size: 0.8rem;
+  .filter-button {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+  }
+  
+  .filter-button:hover {
+    background: #15803d;
+  }
+  
+  .filter-button.secondary {
+    background: #6b7280;
+  }
+  
+  .filter-button.secondary:hover {
+    background: #4b5563;
+  }
+  
+  .reports-grid {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .report-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  
+  .report-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .report-card.critical {
+    border-left-color: #dc2626;
+    background: linear-gradient(135deg, #fff 0%, #fef2f2 100%);
+  }
+  
+  .report-card.high {
+    border-left-color: #ea580c;
+    background: linear-gradient(135deg, #fff 0%, #fff7ed 100%);
+  }
+  
+  .report-card.moderate {
+    border-left-color: #ca8a04;
+    background: linear-gradient(135deg, #fff 0%, #fefce8 100%);
+  }
+  
+  .report-card.low {
+    border-left-color: #16a34a;
+    background: linear-gradient(135deg, #fff 0%, #f0fdf4 100%);
+  }
+  
+  .report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  
+  .escalation-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .escalation-badge.critical {
+    background: #fecaca;
+    color: #991b1b;
+  }
+  
+  .escalation-badge.high {
+    background: #fed7aa;
+    color: #9a3412;
+  }
+  
+  .escalation-badge.moderate {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .escalation-badge.low {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  
+  .tone-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    background: #f3f4f6;
+    color: #374151;
+    margin-left: 0.5rem;
+  }
+  
+  .report-message {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #374151;
+    margin-bottom: 1rem;
+  }
+  
+  .report-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #6b7280;
+    border-top: 1px solid #f3f4f6;
+    padding-top: 1rem;
+  }
+  
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .timestamp-info {
+    text-align: right;
+  }
+  
+  .location-info {
+    color: #3b82f6;
+    font-weight: 500;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6b7280;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+    animation: bounce 2s infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
     }
-    
-    .crowd-report-table th,
-    .crowd-report-table td {
-      padding: 0.5rem;
+    40% {
+      transform: translateY(-10px);
     }
-    
-    .message-preview {
-      max-width: 200px;
+    60% {
+      transform: translateY(-5px);
     }
+  }
+  
+  .export-section {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .export-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .last-updated {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    color: #0c4a6e;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    text-align: center;
   }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Last Updated -->
+<div class="last-updated">
+  📡 Last Updated: {{ current_time.strftime("%B %d, %Y at %H:%M:%S") }} | Auto-refresh every 30 seconds
+</div>
+
 <!-- Statistics Cards -->
 <div class="report-stats">
   <div class="stat-card">
@@ -211,16 +271,16 @@
     <div class="stat-label">Total Reports</div>
   </div>
   <div class="stat-card">
-    <div class="stat-number">{{ reports|selectattr('priority', 'equalto', 'critical')|list|length }}</div>
+    <div class="stat-number">{{ reports|selectattr('escalation', 'equalto', 'Critical')|list|length }}</div>
     <div class="stat-label">Critical Alerts</div>
   </div>
   <div class="stat-card">
-    <div class="stat-number">{{ reports|selectattr('image_path')|list|length }}</div>
-    <div class="stat-label">With Images</div>
+    <div class="stat-number">{{ reports|selectattr('latitude')|list|length }}</div>
+    <div class="stat-label">With Location</div>
   </div>
   <div class="stat-card">
-    <div class="stat-number">{{ reports|selectattr('audio_path')|list|length }}</div>
-    <div class="stat-label">With Audio</div>
+    <div class="stat-number">{{ reports|map(attribute='user')|select|reject('equalto', 'Anonymous')|list|length }}</div>
+    <div class="stat-label">Named Users</div>
   </div>
 </div>
 
@@ -229,107 +289,101 @@
   <label for="tone">Tone:</label>
   <select name="tone" id="tone" class="filter-select">
     <option value="">All Tones</option>
-    <option value="Calm" {% if tone == 'Calm' %}selected{% endif %}>Calm</option>
     <option value="Urgent" {% if tone == 'Urgent' %}selected{% endif %}>Urgent</option>
-    <option value="Panic" {% if tone == 'Panic' %}selected{% endif %}>Panic</option>
+    <option value="Frantic" {% if tone == 'Frantic' %}selected{% endif %}>Frantic</option>
+    <option value="Helpless" {% if tone == 'Helpless' %}selected{% endif %}>Helpless</option>
+    <option value="Descriptive" {% if tone == 'Descriptive' %}selected{% endif %}>Descriptive</option>
   </select>
 
   <label for="escalation">Escalation:</label>
   <select name="escalation" id="escalation" class="filter-select">
     <option value="">All Levels</option>
-    <option value="Low" {% if escalation == 'Low' %}selected{% endif %}>Low</option>
-    <option value="Medium" {% if escalation == 'Medium' %}selected{% endif %}>Medium</option>
+    <option value="Critical" {% if escalation == 'Critical' %}selected{% endif %}>Critical</option>
     <option value="High" {% if escalation == 'High' %}selected{% endif %}>High</option>
+    <option value="Moderate" {% if escalation == 'Moderate' %}selected{% endif %}>Moderate</option>
+    <option value="Low" {% if escalation == 'Low' %}selected{% endif %}>Low</option>
   </select>
 
   <input type="text" name="keyword" placeholder="Search messages..." value="{{ keyword or '' }}" class="filter-select" />
 
-  <button type="submit" class="refresh-button">🔍 Filter</button>
-  <a href="/crowd-reports" class="refresh-button" style="background:#6b7280">♻️ Reset</a>
+  <button type="submit" class="filter-button">🔍 Filter</button>
+  <a href="/crowd-reports" class="filter-button secondary">♻️ Reset</a>
 </form>
 
-<form method="post" action="/export-reports/pdf" target="_blank" style="margin-top: 0.5rem;">
-  <input type="hidden" name="tone" value="{{ tone or '' }}">
-  <input type="hidden" name="escalation" value="{{ escalation or '' }}">
-  <input type="hidden" name="keyword" value="{{ keyword or '' }}">
-  <button type="submit" class="refresh-button" style="background: #1e3a8a;">
-    📄 Export as PDF
-  </button>
-</form>
-
-<div class="export-buttons" style="margin-top: 0.5rem;">
-  <a href="/export-reports.csv?tone={{ tone }}&escalation={{ escalation }}&keyword={{ keyword }}" class="refresh-button" style="background: #6d28d9;">
-    📤 Export CSV
-  </a>
-  <a href="/export-reports.json?tone={{ tone }}&escalation={{ escalation }}&keyword={{ keyword }}" class="refresh-button" style="background: #334155;">
-    🧾 Export JSON
-  </a>
+<!-- Export Section -->
+<div class="export-section">
+  <h3 style="margin: 0 0 1rem 0; color: #374151;">📦 Export Options</h3>
+  <div class="export-buttons">
+    <form method="post" action="/export-reports/pdf" target="_blank" style="display: inline;">
+      <input type="hidden" name="tone" value="{{ tone or '' }}">
+      <input type="hidden" name="escalation" value="{{ escalation or '' }}">
+      <input type="hidden" name="keyword" value="{{ keyword or '' }}">
+      <button type="submit" class="filter-button" style="background: #1e3a8a;">
+        📄 Export PDF
+      </button>
+    </form>
+    
+    <a href="/export-reports.csv?tone={{ tone }}&escalation={{ escalation }}&keyword={{ keyword }}" class="filter-button" style="background: #6d28d9; text-decoration: none; display: inline-block;">
+      📊 Export CSV
+    </a>
+    
+    <a href="/export-reports.json?tone={{ tone }}&escalation={{ escalation }}&keyword={{ keyword }}" class="filter-button" style="background: #334155; text-decoration: none; display: inline-block;">
+      🔧 Export JSON
+    </a>
+  </div>
 </div>
 
 {% if reports %}
-<div style="overflow-x: auto;">
-  <table class="crowd-report-table" id="reportsTable">
-    <thead>
-      <tr>
-        <th>📄 Message</th>
-        <th>🎯 Priority</th>
-        <th>📆 Timestamp</th>
-        <th>🧑 User</th>
-        <th>🖼️ Image</th>
-        <th>🔊 Audio</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for report in reports %}
-      <tr data-priority="{{ report.priority }}" data-has-image="{{ 'true' if report.image_path else 'false' }}" data-has-audio="{{ 'true' if report.audio_path else 'false' }}">
-        <td>
-          <div class="message-preview">
-            {{ report.message or '—' }}
-          </div>
-        </td>
-        <td>
-          <span class="priority-badge priority-{{ report.priority }}">
-            {% if report.priority == 'critical' %}🚨{% elif report.priority == 'urgent' %}⚠️{% elif report.priority == 'medium' %}📊{% else %}📝{% endif %}
-            {{ report.priority.capitalize() }}
-          </span>
-        </td>
-        <td>
-          <div class="timestamp">
-            {{ report.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
-          </div>
-        </td>
-        <td>
-          <span class="user-badge">
-            👤 {{ report.user or 'Anonymous' }}
-          </span>
-        </td>
-        <td>
-          {% if report.image_path %}
-            <a href="{{ report.image_path }}" target="_blank" class="media-link">
-              🖼️ View Image
-            </a>
-          {% else %}
-            —
-          {% endif %}
-        </td>
-        <td>
-          {% if report.audio_path %}
-            <audio controls src="{{ report.audio_path }}" class="audio-player"></audio>
-          {% else %}
-            —
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="reports-grid">
+  {% for report in reports %}
+  <div class="report-card {{ report.escalation.lower() }}" onclick="toggleReportDetails({{ report.id }})">
+    <div class="report-header">
+      <div>
+        <span class="escalation-badge {{ report.escalation.lower() }}">
+          {% if report.escalation == 'Critical' %}🚨{% elif report.escalation == 'High' %}⚠️{% elif report.escalation == 'Moderate' %}📊{% else %}📝{% endif %}
+          {{ report.escalation }}
+        </span>
+        {% if report.tone %}
+          <span class="tone-badge">{{ report.tone }}</span>
+        {% endif %}
+      </div>
+      <div style="font-size: 0.8rem; color: #6b7280;">
+        #{{ report.id }}
+      </div>
+    </div>
+    
+    <div class="report-message">
+      {{ report.message or 'No message provided' }}
+    </div>
+    
+    <div class="report-meta">
+      <div class="user-info">
+        <span>👤 {{ report.user or 'Anonymous' }}</span>
+        {% if report.location %}
+          <span class="location-info">📍 {{ report.location }}</span>
+        {% endif %}
+      </div>
+      <div class="timestamp-info">
+        {% if report.timestamp %}
+          <div>{{ report.timestamp[:10] }}</div>
+          <div>{{ report.timestamp[11:19] }}</div>
+        {% else %}
+          <div>Unknown time</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 {% else %}
 <div class="empty-state">
   <div class="empty-state-icon">📭</div>
-  <h3>No Reports Yet</h3>
-  <p>When community members submit emergency reports, they'll appear here.</p>
-  <a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+  <h3>No Reports Found</h3>
+  <p>No crowd reports match your current filters.</p>
+  <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+    Try adjusting your filters or <a href="/crowd-reports" style="color: #3b82f6;">reset to see all reports</a>
+  </p>
+  <a href="/submit-crowd-report" style="display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background-color: #16a34a; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 500;">
     📝 Submit First Report
   </a>
 </div>
@@ -338,89 +392,49 @@
 
 {% block scripts %}
 <script>
-// Real-time filtering functionality
-document.addEventListener('DOMContentLoaded', function() {
-  const priorityFilter = document.getElementById('priorityFilter');
-  const mediaFilter = document.getElementById('mediaFilter');
-  const table = document.getElementById('reportsTable');
-  
-  function filterReports() {
-    const selectedPriority = priorityFilter.value;
-    const selectedMedia = mediaFilter.value;
-    const rows = table ? table.querySelectorAll('tbody tr') : [];
-    
-    rows.forEach(row => {
-      const priority = row.dataset.priority;
-      const hasImage = row.dataset.hasImage === 'true';
-      const hasAudio = row.dataset.hasAudio === 'true';
-      
-      let showRow = true;
-      
-      // Priority filter
-      if (selectedPriority && priority !== selectedPriority) {
-        showRow = false;
-      }
-      
-      // Media filter
-      if (selectedMedia) {
-        switch (selectedMedia) {
-          case 'image':
-            if (!hasImage) showRow = false;
-            break;
-          case 'audio':
-            if (!hasAudio) showRow = false;
-            break;
-          case 'media':
-            if (!hasImage && !hasAudio) showRow = false;
-            break;
-        }
-      }
-      
-      row.style.display = showRow ? '' : 'none';
-    });
-  }
-  
-  if (priorityFilter) priorityFilter.addEventListener('change', filterReports);
-  if (mediaFilter) mediaFilter.addEventListener('change', filterReports);
-  
-  // Auto-refresh every 30 seconds
-  setInterval(() => {
-    if (navigator.onLine) {
-      location.reload();
+// Report interaction
+function toggleReportDetails(reportId) {
+  // Future enhancement: show modal with full details
+  console.log('Report clicked:', reportId);
+}
+
+// Auto-refresh functionality
+let refreshInterval;
+
+function startAutoRefresh() {
+  refreshInterval = setInterval(() => {
+    if (navigator.onLine && !document.hidden) {
+      console.log('🔄 Auto-refreshing reports...');
+      window.location.reload();
     }
   }, 30000);
-});
-
-// Print functionality
-function printReports() {
-  window.print();
 }
 
-// Export functionality (if needed)
-function exportReports() {
-  const reports = Array.from(document.querySelectorAll('#reportsTable tbody tr')).map(row => {
-    const cells = row.querySelectorAll('td');
-    return {
-      message: cells[0].textContent.trim(),
-      priority: cells[1].textContent.trim(),
-      timestamp: cells[2].textContent.trim(),
-      user: cells[3].textContent.trim(),
-      hasImage: cells[4].textContent.trim() !== '—',
-      hasAudio: cells[5].textContent.trim() !== '—'
-    };
+function stopAutoRefresh() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  startAutoRefresh();
+  
+  // Pause refresh when page is hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopAutoRefresh();
+    } else {
+      startAutoRefresh();
+    }
   });
   
-  const dataStr = JSON.stringify(reports, null, 2);
-  const dataBlob = new Blob([dataStr], {type: 'application/json'});
-  const url = URL.createObjectURL(dataBlob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `crowd-reports-${new Date().toISOString().split('T')[0]}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
+  console.log('📋 Crowd Reports Viewer loaded with auto-refresh');
+});
+
+// Cleanup
+window.addEventListener('beforeunload', stopAutoRefresh);
 </script>
 {% endblock %}
 
-<!-- No AI status needed for this page -->
 {% block ai_status %}{% endblock %}

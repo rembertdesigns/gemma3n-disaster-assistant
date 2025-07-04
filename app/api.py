@@ -537,6 +537,8 @@ async def submit_crowd_report_form(request: Request):
 async def map_reports_page(request: Request):
     return templates.TemplateResponse("map_reports.html", {"request": request})
 
+# Replace your existing /crowd-reports route with this updated version
+
 @app.get("/crowd-reports", response_class=HTMLResponse)
 async def view_crowd_reports(
     request: Request,
@@ -545,25 +547,42 @@ async def view_crowd_reports(
     keyword: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Alternative crowd reports view"""
-    query = db.query(CrowdReport)
+    """Alternative crowd reports view with enhanced data"""
+    try:
+        query = db.query(CrowdReport)
 
-    if tone:
-        query = query.filter(CrowdReport.tone == tone)
-    if escalation:
-        query = query.filter(CrowdReport.escalation == escalation)
-    if keyword:
-        query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+        if tone:
+            query = query.filter(CrowdReport.tone == tone)
+        if escalation:
+            query = query.filter(CrowdReport.escalation == escalation)
+        if keyword:
+            query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
 
-    reports = query.order_by(CrowdReport.timestamp.desc()).all()
+        reports = query.order_by(CrowdReport.timestamp.desc()).all()
+        
+        logger.info(f"📋 Crowd reports loaded: {len(reports)} reports found")
 
-    return templates.TemplateResponse("crowd_reports.html", {
-        "request": request,
-        "reports": reports,
-        "tone": tone,
-        "escalation": escalation,
-        "keyword": keyword
-    })
+        return templates.TemplateResponse("crowd_reports.html", {
+            "request": request,
+            "reports": reports,
+            "tone": tone,
+            "escalation": escalation,
+            "keyword": keyword,
+            "current_time": datetime.utcnow()  # ✅ Added this line
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading crowd reports: {str(e)}")
+        # Return with empty data and current_time
+        return templates.TemplateResponse("crowd_reports.html", {
+            "request": request,
+            "reports": [],
+            "tone": tone,
+            "escalation": escalation,
+            "keyword": keyword,
+            "current_time": datetime.utcnow(),  # ✅ Added this line
+            "error": str(e)
+        })
 
 @app.post("/submit-crowd-report")
 async def submit_crowd_report(
