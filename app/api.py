@@ -48,14 +48,6 @@ from app.auth import (
     get_current_user,
     require_role
 )
-from app.db import (
-    get_db_connection,
-    save_report_metadata,
-    get_all_reports,
-    get_report_by_id,
-    get_dashboard_stats, 
-    run_migrations
-)
 
 # Map-related tools
 from app.map_utils import (
@@ -67,9 +59,9 @@ from app.map_utils import (
     MapConfig
 )
 
-# 🆕 Database session and models for crowd report queue
-from app.database import get_db  # Your SQLAlchemy session
-from app.models import CrowdReport, TriagePatient
+# 🆕 Database session and models - SQLAlchemy ONLY
+from app.database import get_db, engine
+from app.models import CrowdReport, TriagePatient, Base
 
 # ================================
 # CONFIGURATION & SETUP
@@ -96,12 +88,41 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # ✅ Setup Jinja templates
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-# Global storage and directories
-crowd_reports = []  # In-memory store; consider replacing with DB later
+# Global directories
 UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# ================================
+# UTILITY FUNCTIONS
+# ================================
+
+def get_time_ago(timestamp_str):
+    """Calculate human-readable time ago from timestamp string"""
+    try:
+        if isinstance(timestamp_str, str):
+            if timestamp_str.endswith('Z'):
+                timestamp_str = timestamp_str.replace('Z', '+00:00')
+            timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        else:
+            timestamp = timestamp_str
+            
+        now = datetime.utcnow()
+        diff = now - timestamp.replace(tzinfo=None)
+        
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        else:
+            return "Just now"
+    except Exception:
+        return "Unknown"
 
 # ================================
 # AUTHENTICATION ROUTES
@@ -148,14 +169,49 @@ async def offline_page(request: Request):
 async def submit_report_page(request: Request):
     return templates.TemplateResponse("submit-report.html", {"request": request})
 
+# ================================
+# CROWD REPORTS ROUTES - SQLAlchemy Only
+# ================================
+
 @app.get("/view-reports", response_class=HTMLResponse)
-async def view_reports(request: Request):
-    conn = get_db_connection()
-    reports = get_all_reports(conn)
-    return templates.TemplateResponse("view-reports.html", {
-        "request": request,
-        "reports": reports
-    })
+async def view_reports(
+    request: Request,
+    tone: Optional[str] = Query(None),
+    escalation: Optional[str] = Query(None),
+    keyword: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """View crowd reports using SQLAlchemy"""
+    try:
+        query = db.query(CrowdReport)
+        
+        # Apply filters
+        if tone:
+            query = query.filter(CrowdReport.tone == tone)
+        if escalation:
+            query = query.filter(CrowdReport.escalation == escalation)
+        if keyword:
+            query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+        
+        reports = query.order_by(CrowdReport.timestamp.desc()).all()
+        
+        logger.info(f"📋 Loaded {len(reports)} crowd reports")
+        
+        return templates.TemplateResponse("view-reports.html", {
+            "request": request,
+            "reports": reports,
+            "tone": tone,
+            "escalation": escalation,
+            "keyword": keyword
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading reports: {str(e)}")
+        return templates.TemplateResponse("view-reports.html", {
+            "request": request,
+            "reports": [],
+            "error": str(e)
+        })
 
 @app.get("/submit-crowd-report", response_class=HTMLResponse)
 async def submit_crowd_report_form(request: Request):
@@ -173,6 +229,7 @@ async def view_crowd_reports(
     keyword: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    """Alternative crowd reports view"""
     query = db.query(CrowdReport)
 
     if tone:
@@ -192,8 +249,64 @@ async def view_crowd_reports(
         "keyword": keyword
     })
 
+@app.post("/submit-crowd-report")
+async def submit_crowd_report(
+    request: Request,
+    message: str = Form(...),
+    tone: Optional[str] = Form(None),
+    escalation: str = Form(...),
+    user: Optional[str] = Form("Anonymous"),
+    location: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Submit crowd report using SQLAlchemy"""
+    try:
+        # Log coordinates if provided
+        if latitude and longitude:
+            logger.info(f"📍 Received crowd report from location: {latitude}, {longitude}")
+
+        # Analyze sentiment if not provided
+        if not tone:
+            tone = analyze_sentiment(message)
+
+        # Handle image upload
+        image_path = None
+        if image and image.filename:
+            ext = os.path.splitext(image.filename)[1]
+            image_path = os.path.join("uploads", f"crowd_{uuid.uuid4().hex}{ext}")
+            with open(image_path, "wb") as f:
+                f.write(await image.read())
+
+        # Create new crowd report using SQLAlchemy
+        new_report = CrowdReport(
+            message=message,
+            tone=tone,
+            escalation=escalation,
+            user=user,
+            location=location,
+            timestamp=datetime.utcnow().isoformat(),
+            latitude=latitude,
+            longitude=longitude
+        )
+        
+        db.add(new_report)
+        db.commit()
+        db.refresh(new_report)
+        
+        logger.info(f"✅ Crowd report saved: ID={new_report.id}, escalation={new_report.escalation}")
+        
+        return RedirectResponse(url="/view-reports", status_code=303)
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to insert crowd report: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error saving report")
+
 # ================================
-# TRIAGE & PATIENT MANAGEMENT ROUTES
+# TRIAGE & PATIENT MANAGEMENT ROUTES - SQLAlchemy Only
 # ================================
 
 @app.get("/triage", response_class=HTMLResponse)
@@ -201,181 +314,34 @@ async def triage_form_page(request: Request):
     return templates.TemplateResponse("triage_form.html", {"request": request})
 
 @app.get("/patients", response_class=HTMLResponse)
-async def get_patient_tracker(request: Request, severity: Optional[str] = None, status: Optional[str] = None):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    query = "SELECT * FROM triage_patients WHERE 1=1"
-    params = []
-
-    if severity:
-        query += " AND severity = ?"
-        params.append(severity)
-
-    if status:
-        query += " AND status = ?"
-        params.append(status)
-
-    query += " ORDER BY timestamp DESC"
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
-
-    now = datetime.utcnow()
-    return templates.TemplateResponse("patient_tracker.html", {
-        "request": request,
-        "patients": rows,
-        "now": now,
-        "severity_filter": severity,
-        "status_filter": status
-    })
-
-@app.post("/submit-triage")
-async def submit_triage(
-    request: Request,
-    db: Session = Depends(get_db),
-    # Patient Information
-    name: str = Form(...),  # Required
-    age: Optional[int] = Form(None),
-    gender: Optional[str] = Form(None),
-    medical_id: Optional[str] = Form(None),
-    # Medical Assessment
-    injury_type: str = Form(...),  # Required
-    mechanism: Optional[str] = Form(None),
-    consciousness: str = Form(...),  # Required
-    breathing: str = Form(...),  # Required
-    # Vital Signs
-    heart_rate: Optional[int] = Form(None),
-    bp_systolic: Optional[int] = Form(None),
-    bp_diastolic: Optional[int] = Form(None),
-    respiratory_rate: Optional[int] = Form(None),
-    temperature: Optional[float] = Form(None),
-    oxygen_sat: Optional[int] = Form(None),
-    # Assessment
-    severity: str = Form(...),  # Required
-    triage_color: str = Form(...),  # Required
-    # Additional Information
-    allergies: Optional[str] = Form(None),
-    medications: Optional[str] = Form(None),
-    medical_history: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
-    # Timestamp from form
-    assessment_timestamp: Optional[str] = Form(None)
+async def get_patient_tracker(
+    request: Request, 
+    severity: Optional[str] = None, 
+    status: Optional[str] = None,
+    db: Session = Depends(get_db)
 ):
-    """
-    Submit a new triage assessment and save to database
-    """
+    """Patient tracker using SQLAlchemy"""
     try:
-        logger.info(f"🚑 Receiving triage submission for patient: {name}")
+        query = db.query(TriagePatient)
         
-        # Validate required fields
-        if not name or not name.strip():
-            raise HTTPException(status_code=400, detail="Patient name is required")
-        if not injury_type or not injury_type.strip():
-            raise HTTPException(status_code=400, detail="Injury type is required")
-        if consciousness not in ["alert", "verbal", "pain", "unresponsive"]:
-            raise HTTPException(status_code=400, detail="Invalid consciousness level")
-        if breathing not in ["normal", "labored", "shallow", "absent"]:
-            raise HTTPException(status_code=400, detail="Invalid breathing status")
-        if severity not in ["mild", "moderate", "severe", "critical"]:
-            raise HTTPException(status_code=400, detail="Invalid severity level")
-        if triage_color not in ["red", "yellow", "green", "black"]:
-            raise HTTPException(status_code=400, detail="Invalid triage color")
+        if severity:
+            query = query.filter(TriagePatient.severity == severity)
+        if status:
+            query = query.filter(TriagePatient.status == status)
         
-        # Validate vital signs ranges (if provided)
-        if heart_rate is not None and (heart_rate < 0 or heart_rate > 300):
-            raise HTTPException(status_code=400, detail="Invalid heart rate")
-        if bp_systolic is not None and (bp_systolic < 0 or bp_systolic > 300):
-            raise HTTPException(status_code=400, detail="Invalid systolic blood pressure")
-        if bp_diastolic is not None and (bp_diastolic < 0 or bp_diastolic > 200):
-            raise HTTPException(status_code=400, detail="Invalid diastolic blood pressure")
-        if respiratory_rate is not None and (respiratory_rate < 0 or respiratory_rate > 100):
-            raise HTTPException(status_code=400, detail="Invalid respiratory rate")
-        if temperature is not None and (temperature < 80 or temperature > 115):
-            raise HTTPException(status_code=400, detail="Invalid temperature")
-        if oxygen_sat is not None and (oxygen_sat < 0 or oxygen_sat > 100):
-            raise HTTPException(status_code=400, detail="Invalid oxygen saturation")
-        if age is not None and (age < 0 or age > 120):
-            raise HTTPException(status_code=400, detail="Invalid age")
+        patients = query.order_by(TriagePatient.created_at.desc()).all()
         
-        # Create new triage patient record
-        new_patient = TriagePatient(
-            # Patient Information
-            name=name.strip(),
-            age=age,
-            gender=gender,
-            medical_id=medical_id,
-            # Medical Assessment
-            injury_type=injury_type.strip(),
-            mechanism=mechanism,
-            consciousness=consciousness,
-            breathing=breathing,
-            # Vital Signs
-            heart_rate=heart_rate,
-            bp_systolic=bp_systolic,
-            bp_diastolic=bp_diastolic,
-            respiratory_rate=respiratory_rate,
-            temperature=temperature,
-            oxygen_sat=oxygen_sat,
-            # Assessment
-            severity=severity,
-            triage_color=triage_color,
-            # Additional Information
-            allergies=allergies,
-            medications=medications,
-            medical_history=medical_history,
-            notes=notes,
-            # System fields
-            status="active",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
+        return templates.TemplateResponse("patient_tracker.html", {
+            "request": request,
+            "patients": patients,
+            "now": datetime.utcnow(),
+            "severity_filter": severity,
+            "status_filter": status
+        })
         
-        # Save to database
-        db.add(new_patient)
-        db.commit()
-        db.refresh(new_patient)
-        
-        logger.info(f"✅ Triage patient saved: ID={new_patient.id}, Name={new_patient.name}, Color={new_patient.triage_color}")
-        
-        # Log critical cases for immediate attention
-        if triage_color == "red" or severity == "critical":
-            logger.warning(f"🚨 CRITICAL PATIENT ALERT: {name} - {triage_color.upper()} triage, {severity} severity")
-        
-        # Return success response
-        return JSONResponse(
-            status_code=200,
-            content={
-                "success": True,
-                "message": f"Triage assessment submitted successfully for {name}",
-                "patient_id": new_patient.id,
-                "triage_color": new_patient.triage_color,
-                "severity": new_patient.severity,
-                "priority_score": new_patient.priority_score,
-                "critical_vitals": new_patient.is_critical_vitals,
-                "timestamp": new_patient.created_at.isoformat()
-            }
-        )
-        
-    except HTTPException:
-        # Re-raise HTTP exceptions (validation errors)
-        raise
     except Exception as e:
-        logger.error(f"❌ Error saving triage patient: {str(e)}")
-        db.rollback()
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Failed to save triage assessment: {str(e)}"
-        )
-
-@app.post("/patients/{patient_id}/discharge")
-async def discharge_patient(patient_id: int):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE triage_patients SET status = 'Discharged' WHERE id = ?", (patient_id,))
-    conn.commit()
-    conn.close()
-    return RedirectResponse(url="/patients", status_code=303)
+        logger.error(f"❌ Error loading patient tracker: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load patients: {str(e)}")
 
 @app.get("/patient-list", response_class=HTMLResponse)
 async def patient_list_page(
@@ -385,11 +351,8 @@ async def patient_list_page(
     severity: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """
-    Enhanced patient list dashboard using SQLAlchemy
-    """
+    """Enhanced patient list dashboard using SQLAlchemy"""
     try:
-        # Query triage patients with filters
         query = db.query(TriagePatient)
         
         # Apply filters
@@ -400,13 +363,9 @@ async def patient_list_page(
         if severity:
             query = query.filter(TriagePatient.severity == severity)
         
-        # Order by priority (red first, then by creation time)
-        patients = query.order_by(
-            TriagePatient.triage_color.desc(),  # This will need custom ordering
-            TriagePatient.created_at.desc()
-        ).all()
+        patients = query.order_by(TriagePatient.created_at.desc()).all()
         
-        # Custom sort by priority score (red=1, yellow=2, green=3, black=4)
+        # Custom sort by priority score
         patients = sorted(patients, key=lambda p: (p.priority_score, -p.id))
         
         # Calculate statistics
@@ -414,7 +373,6 @@ async def patient_list_page(
         active_patients = len([p for p in patients if p.status == "active"])
         critical_patients = len([p for p in patients if p.triage_color == "red"])
         
-        # Count by triage color
         color_counts = {
             "red": len([p for p in patients if p.triage_color == "red"]),
             "yellow": len([p for p in patients if p.triage_color == "yellow"]),
@@ -422,7 +380,6 @@ async def patient_list_page(
             "black": len([p for p in patients if p.triage_color == "black"])
         }
         
-        # Count by status
         status_counts = {
             "active": len([p for p in patients if p.status == "active"]),
             "in_treatment": len([p for p in patients if p.status == "in_treatment"]),
@@ -430,7 +387,7 @@ async def patient_list_page(
             "discharged": len([p for p in patients if p.status == "discharged"])
         }
         
-        logger.info(f"📋 Patient list accessed: {total_patients} total, {active_patients} active, {critical_patients} critical")
+        logger.info(f"📋 Patient list accessed: {total_patients} total, {active_patients} active")
         
         return templates.TemplateResponse("patient_list.html", {
             "request": request,
@@ -456,15 +413,11 @@ async def triage_dashboard_page(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    """
-    Comprehensive triage dashboard with real-time statistics
-    """
+    """Comprehensive triage dashboard with real-time statistics"""
     try:
-        # Get all active patients
         all_patients = db.query(TriagePatient).all()
         active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").all()
         
-        # Calculate comprehensive statistics
         stats = {
             "total_patients": len(all_patients),
             "active_patients": len(active_patients),
@@ -478,24 +431,11 @@ async def triage_dashboard_page(
             ])
         }
         
-        # Triage color breakdown
         triage_breakdown = {
-            "red": {
-                "count": len([p for p in active_patients if p.triage_color == "red"]),
-                "percentage": 0
-            },
-            "yellow": {
-                "count": len([p for p in active_patients if p.triage_color == "yellow"]),
-                "percentage": 0
-            },
-            "green": {
-                "count": len([p for p in active_patients if p.triage_color == "green"]),
-                "percentage": 0
-            },
-            "black": {
-                "count": len([p for p in active_patients if p.triage_color == "black"]),
-                "percentage": 0
-            }
+            "red": {"count": len([p for p in active_patients if p.triage_color == "red"]), "percentage": 0},
+            "yellow": {"count": len([p for p in active_patients if p.triage_color == "yellow"]), "percentage": 0},
+            "green": {"count": len([p for p in active_patients if p.triage_color == "green"]), "percentage": 0},
+            "black": {"count": len([p for p in active_patients if p.triage_color == "black"]), "percentage": 0}
         }
         
         # Calculate percentages
@@ -505,7 +445,6 @@ async def triage_dashboard_page(
                     (triage_breakdown[color]["count"] / stats["active_patients"]) * 100, 1
                 )
         
-        # Severity breakdown
         severity_breakdown = {
             "critical": len([p for p in active_patients if p.severity == "critical"]),
             "severe": len([p for p in active_patients if p.severity == "severe"]),
@@ -513,33 +452,15 @@ async def triage_dashboard_page(
             "mild": len([p for p in active_patients if p.severity == "mild"])
         }
         
-        # Critical vitals alerts
         critical_vitals_patients = [p for p in active_patients if p.is_critical_vitals]
         
-        # Recent patients (last 24 hours)
         recent_patients = [
             p for p in all_patients 
-            if (datetime.utcnow() - p.created_at).total_seconds() < 86400  # 24 hours
+            if (datetime.utcnow() - p.created_at).total_seconds() < 86400
         ]
         recent_patients = sorted(recent_patients, key=lambda p: p.created_at, reverse=True)[:10]
         
-        # Priority queue (active patients sorted by priority)
-        priority_queue = sorted(
-            active_patients, 
-            key=lambda p: (p.priority_score, -p.id)
-        )[:15]  # Top 15 priority patients
-        
-        # Hourly activity (last 24 hours)
-        hourly_activity = {}
-        now = datetime.utcnow()
-        for i in range(24):
-            hour_start = now - timedelta(hours=i+1)
-            hour_end = now - timedelta(hours=i)
-            hour_patients = len([
-                p for p in all_patients 
-                if hour_start <= p.created_at < hour_end
-            ])
-            hourly_activity[hour_start.strftime("%H:00")] = hour_patients
+        priority_queue = sorted(active_patients, key=lambda p: (p.priority_score, -p.id))[:15]
         
         logger.info(f"📊 Triage dashboard accessed: {stats['total_patients']} total, {stats['active_patients']} active")
         
@@ -551,7 +472,6 @@ async def triage_dashboard_page(
             "critical_vitals_patients": critical_vitals_patients,
             "recent_patients": recent_patients,
             "priority_queue": priority_queue,
-            "hourly_activity": hourly_activity,
             "current_time": datetime.utcnow()
         })
         
@@ -559,175 +479,364 @@ async def triage_dashboard_page(
         logger.error(f"❌ Error loading triage dashboard: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to load dashboard: {str(e)}")
 
-@app.get("/export-patients-pdf")
-async def export_patients_pdf():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM triage_patients ORDER BY timestamp DESC")
-    patients = cursor.fetchall()
-    conn.close()
-    
-    env = Environment(loader=FileSystemLoader("templates"))
-    template = env.get_template("patient_tracker.html")
-    html_out = template.render(
-        patients=patients, 
-        now=datetime.utcnow(), 
-        severity_filter=None, 
-        status_filter=None
-    )
-    
-    pdf_path = os.path.join("outputs", f"patients_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf")
-    WeasyHTML(string=html_out).write_pdf(pdf_path)
-    
-    return FileResponse(pdf_path, filename="patient_tracker.pdf", media_type="application/pdf")
-
-# ================================
-# CROWD REPORTS API ROUTES
-# ================================
-
-@app.get("/api/reports", response_class=JSONResponse)
-async def filtered_reports(
-    tone: Optional[str] = Query(None),
-    escalation: Optional[str] = Query(None),
-    keyword: Optional[str] = Query(None)
-):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    query = "SELECT * FROM reports WHERE 1=1"
-    params = []
-
-    if tone:
-        query += " AND tone = ?"
-        params.append(tone)
-
-    if escalation:
-        query += " AND escalation = ?"
-        params.append(escalation)
-
-    if keyword:
-        query += " AND message LIKE ?"
-        params.append(f"%{keyword}%")
-
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
-
-    reports = [{
-        "id": row["id"],
-        "message": row["message"],
-        "tone": row["tone"],
-        "escalation": row["escalation"],
-        "timestamp": row["timestamp"],
-        "user": row["user"]
-    } for row in rows]
-
-    return JSONResponse(content={"reports": reports})
-
-@app.post("/api/submit-crowd-report")
-async def submit_crowd_report(
+@app.post("/submit-triage")
+async def submit_triage(
     request: Request,
-    message: str = Form(...),
-    tone: Optional[str] = Form(None),
-    escalation: str = Form(...),
-    user: Optional[str] = Form("Anonymous"),
-    location: Optional[str] = Form(None),
-    image: Optional[UploadFile] = File(None),
-    latitude: Optional[str] = Form(None),
-    longitude: Optional[str] = Form(None)
+    db: Session = Depends(get_db),
+    # Patient Information
+    name: str = Form(...),
+    age: Optional[int] = Form(None),
+    gender: Optional[str] = Form(None),
+    medical_id: Optional[str] = Form(None),
+    # Medical Assessment
+    injury_type: str = Form(...),
+    mechanism: Optional[str] = Form(None),
+    consciousness: str = Form(...),
+    breathing: str = Form(...),
+    # Vital Signs
+    heart_rate: Optional[int] = Form(None),
+    bp_systolic: Optional[int] = Form(None),
+    bp_diastolic: Optional[int] = Form(None),
+    respiratory_rate: Optional[int] = Form(None),
+    temperature: Optional[float] = Form(None),
+    oxygen_sat: Optional[int] = Form(None),
+    # Assessment
+    severity: str = Form(...),
+    triage_color: str = Form(...),
+    # Additional Information
+    allergies: Optional[str] = Form(None),
+    medications: Optional[str] = Form(None),
+    medical_history: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    assessment_timestamp: Optional[str] = Form(None)
 ):
-    # Log lat/lon
-    if latitude and longitude:
-        logger.info(f"📍 Received crowd report from location: {latitude}, {longitude}")
-
-    if not tone:
-        tone = analyze_sentiment(message)
-
-    timestamp = datetime.utcnow().isoformat()
-    image_path = None
-
-    if image and image.filename:
-        ext = os.path.splitext(image.filename)[1]
-        image_path = os.path.join("uploads", f"crowd_{uuid.uuid4().hex}{ext}")
-        with open(image_path, "wb") as f:
-            f.write(await image.read())
-
+    """Submit a new triage assessment and save to database"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO reports (message, tone, escalation, timestamp, user, location, image_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (message, tone, escalation, timestamp, user, location, image_path))
-        conn.commit()
-        conn.close()
+        logger.info(f"🚑 Receiving triage submission for patient: {name}")
+        
+        # Validate required fields
+        if not name or not name.strip():
+            raise HTTPException(status_code=400, detail="Patient name is required")
+        if not injury_type or not injury_type.strip():
+            raise HTTPException(status_code=400, detail="Injury type is required")
+        if consciousness not in ["alert", "verbal", "pain", "unresponsive"]:
+            raise HTTPException(status_code=400, detail="Invalid consciousness level")
+        if breathing not in ["normal", "labored", "shallow", "absent"]:
+            raise HTTPException(status_code=400, detail="Invalid breathing status")
+        if severity not in ["mild", "moderate", "severe", "critical"]:
+            raise HTTPException(status_code=400, detail="Invalid severity level")
+        if triage_color not in ["red", "yellow", "green", "black"]:
+            raise HTTPException(status_code=400, detail="Invalid triage color")
+        
+        # Validate vital signs ranges
+        if heart_rate is not None and (heart_rate < 0 or heart_rate > 300):
+            raise HTTPException(status_code=400, detail="Invalid heart rate")
+        if bp_systolic is not None and (bp_systolic < 0 or bp_systolic > 300):
+            raise HTTPException(status_code=400, detail="Invalid systolic blood pressure")
+        if bp_diastolic is not None and (bp_diastolic < 0 or bp_diastolic > 200):
+            raise HTTPException(status_code=400, detail="Invalid diastolic blood pressure")
+        if respiratory_rate is not None and (respiratory_rate < 0 or respiratory_rate > 100):
+            raise HTTPException(status_code=400, detail="Invalid respiratory rate")
+        if temperature is not None and (temperature < 80 or temperature > 115):
+            raise HTTPException(status_code=400, detail="Invalid temperature")
+        if oxygen_sat is not None and (oxygen_sat < 0 or oxygen_sat > 100):
+            raise HTTPException(status_code=400, detail="Invalid oxygen saturation")
+        if age is not None and (age < 0 or age > 120):
+            raise HTTPException(status_code=400, detail="Invalid age")
+        
+        # Create new triage patient record
+        new_patient = TriagePatient(
+            name=name.strip(),
+            age=age,
+            gender=gender,
+            medical_id=medical_id,
+            injury_type=injury_type.strip(),
+            mechanism=mechanism,
+            consciousness=consciousness,
+            breathing=breathing,
+            heart_rate=heart_rate,
+            bp_systolic=bp_systolic,
+            bp_diastolic=bp_diastolic,
+            respiratory_rate=respiratory_rate,
+            temperature=temperature,
+            oxygen_sat=oxygen_sat,
+            severity=severity,
+            triage_color=triage_color,
+            allergies=allergies,
+            medications=medications,
+            medical_history=medical_history,
+            notes=notes,
+            status="active",
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.add(new_patient)
+        db.commit()
+        db.refresh(new_patient)
+        
+        logger.info(f"✅ Triage patient saved: ID={new_patient.id}, Name={new_patient.name}, Color={new_patient.triage_color}")
+        
+        # Log critical cases
+        if triage_color == "red" or severity == "critical":
+            logger.warning(f"🚨 CRITICAL PATIENT ALERT: {name} - {triage_color.upper()} triage, {severity} severity")
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "message": f"Triage assessment submitted successfully for {name}",
+                "patient_id": new_patient.id,
+                "triage_color": new_patient.triage_color,
+                "severity": new_patient.severity,
+                "priority_score": new_patient.priority_score,
+                "critical_vitals": new_patient.is_critical_vitals,
+                "timestamp": new_patient.created_at.isoformat()
+            }
+        )
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to insert crowd report: {e}")
-        raise HTTPException(status_code=500, detail="Error saving report")
+        logger.error(f"❌ Error saving triage patient: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save triage assessment: {str(e)}")
 
-    return RedirectResponse(url="/view-reports", status_code=303)
+@app.post("/patients/{patient_id}/discharge")
+async def discharge_patient(patient_id: int, db: Session = Depends(get_db)):
+    """Discharge patient using SQLAlchemy"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        patient.status = "discharged"
+        patient.updated_at = datetime.utcnow()
+        db.commit()
+        
+        logger.info(f"✅ Patient discharged: ID={patient_id}, Name={patient.name}")
+        return RedirectResponse(url="/patients", status_code=303)
+        
+    except Exception as e:
+        logger.error(f"❌ Error discharging patient: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to discharge patient")
+
+# ================================
+# CROWD REPORTS API ROUTES - All SQLAlchemy
+# ================================
+
+@app.get("/api/community-stats", response_class=JSONResponse)
+async def get_community_stats(db: Session = Depends(get_db)):
+    """Get community statistics for dashboard widgets"""
+    try:
+        all_reports = db.query(CrowdReport).all()
+        today_reports = [
+            r for r in all_reports 
+            if r.timestamp and datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')).date() == datetime.utcnow().date()
+        ]
+        
+        stats = {
+            "total_reports": len(all_reports),
+            "reports_today": len(today_reports),
+            "critical_reports": len([r for r in all_reports if r.escalation == "Critical"]),
+            "active_locations": len(set([r.location for r in all_reports if r.location])),
+            "escalation_breakdown": {
+                "Critical": len([r for r in all_reports if r.escalation == "Critical"]),
+                "High": len([r for r in all_reports if r.escalation == "High"]),
+                "Moderate": len([r for r in all_reports if r.escalation == "Moderate"]),
+                "Low": len([r for r in all_reports if r.escalation == "Low"])
+            },
+            "tone_breakdown": {
+                "Urgent": len([r for r in all_reports if r.tone == "Urgent"]),
+                "Frantic": len([r for r in all_reports if r.tone == "Frantic"]),
+                "Helpless": len([r for r in all_reports if r.tone == "Helpless"]),
+                "Descriptive": len([r for r in all_reports if r.tone == "Descriptive"])
+            }
+        }
+        
+        logger.info(f"📊 Community stats requested: {stats['total_reports']} total reports")
+        
+        return JSONResponse(content={
+            "success": True,
+            "stats": stats,
+            "generated_at": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting community stats: {str(e)}")
+        return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
+
+@app.get("/api/recent-reports", response_class=JSONResponse)
+async def get_recent_reports(
+    limit: int = Query(5, description="Number of recent reports to return"),
+    db: Session = Depends(get_db)
+):
+    """Get recent crowd reports for widgets and notifications"""
+    try:
+        if limit < 1 or limit > 50:
+            limit = 5
+            
+        recent_reports = db.query(CrowdReport).order_by(
+            CrowdReport.timestamp.desc()
+        ).limit(limit).all()
+        
+        reports_data = []
+        for report in recent_reports:
+            reports_data.append({
+                "id": report.id,
+                "message": report.message,
+                "tone": report.tone,
+                "escalation": report.escalation,
+                "user": report.user or "Anonymous",
+                "location": report.location,
+                "timestamp": report.timestamp,
+                "latitude": report.latitude,
+                "longitude": report.longitude,
+                "time_ago": get_time_ago(report.timestamp) if report.timestamp else "Unknown"
+            })
+        
+        logger.info(f"📋 Recent reports API called: returned {len(reports_data)} reports")
+        
+        return JSONResponse(content={
+            "success": True,
+            "reports": reports_data,
+            "count": len(reports_data),
+            "generated_at": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting recent reports: {str(e)}")
+        return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
+
+@app.get("/api/triage-stats", response_class=JSONResponse)
+async def get_triage_stats(db: Session = Depends(get_db)):
+    """Get triage statistics for dashboard widgets"""
+    try:
+        all_patients = db.query(TriagePatient).all()
+        active_patients = [p for p in all_patients if p.status == "active"]
+        today_patients = [
+            p for p in all_patients 
+            if p.created_at.date() == datetime.utcnow().date()
+        ]
+        
+        stats = {
+            "total_patients": len(all_patients),
+            "active_patients": len(active_patients),
+            "patients_today": len(today_patients),
+            "critical_alerts": len([
+                p for p in active_patients 
+                if p.triage_color == "red" or p.severity == "critical" or p.is_critical_vitals
+            ]),
+            "triage_breakdown": {
+                "red": len([p for p in active_patients if p.triage_color == "red"]),
+                "yellow": len([p for p in active_patients if p.triage_color == "yellow"]),
+                "green": len([p for p in active_patients if p.triage_color == "green"]),
+                "black": len([p for p in active_patients if p.triage_color == "black"])
+            },
+            "severity_breakdown": {
+                "critical": len([p for p in active_patients if p.severity == "critical"]),
+                "severe": len([p for p in active_patients if p.severity == "severe"]),
+                "moderate": len([p for p in active_patients if p.severity == "moderate"]),
+                "mild": len([p for p in active_patients if p.severity == "mild"])
+            },
+            "status_breakdown": {
+                "active": len([p for p in all_patients if p.status == "active"]),
+                "in_treatment": len([p for p in all_patients if p.status == "in_treatment"]),
+                "treated": len([p for p in all_patients if p.status == "treated"]),
+                "discharged": len([p for p in all_patients if p.status == "discharged"])
+            }
+        }
+        
+        logger.info(f"🏥 Triage stats requested: {stats['total_patients']} total patients")
+        
+        return JSONResponse(content={
+            "success": True,
+            "stats": stats,
+            "generated_at": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting triage stats: {str(e)}")
+        return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
+
+@app.get("/api/priority-queue", response_class=JSONResponse)
+async def get_priority_queue(
+    limit: int = Query(10, description="Number of priority patients to return"),
+    db: Session = Depends(get_db)
+):
+    """Get priority patient queue for real-time updates"""
+    try:
+        active_patients = db.query(TriagePatient).filter(
+            TriagePatient.status == "active"
+        ).all()
+        
+        priority_patients = sorted(active_patients, key=lambda p: (p.priority_score, -p.id))[:limit]
+        
+        queue_data = []
+        for patient in priority_patients:
+            queue_data.append({
+                "id": patient.id,
+                "name": patient.name,
+                "injury_type": patient.injury_type,
+                "severity": patient.severity,
+                "triage_color": patient.triage_color,
+                "priority_score": patient.priority_score,
+                "critical_vitals": patient.is_critical_vitals,
+                "created_at": patient.created_at.isoformat(),
+                "time_ago": get_time_ago(patient.created_at.isoformat())
+            })
+        
+        logger.info(f"🚨 Priority queue requested: {len(queue_data)} patients")
+        
+        return JSONResponse(content={
+            "success": True,
+            "queue": queue_data,
+            "count": len(queue_data),
+            "generated_at": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting priority queue: {str(e)}")
+        return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
 
 @app.get("/api/crowd-report-locations", response_class=JSONResponse)
 async def crowd_report_locations(
     tone: Optional[str] = Query(None),
-    escalation: Optional[str] = Query(None)
+    escalation: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
 ):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    query = """
-        SELECT id, message, user, timestamp, tone, escalation, location, latitude, longitude
-        FROM crowd_reports
-        WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-    """
-    params = []
-
-    if tone:
-        query += " AND tone = ?"
-        params.append(tone)
-    if escalation:
-        query += " AND escalation = ?"
-        params.append(escalation)
-
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
-
-    reports = [{
-        "id": row["id"],
-        "message": row["message"],
-        "user": row["user"],
-        "timestamp": row["timestamp"],
-        "tone": row["tone"],
-        "escalation": row["escalation"],
-        "location": row["location"],
-        "latitude": float(row["latitude"]),
-        "longitude": float(row["longitude"]),
-    } for row in rows]
-
-    return JSONResponse(content={"reports": reports})
-
-@app.post("/api/submit-report")
-async def submit_crowd_report_api(payload: dict = Body(...)):
-    message = payload.get("message", "")
-    location = payload.get("location", {})
-    user = payload.get("user", "anonymous")
-
-    sentiment_result = analyze_sentiment(message)
-
-    report = {
-        "id": str(uuid.uuid4()),
-        "message": message,
-        "location": location,
-        "user": user,
-        "timestamp": datetime.now().isoformat(),
-        "sentiment": sentiment_result.get("sentiment"),
-        "tone": sentiment_result.get("tone"),
-        "escalation": sentiment_result.get("escalation"),
-    }
-
-    crowd_reports.append(report)
-    return JSONResponse(content={"success": True, "report": report})
+    """Get crowd reports with GPS coordinates for mapping"""
+    try:
+        query = db.query(CrowdReport).filter(
+            CrowdReport.latitude.isnot(None),
+            CrowdReport.longitude.isnot(None)
+        )
+        
+        if tone:
+            query = query.filter(CrowdReport.tone == tone)
+        if escalation:
+            query = query.filter(CrowdReport.escalation == escalation)
+        
+        reports = query.all()
+        
+        reports_data = [{
+            "id": report.id,
+            "message": report.message,
+            "user": report.user,
+            "timestamp": report.timestamp,
+            "tone": report.tone,
+            "escalation": report.escalation,
+            "location": report.location,
+            "latitude": float(report.latitude),
+            "longitude": float(report.longitude),
+        } for report in reports]
+        
+        return JSONResponse(content={"reports": reports_data})
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting crowd report locations: {str(e)}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.post("/export-reports/pdf")
 async def export_reports_pdf(
@@ -737,44 +846,50 @@ async def export_reports_pdf(
     keyword: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(CrowdReport)
+    """Export filtered reports as PDF"""
+    try:
+        query = db.query(CrowdReport)
 
-    if tone:
-        query = query.filter(CrowdReport.tone == tone)
-    if escalation:
-        query = query.filter(CrowdReport.escalation == escalation)
-    if keyword:
-        query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+        if tone:
+            query = query.filter(CrowdReport.tone == tone)
+        if escalation:
+            query = query.filter(CrowdReport.escalation == escalation)
+        if keyword:
+            query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
 
-    reports = query.order_by(CrowdReport.timestamp.desc()).all()
+        reports = query.order_by(CrowdReport.timestamp.desc()).all()
 
-    # Inject base64 map images
-    for report in reports:
-        if hasattr(report, 'latitude') and hasattr(report, 'longitude'):
-            if report.latitude and report.longitude:
-                try:
-                    map_bytes = generate_map_image(report.latitude, report.longitude, str(report.id))
-                    report.map_image_base64 = base64.b64encode(map_bytes).decode("utf-8")
-                except Exception as e:
+        # Inject base64 map images
+        for report in reports:
+            if hasattr(report, 'latitude') and hasattr(report, 'longitude'):
+                if report.latitude and report.longitude:
+                    try:
+                        map_bytes = generate_map_image(report.latitude, report.longitude, str(report.id))
+                        report.map_image_base64 = base64.b64encode(map_bytes).decode("utf-8")
+                    except Exception as e:
+                        report.map_image_base64 = None
+                else:
                     report.map_image_base64 = None
             else:
                 report.map_image_base64 = None
-        else:
-            report.map_image_base64 = None
 
-    html_content = templates.get_template("export_pdf.html").render({
-        "reports": reports
-    })
+        html_content = templates.get_template("export_pdf.html").render({
+            "reports": reports
+        })
 
-    pdf_io = BytesIO()
-    HTML(string=html_content).write_pdf(pdf_io)
-    pdf_io.seek(0)
+        pdf_io = BytesIO()
+        HTML(string=html_content).write_pdf(pdf_io)
+        pdf_io.seek(0)
 
-    return StreamingResponse(
-        pdf_io,
-        media_type="application/pdf",
-        headers={"Content-Disposition": "inline; filename=crowd_reports.pdf"}
-    )
+        return StreamingResponse(
+            pdf_io,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "inline; filename=crowd_reports.pdf"}
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error exporting reports PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to export PDF")
 
 @app.get("/export-reports.csv")
 async def export_reports_csv(
@@ -783,27 +898,32 @@ async def export_reports_csv(
     keyword: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(CrowdReport)
+    """Export filtered reports as CSV"""
+    try:
+        query = db.query(CrowdReport)
 
-    if tone:
-        query = query.filter(CrowdReport.tone == tone)
-    if escalation:
-        query = query.filter(CrowdReport.escalation == escalation)
-    if keyword:
-        query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+        if tone:
+            query = query.filter(CrowdReport.tone == tone)
+        if escalation:
+            query = query.filter(CrowdReport.escalation == escalation)
+        if keyword:
+            query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
 
-    reports = query.order_by(CrowdReport.timestamp.desc()).all()
+        reports = query.order_by(CrowdReport.timestamp.desc()).all()
 
-    # Build CSV
-    csv_data = "id,message,tone,escalation,timestamp,user,location,image_url\n"
-    for r in reports:
-        csv_data += f'"{r.id}","{r.message}","{r.tone}","{r.escalation}","{r.timestamp}","{r.user or ""}","{r.location or ""}","{r.image_url or ""}"\n'
+        csv_data = "id,message,tone,escalation,timestamp,user,location,latitude,longitude\n"
+        for r in reports:
+            csv_data += f'"{r.id}","{r.message}","{r.tone}","{r.escalation}","{r.timestamp}","{r.user or ""}","{r.location or ""}","{r.latitude or ""}","{r.longitude or ""}"\n'
 
-    return Response(
-        content=csv_data,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=crowd_reports.csv"}
-    )
+        return Response(
+            content=csv_data,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=crowd_reports.csv"}
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error exporting reports CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to export CSV")
 
 @app.get("/export-reports.json", response_class=JSONResponse)
 async def export_reports_json(
@@ -812,109 +932,64 @@ async def export_reports_json(
     keyword: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(CrowdReport)
+    """Export filtered reports as JSON"""
+    try:
+        query = db.query(CrowdReport)
 
-    if tone:
-        query = query.filter(CrowdReport.tone == tone)
-    if escalation:
-        query = query.filter(CrowdReport.escalation == escalation)
-    if keyword:
-        query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
+        if tone:
+            query = query.filter(CrowdReport.tone == tone)
+        if escalation:
+            query = query.filter(CrowdReport.escalation == escalation)
+        if keyword:
+            query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
 
-    reports = query.order_by(CrowdReport.timestamp.desc()).all()
+        reports = query.order_by(CrowdReport.timestamp.desc()).all()
 
-    report_list = [{
-        "id": r.id,
-        "message": r.message,
-        "tone": r.tone,
-        "escalation": r.escalation,
-        "timestamp": r.timestamp,
-        "user": r.user,
-        "location": r.location,
-        "image_url": r.image_url
-    } for r in reports]
-
-    return {"reports": report_list}
-
-# ================================
-# ADMIN DASHBOARD ROUTES
-# ================================
-
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard(request: Request):
-    conn = get_db_connection()
-    stats = get_dashboard_stats(conn)
-    conn.close()
-    return templates.TemplateResponse("admin.html", {
-        "request": request,
-        "username": "Test Admin",
-        "role": "admin",
-        "stats": stats
-    })
-
-@app.get("/reports", response_class=HTMLResponse)
-async def list_reports(request: Request, user: dict = Depends(require_role(["admin"]))):
-    conn = get_db_connection()
-    rows = get_all_reports(conn)
-    conn.close()
-    return templates.TemplateResponse("reports.html", {"request": request, "reports": rows})
-
-@app.get("/reports/{report_id}")
-async def download_report(report_id: str, user: dict = Depends(require_role(["admin"]))):
-    conn = get_db_connection()
-    report = get_report_by_id(conn, report_id)
-    conn.close()
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
-
-    file_path = os.path.join(OUTPUT_DIR, report["filename"])
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-
-    return FileResponse(file_path, media_type="application/pdf", filename=report["filename"])
-
-@app.post("/reports/{report_id}/status")
-async def update_report_status(
-    report_id: str,
-    new_status: str = Form(...),
-    user: dict = Depends(require_role(["admin"]))
-):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE reports SET status = ? WHERE id = ?", (new_status, report_id))
-    conn.commit()
-    conn.close()
-    return RedirectResponse("/reports", status_code=303)
-
-@app.get("/reports/export")
-async def export_reports_zip(user: dict = Depends(require_role(["admin"]))):
-    conn = get_db_connection()
-    reports = get_all_reports(conn)
-    conn.close()
-
-    zip_buffer = io.BytesIO()
-
-    with zipfile.ZipFile(zip_buffer, "w") as zipf:
-        for report in reports:
-            pdf_path = os.path.join(OUTPUT_DIR, report["filename"])
-            if os.path.exists(pdf_path):
-                zipf.write(pdf_path, arcname=f"{report['id']}.pdf")
-
-        metadata = [{
-            "id": r["id"],
-            "location": r["location"],
-            "severity": r["severity"],
-            "timestamp": r["timestamp"],
-            "user": r["user"],
-            "status": r["status"]
+        report_list = [{
+            "id": r.id,
+            "message": r.message,
+            "tone": r.tone,
+            "escalation": r.escalation,
+            "timestamp": r.timestamp,
+            "user": r.user,
+            "location": r.location,
+            "latitude": r.latitude,
+            "longitude": r.longitude
         } for r in reports]
 
-        zipf.writestr("metadata.json", json.dumps(metadata, indent=2))
+        return {"reports": report_list}
+        
+    except Exception as e:
+        logger.error(f"❌ Error exporting reports JSON: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to export JSON")
 
-    zip_buffer.seek(0)
-    return StreamingResponse(zip_buffer, media_type="application/zip", headers={
-        "Content-Disposition": "attachment; filename=report_archive.zip"
-    })
+# ================================
+# PATIENT EXPORT ROUTES - SQLAlchemy
+# ================================
+
+@app.get("/export-patients-pdf")
+async def export_patients_pdf(db: Session = Depends(get_db)):
+    """Export patients as PDF using SQLAlchemy"""
+    try:
+        patients = db.query(TriagePatient).order_by(TriagePatient.created_at.desc()).all()
+        
+        env = Environment(loader=FileSystemLoader("templates"))
+        template = env.get_template("patient_tracker.html")
+        html_out = template.render(
+            patients=patients, 
+            now=datetime.utcnow(), 
+            severity_filter=None, 
+            status_filter=None
+        )
+        
+        pdf_path = os.path.join("outputs", f"patients_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf")
+        WeasyHTML(string=html_out).write_pdf(pdf_path)
+        
+        return FileResponse(pdf_path, filename="patient_tracker.pdf", media_type="application/pdf")
+        
+    except Exception as e:
+        logger.error(f"❌ Error exporting patients PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to export patients PDF")
 
 # ================================
 # MAP API ROUTES
@@ -928,21 +1003,10 @@ async def api_static_map(
     height: int = 400,
     zoom: int = 15,
     format: str = "png",
-    user: dict = Depends(require_role(["admin", "responder"]))  # Require auth for maps
+    user: dict = Depends(require_role(["admin", "responder"]))
 ):
-    """
-    Generate static map image for given coordinates
-    
-    Query params:
-    - latitude: Incident latitude (-90 to 90)
-    - longitude: Incident longitude (-180 to 180)
-    - width: Map width in pixels (default: 600)
-    - height: Map height in pixels (default: 400)
-    - zoom: Map zoom level 1-20 (default: 15)
-    - format: Response format ('png', 'json', 'base64')
-    """
+    """Generate static map image for given coordinates"""
     try:
-        # Validate coordinates
         if not (-90 <= latitude <= 90):
             raise HTTPException(status_code=400, detail="Invalid latitude (-90 to 90)")
         if not (-180 <= longitude <= 180):
@@ -954,7 +1018,6 @@ async def api_static_map(
         
         logger.info(f"Generating static map for {latitude}, {longitude} by user {user['username']}")
         
-        # Generate map using our utilities
         result = generate_static_map_endpoint(latitude, longitude, width, height, zoom)
         
         if not result['success']:
@@ -962,15 +1025,10 @@ async def api_static_map(
             raise HTTPException(status_code=500, detail=result.get('error', 'Map generation failed'))
         
         if format.lower() == 'json':
-            # Return JSON with base64 image data
             return JSONResponse(content=result)
-        
         elif format.lower() == 'base64':
-            # Return just base64 string
             return {"image_data": result['image_data']}
-        
         else:
-            # Return raw image bytes
             try:
                 image_bytes = base64.b64decode(result['image_data'])
                 return Response(
@@ -978,7 +1036,7 @@ async def api_static_map(
                     media_type="image/png",
                     headers={
                         "Content-Disposition": f"inline; filename=emergency_map_{latitude}_{longitude}.png",
-                        "Cache-Control": "public, max-age=3600"  # Cache for 1 hour
+                        "Cache-Control": "public, max-age=3600"
                     }
                 )
             except Exception as e:
@@ -997,22 +1055,13 @@ async def api_map_preview(
     longitude: float,
     user: dict = Depends(require_role(["admin", "responder"]))
 ):
-    """
-    Get comprehensive map preview data for web interface
-    
-    Returns:
-    - Coordinate formats (decimal, DMS, UTM, MGRS, Plus Codes, etc.)
-    - Emergency resources within 25km
-    - Location analysis metadata
-    """
+    """Get comprehensive map preview data for web interface"""
     try:
-        # Validate coordinates
         if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
             raise HTTPException(status_code=400, detail="Invalid coordinates")
         
         logger.info(f"Generating map preview for {latitude}, {longitude} by user {user['username']}")
         
-        # Generate preview data using our utilities
         preview_data = generate_map_preview_data(latitude, longitude)
         
         if not preview_data['success']:
@@ -1035,14 +1084,7 @@ async def api_emergency_resources(
     type_filter: str = None,
     user: dict = Depends(require_role(["admin", "responder"]))
 ):
-    """
-    Find emergency resources near coordinates
-    
-    Query params:
-    - latitude, longitude: Search center
-    - radius: Search radius in kilometers (1-100, default: 25)
-    - type_filter: Filter by resource type (hospital, fire_station, police, evacuation_route)
-    """
+    """Find emergency resources near coordinates"""
     try:
         if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
             raise HTTPException(status_code=400, detail="Invalid coordinates")
@@ -1056,14 +1098,11 @@ async def api_emergency_resources(
         
         logger.info(f"Finding emergency resources near {latitude}, {longitude} within {radius}km by user {user['username']}")
         
-        # Get emergency resources
         resources = get_emergency_resources(latitude, longitude, radius)
         
-        # Filter by type if specified
         if type_filter:
             resources = [r for r in resources if r.type == type_filter]
         
-        # Convert to JSON-serializable format
         resources_data = [
             {
                 'name': resource.name,
@@ -1101,19 +1140,13 @@ async def api_coordinate_formats(
     longitude: float,
     user: dict = Depends(require_role(["admin", "responder"]))
 ):
-    """
-    Get coordinates in multiple formats
-    
-    Returns all supported coordinate system formats:
-    - Decimal Degrees, DMS, UTM, MGRS, Plus Codes, Emergency Grid
-    """
+    """Get coordinates in multiple formats"""
     try:
         if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
             raise HTTPException(status_code=400, detail="Invalid coordinates")
         
         logger.info(f"Generating coordinate formats for {latitude}, {longitude} by user {user['username']}")
         
-        # Get coordinate formats using our utilities
         formats = get_coordinate_formats(latitude, longitude)
         
         return JSONResponse(content={
@@ -1136,25 +1169,15 @@ async def api_map_metadata(
     longitude: float, 
     user: dict = Depends(require_role(["admin", "responder"]))
 ):
-    """
-    Get comprehensive location metadata for emergency planning
-    
-    Returns:
-    - Coordinate formats
-    - Emergency resources
-    - Location analysis (terrain, accessibility, risk factors)
-    - Map service information
-    """
+    """Get comprehensive location metadata for emergency planning"""
     try:
         if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
             raise HTTPException(status_code=400, detail="Invalid coordinates")
         
         logger.info(f"Generating map metadata for {latitude}, {longitude} by user {user['username']}")
         
-        # Get comprehensive metadata
         metadata = get_map_metadata(latitude, longitude)
         
-        # Add user context
         metadata['request_info'] = {
             'generated_by': user['username'],
             'user_role': user['role'],
@@ -1201,6 +1224,7 @@ async def analyze_input(
     audio: UploadFile = File(None),
     user: dict = Depends(require_role(["admin", "responder"]))
 ):
+    """AI analysis of reports, images, and audio"""
     input_payload = {}
     hazards = []
 
@@ -1220,7 +1244,7 @@ async def analyze_input(
 
         transcription = transcribe_audio(audio_path)
         if "error" in transcription:
-            return templates.TemplateResponse("index.html", {
+            return templates.TemplateResponse("home.html", {
                 "request": request,
                 "result": transcription,
                 "input_text": None
@@ -1235,7 +1259,7 @@ async def analyze_input(
     processed = preprocess_input(input_payload)
     result = run_disaster_analysis(processed)
 
-    return templates.TemplateResponse("index.html", {
+    return templates.TemplateResponse("home.html", {
         "request": request,
         "result": result,
         "original_input": input_payload["content"],
@@ -1244,6 +1268,7 @@ async def analyze_input(
 
 @app.post("/export-pdf")
 async def export_pdf(request: Request, report_text: str = Form(...)):
+    """Export analysis as PDF"""
     html_content = templates.get_template("pdf_template.html").render({
         "report_text": report_text
     })
@@ -1261,14 +1286,11 @@ async def generate_report(
     file: UploadFile = File(None),
     user: dict = Depends(require_role(["admin", "responder"]))
 ):
-    """
-    ENHANCED: Generate PDF report with MAP integration
-    """
+    """Generate enhanced PDF report with MAP integration"""
     content_type = request.headers.get("Content-Type", "")
 
     if "application/json" in content_type:
         payload = await request.json()
-
     elif "multipart/form-data" in content_type:
         form = await request.form()
         payload_raw = form.get("json")
@@ -1284,34 +1306,13 @@ async def generate_report(
             with open(filepath, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             payload["image_url"] = f"uploaded://{filename}"
-
     else:
         return JSONResponse(content={"error": "Unsupported content type"}, status_code=415)
 
-    # NEW: Enhanced PDF generation with maps
     logger.info(f"Generating enhanced PDF report with maps for user {user['username']}")
     
     try:
         pdf_path = generate_report_pdf(payload)
-        
-        # Enhanced metadata with map information
-        metadata = {
-            "id": str(uuid.uuid4()),
-            "timestamp": payload.get("timestamp", datetime.now().isoformat()),
-            "location": payload.get("location", "Unknown"),
-            "severity": payload.get("severity", "N/A"),
-            "filename": os.path.basename(pdf_path),
-            "user": user["username"],
-            "status": "submitted",
-            "image_url": payload.get("image_url"),
-            "checklist": payload.get("checklist", []),
-            # NEW: Map metadata
-            "has_coordinates": bool(payload.get("coordinates")),
-            "gps_accuracy": payload.get("gps_accuracy"),
-            "map_included": bool(payload.get("coordinates"))
-        }
-        
-        save_report_metadata(metadata)
         
         logger.info(f"PDF report generated successfully: {pdf_path}")
         
@@ -1334,13 +1335,13 @@ async def detect_hazards_api(
     file: UploadFile = File(...),
     user: dict = Depends(require_role(["admin", "responder"]))
 ):
+    """AI-powered hazard detection from images"""
     if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
         return JSONResponse(content={"error": "Unsupported file format"}, status_code=400)
     try:
         image_bytes = await file.read()
         result = detect_hazards(image_bytes)
         
-        # NEW: Log hazard detection with user info
         logger.info(f"Hazard detection performed by user {user['username']}")
         
         return JSONResponse(content=result)
@@ -1354,6 +1355,7 @@ async def detect_hazards_api(
 
 @app.post("/predict-risk")
 async def predict_risk_api(payload: dict = Body(...)):
+    """Predict risk scores based on location, weather, and hazard type"""
     location = payload.get("location", {})
     weather = payload.get("weather", {})
     hazard = payload.get("hazard_type", "unknown")
@@ -1367,6 +1369,7 @@ async def predict_risk_api(payload: dict = Body(...)):
 
 @app.post("/broadcast")
 async def trigger_broadcast(request: Request):
+    """Trigger emergency broadcast"""
     payload = await request.json()
     message = payload.get("message", "Emergency Broadcast")
     location = payload.get("location", {})
@@ -1376,7 +1379,8 @@ async def trigger_broadcast(request: Request):
 
 @app.get("/broadcasts")
 async def get_active_broadcasts():
-    result = discover_nearby_broadcasts(location={})  # Replace with real location filtering if needed
+    """Get active emergency broadcasts"""
+    result = discover_nearby_broadcasts(location={})
     return JSONResponse(content=result)
 
 # ================================
@@ -1385,7 +1389,7 @@ async def get_active_broadcasts():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint with map service status"""
+    """Health check endpoint with service status"""
     return {
         "status": "healthy",
         "service": "Disaster Response Assistant",
@@ -1400,7 +1404,12 @@ async def health_check():
             "hazard_detection": True,
             "audio_transcription": True,
             "pdf_generation": True,
-            "patient_management": True
+            "patient_management": True,
+            "crowd_reports": True
+        },
+        "database": {
+            "status": "connected",
+            "type": "SQLAlchemy with SQLite"
         },
         "map_service": {
             "preferred": map_utils.preferred_service.value,
@@ -1426,6 +1435,13 @@ async def startup_event():
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
+    # Create all SQLAlchemy tables
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("✅ SQLAlchemy tables created/verified")
+    except Exception as e:
+        logger.error(f"❌ Error creating tables: {e}")
+    
     # Log available map services
     available_services = [
         service.value for service in map_utils.api_keys.keys() 
@@ -1433,10 +1449,12 @@ async def startup_event():
     ]
     logger.info(f"🔑 Available map services: {available_services or ['OpenStreetMap (free)']}")
     
-    # ✅ Run DB migrations
-    run_migrations()
-
-    logger.info("✅ API server ready with enhanced map capabilities and patient management")
+    logger.info("✅ API server ready with enhanced capabilities:")
+    logger.info("   • Patient management (SQLAlchemy)")
+    logger.info("   • Crowd reports (SQLAlchemy)")
+    logger.info("   • Map integration")
+    logger.info("   • AI analysis & hazard detection")
+    logger.info("   • Real-time dashboards")
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
