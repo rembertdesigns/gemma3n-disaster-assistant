@@ -31,7 +31,7 @@ A comprehensive, **offline-first AI assistant** powered by **Gemma 3n** and adva
 ### 🧩 Sprint 3 – Professional Reporting System ✅
 
 - ✅ Advanced JSON-to-PDF report generator with Jinja2 + WeasyPrint  
-- ✅ Interactive report builder with live preview  
+- ✅ Interactive report builder with live preview (`generate.html`)  
 - ✅ GPS coordinate integration and dynamic location mapping  
 - ✅ Team assignment and checklist management  
 - ✅ Professional PDF templates with severity badges and embedded imagery  
@@ -83,17 +83,18 @@ A comprehensive, **offline-first AI assistant** powered by **Gemma 3n** and adva
 
 ### 🧩 Sprint 8 – Specialized Response Modules ✅
 
-- ✅ Medical Triage UI with patient intake + color-coded severity  
-- ✅ Patient Tracker with filters, update/discharge buttons  
+- ✅ Medical Triage UI with patient intake + color-coded severity (`triage_form.html`)  
+- ✅ Patient Tracker with filters, update/discharge buttons (`patient_list.html`)  
 - ✅ PDF export of triage status + patient logs  
 - ✅ Full Jinja2 template refactor using `base.html` + `home.html`  
 - ✅ Offline queue integration for medical reports  
+- ✅ Edit and discharge views (`edit_patient.html`, status tracking)  
 
 ---
 
 ### 🧩 Sprint 9 – Crowd Reports, Export & Map Snapshots ✅
 
-- ✅ Filtering of crowd reports by tone, escalation, and keyword  
+- ✅ Filtering of crowd reports by tone, escalation, and keyword (`crowd_reports.html`)  
 - ✅ Export options for PDF, CSV, and JSON  
 - ✅ Enhanced PDF export with embedded image/audio links  
 - ✅ `export_pdf.html` template with styling + timestamp  
@@ -104,34 +105,52 @@ A comprehensive, **offline-first AI assistant** powered by **Gemma 3n** and adva
 
 ---
 
+### 🧩 Sprint 10 – Live Report Builder & Modularization ✅
+
+- ✅ `live_generate.html` live report editor with real-time preview  
+- ✅ Refactored `generate.html` to split JS into `report-generator.js`  
+- ✅ Refactored `hazards.html` to modular `hazards.js` for clarity  
+- ✅ Base styles and layout consistent across pages  
+- ✅ View and edit reports from admin dashboard or archive  
+
+---
+
 ## 🔜 Upcoming Sprints
 
-### 🧩 Sprint 10 – Analytics Dashboards & Visual Insights 🔄
+### 🧩 Sprint 11 – Analytics Dashboards & Visual Insights 🔄
 - 📊 Report analytics (tone, severity, escalation over time)  
 - 📈 Timeline graphs, heatmaps, and keyword clouds  
 - 🧮 Per-user activity & top locations summary  
 - 📥 Export analytics as PNG/PDF  
-- 🧰 Built with Chart.js, Recharts, or Plotly  
+- 📊 Built with Chart.js, Recharts, or Plotly  
 
-### 🧩 Sprint 11 – Full Incident Lifecycle 🔄
+---
+
+### 🧩 Sprint 12 – Full Incident Lifecycle 🔄
 - 🧾 Multi-stage report lifecycle: Submitted → Reviewed → Resolved  
 - 🏷️ Tagging, notes, and attachments per status  
 - 🔁 Workflow escalation: auto-prioritize follow-ups  
 - 📤 Export lifecycle history with metadata  
 
-### 🧩 Sprint 12 – Live Collaboration & Messaging 🔄
+---
+
+### 🧩 Sprint 13 – Live Collaboration & Messaging 🔄
 - 💬 Internal responder chat per incident  
 - 📎 File and image sharing in chat  
 - ⏳ Typing indicators, seen/unseen markers  
 - 📲 Push notifications (PWA + desktop)  
 
-### 🧩 Sprint 13 – Simulation & Training 🔄
+---
+
+### 🧩 Sprint 14 – Simulation & Training 🔄
 - 🎓 Training mode with fake data playback  
 - 🕹️ Replay of past incident timelines  
 - 💻 VR/AR support hooks for future expansion  
 - 📘 Guided scenario checklists  
 
-### 🧩 Sprint 14 – Deployment, Hosting, and Monitoring 🔄
+---
+
+### 🧩 Sprint 15 – Deployment, Hosting, and Monitoring 🔄
 - 🌍 Docker + Gunicorn deployment bundle  
 - 📡 Prometheus/Grafana metrics  
 - 🔐 Hardened OAuth2 & SSL setup  
