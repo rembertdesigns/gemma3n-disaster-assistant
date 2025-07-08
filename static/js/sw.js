@@ -526,9 +526,25 @@ async function initializeDatabase() {
   });
 }
 
-async function updateDatabaseSchema() {
-  // Placeholder for future schema updates
-  console.log("🔄 Checking database schema...");
+async function updateQueueDisplay() {
+  if (window.offlineRecovery) {
+      // Let the offline recovery system handle this
+      await window.offlineRecovery.updateSyncStatus();
+  } else {
+      // Fallback for when offline recovery isn't loaded
+      const queue = JSON.parse(localStorage.getItem("sync_queue") || "[]");
+      const queueCount = document.getElementById('queueCount');
+      const queueStatus = document.getElementById('queueStatus');
+      
+      if (queueCount) queueCount.textContent = queue.length;
+      
+      if (queue.length > 0 && queueStatus) {
+          queueStatus.style.display = 'inline';
+          queueStatus.textContent = `Queue: ${queue.length} reports`;
+      } else if (queueStatus) {
+          queueStatus.style.display = 'none';
+      }
+  }
 }
 
 async function cleanupOldCaches() {
