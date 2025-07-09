@@ -44,13 +44,20 @@ const DB_STORES = {
 // ENHANCED: Critical pages that must work offline
 const CRITICAL_PAGES = [
   "/",
+  "/home",
   "/submit-report",
   "/submit-crowd-report", 
   "/triage-form",
+  "/triage-dashboard",
+  "/patient-tracker",
+  "/patient-list",
   "/crowd-reports",
   "/map-reports",
+  "/view-reports",
+  "/hazards",
   "/predict",
   "/live-generate",
+  "/test-offline",
   "/offline.html"
 ];
 
@@ -68,7 +75,12 @@ const CRITICAL_ASSETS = [
   "/manifest.json",
   // ENHANCED: Add Leaflet for offline maps
   "https://unpkg.com/leaflet/dist/leaflet.css",
-  "https://unpkg.com/leaflet/dist/leaflet.js"
+  "https://unpkg.com/leaflet/dist/leaflet.js",
+  // ENHANCED: Add any additional utility JS files
+  "/static/js/triage-utils.js",
+  "/static/js/pdf-export.js",
+  "/static/js/patient-management.js",
+  "/static/js/map-utils.js"
 ];
 
 // ENHANCED: API endpoints that need offline handling
@@ -79,7 +91,12 @@ const OFFLINE_API_ENDPOINTS = [
   "/predict-risk",
   "/analyze-sentiment",
   "/generate-report",
-  "/broadcast"
+  "/broadcast",
+  "/api/patients",
+  "/api/triage-queue",
+  "/api/hazard-analysis",
+  "/api/sync-status",
+  "/api/offline-reports"
 ];
 
 // Network timeout configuration
