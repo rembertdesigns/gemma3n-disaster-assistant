@@ -1,0 +1,1432 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Cross-Modal Verification - Report Validation{% endblock %}
+{% block page_title %}🔍 Cross-Modal Verification{% endblock %}
+{% block subtitle %}AI-Powered Multi-Input Report Validation & Authentication{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .verification-dashboard {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .input-processor {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .processor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .processor-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .verification-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+  
+  .status-pending {
+    background: #fbbf24;
+    color: #92400e;
+  }
+  
+  .status-processing {
+    background: #3b82f6;
+    color: white;
+    animation: pulse 2s infinite;
+  }
+  
+  .status-verified {
+    background: #10b981;
+    color: white;
+  }
+  
+  .status-flagged {
+    background: #ef4444;
+    color: white;
+  }
+  
+  .input-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .input-section {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .input-section:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+  }
+  
+  .input-section.has-content {
+    border-color: #10b981;
+    border-style: solid;
+    background: #f0fdf4;
+  }
+  
+  .input-section.processing {
+    border-color: #3b82f6;
+    border-style: solid;
+    background: #eff6ff;
+  }
+  
+  .input-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  
+  .input-title {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+  
+  .input-description {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+  }
+  
+  .input-controls {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .input-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+  }
+  
+  .input-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+  
+  .input-btn.primary {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+  
+  .input-preview {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 1rem;
+    display: none;
+  }
+  
+  .input-preview.visible {
+    display: block;
+  }
+  
+  .preview-content {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .text-analysis {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  
+  .analysis-title {
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .confidence-score {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .confidence-high { background: #16a34a; }
+  .confidence-medium { background: #d97706; }
+  .confidence-low { background: #dc2626; }
+  
+  .analysis-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .detail-label {
+    color: #6b7280;
+  }
+  
+  .detail-value {
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .verification-panel {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  .panel-header {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+  
+  .verification-score {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    position: relative;
+  }
+  
+  .score-value {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+  
+  .score-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    text-align: center;
+  }
+  
+  .verification-factors {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .factor-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .factor-item:last-child {
+    border-bottom: none;
+  }
+  
+  .factor-label {
+    font-size: 0.9rem;
+  }
+  
+  .factor-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+  }
+  
+  .factor-pass {
+    background: rgba(16, 185, 129, 0.8);
+    color: white;
+  }
+  
+  .factor-warning {
+    background: rgba(245, 158, 11, 0.8);
+    color: white;
+  }
+  
+  .factor-fail {
+    background: rgba(239, 68, 68, 0.8);
+    color: white;
+  }
+  
+  .verification-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+  
+  .action-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .action-btn.primary {
+    background: rgba(255, 255, 255, 0.9);
+    color: #7c3aed;
+  }
+  
+  .cross-modal-analysis {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .modal-comparison {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .comparison-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  
+  .comparison-title {
+    font-weight: bold;
+    color: #1f2937;
+    font-size: 0.95rem;
+  }
+  
+  .consistency-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .consistency-high { background: #16a34a; }
+  .consistency-medium { background: #d97706; }
+  .consistency-low { background: #dc2626; }
+  
+  .comparison-details {
+    font-size: 0.85rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  
+  .discrepancy-list {
+    margin-top: 0.5rem;
+    padding-left: 1rem;
+  }
+  
+  .discrepancy-item {
+    color: #dc2626;
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .evidence-timeline {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .timeline-header {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 1rem;
+  }
+  
+  .timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .timeline-item:last-child {
+    border-bottom: none;
+  }
+  
+  .timeline-timestamp {
+    font-size: 0.8rem;
+    color: #6b7280;
+    min-width: 80px;
+  }
+  
+  .timeline-type {
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+    min-width: 60px;
+    text-align: center;
+  }
+  
+  .type-text { background: #3b82f6; }
+  .type-image { background: #10b981; }
+  .type-audio { background: #f59e0b; }
+  .type-video { background: #8b5cf6; }
+  .type-metadata { background: #6b7280; }
+  
+  .timeline-content {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #374151;
+  }
+  
+  .ai-insights {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+    font-family: monospace;
+  }
+  
+  .insights-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    font-weight: bold;
+  }
+  
+  .insights-stream {
+    max-height: 250px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+  }
+  
+  .insight-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .insight-timestamp {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    min-width: 60px;
+  }
+  
+  .insight-type {
+    padding: 0.125rem 0.375rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    min-width: 45px;
+    text-align: center;
+  }
+  
+  .insight-analysis { background: #3b82f6; }
+  .insight-warning { background: #f59e0b; }
+  .insight-anomaly { background: #ef4444; }
+  .insight-verification { background: #10b981; }
+  
+  .insight-message {
+    flex: 1;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+  
+  .verification-results {
+    background: #f0fdf4;
+    border: 2px solid #22c55e;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: none;
+  }
+  
+  .verification-results.visible {
+    display: block;
+    animation: slideInUp 0.5s ease;
+  }
+  
+  @keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .results-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #166534;
+  }
+  
+  .overall-verdict {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .verdict-verified { background: #16a34a; }
+  .verdict-questionable { background: #d97706; }
+  .verdict-rejected { background: #dc2626; }
+  
+  .results-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .summary-card {
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .summary-title {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+  
+  .summary-content {
+    font-size: 0.9rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  
+  .recommendations {
+    background: white;
+    border-left: 4px solid #22c55e;
+    padding: 1rem;
+    border-radius: 0 8px 8px 0;
+  }
+  
+  .recommendations h4 {
+    color: #166534;
+    margin-bottom: 0.75rem;
+  }
+  
+  .recommendation-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .recommendation-priority {
+    padding: 0.125rem 0.375rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+    min-width: 40px;
+    text-align: center;
+  }
+  
+  .priority-high { background: #dc2626; }
+  .priority-medium { background: #d97706; }
+  .priority-low { background: #16a34a; }
+  
+  @media (max-width: 768px) {
+    .verification-dashboard {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .input-sections {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .analysis-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .results-summary {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verification-dashboard">
+  <div class="input-processor">
+    <div class="processor-header">
+      <div class="processor-title">📥 Multi-Modal Input Processor</div>
+      <div class="verification-status status-pending" id="verificationStatus">
+        ⏳ Awaiting Input
+      </div>
+    </div>
+    
+    <div class="input-sections">
+      <div class="input-section" id="textSection">
+        <span class="input-icon">📝</span>
+        <div class="input-title">Text Analysis</div>
+        <div class="input-description">Paste emergency report text, social media posts, or witness statements</div>
+        <div class="input-controls">
+          <button class="input-btn primary" onclick="openTextInput()">📝 Enter Text</button>
+          <button class="input-btn" onclick="pasteFromClipboard()">📋 Paste</button>
+          <button class="input-btn" onclick="loadSampleText()">🎯 Sample</button>
+        </div>
+        <div class="input-preview" id="textPreview">
+          <div class="preview-content" id="textContent"></div>
+        </div>
+      </div>
+      
+      <div class="input-section" id="imageSection">
+        <span class="input-icon">📸</span>
+        <div class="input-title">Image Evidence</div>
+        <div class="input-description">Upload photos, satellite imagery, or visual documentation</div>
+        <div class="input-controls">
+          <button class="input-btn primary" onclick="uploadImage()">📸 Upload Image</button>
+          <button class="input-btn" onclick="captureFromCamera()">📹 Camera</button>
+          <button class="input-btn" onclick="loadSampleImage()">🎯 Sample</button>
+        </div>
+        <div class="input-preview" id="imagePreview">
+          <div class="preview-content" id="imageContent"></div>
+        </div>
+      </div>
+      
+      <div class="input-section" id="audioSection">
+        <span class="input-icon">🎤</span>
+        <div class="input-title">Audio Analysis</div>
+        <div class="input-description">Record voice reports, emergency calls, or ambient sounds</div>
+        <div class="input-controls">
+          <button class="input-btn primary" onclick="recordAudio()">🎤 Record</button>
+          <button class="input-btn" onclick="uploadAudio()">📁 Upload</button>
+          <button class="input-btn" onclick="loadSampleAudio()">🎯 Sample</button>
+        </div>
+        <div class="input-preview" id="audioPreview">
+          <div class="preview-content" id="audioContent"></div>
+        </div>
+      </div>
+      
+      <div class="input-section" id="videoSection">
+        <span class="input-icon">🎬</span>
+        <div class="input-title">Video Evidence</div>
+        <div class="input-description">Upload video footage, livestreams, or surveillance recordings</div>
+        <div class="input-controls">
+          <button class="input-btn primary" onclick="uploadVideo()">🎬 Upload Video</button>
+          <button class="input-btn" onclick="recordVideo()">📹 Record</button>
+          <button class="input-btn" onclick="loadSampleVideo()">🎯 Sample</button>
+        </div>
+        <div class="input-preview" id="videoPreview">
+          <div class="preview-content" id="videoContent"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+      <button class="action-btn primary" onclick="startCrossModalVerification()">
+        🔍 Start Cross-Modal Verification
+      </button>
+      <button class="action-btn" onclick="clearAllInputs()">
+        🗑️ Clear All
+      </button>
+      <button class="action-btn" onclick="saveVerificationSession()">
+        💾 Save Session
+      </button>
+    </div>
+  </div>
+  
+  <div class="verification-panel">
+    <div class="panel-header">🎯 Verification Dashboard</div>
+    
+    <div class="verification-score">
+      <div class="score-circle">
+        <div class="score-value" id="verificationScore">--</div>
+      </div>
+      <div class="score-label">Overall Authenticity Score</div>
+    </div>
+    
+    <div class="verification-factors">
+      <div class="factor-item">
+        <div class="factor-label">Temporal Consistency</div>
+        <div class="factor-status factor-pass" id="temporalStatus">PASS</div>
+      </div>
+      
+      <div class="factor-item">
+        <div class="factor-label">Location Verification</div>
+        <div class="factor-status factor-warning" id="locationStatus">CHECK</div>
+      </div>
+      
+      <div class="factor-item">
+        <div class="factor-label">Content Authenticity</div>
+        <div class="factor-status factor-pass" id="contentStatus">PASS</div>
+      </div>
+      
+      <div class="factor-item">
+        <div class="factor-label">Source Credibility</div>
+        <div class="factor-status factor-warning" id="sourceStatus">REVIEW</div>
+      </div>
+      
+      <div class="factor-item">
+        <div class="factor-label">Technical Analysis</div>
+        <div class="factor-status factor-pass" id="technicalStatus">PASS</div>
+      </div>
+      
+      <div class="factor-item">
+        <div class="factor-label">Cross-Modal Match</div>
+        <div class="factor-status factor-pass" id="crossModalStatus">PASS</div>
+      </div>
+    </div>
+    
+    <div class="verification-actions">
+      <button class="action-btn primary" onclick="generateDetailedReport()">
+        📊 Generate Report
+      </button>
+      <button class="action-btn" onclick="flagForHumanReview()">
+        🚩 Flag for Review
+      </button>
+      <button class="action-btn" onclick="approveReport()">
+        ✅ Approve Report
+      </button>
+      <button class="action-btn" onclick="rejectReport()">
+        ❌ Reject Report
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="cross-modal-analysis">
+  <h3 style="margin-bottom: 1rem; color: #1f2937;">🔗 Cross-Modal Consistency Analysis</h3>
+  
+  <div class="analysis-grid">
+    <div class="modal-comparison">
+      <div class="comparison-header">
+        <div class="comparison-title">📝 Text ↔ 📸 Image</div>
+        <div class="consistency-badge consistency-high">94% Match</div>
+      </div>
+      <div class="comparison-details">
+        Text description aligns well with visual evidence. Location markers and weather conditions are consistent.
+        <div class="discrepancy-list">
+          <div class="discrepancy-item">• Minor time discrepancy: Text mentions "afternoon" but image metadata shows 11:47 AM</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-comparison">
+      <div class="comparison-header">
+        <div class="comparison-title">🎤 Audio ↔ 📝 Text</div>
+        <div class="consistency-badge consistency-medium">87% Match</div>
+      </div>
+      <div class="comparison-details">
+        Audio transcript matches written report content. Voice stress analysis indicates genuine concern.
+        <div class="discrepancy-list">
+          <div class="discrepancy-item">• Speaker mentions "heavy rain" but text says "light drizzle"</div>
+          <div class="discrepancy-item">• Audio background noise suggests urban area, text indicates rural location</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-comparison">
+      <div class="comparison-header">
+        <div class="comparison-title">🎬 Video ↔ 📸 Image</div>
+        <div class="consistency-badge consistency-high">96% Match</div>
+      </div>
+      <div class="comparison-details">
+        Video frames highly consistent with uploaded images. Timestamp correlation within acceptable range.
+        <div class="discrepancy-list">
+          <div class="discrepancy-item">• Image resolution higher than video frames - potential enhancement detected</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-comparison">
+      <div class="comparison-header">
+        <div class="comparison-title">🌍 Metadata ↔ 📍 Location</div>
+        <div class="consistency-badge consistency-low">73% Match</div>
+      </div>
+      <div class="comparison-details">
+        GPS coordinates from different sources show significant variance. Requires additional verification.
+        <div class="discrepancy-list">
+          <div class="discrepancy-item">• Image EXIF: 40.7589°N, 73.9851°W</div>
+          <div class="discrepancy-item">• Audio geotag: 40.7614°N, 73.9776°W</div>
+          <div class="discrepancy-item">• Text location: "Near Central Park" (approximate)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="evidence-timeline">
+    <div class="timeline-header">⏱️ Evidence Timeline Reconstruction</div>
+    
+    <div class="timeline-item">
+      <div class="timeline-timestamp">11:45 AM</div>
+      <div class="timeline-type type-metadata">META</div>
+      <div class="timeline-content">Initial image captured (EXIF timestamp)</div>
+    </div>
+    
+    <div class="timeline-item">
+      <div class="timeline-timestamp">11:47 AM</div>
+      <div class="timeline-type type-audio">AUDIO</div>
+      <div class="timeline-content">Voice recording started - witness report begins</div>
+    </div>
+    
+    <div class="timeline-item">
+      <div class="timeline-timestamp">11:52 AM</div>
+      <div class="timeline-type type-video">VIDEO</div>
+      <div class="timeline-content">Video recording initiated - emergency scene documentation</div>
+    </div>
+    
+    <div class="timeline-item">
+      <div class="timeline-timestamp">12:03 PM</div>
+      <div class="timeline-type type-text">TEXT</div>
+      <div class="timeline-content">Written report submitted via emergency app</div>
+    </div>
+    
+    <div class="timeline-item">
+      <div class="timeline-timestamp">12:15 PM</div>
+      <div class="timeline-type type-image">IMAGE</div>
+      <div class="timeline-content">Additional photos uploaded - aftermath documentation</div>
+    </div>
+  </div>
+</div>
+
+<div class="ai-insights">
+  <div class="insights-header">
+    <span>🧠 AI Analysis Stream</span>
+    <span style="font-size: 0.8rem; opacity: 0.7;">Real-Time Processing</span>
+  </div>
+  <div class="insights-stream" id="aiInsightsStream">
+    <div class="insight-item">
+      <span class="insight-timestamp">12:34:23</span>
+      <span class="insight-type insight-verification">VERIFY</span>
+      <span class="insight-message">Weather data correlation: Conditions match reported atmospheric state</span>
+    </div>
+    <div class="insight-item">
+      <span class="insight-timestamp">12:33:45</span>
+      <span class="insight-type insight-warning">WARN</span>
+      <span class="insight-message">Audio analysis: Background noise suggests different location than claimed</span>
+    </div>
+    <div class="insight-item">
+      <span class="insight-timestamp">12:33:12</span>
+      <span class="insight-type insight-analysis">SCAN</span>
+      <span class="insight-message">Image forensics: No evidence of digital manipulation or editing</span>
+    </div>
+    <div class="insight-item">
+      <span class="insight-timestamp">12:32:58</span>
+      <span class="insight-type insight-verification">VERIFY</span>
+      <span class="insight-message">Cross-reference complete: Similar incident reported 2.3km away</span>
+    </div>
+    <div class="insight-item">
+      <span class="insight-timestamp">12:32:34</span>
+      <span class="insight-type insight-anomaly">ANOMALY</span>
+      <span class="insight-message">Timestamp inconsistency detected across media types</span>
+    </div>
+  </div>
+</div>
+
+<div class="verification-results" id="verificationResults">
+  <div class="results-header">
+    <div class="results-title">🎯 Verification Results</div>
+    <div class="overall-verdict verdict-verified" id="overallVerdict">VERIFIED</div>
+  </div>
+  
+  <div class="results-summary">
+    <div class="summary-card">
+      <div class="summary-title">📊 Authenticity Assessment</div>
+      <div class="summary-content">
+        Cross-modal analysis indicates a <strong>92% probability</strong> that the submitted evidence is authentic. 
+        Minor inconsistencies detected but within acceptable variance for genuine emergency reports.
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="summary-title">⚠️ Key Discrepancies</div>
+      <div class="summary-content">
+        <strong>3 minor discrepancies</strong> identified:
+        <br>• Timestamp variance (16 minutes)
+        <br>• Location precision differences
+        <br>• Weather description variations
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="summary-title">✅ Verification Strengths</div>
+      <div class="summary-content">
+        <strong>High confidence factors:</strong>
+        <br>• Consistent visual evidence
+        <br>• Authentic voice patterns
+        <br>• No digital manipulation detected
+        <br>• Weather data correlation
+      </div>
+    </div>
+    
+    <div class="summary-card">
+      <div class="summary-title">🎯 Confidence Metrics</div>
+      <div class="summary-content">
+        <strong>Individual modal confidence:</strong>
+        <br>• Text: 89% authentic
+        <br>• Image: 96% authentic
+        <br>• Audio: 87% authentic
+        <br>• Video: 94% authentic
+      </div>
+    </div>
+  </div>
+  
+  <div class="recommendations">
+    <h4>🎯 AI Recommendations</h4>
+    
+    <div class="recommendation-item">
+      <div class="recommendation-priority priority-medium">MED</div>
+      <div>Cross-reference with additional sources to resolve location discrepancies</div>
+    </div>
+    
+    <div class="recommendation-item">
+      <div class="recommendation-priority priority-low">LOW</div>
+      <div>Verify timestamp accuracy with device clock synchronization data</div>
+    </div>
+    
+    <div class="recommendation-item">
+      <div class="recommendation-priority priority-high">HIGH</div>
+      <div>Approve report for emergency response - confidence level meets threshold</div>
+    </div>
+    
+    <div class="recommendation-item">
+      <div class="recommendation-priority priority-low">LOW</div>
+      <div>Archive for training data - good example of multi-modal emergency reporting</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/cross-modal-verification.js"></script>
+<script>
+  // Initialize the cross-modal verification system
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeCrossModalVerification();
+    
+    // Start real-time AI insights stream
+    setInterval(updateAIInsightsStream, 3000);
+    
+    // Initialize input processors
+    initializeInputProcessors();
+  });
+  
+  function initializeCrossModalVerification() {
+    console.log('🔍 Cross-Modal Verification System Initialized');
+    updateVerificationStatus('pending');
+  }
+  
+  function initializeInputProcessors() {
+    // Set up drag and drop for all input sections
+    document.querySelectorAll('.input-section').forEach(section => {
+      section.addEventListener('dragover', handleDragOver);
+      section.addEventListener('drop', handleDrop);
+      section.addEventListener('dragleave', handleDragLeave);
+    });
+  }
+  
+  function handleDragOver(e) {
+    e.preventDefault();
+    this.style.borderColor = '#3b82f6';
+    this.style.background = '#eff6ff';
+  }
+  
+  function handleDragLeave(e) {
+    e.preventDefault();
+    this.style.borderColor = '#d1d5db';
+    this.style.background = '';
+  }
+  
+  function handleDrop(e) {
+    e.preventDefault();
+    this.style.borderColor = '#d1d5db';
+    this.style.background = '';
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processDroppedFile(files[0], this);
+    }
+  }
+  
+  function processDroppedFile(file, section) {
+    const sectionId = section.id;
+    console.log(`📁 Processing dropped file for ${sectionId}:`, file.name);
+    
+    // Mark section as having content
+    section.classList.add('has-content');
+    
+    // Show preview
+    const preview = section.querySelector('.input-preview');
+    const content = section.querySelector('.preview-content');
+    
+    if (preview && content) {
+      preview.classList.add('visible');
+      content.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <span>📁</span>
+          <strong>${file.name}</strong>
+          <span style="color: #6b7280;">(${(file.size / 1024).toFixed(1)} KB)</span>
+        </div>
+        <div style="font-size: 0.8rem; color: #6b7280;">
+          Type: ${file.type || 'Unknown'} • Processing...
+        </div>
+      `;
+    }
+    
+    // Simulate processing
+    setTimeout(() => {
+      section.classList.add('processing');
+      updateVerificationStatus('processing');
+    }, 500);
+  }
+  
+  function openTextInput() {
+    const text = prompt('Enter emergency report text:', 'EMERGENCY REPORT: Severe flooding observed at Main Street Bridge. Water level approximately 3 feet above normal. Several vehicles stranded. Emergency services requested immediately. Time: 11:45 AM. Weather: Heavy rain, strong winds.');
+    
+    if (text && text.trim()) {
+      processTextInput(text);
+    }
+  }
+  
+  function processTextInput(text) {
+    const section = document.getElementById('textSection');
+    const preview = document.getElementById('textPreview');
+    const content = document.getElementById('textContent');
+    
+    section.classList.add('has-content');
+    preview.classList.add('visible');
+    
+    content.innerHTML = `
+      <div style="margin-bottom: 0.75rem;">
+        <strong>📝 Text Analysis Complete</strong>
+      </div>
+      <div style="background: white; padding: 0.75rem; border-radius: 4px; border: 1px solid #e5e7eb; margin-bottom: 0.75rem;">
+        ${text.substring(0, 200)}${text.length > 200 ? '...' : ''}
+      </div>
+      <div style="font-size: 0.8rem; color: #6b7280;">
+        Length: ${text.length} characters • Sentiment: Urgent • Confidence: 94%
+      </div>
+    `;
+    
+    console.log('📝 Text input processed');
+  }
+  
+  function pasteFromClipboard() {
+    navigator.clipboard.readText().then(text => {
+      if (text.trim()) {
+        processTextInput(text);
+      } else {
+        alert('Clipboard is empty or contains no text');
+      }
+    }).catch(err => {
+      console.warn('Could not read clipboard:', err);
+      openTextInput(); // Fallback to manual input
+    });
+  }
+  
+  function loadSampleText() {
+    const sampleText = 'EMERGENCY REPORT: Severe flooding observed at Main Street Bridge. Water level approximately 3 feet above normal. Several vehicles stranded in rising water. Emergency services requested immediately. Location: Downtown area near civic center. Time: 11:45 AM. Weather conditions: Heavy rain with strong winds from the southeast. Visibility severely reduced. Request immediate evacuation assistance for stranded motorists.';
+    processTextInput(sampleText);
+  }
+  
+  function uploadImage() {
+    console.log('📸 Image upload initiated');
+    
+    const section = document.getElementById('imageSection');
+    const preview = document.getElementById('imagePreview');
+    const content = document.getElementById('imageContent');
+    
+    section.classList.add('has-content', 'processing');
+    preview.classList.add('visible');
+    
+    content.innerHTML = `
+      <div style="margin-bottom: 0.75rem;">
+        <strong>📸 Image Analysis in Progress</strong>
+      </div>
+      <div style="background: white; padding: 0.75rem; border-radius: 4px; border: 1px solid #e5e7eb; margin-bottom: 0.75rem; text-align: center;">
+        <div style="width: 100px; height: 80px; background: #f3f4f6; border-radius: 4px; margin: 0 auto 0.5rem; display: flex; align-items: center; justify-content: center;">
+          🖼️
+        </div>
+        <div style="font-size: 0.9rem;">emergency_scene_001.jpg</div>
+      </div>
+      <div style="font-size: 0.8rem; color: #6b7280;">
+        Resolution: 1920x1080 • Size: 2.4 MB • GPS: Available • Analyzing...
+      </div>
+    `;
+    
+    setTimeout(() => {
+      content.innerHTML += `
+        <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f0fdf4; border-radius: 4px; font-size: 0.8rem;">
+          ✅ No digital manipulation detected • Weather conditions match metadata
+        </div>
+      `;
+    }, 2000);
+  }
+  
+  function captureFromCamera() {
+    console.log('📹 Camera capture initiated');
+    alert('Camera interface would open here. For demo purposes, simulating image capture...');
+    uploadImage(); // Use same processing for demo
+  }
+  
+  function loadSampleImage() {
+    console.log('🎯 Loading sample image');
+    uploadImage(); // Use same processing for demo
+  }
+  
+  function recordAudio() {
+    console.log('🎤 Audio recording initiated');
+    
+    const section = document.getElementById('audioSection');
+    const preview = document.getElementById('audioPreview');
+    const content = document.getElementById('audioContent');
+    
+    section.classList.add('has-content', 'processing');
+    preview.classList.add('visible');
+    
+    content.innerHTML = `
+      <div style="margin-bottom: 0.75rem;">
+        <strong>🎤 Recording Audio...</strong>
+      </div>
+      <div style="background: white; padding: 0.75rem; border-radius: 4px; border: 1px solid #e5e7eb; margin-bottom: 0.75rem; text-align: center;">
+        <div style="width: 100%; height: 40px; background: #f3f4f6; border-radius: 4px; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center;">
+          🎵 ▬▬▬▬▬▬▬▬▬
+        </div>
+        <div style="font-size: 0.9rem;">Recording: 00:15</div>
+      </div>
+      <div style="font-size: 0.8rem; color: #6b7280;">
+        Quality: High • Format: WAV • Analyzing voice patterns...
+      </div>
+    `;
+    
+    setTimeout(() => {
+      content.innerHTML = `
+        <div style="margin-bottom: 0.75rem;">
+          <strong>🎤 Audio Analysis Complete</strong>
+        </div>
+        <div style="background: white; padding: 0.75rem; border-radius: 4px; border: 1px solid #e5e7eb; margin-bottom: 0.75rem;">
+          <div style="margin-bottom: 0.5rem;">📝 <strong>Transcript:</strong></div>
+          <div style="font-style: italic; color: #374151;">
+            "Emergency at Main Street Bridge. There's severe flooding, water is about three feet high. Multiple cars are stuck. We need immediate help. The rain is getting worse..."
+          </div>
+        </div>
+        <div style="font-size: 0.8rem; color: #6b7280;">
+          Duration: 23 seconds • Voice stress: Elevated (consistent with emergency) • Background: Urban environment
+        </div>
+      `;
+    }, 3000);
+  }
+  
+  function uploadAudio() {
+    console.log('📁 Audio upload initiated');
+    recordAudio(); // Use same processing for demo
+  }
+  
+  function loadSampleAudio() {
+    console.log('🎯 Loading sample audio');
+    recordAudio(); // Use same processing for demo
+  }
+  
+  function uploadVideo() {
+    console.log('🎬 Video upload initiated');
+    
+    const section = document.getElementById('videoSection');
+    const preview = document.getElementById('videoPreview');
+    const content = document.getElementById('videoContent');
+    
+    section.classList.add('has-content', 'processing');
+    preview.classList.add('visible');
+    
+    content.innerHTML = `
+      <div style="margin-bottom: 0.75rem;">
+        <strong>🎬 Video Analysis in Progress</strong>
+      </div>
+      <div style="background: white; padding: 0.75rem; border-radius: 4px; border: 1px solid #e5e7eb; margin-bottom: 0.75rem; text-align: center;">
+        <div style="width: 120px; height: 80px; background: #f3f4f6; border-radius: 4px; margin: 0 auto 0.5rem; display: flex; align-items: center; justify-content: center;">
+          🎬
+        </div>
+        <div style="font-size: 0.9rem;">flood_documentation.mp4</div>
+      </div>
+      <div style="font-size: 0.8rem; color: #6b7280;">
+        Duration: 2:34 • Resolution: 1080p • Size: 45.2 MB • Analyzing frames...
+      </div>
+    `;
+    
+    setTimeout(() => {
+      content.innerHTML += `
+        <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f0fdf4; border-radius: 4px; font-size: 0.8rem;">
+          ✅ 147 frames analyzed • Consistent lighting and shadows • No manipulation detected
+        </div>
+      `;
+    }, 4000);
+  }
+  
+  function recordVideo() {
+    console.log('📹 Video recording initiated');
+    alert('Video recording interface would open here. For demo purposes, simulating video capture...');
+    uploadVideo(); // Use same processing for demo
+  }
+  
+  function loadSampleVideo() {
+    console.log('🎯 Loading sample video');
+    uploadVideo(); // Use same processing for demo
+  }
+  
+  function startCrossModalVerification() {
+    console.log('🔍 Starting cross-modal verification...');
+    
+    updateVerificationStatus('processing');
+    
+    // Simulate verification process
+    setTimeout(() => {
+      updateVerificationScore(92);
+      updateVerificationFactors();
+      showVerificationResults();
+      updateVerificationStatus('verified');
+    }, 5000);
+  }
+  
+  function updateVerificationStatus(status) {
+    const statusElement = document.getElementById('verificationStatus');
+    if (!statusElement) return;
+    
+    statusElement.className = `verification-status status-${status}`;
+    
+    const statusTexts = {
+      pending: '⏳ Awaiting Input',
+      processing: '🔄 Processing...',
+      verified: '✅ Verified',
+      flagged: '🚩 Flagged for Review'
+    };
+    
+    statusElement.textContent = statusTexts[status] || status;
+  }
+  
+  function updateVerificationScore(score) {
+    const scoreElement = document.getElementById('verificationScore');
+    if (scoreElement) {
+      scoreElement.textContent = score + '%';
+      
+      // Update circle color based on score
+      const circle = scoreElement.parentElement;
+      if (score >= 90) {
+        circle.style.borderColor = '#16a34a';
+      } else if (score >= 75) {
+        circle.style.borderColor = '#d97706';
+      } else {
+        circle.style.borderColor = '#dc2626';
+      }
+    }
+  }
+  
+  function updateVerificationFactors() {
+    const factors = {
+      temporalStatus: 'PASS',
+      locationStatus: 'CHECK',
+      contentStatus: 'PASS',
+      sourceStatus: 'REVIEW',
+      technicalStatus: 'PASS',
+      crossModalStatus: 'PASS'
+    };
+    
+    Object.entries(factors).forEach(([id, status]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = status;
+        element.className = `factor-status factor-${status.toLowerCase() === 'pass' ? 'pass' : status.toLowerCase() === 'check' || status.toLowerCase() === 'review' ? 'warning' : 'fail'}`;
+      }
+    });
+  }
+  
+  function showVerificationResults() {
+    const results = document.getElementById('verificationResults');
+    if (results) {
+      results.classList.add('visible');
+    }
+  }
+  
+  function clearAllInputs() {
+    console.log('🗑️ Clearing all inputs');
+    
+    document.querySelectorAll('.input-section').forEach(section => {
+      section.classList.remove('has-content', 'processing');
+    });
+    
+    document.querySelectorAll('.input-preview').forEach(preview => {
+      preview.classList.remove('visible');
+    });
+    
+    updateVerificationStatus('pending');
+    updateVerificationScore('--');
+    
+    const results = document.getElementById('verificationResults');
+    if (results) {
+      results.classList.remove('visible');
+    }
+  }
+  
+  function saveVerificationSession() {
+    console.log('💾 Saving verification session');
+    
+    const sessionData = {
+      timestamp: new Date().toISOString(),
+      verificationScore: document.getElementById('verificationScore').textContent,
+      status: 'saved'
+    };
+    
+    localStorage.setItem('verificationSession', JSON.stringify(sessionData));
+    
+    alert('Verification session saved successfully!');
+  }
+  
+  function generateDetailedReport() {
+    console.log('📊 Generating detailed verification report');
+    alert('Detailed verification report generated and saved to system. Report ID: VR-' + Date.now());
+  }
+  
+  function flagForHumanReview() {
+    console.log('🚩 Flagging for human review');
+    updateVerificationStatus('flagged');
+    alert('Report flagged for human expert review. Case ID: HR-' + Date.now());
+  }
+  
+  function approveReport() {
+    console.log('✅ Approving report');
+    updateVerificationStatus('verified');
+    alert('Report approved and forwarded to emergency response teams.');
+  }
+  
+  function rejectReport() {
+    console.log('❌ Rejecting report');
+    const reason = prompt('Rejection reason:', 'Insufficient evidence for verification');
+    if (reason) {
+      alert(`Report rejected: ${reason}`);
+    }
+  }
+  
+  function updateAIInsightsStream() {
+    const stream = document.getElementById('aiInsightsStream');
+    if (!stream) return;
+    
+    const insights = [
+      { type: 'analysis', message: 'Deepfake detection: No artificial face generation patterns found' },
+      { type: 'verification', message: 'Geolocation verified: Coordinates match known emergency hotspot' },
+      { type: 'warning', message: 'Audio quality analysis: Some background noise interference detected' },
+      { type: 'analysis', message: 'Image compression analysis: Standard camera compression detected' },
+      { type: 'verification', message: 'Weather API correlation: Reported conditions match historical data' },
+      { type: 'anomaly', message: 'Device fingerprint: Multiple devices used for single report' },
+      { type: 'analysis', message: 'Sentiment analysis: Genuine distress patterns in voice recording' },
+      { type: 'verification', message: 'Social media cross-check: Similar reports found in vicinity' }
+    ];
+    
+    const randomInsight = insights[Math.floor(Math.random() * insights.length)];
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const newItem = document.createElement('div');
+    newItem.className = 'insight-item';
+    newItem.innerHTML = `
+      <span class="insight-timestamp">${timestamp}</span>
+      <span class="insight-type insight-${randomInsight.type}">${randomInsight.type.toUpperCase()}</span>
+      <span class="insight-message">${randomInsight.message}</span>
+    `;
+    
+    stream.insertBefore(newItem, stream.firstChild);
+    
+    // Keep only last 15 insights
+    while (stream.children.length > 15) {
+      stream.removeChild(stream.lastChild);
+    }
+  }
+  
+  // Export functions for other modules
+  window.CrossModalVerification = {
+    startCrossModalVerification,
+    updateVerificationScore,
+    clearAllInputs,
+    saveVerificationSession
+  };
+</script>
+{% endblock %}:34:56</span>
+      <span class="insight-type insight-analysis">SCAN</span>
+      <span class="insight-message">Facial recognition: No known actors or deep fake patterns detected</span>
+    </div>
+    <div class="insight-item">
+      <span class="insight-timestamp">12
