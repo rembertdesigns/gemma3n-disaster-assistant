@@ -1,0 +1,1252 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Device Status - Disaster Response Assistant{% endblock %}
+{% block page_title %}📱 Device Status{% endblock %}
+{% block subtitle %}Monitor sensors, connectivity, and mesh network health{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .status-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .status-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--card-accent, #6b7280);
+  }
+
+  .status-card.healthy::before { --card-accent: #10b981; }
+  .status-card.warning::before { --card-accent: #f59e0b; }
+  .status-card.error::before { --card-accent: #ef4444; }
+  .status-card.offline::before { --card-accent: #6b7280; }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .status-healthy { background: #10b981; animation: pulse-green 2s infinite; }
+  .status-warning { background: #f59e0b; animation: pulse-yellow 2s infinite; }
+  .status-error { background: #ef4444; animation: pulse-red 2s infinite; }
+  .status-offline { background: #6b7280; }
+
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+  }
+
+  @keyframes pulse-yellow {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
+  }
+
+  @keyframes pulse-red {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+  }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .metric-row:last-child {
+    border-bottom: none;
+  }
+
+  .metric-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+
+  .metric-value {
+    font-weight: bold;
+    color: #1f2937;
+  }
+
+  .metric-value.good { color: #059669; }
+  .metric-value.warning { color: #d97706; }
+  .metric-value.poor { color: #dc2626; }
+
+  .signal-bars {
+    display: inline-flex;
+    gap: 2px;
+    align-items: end;
+  }
+
+  .signal-bar {
+    width: 3px;
+    background: #e5e7eb;
+    border-radius: 1px;
+  }
+
+  .signal-bar.active { background: #10b981; }
+  .signal-bar:nth-child(1) { height: 4px; }
+  .signal-bar:nth-child(2) { height: 8px; }
+  .signal-bar:nth-child(3) { height: 12px; }
+  .signal-bar:nth-child(4) { height: 16px; }
+  .signal-bar:nth-child(5) { height: 20px; }
+
+  .battery-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .battery-level {
+    width: 30px;
+    height: 15px;
+    border: 2px solid #374151;
+    border-radius: 2px;
+    position: relative;
+    background: #f3f4f6;
+  }
+
+  .battery-level::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: 4px;
+    width: 2px;
+    height: 7px;
+    background: #374151;
+    border-radius: 0 1px 1px 0;
+  }
+
+  .battery-fill {
+    height: 100%;
+    border-radius: 1px;
+    transition: all 0.3s ease;
+  }
+
+  .battery-fill.high { background: #10b981; }
+  .battery-fill.medium { background: #f59e0b; }
+  .battery-fill.low { background: #ef4444; }
+
+  .mesh-network {
+    margin-top: 1rem;
+  }
+
+  .mesh-peers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .peer-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    position: relative;
+  }
+
+  .peer-card.connected {
+    border-color: #10b981;
+    background: #ecfdf5;
+  }
+
+  .peer-card.connecting {
+    border-color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  .peer-card.disconnected {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+
+  .peer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .peer-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+
+  .peer-signal {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .diagnostics-panel {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .diagnostic-test {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .diagnostic-test:last-child {
+    border-bottom: none;
+  }
+
+  .test-name {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .test-result {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: #2563eb;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #1d4ed8;
+  }
+
+  .btn-secondary {
+    background: #6b7280;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #4b5563;
+  }
+
+  .btn-danger {
+    background: #dc2626;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #b91c1c;
+  }
+
+  .btn-small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .actions-bar {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .location-map {
+    height: 200px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .status-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .mesh-peers {
+      grid-template-columns: 1fr;
+    }
+    
+    .actions-bar {
+      flex-direction: column;
+    }
+  }
+
+  [data-theme="dark"] .status-card {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  [data-theme="dark"] .peer-card {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+
+  [data-theme="dark"] .diagnostics-panel {
+    background: #374151;
+    border-color: #4b5563;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="status-grid">
+  <!-- GPS/Location Status -->
+  <div class="status-card" id="gpsCard">
+    <div class="card-header">
+      <div class="card-title">
+        📍 GPS & Location
+        <div class="status-indicator" id="gpsIndicator"></div>
+      </div>
+      <button class="btn btn-small btn-secondary" onclick="refreshGPS()">🔄 Refresh</button>
+    </div>
+    
+    <div class="metric-row">
+      <span class="metric-label">Status</span>
+      <span class="metric-value" id="gpsStatus">Checking...</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Accuracy</span>
+      <span class="metric-value" id="gpsAccuracy">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Coordinates</span>
+      <span class="metric-value" id="gpsCoords">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Last Update</span>
+      <span class="metric-value" id="gpsLastUpdate">Never</span>
+    </div>
+    
+    <div class="location-map" id="locationPreview">
+      📍 Location will appear here
+    </div>
+  </div>
+
+  <!-- Network Connectivity -->
+  <div class="status-card" id="networkCard">
+    <div class="card-header">
+      <div class="card-title">
+        🌐 Network Connectivity
+        <div class="status-indicator" id="networkIndicator"></div>
+      </div>
+      <div class="signal-bars" id="signalBars">
+        <div class="signal-bar"></div>
+        <div class="signal-bar"></div>
+        <div class="signal-bar"></div>
+        <div class="signal-bar"></div>
+        <div class="signal-bar"></div>
+      </div>
+    </div>
+    
+    <div class="metric-row">
+      <span class="metric-label">Connection Type</span>
+      <span class="metric-value" id="connectionType">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Signal Strength</span>
+      <span class="metric-value" id="signalStrength">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Download Speed</span>
+      <span class="metric-value" id="downloadSpeed">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Latency</span>
+      <span class="metric-value" id="latency">Unknown</span>
+    </div>
+  </div>
+
+  <!-- Device Health -->
+  <div class="status-card" id="deviceCard">
+    <div class="card-header">
+      <div class="card-title">
+        🔋 Device Health
+        <div class="status-indicator" id="deviceIndicator"></div>
+      </div>
+      <div class="battery-indicator">
+        <div class="battery-level">
+          <div class="battery-fill" id="batteryFill"></div>
+        </div>
+        <span id="batteryPercent">--</span>
+      </div>
+    </div>
+    
+    <div class="metric-row">
+      <span class="metric-label">Battery Level</span>
+      <span class="metric-value" id="batteryLevel">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Charging Status</span>
+      <span class="metric-value" id="chargingStatus">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Memory Usage</span>
+      <span class="metric-value" id="memoryUsage">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Storage Available</span>
+      <span class="metric-value" id="storageAvailable">Unknown</span>
+    </div>
+  </div>
+
+  <!-- Sensors Status -->
+  <div class="status-card" id="sensorsCard">
+    <div class="card-header">
+      <div class="card-title">
+        📱 Sensors
+        <div class="status-indicator" id="sensorsIndicator"></div>
+      </div>
+      <button class="btn btn-small btn-secondary" onclick="testSensors()">🧪 Test All</button>
+    </div>
+    
+    <div class="metric-row">
+      <span class="metric-label">Camera</span>
+      <span class="metric-value" id="cameraStatus">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Microphone</span>
+      <span class="metric-value" id="microphoneStatus">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Accelerometer</span>
+      <span class="metric-value" id="accelerometerStatus">Unknown</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Gyroscope</span>
+      <span class="metric-value" id="gyroscopeStatus">Unknown</span>
+    </div>
+  </div>
+</div>
+
+<!-- Mesh Network Status -->
+<div class="status-card">
+  <div class="card-header">
+    <div class="card-title">
+      🕸️ Mesh Network
+      <div class="status-indicator" id="meshIndicator"></div>
+    </div>
+    <div>
+      <button class="btn btn-small btn-secondary" onclick="scanForPeers()">🔍 Scan</button>
+      <button class="btn btn-small btn-primary" onclick="startMeshNode()">🚀 Start Node</button>
+    </div>
+  </div>
+  
+  <div class="metric-row">
+    <span class="metric-label">Node Status</span>
+    <span class="metric-value" id="meshNodeStatus">Offline</span>
+  </div>
+  <div class="metric-row">
+    <span class="metric-label">Connected Peers</span>
+    <span class="metric-value" id="connectedPeers">0</span>
+  </div>
+  <div class="metric-row">
+    <span class="metric-label">Data Relayed</span>
+    <span class="metric-value" id="dataRelayed">0 MB</span>
+  </div>
+
+  <div class="mesh-network">
+    <h4>Connected Peers</h4>
+    <div class="mesh-peers" id="meshPeers">
+      <!-- Peer cards will be populated here -->
+    </div>
+  </div>
+</div>
+
+<!-- Diagnostics Panel -->
+<div class="diagnostics-panel">
+  <h3>🔧 System Diagnostics</h3>
+  
+  <div class="diagnostic-test">
+    <span class="test-name">GPS Functionality</span>
+    <div class="test-result">
+      <span id="gpsTestResult">Not tested</span>
+      <button class="btn btn-small btn-secondary" onclick="runGPSTest()">▶️ Test</button>
+    </div>
+  </div>
+  
+  <div class="diagnostic-test">
+    <span class="test-name">Network Connectivity</span>
+    <div class="test-result">
+      <span id="networkTestResult">Not tested</span>
+      <button class="btn btn-small btn-secondary" onclick="runNetworkTest()">▶️ Test</button>
+    </div>
+  </div>
+  
+  <div class="diagnostic-test">
+    <span class="test-name">Camera Access</span>
+    <div class="test-result">
+      <span id="cameraTestResult">Not tested</span>
+      <button class="btn btn-small btn-secondary" onclick="runCameraTest()">▶️ Test</button>
+    </div>
+  </div>
+  
+  <div class="diagnostic-test">
+    <span class="test-name">Storage Space</span>
+    <div class="test-result">
+      <span id="storageTestResult">Not tested</span>
+      <button class="btn btn-small btn-secondary" onclick="runStorageTest()">▶️ Test</button>
+    </div>
+  </div>
+  
+  <div class="diagnostic-test">
+    <span class="test-name">Mesh Networking</span>
+    <div class="test-result">
+      <span id="meshTestResult">Not tested</span>
+      <button class="btn btn-small btn-secondary" onclick="runMeshTest()">▶️ Test</button>
+    </div>
+  </div>
+</div>
+
+<div class="actions-bar">
+  <button class="btn btn-primary" onclick="runFullDiagnostics()">
+    🩺 Run Full Diagnostics
+  </button>
+  <button class="btn btn-secondary" onclick="exportDiagnostics()">
+    📄 Export Report
+  </button>
+  <button class="btn btn-danger" onclick="resetAllSensors()">
+    🔄 Reset All Sensors
+  </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+class DeviceStatusManager {
+  constructor() {
+    this.watchIds = {};
+    this.sensorData = {};
+    this.meshPeers = new Map();
+    this.diagnosticResults = {};
+    
+    this.init();
+  }
+
+  init() {
+    this.updateAllStatus();
+    this.startMonitoring();
+    
+    // Update every 10 seconds
+    setInterval(() => {
+      this.updateAllStatus();
+    }, 10000);
+  }
+
+  async updateAllStatus() {
+    await Promise.all([
+      this.updateGPSStatus(),
+      this.updateNetworkStatus(),
+      this.updateDeviceHealth(),
+      this.updateSensorStatus(),
+      this.updateMeshStatus()
+    ]);
+  }
+
+  async updateGPSStatus() {
+    const card = document.getElementById('gpsCard');
+    const indicator = document.getElementById('gpsIndicator');
+    
+    if (!navigator.geolocation) {
+      this.setCardStatus(card, indicator, 'error');
+      document.getElementById('gpsStatus').textContent = 'Not Supported';
+      return;
+    }
+
+    try {
+      const position = await this.getCurrentPosition();
+      const accuracy = position.coords.accuracy;
+      
+      // Determine GPS quality
+      let status, className;
+      if (accuracy <= 10) {
+        status = 'Excellent';
+        className = 'good';
+      } else if (accuracy <= 50) {
+        status = 'Good';
+        className = 'warning';
+      } else {
+        status = 'Poor';
+        className = 'poor';
+      }
+
+      this.setCardStatus(card, indicator, accuracy <= 50 ? 'healthy' : 'warning');
+      
+      document.getElementById('gpsStatus').textContent = status;
+      document.getElementById('gpsStatus').className = `metric-value ${className}`;
+      document.getElementById('gpsAccuracy').textContent = `±${Math.round(accuracy)}m`;
+      document.getElementById('gpsCoords').textContent = 
+        `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+      document.getElementById('gpsLastUpdate').textContent = new Date().toLocaleTimeString();
+      
+      // Update location preview
+      document.getElementById('locationPreview').innerHTML = 
+        `📍 Lat: ${position.coords.latitude.toFixed(4)}<br>📍 Lng: ${position.coords.longitude.toFixed(4)}`;
+        
+    } catch (error) {
+      this.setCardStatus(card, indicator, 'error');
+      document.getElementById('gpsStatus').textContent = 'Error';
+      document.getElementById('gpsStatus').className = 'metric-value poor';
+      console.error('GPS Error:', error);
+    }
+  }
+
+  getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000
+      });
+    });
+  }
+
+  async updateNetworkStatus() {
+    const card = document.getElementById('networkCard');
+    const indicator = document.getElementById('networkIndicator');
+    
+    if (navigator.onLine) {
+      this.setCardStatus(card, indicator, 'healthy');
+      
+      // Network information
+      if ('connection' in navigator) {
+        const conn = navigator.connection;
+        document.getElementById('connectionType').textContent = 
+          `${conn.effectiveType || 'Unknown'} (${conn.type || 'Unknown'})`;
+        document.getElementById('downloadSpeed').textContent = 
+          conn.downlink ? `${conn.downlink} Mbps` : 'Unknown';
+        
+        // Update signal bars
+        this.updateSignalBars(conn.effectiveType);
+      } else {
+        document.getElementById('connectionType').textContent = 'Connected';
+        document.getElementById('downloadSpeed').textContent = 'Unknown';
+        this.updateSignalBars('4g'); // Default to good signal
+      }
+      
+      // Test latency
+      const latency = await this.testLatency();
+      document.getElementById('latency').textContent = `${latency}ms`;
+      document.getElementById('signalStrength').textContent = 'Good';
+      
+    } else {
+      this.setCardStatus(card, indicator, 'offline');
+      document.getElementById('connectionType').textContent = 'Offline';
+      document.getElementById('signalStrength').textContent = 'No Signal';
+      document.getElementById('downloadSpeed').textContent = '--';
+      document.getElementById('latency').textContent = '--';
+      this.updateSignalBars('offline');
+    }
+  }
+
+  updateSignalBars(effectiveType) {
+    const bars = document.querySelectorAll('.signal-bar');
+    bars.forEach(bar => bar.classList.remove('active'));
+    
+    let activeBars = 0;
+    switch (effectiveType) {
+      case '4g': activeBars = 5; break;
+      case '3g': activeBars = 4; break;
+      case '2g': activeBars = 2; break;
+      case 'slow-2g': activeBars = 1; break;
+      default: activeBars = 0;
+    }
+    
+    for (let i = 0; i < activeBars; i++) {
+      bars[i].classList.add('active');
+    }
+  }
+
+  async testLatency() {
+    try {
+      const start = performance.now();
+      await fetch('/ping', { method: 'HEAD', cache: 'no-cache' });
+      return Math.round(performance.now() - start);
+    } catch {
+      return 999;
+    }
+  }
+
+  async updateDeviceHealth() {
+    const card = document.getElementById('deviceCard');
+    const indicator = document.getElementById('deviceIndicator');
+    
+    // Battery status
+    if ('getBattery' in navigator) {
+      try {
+        const battery = await navigator.getBattery();
+        const level = Math.round(battery.level * 100);
+        
+        this.updateBatteryDisplay(level, battery.charging);
+        
+        document.getElementById('batteryLevel').textContent = `${level}%`;
+        document.getElementById('chargingStatus').textContent = 
+          battery.charging ? 'Charging' : 'Discharging';
+        
+        // Set card status based on battery level
+        if (level > 50 || battery.charging) {
+          this.setCardStatus(card, indicator, 'healthy');
+        } else if (level > 20) {
+          this.setCardStatus(card, indicator, 'warning');
+        } else {
+          this.setCardStatus(card, indicator, 'error');
+        }
+        
+      } catch (error) {
+        document.getElementById('batteryLevel').textContent = 'Unknown';
+        document.getElementById('chargingStatus').textContent = 'Unknown';
+        this.setCardStatus(card, indicator, 'warning');
+      }
+    } else {
+      document.getElementById('batteryLevel').textContent = 'Not Supported';
+      this.setCardStatus(card, indicator, 'warning');
+    }
+
+    // Memory usage (if available)
+    if ('memory' in performance) {
+      const memory = performance.memory;
+      const used = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+      const total = Math.round(memory.totalJSHeapSize / 1024 / 1024);
+      document.getElementById('memoryUsage').textContent = `${used}/${total} MB`;
+    } else {
+      document.getElementById('memoryUsage').textContent = 'Unknown';
+    }
+
+    // Storage (if available)
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+      try {
+        const estimate = await navigator.storage.estimate();
+        const used = Math.round(estimate.usage / 1024 / 1024);
+        const available = Math.round((estimate.quota - estimate.usage) / 1024 / 1024);
+        document.getElementById('storageAvailable').textContent = `${available} MB free`;
+      } catch (error) {
+        document.getElementById('storageAvailable').textContent = 'Unknown';
+      }
+    } else {
+      document.getElementById('storageAvailable').textContent = 'Unknown';
+    }
+  }
+
+  updateBatteryDisplay(level, charging) {
+    const fill = document.getElementById('batteryFill');
+    const percent = document.getElementById('batteryPercent');
+    
+    fill.style.width = `${level}%`;
+    percent.textContent = `${level}%`;
+    
+    // Color based on level
+    fill.className = 'battery-fill ';
+    if (level > 50) {
+      fill.className += 'high';
+    } else if (level > 20) {
+      fill.className += 'medium';
+    } else {
+      fill.className += 'low';
+    }
+  }
+
+  async updateSensorStatus() {
+    const card = document.getElementById('sensorsCard');
+    const indicator = document.getElementById('sensorsIndicator');
+    
+    let healthyCount = 0;
+    let totalCount = 0;
+
+    // Camera
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      document.getElementById('cameraStatus').textContent = 'Available';
+      document.getElementById('cameraStatus').className = 'metric-value good';
+      stream.getTracks().forEach(track => track.stop());
+      healthyCount++;
+    } catch (error) {
+      document.getElementById('cameraStatus').textContent = 'Denied/Error';
+      document.getElementById('cameraStatus').className = 'metric-value poor';
+    }
+    totalCount++;
+
+    // Microphone
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      document.getElementById('microphoneStatus').textContent = 'Available';
+      document.getElementById('microphoneStatus').className = 'metric-value good';
+      stream.getTracks().forEach(track => track.stop());
+      healthyCount++;
+    } catch (error) {
+      document.getElementById('microphoneStatus').textContent = 'Denied/Error';
+      document.getElementById('microphoneStatus').className = 'metric-value poor';
+    }
+    totalCount++;
+
+    // Motion sensors
+    if ('DeviceMotionEvent' in window) {
+      document.getElementById('accelerometerStatus').textContent = 'Available';
+      document.getElementById('accelerometerStatus').className = 'metric-value good';
+      healthyCount++;
+    } else {
+      document.getElementById('accelerometerStatus').textContent = 'Not Supported';
+      document.getElementById('accelerometerStatus').className = 'metric-value warning';
+    }
+    totalCount++;
+
+    if ('DeviceOrientationEvent' in window) {
+      document.getElementById('gyroscopeStatus').textContent = 'Available';
+      document.getElementById('gyroscopeStatus').className = 'metric-value good';
+      healthyCount++;
+    } else {
+      document.getElementById('gyroscopeStatus').textContent = 'Not Supported';
+      document.getElementById('gyroscopeStatus').className = 'metric-value warning';
+    }
+    totalCount++;
+
+    // Set overall sensor status
+    if (healthyCount === totalCount) {
+      this.setCardStatus(card, indicator, 'healthy');
+    } else if (healthyCount > totalCount / 2) {
+      this.setCardStatus(card, indicator, 'warning');
+    } else {
+      this.setCardStatus(card, indicator, 'error');
+    }
+  }
+
+  updateMeshStatus() {
+    const indicator = document.getElementById('meshIndicator');
+    
+    // Simulate mesh network status
+    const isActive = this.meshPeers.size > 0;
+    
+    if (isActive) {
+      indicator.className = 'status-indicator status-healthy';
+      document.getElementById('meshNodeStatus').textContent = 'Active';
+    } else {
+      indicator.className = 'status-indicator status-offline';
+      document.getElementById('meshNodeStatus').textContent = 'Offline';
+    }
+    
+    document.getElementById('connectedPeers').textContent = this.meshPeers.size;
+    document.getElementById('dataRelayed').textContent = 
+      `${(Math.random() * 10).toFixed(1)} MB`; // Simulated
+    
+    this.renderMeshPeers();
+  }
+
+  renderMeshPeers() {
+    const container = document.getElementById('meshPeers');
+    
+    if (this.meshPeers.size === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; color: #6b7280; padding: 2rem;">
+          No peers connected. Click "Scan" to find nearby devices.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = Array.from(this.meshPeers.entries()).map(([id, peer]) => `
+      <div class="peer-card ${peer.status}">
+        <div class="peer-header">
+          <div class="peer-name">${peer.name}</div>
+          <div class="peer-signal">${peer.signal}%</div>
+        </div>
+        <div style="font-size: 0.8rem; color: #6b7280;">
+          <div>Type: ${peer.type}</div>
+          <div>Last seen: ${peer.lastSeen}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  setCardStatus(card, indicator, status) {
+    card.className = `status-card ${status}`;
+    indicator.className = `status-indicator status-${status}`;
+  }
+
+  startMonitoring() {
+    // Start location watching if permission granted
+    if (navigator.geolocation) {
+      this.watchIds.location = navigator.geolocation.watchPosition(
+        (position) => {
+          // Update location in real-time
+          this.updateGPSStatus();
+        },
+        (error) => console.error('Location watch error:', error),
+        { enableHighAccuracy: true, maximumAge: 60000 }
+      );
+    }
+  }
+
+  // Diagnostic test functions
+  async runGPSTest() {
+    const result = document.getElementById('gpsTestResult');
+    result.textContent = 'Testing...';
+    
+    try {
+      const position = await this.getCurrentPosition();
+      const accuracy = position.coords.accuracy;
+      
+      if (accuracy <= 10) {
+        result.textContent = '✅ Excellent';
+        result.className = 'metric-value good';
+      } else if (accuracy <= 50) {
+        result.textContent = '⚠️ Good';
+        result.className = 'metric-value warning';
+      } else {
+        result.textContent = '❌ Poor';
+        result.className = 'metric-value poor';
+      }
+      
+      this.diagnosticResults.gps = { status: 'fail', error: error.message };
+    }
+  }
+
+  async runNetworkTest() {
+    const result = document.getElementById('networkTestResult');
+    result.textContent = 'Testing...';
+    
+    try {
+      const latency = await this.testLatency();
+      
+      if (latency < 100) {
+        result.textContent = '✅ Excellent';
+        result.className = 'metric-value good';
+      } else if (latency < 300) {
+        result.textContent = '⚠️ Good';
+        result.className = 'metric-value warning';
+      } else {
+        result.textContent = '❌ Poor';
+        result.className = 'metric-value poor';
+      }
+      
+      this.diagnosticResults.network = { status: 'pass', latency };
+    } catch (error) {
+      result.textContent = '❌ Failed';
+      result.className = 'metric-value poor';
+      this.diagnosticResults.network = { status: 'fail', error: error.message };
+    }
+  }
+
+  async runCameraTest() {
+    const result = document.getElementById('cameraTestResult');
+    result.textContent = 'Testing...';
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 640, height: 480 } 
+      });
+      
+      // Test if we can capture a frame
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+      
+      await new Promise(resolve => {
+        video.onloadedmetadata = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0);
+          resolve();
+        };
+      });
+      
+      stream.getTracks().forEach(track => track.stop());
+      
+      result.textContent = '✅ Working';
+      result.className = 'metric-value good';
+      this.diagnosticResults.camera = { status: 'pass' };
+      
+    } catch (error) {
+      result.textContent = '❌ Failed';
+      result.className = 'metric-value poor';
+      this.diagnosticResults.camera = { status: 'fail', error: error.message };
+    }
+  }
+
+  async runStorageTest() {
+    const result = document.getElementById('storageTestResult');
+    result.textContent = 'Testing...';
+    
+    try {
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        const estimate = await navigator.storage.estimate();
+        const availableGB = (estimate.quota - estimate.usage) / (1024 * 1024 * 1024);
+        
+        if (availableGB > 1) {
+          result.textContent = '✅ Sufficient';
+          result.className = 'metric-value good';
+        } else if (availableGB > 0.1) {
+          result.textContent = '⚠️ Low';
+          result.className = 'metric-value warning';
+        } else {
+          result.textContent = '❌ Critical';
+          result.className = 'metric-value poor';
+        }
+        
+        this.diagnosticResults.storage = { status: 'pass', available: availableGB };
+      } else {
+        result.textContent = '❌ Unsupported';
+        result.className = 'metric-value warning';
+        this.diagnosticResults.storage = { status: 'unsupported' };
+      }
+    } catch (error) {
+      result.textContent = '❌ Failed';
+      result.className = 'metric-value poor';
+      this.diagnosticResults.storage = { status: 'fail', error: error.message };
+    }
+  }
+
+  async runMeshTest() {
+    const result = document.getElementById('meshTestResult');
+    result.textContent = 'Testing...';
+    
+    try {
+      // Simulate mesh connectivity test
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (this.meshPeers.size > 0) {
+        result.textContent = '✅ Connected';
+        result.className = 'metric-value good';
+        this.diagnosticResults.mesh = { status: 'pass', peers: this.meshPeers.size };
+      } else {
+        result.textContent = '⚠️ No Peers';
+        result.className = 'metric-value warning';
+        this.diagnosticResults.mesh = { status: 'warning', peers: 0 };
+      }
+    } catch (error) {
+      result.textContent = '❌ Failed';
+      result.className = 'metric-value poor';
+      this.diagnosticResults.mesh = { status: 'fail', error: error.message };
+    }
+  }
+
+  async runFullDiagnostics() {
+    const tests = [
+      this.runGPSTest(),
+      this.runNetworkTest(),
+      this.runCameraTest(),
+      this.runStorageTest(),
+      this.runMeshTest()
+    ];
+    
+    await Promise.all(tests);
+    
+    // Show summary
+    const passCount = Object.values(this.diagnosticResults).filter(r => r.status === 'pass').length;
+    const totalCount = Object.keys(this.diagnosticResults).length;
+    
+    alert(`Diagnostics Complete!\n✅ ${passCount}/${totalCount} tests passed\n\nCheck individual test results above for details.`);
+  }
+
+  exportDiagnostics() {
+    const report = {
+      timestamp: new Date().toISOString(),
+      deviceInfo: {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        cookieEnabled: navigator.cookieEnabled,
+        onLine: navigator.onLine
+      },
+      diagnostics: this.diagnosticResults,
+      meshPeers: Array.from(this.meshPeers.entries()),
+      currentStatus: {
+        gps: document.getElementById('gpsStatus').textContent,
+        network: document.getElementById('connectionType').textContent,
+        battery: document.getElementById('batteryLevel').textContent,
+        sensors: {
+          camera: document.getElementById('cameraStatus').textContent,
+          microphone: document.getElementById('microphoneStatus').textContent,
+          accelerometer: document.getElementById('accelerometerStatus').textContent,
+          gyroscope: document.getElementById('gyroscopeStatus').textContent
+        }
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `device-diagnostics-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  resetAllSensors() {
+    if (confirm('This will reset all sensor permissions and clear cached data. Continue?')) {
+      // Clear location watch
+      if (this.watchIds.location) {
+        navigator.geolocation.clearWatch(this.watchIds.location);
+      }
+      
+      // Clear diagnostic results
+      this.diagnosticResults = {};
+      
+      // Reset test results
+      const testResults = [
+        'gpsTestResult', 'networkTestResult', 'cameraTestResult', 
+        'storageTestResult', 'meshTestResult'
+      ];
+      
+      testResults.forEach(id => {
+        const element = document.getElementById(id);
+        element.textContent = 'Not tested';
+        element.className = '';
+      });
+      
+      // Restart monitoring
+      this.startMonitoring();
+      this.updateAllStatus();
+      
+      alert('Sensor reset complete. Please refresh the page if you granted new permissions.');
+    }
+  }
+}
+
+// Global functions for button handlers
+let deviceManager;
+
+function refreshGPS() {
+  if (deviceManager) {
+    deviceManager.updateGPSStatus();
+  }
+}
+
+function testSensors() {
+  if (deviceManager) {
+    Promise.all([
+      deviceManager.runCameraTest(),
+      deviceManager.runStorageTest()
+    ]);
+  }
+}
+
+function scanForPeers() {
+  if (deviceManager) {
+    // Simulate finding peers
+    deviceManager.meshPeers.set('peer-1', {
+      name: 'Emergency Unit 1',
+      type: 'Mobile Device',
+      status: 'connected',
+      signal: 85,
+      lastSeen: 'Just now'
+    });
+    
+    deviceManager.meshPeers.set('peer-2', {
+      name: 'Field Station Alpha',
+      type: 'Base Station',
+      status: 'connected',
+      signal: 92,
+      lastSeen: '2 min ago'
+    });
+    
+    deviceManager.updateMeshStatus();
+    alert('Scan complete! Found 2 nearby devices.');
+  }
+}
+
+function startMeshNode() {
+  if (deviceManager) {
+    // Simulate starting mesh node
+    setTimeout(() => {
+      alert('Mesh node started! You are now discoverable by other devices.');
+      deviceManager.updateMeshStatus();
+    }, 1000);
+  }
+}
+
+function runGPSTest() {
+  if (deviceManager) deviceManager.runGPSTest();
+}
+
+function runNetworkTest() {
+  if (deviceManager) deviceManager.runNetworkTest();
+}
+
+function runCameraTest() {
+  if (deviceManager) deviceManager.runCameraTest();
+}
+
+function runStorageTest() {
+  if (deviceManager) deviceManager.runStorageTest();
+}
+
+function runMeshTest() {
+  if (deviceManager) deviceManager.runMeshTest();
+}
+
+function runFullDiagnostics() {
+  if (deviceManager) deviceManager.runFullDiagnostics();
+}
+
+function exportDiagnostics() {
+  if (deviceManager) deviceManager.exportDiagnostics();
+}
+
+function resetAllSensors() {
+  if (deviceManager) deviceManager.resetAllSensors();
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  deviceManager = new DeviceStatusManager();
+});
+</script>
+{% endblock %} 'pass', accuracy };
+    } catch (error) {
+      result.textContent = '❌ Failed';
+      result.className = 'metric-value poor';
+      this.diagnosticResults.gps = { status:

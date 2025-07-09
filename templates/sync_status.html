@@ -1,0 +1,767 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Sync Status - Disaster Response Assistant{% endblock %}
+{% block page_title %}📡 Sync Status{% endblock %}
+{% block subtitle %}Monitor offline data synchronization and queue management{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .sync-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .sync-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+  }
+
+  .sync-card h3 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  .status-online {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .status-offline {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .status-syncing {
+    background: #dbeafe;
+    color: #1e40af;
+    animation: pulse 2s infinite;
+  }
+
+  .queue-item {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    position: relative;
+  }
+
+  .queue-item.failed {
+    border-color: #fca5a5;
+    background: #fef2f2;
+  }
+
+  .queue-item.processing {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    animation: processing 2s infinite;
+  }
+
+  @keyframes processing {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(2px); }
+    75% { transform: translateX(-2px); }
+  }
+
+  .queue-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .queue-title {
+    font-weight: bold;
+    color: #374151;
+  }
+
+  .queue-meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    display: flex;
+    gap: 1rem;
+  }
+
+  .queue-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: #2563eb;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #1d4ed8;
+  }
+
+  .btn-danger {
+    background: #dc2626;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #b91c1c;
+  }
+
+  .btn-secondary {
+    background: #6b7280;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #4b5563;
+  }
+
+  .btn-small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .sync-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1f2937;
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    transition: width 0.5s ease;
+  }
+
+  .retry-count {
+    background: #fbbf24;
+    color: #92400e;
+    padding: 0.125rem 0.375rem;
+    border-radius: 10px;
+    font-size: 0.625rem;
+    font-weight: bold;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .sync-dashboard {
+      grid-template-columns: 1fr;
+    }
+    
+    .sync-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  [data-theme="dark"] .sync-card {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  [data-theme="dark"] .queue-item {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+
+  [data-theme="dark"] .stat-card {
+    background: #374151;
+    border-color: #4b5563;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sync-stats">
+  <div class="stat-card">
+    <span class="stat-number" id="totalQueued">0</span>
+    <span class="stat-label">Queued Items</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-number" id="totalFailed">0</span>
+    <span class="stat-label">Failed Syncs</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-number" id="totalSynced">0</span>
+    <span class="stat-label">Successfully Synced</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-number" id="lastSyncTime">Never</span>
+    <span class="stat-label">Last Sync</span>
+  </div>
+</div>
+
+<div class="sync-dashboard">
+  <div class="sync-card">
+    <h3>
+      🌐 Connection Status
+      <span class="status-badge" id="connectionBadge">Checking...</span>
+    </h3>
+    
+    <div class="connection-details">
+      <p><strong>Network:</strong> <span id="networkType">Unknown</span></p>
+      <p><strong>Signal Strength:</strong> <span id="signalStrength">Unknown</span></p>
+      <p><strong>Last Online:</strong> <span id="lastOnline">Unknown</span></p>
+      <p><strong>Auto-sync:</strong> <span id="autoSyncStatus">Enabled</span></p>
+    </div>
+
+    <div class="queue-actions">
+      <button class="btn btn-primary" id="forceSync">
+        🔄 Force Sync Now
+      </button>
+      <button class="btn btn-secondary" id="toggleAutoSync">
+        ⏸️ Pause Auto-sync
+      </button>
+    </div>
+  </div>
+
+  <div class="sync-card">
+    <h3>⚡ Sync Performance</h3>
+    
+    <div class="performance-metrics">
+      <div style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+          <span>Upload Progress</span>
+          <span id="uploadProgress">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="uploadProgressBar" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+          <span>Queue Processing</span>
+          <span id="queueProgress">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="queueProgressBar" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <p><strong>Average Sync Time:</strong> <span id="avgSyncTime">0ms</span></p>
+      <p><strong>Data Transferred:</strong> <span id="dataTransferred">0 KB</span></p>
+    </div>
+  </div>
+</div>
+
+<div class="sync-card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3>📋 Sync Queue</h3>
+    <div>
+      <button class="btn btn-secondary btn-small" id="clearCompleted">
+        🗑️ Clear Completed
+      </button>
+      <button class="btn btn-danger btn-small" id="clearAll">
+        ❌ Clear All
+      </button>
+    </div>
+  </div>
+
+  <div id="queueContainer">
+    <!-- Queue items will be populated here -->
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+class SyncStatusManager {
+  constructor() {
+    this.syncQueue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+    this.syncHistory = JSON.parse(localStorage.getItem('syncHistory') || '[]');
+    this.isAutoSyncEnabled = localStorage.getItem('autoSync') !== 'false';
+    this.isCurrentlySyncing = false;
+    
+    this.init();
+  }
+
+  init() {
+    this.updateStats();
+    this.updateConnectionStatus();
+    this.renderQueue();
+    this.setupEventListeners();
+    this.startAutoSync();
+    
+    // Update every 5 seconds
+    setInterval(() => {
+      this.updateStats();
+      this.updateConnectionStatus();
+    }, 5000);
+  }
+
+  setupEventListeners() {
+    document.getElementById('forceSync').addEventListener('click', () => {
+      this.forceSyncAll();
+    });
+
+    document.getElementById('toggleAutoSync').addEventListener('click', () => {
+      this.toggleAutoSync();
+    });
+
+    document.getElementById('clearCompleted').addEventListener('click', () => {
+      this.clearCompleted();
+    });
+
+    document.getElementById('clearAll').addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all queued items? This cannot be undone.')) {
+        this.clearAll();
+      }
+    });
+
+    // Network status listeners
+    window.addEventListener('online', () => {
+      this.updateConnectionStatus();
+      if (this.isAutoSyncEnabled) {
+        this.forceSyncAll();
+      }
+    });
+
+    window.addEventListener('offline', () => {
+      this.updateConnectionStatus();
+    });
+  }
+
+  updateStats() {
+    const failedItems = this.syncQueue.filter(item => item.status === 'failed');
+    const completedItems = this.syncHistory.filter(item => item.status === 'completed');
+    
+    document.getElementById('totalQueued').textContent = this.syncQueue.length;
+    document.getElementById('totalFailed').textContent = failedItems.length;
+    document.getElementById('totalSynced').textContent = completedItems.length;
+    
+    const lastSync = this.syncHistory.length > 0 ? 
+      new Date(this.syncHistory[this.syncHistory.length - 1].timestamp).toLocaleString() : 
+      'Never';
+    document.getElementById('lastSyncTime').textContent = lastSync;
+  }
+
+  updateConnectionStatus() {
+    const badge = document.getElementById('connectionBadge');
+    const networkType = document.getElementById('networkType');
+    const signalStrength = document.getElementById('signalStrength');
+    const lastOnline = document.getElementById('lastOnline');
+
+    if (navigator.onLine) {
+      badge.textContent = 'Online';
+      badge.className = 'status-badge status-online';
+      localStorage.setItem('lastOnlineTime', Date.now());
+    } else {
+      badge.textContent = 'Offline';
+      badge.className = 'status-badge status-offline';
+    }
+
+    // Network information (if available)
+    if ('connection' in navigator) {
+      const conn = navigator.connection;
+      networkType.textContent = `${conn.effectiveType} (${conn.type})`;
+      signalStrength.textContent = conn.downlink ? `${conn.downlink} Mbps` : 'Unknown';
+    } else {
+      networkType.textContent = navigator.onLine ? 'Connected' : 'Disconnected';
+      signalStrength.textContent = 'Unknown';
+    }
+
+    const lastOnlineTime = localStorage.getItem('lastOnlineTime');
+    if (lastOnlineTime) {
+      lastOnline.textContent = new Date(parseInt(lastOnlineTime)).toLocaleString();
+    }
+
+    document.getElementById('autoSyncStatus').textContent = this.isAutoSyncEnabled ? 'Enabled' : 'Disabled';
+  }
+
+  renderQueue() {
+    const container = document.getElementById('queueContainer');
+    
+    if (this.syncQueue.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <h4>No items in sync queue</h4>
+          <p>All your reports have been synchronized successfully!</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = this.syncQueue.map((item, index) => {
+      const statusClass = item.status === 'failed' ? 'failed' : 
+                         item.status === 'processing' ? 'processing' : '';
+      
+      const retryCount = item.retryCount || 0;
+      const priority = item.priority || 'medium';
+      const timestamp = new Date(item.timestamp || Date.now()).toLocaleString();
+
+      return `
+        <div class="queue-item ${statusClass}" data-index="${index}">
+          <div class="queue-header">
+            <div class="queue-title">
+              ${this.getReportTypeIcon(item.type)} ${item.title || 'Emergency Report'}
+              ${retryCount > 0 ? `<span class="retry-count">Retry ${retryCount}</span>` : ''}
+            </div>
+            <div>
+              <span class="status-badge status-${item.status || 'queued'}">${item.status || 'queued'}</span>
+            </div>
+          </div>
+          
+          <div class="queue-meta">
+            <span>📅 ${timestamp}</span>
+            <span>⚡ Priority: ${priority}</span>
+            <span>📏 ${this.formatDataSize(item.dataSize || 0)}</span>
+            ${item.location ? `<span>📍 ${item.location}</span>` : ''}
+          </div>
+
+          ${item.error ? `
+            <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 4px;">
+              <strong>Error:</strong> ${item.error}
+            </div>
+          ` : ''}
+
+          <div class="queue-actions">
+            <button class="btn btn-primary btn-small" onclick="syncManager.retrySingle(${index})">
+              🔄 Retry
+            </button>
+            <button class="btn btn-secondary btn-small" onclick="syncManager.viewDetails(${index})">
+              👁️ View
+            </button>
+            <button class="btn btn-danger btn-small" onclick="syncManager.removeSingle(${index})">
+              🗑️ Remove
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  getReportTypeIcon(type) {
+    const icons = {
+      fire: '🔥',
+      medical: '🚑',
+      flood: '🌊',
+      earthquake: '📳',
+      accident: '🚗',
+      hazmat: '☢️',
+      weather: '⛈️',
+      security: '🚔',
+      infrastructure: '🏗️',
+      general: '📋'
+    };
+    return icons[type] || '📋';
+  }
+
+  formatDataSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  async forceSyncAll() {
+    if (!navigator.onLine) {
+      alert('Cannot sync while offline. Please check your connection.');
+      return;
+    }
+
+    if (this.isCurrentlySyncing) {
+      console.log('Sync already in progress');
+      return;
+    }
+
+    this.isCurrentlySyncing = true;
+    const badge = document.getElementById('connectionBadge');
+    badge.textContent = 'Syncing...';
+    badge.className = 'status-badge status-syncing';
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (let i = 0; i < this.syncQueue.length; i++) {
+      const item = this.syncQueue[i];
+      
+      try {
+        item.status = 'processing';
+        this.renderQueue();
+
+        // Simulate API call
+        await this.simulateSync(item);
+        
+        // Move to history
+        this.syncHistory.push({
+          ...item,
+          status: 'completed',
+          syncedAt: Date.now()
+        });
+        
+        successCount++;
+        
+      } catch (error) {
+        item.status = 'failed';
+        item.error = error.message;
+        item.retryCount = (item.retryCount || 0) + 1;
+        failedCount++;
+      }
+
+      // Update progress
+      const progress = ((i + 1) / this.syncQueue.length) * 100;
+      document.getElementById('queueProgress').textContent = `${Math.round(progress)}%`;
+      document.getElementById('queueProgressBar').style.width = `${progress}%`;
+    }
+
+    // Remove successfully synced items
+    this.syncQueue = this.syncQueue.filter(item => item.status !== 'completed');
+    
+    // Save to localStorage
+    localStorage.setItem('syncQueue', JSON.stringify(this.syncQueue));
+    localStorage.setItem('syncHistory', JSON.stringify(this.syncHistory));
+
+    this.isCurrentlySyncing = false;
+    this.updateConnectionStatus();
+    this.updateStats();
+    this.renderQueue();
+
+    // Show summary
+    const message = `Sync completed!\n✅ ${successCount} items synced\n❌ ${failedCount} items failed`;
+    alert(message);
+  }
+
+  async simulateSync(item) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 500));
+    
+    // Simulate occasional failures
+    if (Math.random() < 0.1) { // 10% failure rate
+      throw new Error('Network timeout');
+    }
+  }
+
+  async retrySingle(index) {
+    const item = this.syncQueue[index];
+    if (!item) return;
+
+    try {
+      item.status = 'processing';
+      this.renderQueue();
+
+      await this.simulateSync(item);
+      
+      // Move to history
+      this.syncHistory.push({
+        ...item,
+        status: 'completed',
+        syncedAt: Date.now()
+      });
+
+      // Remove from queue
+      this.syncQueue.splice(index, 1);
+      
+      localStorage.setItem('syncQueue', JSON.stringify(this.syncQueue));
+      localStorage.setItem('syncHistory', JSON.stringify(this.syncHistory));
+
+      this.updateStats();
+      this.renderQueue();
+      
+      alert('Item synced successfully!');
+      
+    } catch (error) {
+      item.status = 'failed';
+      item.error = error.message;
+      item.retryCount = (item.retryCount || 0) + 1;
+      
+      localStorage.setItem('syncQueue', JSON.stringify(this.syncQueue));
+      this.renderQueue();
+      
+      alert(`Sync failed: ${error.message}`);
+    }
+  }
+
+  removeSingle(index) {
+    if (confirm('Remove this item from the sync queue?')) {
+      this.syncQueue.splice(index, 1);
+      localStorage.setItem('syncQueue', JSON.stringify(this.syncQueue));
+      this.updateStats();
+      this.renderQueue();
+    }
+  }
+
+  viewDetails(index) {
+    const item = this.syncQueue[index];
+    if (!item) return;
+
+    const details = `
+Report Details:
+- Type: ${item.type || 'Unknown'}
+- Priority: ${item.priority || 'Medium'}
+- Created: ${new Date(item.timestamp || Date.now()).toLocaleString()}
+- Size: ${this.formatDataSize(item.dataSize || 0)}
+- Retry Count: ${item.retryCount || 0}
+- Status: ${item.status || 'Queued'}
+${item.location ? `- Location: ${item.location}` : ''}
+${item.message ? `- Message: ${item.message}` : ''}
+${item.error ? `- Last Error: ${item.error}` : ''}
+    `;
+
+    alert(details);
+  }
+
+  toggleAutoSync() {
+    this.isAutoSyncEnabled = !this.isAutoSyncEnabled;
+    localStorage.setItem('autoSync', this.isAutoSyncEnabled.toString());
+    
+    const button = document.getElementById('toggleAutoSync');
+    button.innerHTML = this.isAutoSyncEnabled ? '⏸️ Pause Auto-sync' : '▶️ Resume Auto-sync';
+    
+    this.updateConnectionStatus();
+    
+    if (this.isAutoSyncEnabled) {
+      this.startAutoSync();
+    }
+  }
+
+  startAutoSync() {
+    if (!this.isAutoSyncEnabled) return;
+    
+    // Auto-sync every 30 seconds when online
+    setInterval(() => {
+      if (navigator.onLine && this.isAutoSyncEnabled && !this.isCurrentlySyncing && this.syncQueue.length > 0) {
+        this.forceSyncAll();
+      }
+    }, 30000);
+  }
+
+  clearCompleted() {
+    const completedCount = this.syncHistory.length;
+    this.syncHistory = [];
+    localStorage.setItem('syncHistory', JSON.stringify(this.syncHistory));
+    this.updateStats();
+    alert(`Cleared ${completedCount} completed sync records.`);
+  }
+
+  clearAll() {
+    this.syncQueue = [];
+    localStorage.setItem('syncQueue', JSON.stringify(this.syncQueue));
+    this.updateStats();
+    this.renderQueue();
+    alert('All queued items cleared.');
+  }
+}
+
+// Initialize the sync status manager
+let syncManager;
+document.addEventListener('DOMContentLoaded', () => {
+  syncManager = new SyncStatusManager();
+  
+  // Add some demo data if queue is empty
+  if (syncManager.syncQueue.length === 0) {
+    const demoData = [
+      {
+        id: 'demo-1',
+        type: 'fire',
+        title: 'Building Fire on Main St',
+        priority: 'high',
+        timestamp: Date.now() - 300000,
+        status: 'queued',
+        dataSize: 2048,
+        location: 'Main St & 5th Ave'
+      },
+      {
+        id: 'demo-2',
+        type: 'medical',
+        title: 'Medical Emergency',
+        priority: 'critical',
+        timestamp: Date.now() - 600000,
+        status: 'failed',
+        error: 'Connection timeout',
+        retryCount: 2,
+        dataSize: 1024
+      },
+      {
+        id: 'demo-3',
+        type: 'flood',
+        title: 'Street Flooding Report',
+        priority: 'medium',
+        timestamp: Date.now() - 900000,
+        status: 'processing',
+        dataSize: 4096,
+        location: 'River Road'
+      }
+    ];
+    
+    syncManager.syncQueue = demoData;
+    localStorage.setItem('syncQueue', JSON.stringify(demoData));
+    syncManager.renderQueue();
+    syncManager.updateStats();
+  }
+});
+</script>
+{% endblock %}
