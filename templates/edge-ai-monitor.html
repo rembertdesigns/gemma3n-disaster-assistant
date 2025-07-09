@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Edge AI Monitor - Performance Optimization System</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  
+  <!-- Additional CSS for monitoring -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  
+  <style>
+    /* Edge AI Status Indicators */
+    .ai-status-bar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+    
+    .ai-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ff00;
+      animation: pulse 2s infinite;
+    }
+    
+    .ai-status-dot.loading {
+      background: #ffaa00;
+    }
+    
+    .ai-status-dot.error {
+      background: #ff0000;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+
+    /* Monitor-specific styling */
+    .monitor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .monitor-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s ease;
+    }
+
+    .monitor-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .monitor-card h3 {
+      margin: 0 0 1rem 0;
+      color: #1e40af;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .performance-chart {
+      width: 100%;
+      height: 200px;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin: 1rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .metric-row:last-child {
+      border-bottom: none;
+    }
+
+    .metric-label {
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .metric-value {
+      font-weight: bold;
+      color: #1f2937;
+    }
+
+    .metric-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .status-optimal { background: #dcfce7; color: #166534; }
+    .status-good { background: #fef3c7; color: #92400e; }
+    .status-warning { background: #fecaca; color: #991b1b; }
+    .status-critical { background: #dc2626; color: white; animation: blink 1s infinite; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .model-list {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .model-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .model-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .model-name {
+      font-weight: 500;
+      color: #1f2937;
+    }
+
+    .model-stats {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    .optimization-panel {
+      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .optimization-panel h3 {
+      margin: 0 0 1rem 0;
+      color: white;
+    }
+
+    .optimization-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .optimization-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 1rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .optimization-card h4 {
+      margin: 0 0 0.5rem 0;
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    .optimization-button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .optimization-button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .real-time-log {
+      background: #111827;
+      color: #10b981;
+      border-radius: 8px;
+      padding: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .log-entry {
+      margin-bottom: 0.25rem;
+      padding: 0.25rem 0;
+      border-left: 3px solid transparent;
+      padding-left: 0.5rem;
+    }
+
+    .log-info { border-left-color: #3b82f6; }
+    .log-warning { border-left-color: #f59e0b; }
+    .log-error { border-left-color: #ef4444; }
+    .log-success { border-left-color: #10b981; }
+
+    .benchmark-section {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .benchmark-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .benchmark-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .benchmark-score {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #1e40af;
+      margin: 0.5rem 0;
+    }
+
+    .benchmark-label {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 0.5rem 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+      transition: width 0.3s ease;
+    }
+
+    .alert-panel {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .alert-panel.visible {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: bold;
+      color: #991b1b;
+      margin-bottom: 0.5rem;
+    }
+
+    .resource-monitor {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .resource-item {
+      text-align: center;
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .resource-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #1e40af;
+    }
+
+    .resource-label {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    .resource-bar {
+      width: 100%;
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+
+    .resource-bar-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .cpu-bar { background: #3b82f6; }
+    .memory-bar { background: #10b981; }
+    .gpu-bar { background: #f59e0b; }
+    .network-bar { background: #8b5cf6; }
+
+    [data-theme="dark"] .monitor-card {
+      background: #1f2937;
+      border-color: #374151;
+    }
+
+    [data-theme="dark"] .monitor-card h3 {
+      color: #60a5fa;
+    }
+
+    [data-theme="dark"] .metric-label {
+      color: #d1d5db;
+    }
+
+    [data-theme="dark"] .metric-value {
+      color: #f9fafb;
+    }
+
+    [data-theme="dark"] .model-list {
+      background: #111827;
+    }
+
+    [data-theme="dark"] .model-item {
+      background: #1f2937;
+      border-color: #374151;
+    }
+
+    [data-theme="dark"] .model-name {
+      color: #f9fafb;
+    }
+
+    [data-theme="dark"] .benchmark-section {
+      background: #1f2937;
+      border-color: #374151;
+    }
+
+    [data-theme="dark"] .benchmark-card {
+      background: #111827;
+      border-color: #374151;
+    }
+
+    [data-theme="dark"] .resource-item {
+      background: #1f2937;
+      border-color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">🧠</div>
+      <div>
+        <h1 class="title">Edge AI Monitor</h1>
+        <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+          🧩 Live JSON → PDF Editor
+        </a>
+        <p class="subtitle">Real-time AI Performance Optimization & Monitoring</p>
+      </div>
+      <div class="controls">
+        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
+        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
+        <div class="status-bar">
+          <div class="status-indicator status-offline">
+            <div class="status-dot"></div>
+            Offline Ready
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Edge AI Status Bar -->
+    <div class="ai-status-bar" id="aiStatusBar">
+      <div class="ai-status-dot loading" id="aiStatusDot"></div>
+      <span id="aiStatusText">🧠 Initializing AI Performance Monitor...</span>
+      <button onclick="window.EdgeAIMonitor?.runDiagnostics()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-left: auto;">
+        🧪 Run Diagnostics
+      </button>
+    </div>
+
+    <!-- Performance Alert Panel -->
+    <div class="alert-panel" id="alertPanel">
+      <div class="alert-header">
+        <span>⚠️</span>
+        <span id="alertTitle">Performance Alert</span>
+      </div>
+      <div id="alertMessage">AI model performance degradation detected. Optimization recommended.</div>
+    </div>
+
+    <!-- Main Monitor Grid -->
+    <div class="monitor-grid">
+      <!-- System Overview -->
+      <div class="monitor-card">
+        <h3>📊 System Overview</h3>
+        <div class="metric-row">
+          <span class="metric-label">AI Engine Status</span>
+          <span class="metric-value" id="engineStatus">
+            <span class="metric-status status-optimal">🟢 OPTIMAL</span>
+          </span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Active Models</span>
+          <span class="metric-value" id="activeModels">7</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Processing Queue</span>
+          <span class="metric-value" id="processingQueue">12</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Avg Response Time</span>
+          <span class="metric-value" id="avgResponseTime">143ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Total Requests</span>
+          <span class="metric-value" id="totalRequests">2,847</span>
+        </div>
+      </div>
+
+      <!-- Performance Metrics -->
+      <div class="monitor-card">
+        <h3>⚡ Performance Metrics</h3>
+        <div class="performance-chart">
+          <canvas class="chart-canvas" id="performanceChart"></canvas>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Throughput</span>
+          <span class="metric-value" id="throughput">94.2 req/s</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Success Rate</span>
+          <span class="metric-value" id="successRate">99.7%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Error Rate</span>
+          <span class="metric-value" id="errorRate">0.3%</span>
+        </div>
+      </div>
+
+      <!-- Resource Usage -->
+      <div class="monitor-card">
+        <h3>💾 Resource Usage</h3>
+        <div class="resource-monitor">
+          <div class="resource-item">
+            <div class="resource-value" id="cpuUsage">67%</div>
+            <div class="resource-label">CPU Usage</div>
+            <div class="resource-bar">
+              <div class="resource-bar-fill cpu-bar" id="cpuBar" style="width: 67%"></div>
+            </div>
+          </div>
+          <div class="resource-item">
+            <div class="resource-value" id="memoryUsage">45%</div>
+            <div class="resource-label">Memory</div>
+            <div class="resource-bar">
+              <div class="resource-bar-fill memory-bar" id="memoryBar" style="width: 45%"></div>
+            </div>
+          </div>
+          <div class="resource-item">
+            <div class="resource-value" id="gpuUsage">82%</div>
+            <div class="resource-label">GPU Usage</div>
+            <div class="resource-bar">
+              <div class="resource-bar-fill gpu-bar" id="gpuBar" style="width: 82%"></div>
+            </div>
+          </div>
+          <div class="resource-item">
+            <div class="resource-value" id="networkUsage">34%</div>
+            <div class="resource-label">Network</div>
+            <div class="resource-bar">
+              <div class="resource-bar-fill network-bar" id="networkBar" style="width: 34%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model Performance -->
+      <div class="monitor-card">
+        <h3>🤖 Model Performance</h3>
+        <div class="model-list" id="modelList">
+          <div class="model-item">
+            <div class="model-name">Emergency Classification</div>
+            <div class="model-stats">
+              <span>98.4% accuracy</span>
+              <span>87ms latency</span>
+            </div>
+          </div>
+          <div class="model-item">
+            <div class="model-name">Hazard Detection</div>
+            <div class="model-stats">
+              <span>96.7% accuracy</span>
+              <span>124ms latency</span>
+            </div>
+          </div>
+          <div class="model-item">
+            <div class="model-name">Sentiment Analysis</div>
+            <div class="model-stats">
+              <span>94.2% accuracy</span>
+              <span>56ms latency</span>
+            </div>
+          </div>
+          <div class="model-item">
+            <div class="model-name">OCR Processing</div>
+            <div class="model-stats">
+              <span>99.1% accuracy</span>
+              <span>234ms latency</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Optimization Panel -->
+    <div class="optimization-panel">
+      <h3>🚀 AI Optimization Controls</h3>
+      <p>Real-time performance optimization and model tuning controls</p>
+      
+      <div class="optimization-grid">
+        <div class="optimization-card">
+          <h4>🔧 Auto-Optimization</h4>
+          <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-bottom: 1rem;">
+            Automatically optimize models based on performance metrics
+          </p>
+          <button class="optimization-button" onclick="window.EdgeAIMonitor?.toggleAutoOptimization()">
+            <span id="autoOptText">Enable Auto-Opt</span>
+          </button>
+        </div>
+        
+        <div class="optimization-card">
+          <h4>⚡ Performance Boost</h4>
+          <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-bottom: 1rem;">
+            Increase processing speed at cost of accuracy
+          </p>
+          <button class="optimization-button" onclick="window.EdgeAIMonitor?.performanceBoost()">
+            Boost Performance
+          </button>
+        </div>
+        
+        <div class="optimization-card">
+          <h4>🎯 Accuracy Mode</h4>
+          <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-bottom: 1rem;">
+            Prioritize accuracy over speed
+          </p>
+          <button class="optimization-button" onclick="window.EdgeAIMonitor?.accuracyMode()">
+            Enable Accuracy
+          </button>
+        </div>
+        
+        <div class="optimization-card">
+          <h4>🔄 Model Reload</h4>
+          <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-bottom: 1rem;">
+            Reload models to clear cache
+          </p>
+          <button class="optimization-button" onclick="window.EdgeAIMonitor?.reloadModels()">
+            Reload Models
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Benchmark Results -->
+    <div class="benchmark-section">
+      <h3>🏆 Performance Benchmarks</h3>
+      <div class="benchmark-grid">
+        <div class="benchmark-card">
+          <div class="benchmark-score" id="overallScore">94.2</div>
+          <div class="benchmark-label">Overall Score</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="overallProgress" style="width: 94.2%"></div>
+          </div>
+        </div>
+        <div class="benchmark-card">
+          <div class="benchmark-score" id="latencyScore">87.6</div>
+          <div class="benchmark-label">Latency Score</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="latencyProgress" style="width: 87.6%"></div>
+          </div>
+        </div>
+        <div class="benchmark-card">
+          <div class="benchmark-score" id="accuracyScore">98.4</div>
+          <div class="benchmark-label">Accuracy Score</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="accuracyProgress" style="width: 98.4%"></div>
+          </div>
+        </div>
+        <div class="benchmark-card">
+          <div class="benchmark-score" id="efficiencyScore">91.8</div>
+          <div class="benchmark-label">Efficiency Score</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="efficiencyProgress" style="width: 91.8%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real-time Log -->
+    <div class="monitor-card">
+      <h3>📜 Real-time Performance Log</h3>
+      <div class="real-time-log" id="performanceLog">
+        <div class="log-entry log-info">[2025-07-09 14:32:18] INFO: AI Monitor initialized successfully</div>
+        <div class="log-entry log-success">[2025-07-09 14:32:19] SUCCESS: Emergency Classification model loaded (98.4% accuracy)</div>
+        <div class="log-entry log-info">[2025-07-09 14:32:20] INFO: Hazard Detection model optimized (+12ms latency improvement)</div>
+        <div class="log-entry log-warning">[2025-07-09 14:32:21] WARNING: GPU memory usage approaching 85% threshold</div>
+        <div class="log-entry log-success">[2025-07-09 14:32:22] SUCCESS: Auto-optimization completed for Sentiment Analysis</div>
+        <div class="log-entry log-info">[2025-07-09 14:32:23] INFO: Processing queue cleared - 0 pending requests</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>🔒 Privacy-First | ⚙️ Works Offline | 🧠 AI-Optimized</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/static/js/edge-ai.js"></script>
+  <script src="/static/js/edge-ai-monitor.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    // Theme toggle
+    const themeBtn = document.getElementById('toggleThemeBtn');
+    themeBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // High contrast toggle
+    const contrastBtn = document.getElementById("contrastToggleBtn");
+    contrastBtn.addEventListener("click", () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-contrast');
+      const next = current === 'high' ? 'normal' : 'high';
+      html.setAttribute('data-contrast', next);
+      localStorage.setItem('contrast', next);
+    });
+
+    const savedContrast = localStorage.getItem('contrast');
+    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
+
+    // Connection status
+    function updateConnectionStatus() {
+      const indicator = document.querySelector('.status-indicator');
+      if (navigator.onLine) {
+        indicator.innerHTML = '<div class="status-dot"></div>Online + Offline Ready';
+        indicator.className = 'status-indicator status-online';
+      } else {
+        indicator.innerHTML = '<div class="status-dot"></div>Offline Mode Active';
+        indicator.className = 'status-indicator status-offline';
+      }
+    }
+
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    updateConnectionStatus();
+
+    // Service Worker registration
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/static/js/sw.js")
+        .then((reg) => console.log("✅ Service worker registered:", reg.scope))
+        .catch((err) => console.error("❌ Service worker registration failed:", err));
+    }
+
+    // Initialize AI Monitor
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.EdgeAIMonitor) {
+        window.EdgeAIMonitor.initialize();
+      }
+    });
+  </script>
+</body>
+</html>
