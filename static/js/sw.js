@@ -1,9 +1,14 @@
 // ================================================================================
+// ENHANCED SERVICE WORKER - EMERGENCY RESPONSE SYSTEM with GEMMA 3N & OPTIMAL TIER SUPPORT
+// Version: 2.4.0 - Consolidated, Organized & Optimized
+// ================================================================================
+
+// ================================================================================
 // 📋 CONFIGURATION & CONSTANTS
 // ================================================================================
 
 const SW_CONFIG = {
-  VERSION: "v2.3.0",
+  VERSION: "v2.4.0", // Updated version to trigger cache refresh
   DB_NAME: "EmergencyResponseDB",
   DB_VERSION: 4, // Increment if schema changes
   NETWORK_TIMEOUT: 5000, // 5 seconds for network requests
@@ -48,6 +53,11 @@ const DB_STORES = {
   EXPORT_REQUEST_QUEUE: "exportRequestQueue",
   GEMMA_VOICE_SYNC_QUEUE: "gemmaVoiceSyncQueue", // For Gemma 3N voice reports
   GEMMA_MULTIMODAL_SYNC_QUEUE: "gemmaMultimodalSyncQueue", // For Gemma 3N multimodal reports
+  // NEW OPTIMAL TIER QUEUES
+  RISK_PREDICTION_QUEUE: "riskPredictionQueue",
+  RESOURCE_OPTIMIZATION_QUEUE: "resourceOptimizationQueue",
+  TRANSLATION_REQUESTS_QUEUE: "translationRequestsQueue",
+  VERIFICATION_REQUESTS_QUEUE: "verificationRequestsQueue",
   
   // Data Stores for persistent offline data
   SYNC_METADATA: "syncMetadata",
@@ -76,7 +86,12 @@ const SYNC_TAGS = {
   GEMMA_VOICE: "gemma3n-voice-sync",
   GEMMA_MULTIMODAL: "gemma3n-multimodal-sync",
   ADMIN_ACTIONS: "admin-actions-sync",
-  USER_PREFERENCES: "user-preferences-sync"
+  USER_PREFERENCES: "user-preferences-sync",
+  // 🆕 OPTIMAL TIER SYNC TAGS
+  RISK_PREDICTION: "risk-prediction-sync",
+  RESOURCE_OPTIMIZATION: "resource-optimization-sync",
+  TRANSLATION_REQUESTS: "translation-requests-sync",
+  VERIFICATION_REQUESTS: "verification-requests-sync"
 };
 
 // URLs to pre-cache on install (critical for offline first)
@@ -108,6 +123,12 @@ const PRECACHE_URLS = [
   '/voice-emergency-reporter', '/multimodal-damage-assessment',
   '/context-intelligence-dashboard', '/adaptive-ai-settings',
   
+  // 🆕 OPTIMAL TIER - AI-POWERED EMERGENCY MANAGEMENT PAGES
+  '/predictive-risk-modeling',
+  '/real-time-resource-optimizer', 
+  '/communication-intelligence',
+  '/cross-modal-verification',
+  
   // Essential Static Assets & JS modules
   '/static/js/main.js', '/static/js/offline.js', '/static/js/idb.mjs',
   '/static/js/sync-manager.js', '/static/js/device-monitor.js',
@@ -123,6 +144,12 @@ const PRECACHE_URLS = [
   '/static/js/gemma3n-multimodal.js',
   '/static/js/gemma3n-context.js',
   '/static/js/device-performance.js',
+  
+  // 🆕 ADD THE NEW OPTIMAL TIER JAVASCRIPT FILES
+  '/static/js/predictive-risk.js',
+  '/static/js/resource-optimizer.js',
+  '/static/js/communication-intelligence.js',
+  '/static/js/cross-modal-verification.js',
   
   // Icons and Images (example paths, adjust as needed)
   '/static/icons/icon-72x72.png', '/static/icons/icon-96x96.png',
@@ -153,6 +180,12 @@ const API_ENDPOINTS_TO_HANDLE = [
   '/api/submit-voice-emergency-report', '/api/submit-damage-assessment',
   '/api/context-analysis', '/api/ai-model-status', '/api/optimize-ai-settings',
   '/api/device-performance', '/api/hazard-analysis',
+  
+  // 🆕 OPTIMAL TIER API ENDPOINTS
+  '/api/risk-forecast',
+  '/api/resource-optimization', 
+  '/api/translate-emergency-message',
+  '/api/verify-report',
   
   // Explicitly handled for queuing if offline
   '/api/patients', // For new patient submissions
@@ -510,6 +543,11 @@ const syncManager = {
       [SYNC_TAGS.EXPORT_REQUESTS]: () => this.syncQueuedItems(DB_STORES.EXPORT_REQUEST_QUEUE, "/api/export-reports", true),
       [SYNC_TAGS.GEMMA_VOICE]: () => this.syncQueuedItems(DB_STORES.GEMMA_VOICE_SYNC_QUEUE, "/api/submit-voice-emergency-report", true),
       [SYNC_TAGS.GEMMA_MULTIMODAL]: () => this.syncQueuedItems(DB_STORES.GEMMA_MULTIMODAL_SYNC_QUEUE, "/api/submit-damage-assessment", true),
+      // NEW OPTIMAL TIER SYNC HANDLERS
+      [SYNC_TAGS.RISK_PREDICTION]: () => this.syncQueuedItems(DB_STORES.RISK_PREDICTION_QUEUE, "/api/risk-forecast"),
+      [SYNC_TAGS.RESOURCE_OPTIMIZATION]: () => this.syncQueuedItems(DB_STORES.RESOURCE_OPTIMIZATION_QUEUE, "/api/resource-optimization"),
+      [SYNC_TAGS.TRANSLATION_REQUESTS]: () => this.syncQueuedItems(DB_STORES.TRANSLATION_REQUESTS_QUEUE, "/api/translate-emergency-message", true),
+      [SYNC_TAGS.VERIFICATION_REQUESTS]: () => this.syncQueuedItems(DB_STORES.VERIFICATION_REQUESTS_QUEUE, "/api/verify-report", true)
     };
     
     return syncHandlers[tag];
@@ -727,7 +765,12 @@ const requestHandler = {
       '/api/device-status': SYNC_TAGS.DEVICE_STATUS,
       '/api/export-reports': SYNC_TAGS.EXPORT_REQUESTS,
       '/api/patients': SYNC_TAGS.TRIAGE, // For updates to patients
-      '/patients/': SYNC_TAGS.TRIAGE // For updates/discharges
+      '/patients/': SYNC_TAGS.TRIAGE, // For updates/discharges
+      // NEW OPTIMAL TIER API ENDPOINTS (for queuing)
+      '/api/risk-forecast': SYNC_TAGS.RISK_PREDICTION,
+      '/api/resource-optimization': SYNC_TAGS.RESOURCE_OPTIMIZATION,
+      '/api/translate-emergency-message': SYNC_TAGS.TRANSLATION_REQUESTS,
+      '/api/verify-report': SYNC_TAGS.VERIFICATION_REQUESTS
     };
 
     const endpointKey = Object.keys(syncQueueMap).find(key => url.pathname.startsWith(key));
@@ -747,6 +790,11 @@ const requestHandler = {
       case SYNC_TAGS.GEMMA_VOICE: storeName = DB_STORES.GEMMA_VOICE_SYNC_QUEUE; break;
       case SYNC_TAGS.GEMMA_MULTIMODAL: storeName = DB_STORES.GEMMA_MULTIMODAL_SYNC_QUEUE; break;
       case SYNC_TAGS.ADMIN_ACTIONS: storeName = DB_STORES.ADMIN_CACHE; break; // Store admin actions if not immediately synced
+      // NEW OPTIMAL TIER QUEUE STORE NAMES
+      case SYNC_TAGS.RISK_PREDICTION: storeName = DB_STORES.RISK_PREDICTION_QUEUE; break;
+      case SYNC_TAGS.RESOURCE_OPTIMIZATION: storeName = DB_STORES.RESOURCE_OPTIMIZATION_QUEUE; break;
+      case SYNC_TAGS.TRANSLATION_REQUESTS: storeName = DB_STORES.TRANSLATION_REQUESTS_QUEUE; break;
+      case SYNC_TAGS.VERIFICATION_REQUESTS: storeName = DB_STORES.VERIFICATION_REQUESTS_QUEUE; break;
       default: storeName = DB_STORES.CROWD_REPORT_QUEUE;
     }
 
