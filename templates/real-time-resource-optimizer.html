@@ -1,0 +1,1092 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Real-Time Resource Optimizer - Emergency Resource Allocation{% endblock %}
+{% block page_title %}⚡ Real-Time Resource Optimizer{% endblock %}
+{% block subtitle %}AI-Powered Dynamic Resource Allocation & Deployment{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .resource-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .resource-overview {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+  }
+  
+  .resource-metric {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .resource-label {
+    opacity: 0.9;
+    font-size: 0.9rem;
+  }
+  
+  .optimization-panel {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .allocation-map {
+    height: 400px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #e5e7eb;
+  }
+  
+  .map-placeholder {
+    color: #6b7280;
+    font-size: 1.1rem;
+    text-align: center;
+  }
+  
+  .resource-units {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .unit-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid #3b82f6;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+  
+  .unit-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .unit-card.fire { border-left-color: #dc2626; }
+  .unit-card.medical { border-left-color: #059669; }
+  .unit-card.police { border-left-color: #2563eb; }
+  .unit-card.rescue { border-left-color: #7c3aed; }
+  .unit-card.logistics { border-left-color: #ea580c; }
+  
+  .unit-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .unit-icon {
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+  }
+  
+  .unit-title {
+    font-weight: bold;
+    color: #1f2937;
+    flex: 1;
+  }
+  
+  .unit-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .status-available { background: #16a34a; }
+  .status-deployed { background: #d97706; }
+  .status-engaged { background: #dc2626; }
+  .status-maintenance { background: #6b7280; }
+  
+  .unit-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+  
+  .optimization-controls {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+  }
+  
+  .controls-header {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .control-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .control-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .control-item label {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  
+  .control-item select,
+  .control-item input {
+    padding: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 0.9rem;
+  }
+  
+  .control-item select:focus,
+  .control-item input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .control-item select option {
+    background: #1e40af;
+    color: white;
+  }
+  
+  .optimization-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+  
+  .action-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+  }
+  
+  .action-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  .action-btn.primary {
+    background: rgba(255, 255, 255, 0.9);
+    color: #1e40af;
+  }
+  
+  .deployment-queue {
+    background: #f0f9ff;
+    border: 2px solid #0ea5e9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .queue-title {
+    font-weight: bold;
+    color: #0369a1;
+    font-size: 1.1rem;
+  }
+  
+  .queue-stats {
+    font-size: 0.9rem;
+    color: #0369a1;
+  }
+  
+  .deployment-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid #0ea5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .deployment-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .deployment-icon {
+    font-size: 1.2rem;
+  }
+  
+  .deployment-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .deployment-unit {
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .deployment-target {
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+  
+  .deployment-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .deployment-btn {
+    padding: 0.25rem 0.75rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .deploy-now {
+    background: #16a34a;
+    color: white;
+  }
+  
+  .deploy-schedule {
+    background: #d97706;
+    color: white;
+  }
+  
+  .deploy-cancel {
+    background: #dc2626;
+    color: white;
+  }
+  
+  .deployment-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .optimization-results {
+    background: #f6f8fa;
+    border: 2px solid #28a745;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: none;
+  }
+  
+  .optimization-results.visible {
+    display: block;
+    animation: slideInFromBottom 0.5s ease;
+  }
+  
+  @keyframes slideInFromBottom {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .results-header {
+    color: #28a745;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .efficiency-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .metric-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #28a745;
+  }
+  
+  .metric-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+  
+  .resource-recommendations {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+  }
+  
+  .recommendation-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .recommendation-item:last-child {
+    border-bottom: none;
+  }
+  
+  .recommendation-priority {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .priority-high { background: #dc2626; }
+  .priority-medium { background: #d97706; }
+  .priority-low { background: #16a34a; }
+  
+  .real-time-tracker {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-family: monospace;
+  }
+  
+  .tracker-header {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .tracker-stream {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+  }
+  
+  .tracker-item {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .tracker-timestamp {
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+  
+  @media (max-width: 768px) {
+    .resource-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .control-group {
+      grid-template-columns: 1fr;
+    }
+    
+    .optimization-actions {
+      flex-direction: column;
+    }
+    
+    .deployment-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="resource-grid">
+  <div class="resource-overview">
+    <div class="resource-metric" id="totalUnits">247</div>
+    <div class="resource-label">Total Units</div>
+  </div>
+  
+  <div class="resource-overview" style="background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);">
+    <div class="resource-metric" id="deployedUnits">89</div>
+    <div class="resource-label">Currently Deployed</div>
+  </div>
+  
+  <div class="resource-overview" style="background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);">
+    <div class="resource-metric" id="efficiencyScore">94%</div>
+    <div class="resource-label">Optimization Score</div>
+  </div>
+</div>
+
+<div class="optimization-panel">
+  <h3 style="margin-bottom: 1rem; color: #1f2937;">🗺️ Resource Allocation Map</h3>
+  
+  <div class="allocation-map" id="allocationMap">
+    <div class="map-placeholder">
+      <div>📍 Interactive Resource Deployment Map</div>
+      <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">
+        Real-time unit positioning and coverage zones
+      </div>
+    </div>
+  </div>
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+    <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: #6b7280;">
+      <span>🔴 High Priority Areas</span>
+      <span>🟡 Medium Priority</span>
+      <span>🟢 Covered Areas</span>
+    </div>
+    <button onclick="refreshMap()" style="background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">
+      🔄 Refresh Map
+    </button>
+  </div>
+</div>
+
+<div class="optimization-controls">
+  <div class="controls-header">
+    <span>🎛️ Optimization Parameters</span>
+  </div>
+  
+  <div class="control-group">
+    <div class="control-item">
+      <label for="priorityMode">Priority Mode</label>
+      <select id="priorityMode">
+        <option value="response-time">Response Time</option>
+        <option value="coverage" selected>Coverage Area</option>
+        <option value="risk-based">Risk-Based</option>
+        <option value="resource-efficiency">Resource Efficiency</option>
+      </select>
+    </div>
+    
+    <div class="control-item">
+      <label for="deploymentStrategy">Deployment Strategy</label>
+      <select id="deploymentStrategy">
+        <option value="proactive">Proactive Positioning</option>
+        <option value="reactive" selected>Reactive Response</option>
+        <option value="hybrid">Hybrid Approach</option>
+        <option value="demand-based">Demand-Based</option>
+      </select>
+    </div>
+    
+    <div class="control-item">
+      <label for="riskTolerance">Risk Tolerance</label>
+      <select id="riskTolerance">
+        <option value="conservative">Conservative</option>
+        <option value="moderate" selected>Moderate</option>
+        <option value="aggressive">Aggressive</option>
+      </select>
+    </div>
+    
+    <div class="control-item">
+      <label for="timeHorizon">Time Horizon</label>
+      <select id="timeHorizon">
+        <option value="1h">Next Hour</option>
+        <option value="4h" selected>Next 4 Hours</option>
+        <option value="12h">Next 12 Hours</option>
+        <option value="24h">Next 24 Hours</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="optimization-actions">
+    <button class="action-btn primary" onclick="runOptimization()">
+      🧠 Run AI Optimization
+    </button>
+    <button class="action-btn" onclick="previewDeployment()">
+      👁️ Preview Changes
+    </button>
+    <button class="action-btn" onclick="saveConfiguration()">
+      💾 Save Configuration
+    </button>
+    <button class="action-btn" onclick="loadPreset()">
+      📋 Load Preset
+    </button>
+  </div>
+</div>
+
+<div class="resource-units">
+  <div class="unit-card fire">
+    <div class="unit-header">
+      <div style="display: flex; align-items: center;">
+        <div class="unit-icon">🚒</div>
+        <div class="unit-title">Fire Suppression</div>
+      </div>
+      <div class="unit-status status-deployed">Deployed</div>
+    </div>
+    <div class="unit-details">
+      <div>Units: <strong>12 Active</strong></div>
+      <div>Coverage: <strong>85%</strong></div>
+      <div>Avg Response: <strong>4.2 min</strong></div>
+      <div>Efficiency: <strong>92%</strong></div>
+    </div>
+  </div>
+  
+  <div class="unit-card medical">
+    <div class="unit-header">
+      <div style="display: flex; align-items: center;">
+        <div class="unit-icon">🚑</div>
+        <div class="unit-title">Emergency Medical</div>
+      </div>
+      <div class="unit-status status-available">Available</div>
+    </div>
+    <div class="unit-details">
+      <div>Units: <strong>18 Active</strong></div>
+      <div>Coverage: <strong>94%</strong></div>
+      <div>Avg Response: <strong>6.1 min</strong></div>
+      <div>Efficiency: <strong>96%</strong></div>
+    </div>
+  </div>
+  
+  <div class="unit-card police">
+    <div class="unit-header">
+      <div style="display: flex; align-items: center;">
+        <div class="unit-icon">🚔</div>
+        <div class="unit-title">Law Enforcement</div>
+      </div>
+      <div class="unit-status status-engaged">Engaged</div>
+    </div>
+    <div class="unit-details">
+      <div>Units: <strong>24 Active</strong></div>
+      <div>Coverage: <strong>88%</strong></div>
+      <div>Avg Response: <strong>3.8 min</strong></div>
+      <div>Efficiency: <strong>89%</strong></div>
+    </div>
+  </div>
+  
+  <div class="unit-card rescue">
+    <div class="unit-header">
+      <div style="display: flex; align-items: center;">
+        <div class="unit-icon">🚁</div>
+        <div class="unit-title">Search & Rescue</div>
+      </div>
+      <div class="unit-status status-available">Available</div>
+    </div>
+    <div class="unit-details">
+      <div>Units: <strong>8 Active</strong></div>
+      <div>Coverage: <strong>76%</strong></div>
+      <div>Avg Response: <strong>12.3 min</strong></div>
+      <div>Efficiency: <strong>94%</strong></div>
+    </div>
+  </div>
+  
+  <div class="unit-card logistics">
+    <div class="unit-header">
+      <div style="display: flex; align-items: center;">
+        <div class="unit-icon">🚛</div>
+        <div class="unit-title">Logistics Support</div>
+      </div>
+      <div class="unit-status status-maintenance">Maintenance</div>
+    </div>
+    <div class="unit-details">
+      <div>Units: <strong>15 Active</strong></div>
+      <div>Coverage: <strong>67%</strong></div>
+      <div>Avg Response: <strong>18.7 min</strong></div>
+      <div>Efficiency: <strong>78%</strong></div>
+    </div>
+  </div>
+  
+  <div class="unit-card" style="border-left-color: #8b5cf6;">
+    <div class="unit-header">
+      <div style="display: flex; align-items: center;">
+        <div class="unit-icon">🛡️</div>
+        <div class="unit-title">Hazmat Teams</div>
+      </div>
+      <div class="unit-status status-available">Available</div>
+    </div>
+    <div class="unit-details">
+      <div>Units: <strong>6 Active</strong></div>
+      <div>Coverage: <strong>45%</strong></div>
+      <div>Avg Response: <strong>22.1 min</strong></div>
+      <div>Efficiency: <strong>87%</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="deployment-queue">
+  <div class="queue-header">
+    <div class="queue-title">📋 Deployment Queue</div>
+    <div class="queue-stats">6 pending • 3 in progress</div>
+  </div>
+  
+  <div class="deployment-item">
+    <div class="deployment-info">
+      <div class="deployment-icon">🚒</div>
+      <div class="deployment-details">
+        <div class="deployment-unit">Engine 7, Ladder 3</div>
+        <div class="deployment-target">Sector 4-B • ETA: 8 minutes</div>
+      </div>
+    </div>
+    <div class="deployment-actions">
+      <button class="deployment-btn deploy-now">Deploy Now</button>
+      <button class="deployment-btn deploy-schedule">Schedule</button>
+      <button class="deployment-btn deploy-cancel">Cancel</button>
+    </div>
+  </div>
+  
+  <div class="deployment-item">
+    <div class="deployment-info">
+      <div class="deployment-icon">🚑</div>
+      <div class="deployment-details">
+        <div class="deployment-unit">Ambulance 12, Medic 5</div>
+        <div class="deployment-target">Downtown Medical District • ETA: 12 minutes</div>
+      </div>
+    </div>
+    <div class="deployment-actions">
+      <button class="deployment-btn deploy-now">Deploy Now</button>
+      <button class="deployment-btn deploy-schedule">Schedule</button>
+      <button class="deployment-btn deploy-cancel">Cancel</button>
+    </div>
+  </div>
+  
+  <div class="deployment-item">
+    <div class="deployment-info">
+      <div class="deployment-icon">🚁</div>
+      <div class="deployment-details">
+        <div class="deployment-unit">Air Rescue 1</div>
+        <div class="deployment-target">Mountain Sector 7 • ETA: 25 minutes</div>
+      </div>
+    </div>
+    <div class="deployment-actions">
+      <button class="deployment-btn deploy-now">Deploy Now</button>
+      <button class="deployment-btn deploy-schedule">Schedule</button>
+      <button class="deployment-btn deploy-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="optimization-results" id="optimizationResults">
+  <div class="results-header">
+    <span>🎯 Optimization Results</span>
+  </div>
+  
+  <div class="efficiency-metrics">
+    <div class="metric-card">
+      <div class="metric-value" id="responseImprovement">+23%</div>
+      <div class="metric-label">Response Time Improvement</div>
+    </div>
+    
+    <div class="metric-card">
+      <div class="metric-value" id="coverageImprovement">+15%</div>
+      <div class="metric-label">Coverage Increase</div>
+    </div>
+    
+    <div class="metric-card">
+      <div class="metric-value" id="costSavings">-$47K</div>
+      <div class="metric-label">Estimated Cost Savings</div>
+    </div>
+    
+    <div class="metric-card">
+      <div class="metric-value" id="efficiencyGain">+8%</div>
+      <div class="metric-label">Overall Efficiency Gain</div>
+    </div>
+  </div>
+  
+  <div class="resource-recommendations">
+    <h4 style="margin-bottom: 1rem; color: #28a745;">🎯 AI Recommendations</h4>
+    
+    <div class="recommendation-item">
+      <div class="recommendation-priority priority-high">HIGH</div>
+      <div>Relocate 2 fire units from Sector A to Sector D for better coverage</div>
+    </div>
+    
+    <div class="recommendation-item">
+      <div class="recommendation-priority priority-medium">MED</div>
+      <div>Deploy additional medical unit to downtown during peak hours</div>
+    </div>
+    
+    <div class="recommendation-item">
+      <div class="recommendation-priority priority-high">HIGH</div>
+      <div>Pre-position rescue helicopter at Station 7 based on weather forecast</div>
+    </div>
+    
+    <div class="recommendation-item">
+      <div class="recommendation-priority priority-low">LOW</div>
+      <div>Schedule maintenance for Logistics Unit 4 during low-demand period</div>
+    </div>
+  </div>
+</div>
+
+<div class="real-time-tracker">
+  <div class="tracker-header">
+    <span>📡 Real-Time Resource Tracking</span>
+    <span style="font-size: 0.8rem; opacity: 0.7;">Live Updates</span>
+  </div>
+  <div class="tracker-stream" id="resourceTracker">
+    <div class="tracker-item">
+      <span>Engine 12 → Sector 5-C</span>
+      <span class="tracker-timestamp">12:34:56</span>
+    </div>
+    <div class="tracker-item">
+      <span>Ambulance 7 → Available</span>
+      <span class="tracker-timestamp">12:34:23</span>
+    </div>
+    <div class="tracker-item">
+      <span>Medic 3 → En Route Hospital</span>
+      <span class="tracker-timestamp">12:33:45</span>
+    </div>
+    <div class="tracker-item">
+      <span>Ladder 5 → Returning to Station</span>
+      <span class="tracker-timestamp">12:33:12</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/resource-optimizer.js"></script>
+<script>
+  // Initialize the resource optimization system
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeResourceOptimizer();
+    
+    // Start real-time tracking updates
+    setInterval(updateResourceTracking, 3000);
+    
+    // Initialize deployment queue handlers
+    initializeDeploymentQueue();
+  });
+  
+  function initializeResourceOptimizer() {
+    console.log('⚡ Resource Optimizer System Initialized');
+    updateResourceMetrics();
+    loadResourceConfiguration();
+  }
+  
+  function runOptimization() {
+    console.log('🧠 Running AI optimization...');
+    
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '🔄 Optimizing...';
+    btn.disabled = true;
+    
+    // Simulate optimization process
+    setTimeout(() => {
+      // Update metrics with optimized values
+      updateOptimizedMetrics();
+      
+      // Show optimization results
+      const results = document.getElementById('optimizationResults');
+      results.classList.add('visible');
+      
+      // Reset button
+      btn.textContent = originalText;
+      btn.disabled = false;
+      
+      console.log('✅ Optimization complete');
+    }, 3000);
+  }
+  
+  function updateOptimizedMetrics() {
+    // Simulate improved metrics
+    const improvements = {
+      responseImprovement: '+' + (15 + Math.round(Math.random() * 20)) + '%',
+      coverageImprovement: '+' + (10 + Math.round(Math.random() * 15)) + '%',
+      costSavings: '-$' + (30 + Math.round(Math.random() * 50)) + 'K',
+      efficiencyGain: '+' + (5 + Math.round(Math.random() * 10)) + '%'
+    };
+    
+    Object.entries(improvements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) element.textContent = value;
+    });
+    
+    // Update overall efficiency score
+    const efficiencyScore = document.getElementById('efficiencyScore');
+    if (efficiencyScore) {
+      const newScore = Math.min(99, parseInt(efficiencyScore.textContent) + Math.round(Math.random() * 5));
+      efficiencyScore.textContent = newScore + '%';
+    }
+  }
+  
+  function previewDeployment() {
+    console.log('👁️ Previewing deployment changes...');
+    alert('Preview mode: Showing proposed resource reallocation on map');
+  }
+  
+  function saveConfiguration() {
+    const config = {
+      priorityMode: document.getElementById('priorityMode').value,
+      deploymentStrategy: document.getElementById('deploymentStrategy').value,
+      riskTolerance: document.getElementById('riskTolerance').value,
+      timeHorizon: document.getElementById('timeHorizon').value
+    };
+    
+    localStorage.setItem('resourceOptimizerConfig', JSON.stringify(config));
+    console.log('💾 Configuration saved:', config);
+    
+    // Show success message
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '✅ Saved';
+    setTimeout(() => {
+      btn.textContent = originalText;
+    }, 2000);
+  }
+  
+  function loadPreset() {
+    const presets = {
+      'emergency': {
+        priorityMode: 'response-time',
+        deploymentStrategy: 'reactive',
+        riskTolerance: 'conservative',
+        timeHorizon: '1h'
+      },
+      'normal': {
+        priorityMode: 'coverage',
+        deploymentStrategy: 'proactive',
+        riskTolerance: 'moderate',
+        timeHorizon: '4h'
+      },
+      'high-risk': {
+        priorityMode: 'risk-based',
+        deploymentStrategy: 'hybrid',
+        riskTolerance: 'aggressive',
+        timeHorizon: '12h'
+      }
+    };
+    
+    const presetName = prompt('Load preset:\n- emergency\n- normal\n- high-risk', 'normal');
+    
+    if (presets[presetName]) {
+      const preset = presets[presetName];
+      Object.entries(preset).forEach(([key, value]) => {
+        const element = document.getElementById(key);
+        if (element) element.value = value;
+      });
+      
+      console.log('📋 Preset loaded:', presetName);
+    }
+  }
+  
+  function loadResourceConfiguration() {
+    const saved = localStorage.getItem('resourceOptimizerConfig');
+    if (saved) {
+      const config = JSON.parse(saved);
+      Object.entries(config).forEach(([key, value]) => {
+        const element = document.getElementById(key);
+        if (element) element.value = value;
+      });
+    }
+  }
+  
+  function updateResourceMetrics() {
+    // Simulate dynamic resource metrics
+    const totalUnits = document.getElementById('totalUnits');
+    const deployedUnits = document.getElementById('deployedUnits');
+    const efficiencyScore = document.getElementById('efficiencyScore');
+    
+    // Add some realistic variation
+    if (Math.random() < 0.3) { // 30% chance of update
+      if (totalUnits) {
+        const current = parseInt(totalUnits.textContent);
+        const variation = Math.round((Math.random() - 0.5) * 10);
+        totalUnits.textContent = Math.max(200, current + variation);
+      }
+      
+      if (deployedUnits) {
+        const current = parseInt(deployedUnits.textContent);
+        const variation = Math.round((Math.random() - 0.5) * 20);
+        deployedUnits.textContent = Math.max(50, current + variation);
+      }
+      
+      if (efficiencyScore) {
+        const current = parseInt(efficiencyScore.textContent);
+        const variation = Math.round((Math.random() - 0.5) * 6);
+        efficiencyScore.textContent = Math.max(75, Math.min(99, current + variation)) + '%';
+      }
+    }
+  }
+  
+  function initializeDeploymentQueue() {
+    // Add click handlers for deployment buttons
+    document.querySelectorAll('.deployment-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        
+        const action = this.classList.contains('deploy-now') ? 'deploy' :
+                      this.classList.contains('deploy-schedule') ? 'schedule' : 'cancel';
+        
+        const deploymentItem = this.closest('.deployment-item');
+        const unitName = deploymentItem.querySelector('.deployment-unit').textContent;
+        
+        handleDeploymentAction(action, unitName, deploymentItem);
+      });
+    });
+  }
+  
+  function handleDeploymentAction(action, unitName, deploymentItem) {
+    console.log(`${action.toUpperCase()}: ${unitName}`);
+    
+    switch (action) {
+      case 'deploy':
+        deploymentItem.style.background = '#dcfce7';
+        deploymentItem.style.borderLeftColor = '#16a34a';
+        
+        // Simulate deployment
+        setTimeout(() => {
+          deploymentItem.remove();
+          addResourceTrackingUpdate(`${unitName} → Deployed`);
+        }, 1000);
+        break;
+        
+      case 'schedule':
+        const scheduleTime = prompt('Schedule deployment time (minutes from now):', '15');
+        if (scheduleTime) {
+          deploymentItem.style.background = '#fef3c7';
+          deploymentItem.style.borderLeftColor = '#d97706';
+          addResourceTrackingUpdate(`${unitName} → Scheduled (+${scheduleTime}m)`);
+        }
+        break;
+        
+      case 'cancel':
+        deploymentItem.style.background = '#fecaca';
+        deploymentItem.style.borderLeftColor = '#dc2626';
+        
+        setTimeout(() => {
+          deploymentItem.remove();
+          addResourceTrackingUpdate(`${unitName} → Deployment Cancelled`);
+        }, 1000);
+        break;
+    }
+  }
+  
+  function refreshMap() {
+    const map = document.getElementById('allocationMap');
+    const placeholder = map.querySelector('.map-placeholder');
+    
+    // Show loading state
+    placeholder.innerHTML = '<div>🔄 Refreshing resource positions...</div>';
+    
+    setTimeout(() => {
+      placeholder.innerHTML = `
+        <div>📍 Interactive Resource Deployment Map</div>
+        <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">
+          Updated: ${new Date().toLocaleTimeString()}
+        </div>
+      `;
+    }, 2000);
+  }
+  
+  function updateResourceTracking() {
+    const tracker = document.getElementById('resourceTracker');
+    if (!tracker) return;
+    
+    const updateTypes = [
+      'Engine', 'Ambulance', 'Ladder', 'Medic', 'Rescue', 'Logistics'
+    ];
+    
+    const statuses = [
+      'En Route', 'Available', 'Deployed', 'Returning to Station', 
+      'On Scene', 'Refueling', 'Maintenance Check'
+    ];
+    
+    const locations = [
+      'Sector 1-A', 'Sector 2-B', 'Sector 3-C', 'Sector 4-D',
+      'Downtown', 'Medical District', 'Industrial Zone', 'Residential Area'
+    ];
+    
+    const randomUnit = updateTypes[Math.floor(Math.random() * updateTypes.length)];
+    const randomNumber = Math.floor(Math.random() * 20) + 1;
+    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+    const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+    
+    const newItem = document.createElement('div');
+    newItem.className = 'tracker-item';
+    newItem.innerHTML = `
+      <span>${randomUnit} ${randomNumber} → ${randomStatus}</span>
+      <span class="tracker-timestamp">${new Date().toLocaleTimeString()}</span>
+    `;
+    
+    tracker.insertBefore(newItem, tracker.firstChild);
+    
+    // Keep only last 15 updates
+    while (tracker.children.length > 15) {
+      tracker.removeChild(tracker.lastChild);
+    }
+  }
+  
+  function addResourceTrackingUpdate(message) {
+    const tracker = document.getElementById('resourceTracker');
+    if (!tracker) return;
+    
+    const newItem = document.createElement('div');
+    newItem.className = 'tracker-item';
+    newItem.innerHTML = `
+      <span>${message}</span>
+      <span class="tracker-timestamp">${new Date().toLocaleTimeString()}</span>
+    `;
+    
+    tracker.insertBefore(newItem, tracker.firstChild);
+    
+    // Keep only last 15 updates
+    while (tracker.children.length > 15) {
+      tracker.removeChild(tracker.lastChild);
+    }
+  }
+  
+  // Export functions for other modules
+  window.ResourceOptimizer = {
+    runOptimization,
+    previewDeployment,
+    saveConfiguration,
+    loadPreset,
+    refreshMap,
+    updateResourceMetrics
+  };
+</script>
+{% endblock %}
