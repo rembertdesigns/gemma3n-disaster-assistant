@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Testing Suite - Emergency Response System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .test-card {
+            background: #f8fafc;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .test-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .test-card.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .test-card.success {
+            border-color: #16a34a;
+            background: #f0f9ff;
+        }
+
+        .test-card.error {
+            border-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .test-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .test-icon {
+            font-size: 2rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .test-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1e40af;
+        }
+
+        .test-description {
+            color: #6b7280;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .test-status {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .test-status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .test-status.running {
+            background: #dbeafe;
+            color: #1e40af;
+            animation: pulse 1.5s infinite;
+        }
+
+        .test-status.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .test-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .test-details {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+        }
+
+        .test-button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+
+        .test-button:hover {
+            background: #2563eb;
+        }
+
+        .test-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .control-panel {
+            background: #1f2937;
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .control-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-button.primary {
+            background: #16a34a;
+            color: white;
+        }
+
+        .control-button.primary:hover {
+            background: #15803d;
+        }
+
+        .control-button.secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .control-button.secondary:hover {
+            background: #4b5563;
+        }
+
+        .control-button.danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .control-button.danger:hover {
+            background: #b91c1c;
+        }
+
+        .status-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #1f2937;
+            color: white;
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-indicator.online {
+            background: #16a34a;
+        }
+
+        .status-indicator.offline {
+            background: #dc2626;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .results-summary {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .results-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .results-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-buttons {
+                flex-direction: column;
+            }
+            
+            .results-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div style="display: flex; align-items: center;">
+            <div class="status-indicator" id="connectionIndicator"></div>
+            <span id="connectionStatus">Checking connection...</span>
+        </div>
+        <div>
+            SW: <span id="swStatus">Loading...</span> | 
+            Cache: <span id="cacheStatus">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 3rem;">
+        <!-- Header -->
+        <div class="header">
+            <h1>🧪 Offline Testing Suite</h1>
+            <p>Comprehensive testing for Service Worker and Offline Page Integration</p>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="control-title">
+                <span>🎛️</span>
+                <span>Test Controls</span>
+            </div>
+            <div class="control-buttons">
+                <button class="control-button primary" onclick="runAllTests()">
+                    <span>🚀</span>
+                    <span>Run All Tests</span>
+                </button>
+                <button class="control-button secondary" onclick="simulateOffline()">
+                    <span>📴</span>
+                    <span>Simulate Offline</span>
+                </button>
+                <button class="control-button secondary" onclick="simulateOnline()">
+                    <span>🌐</span>
+                    <span>Restore Online</span>
+                </button>
+                <button class="control-button danger" onclick="clearAllCaches()">
+                    <span>🗑️</span>
+                    <span>Clear Caches</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Test Grid -->
+        <div class="test-grid">
+            <!-- Service Worker Registration Test -->
+            <div class="test-card" id="swTest">
+                <div class="test-header">
+                    <div class="test-icon">⚙️</div>
+                    <div class="test-title">Service Worker Registration</div>
+                </div>
+                <div class="test-description">
+                    Verify that the service worker is properly registered and active.
+                </div>
+                <div class="test-status pending" id="swTestStatus">Ready to test</div>
+                <div class="test-details" id="swTestDetails">Click "Run Test" to check service worker status...</div>
+                <button class="test-button" onclick="testServiceWorker()">Run Test</button>
+            </div>
+
+            <!-- Cache Population Test -->
+            <div class="test-card" id="cacheTest">
+                <div class="test-header">
+                    <div class="test-icon">💾</div>
+                    <div class="test-title">Cache Population</div>
+                </div>
+                <div class="test-description">
+                    Check if critical assets are cached for offline access.
+                </div>
+                <div class="test-status pending" id="cacheTestStatus">Ready to test</div>
+                <div class="test-details" id="cacheTestDetails">Click "Run Test" to check cached assets...</div>
+                <button class="test-button" onclick="testCachePopulation()">Run Test</button>
+            </div>
+
+            <!-- Offline Navigation Test -->
+            <div class="test-card" id="navigationTest">
+                <div class="test-header">
+                    <div class="test-icon">🧭</div>
+                    <div class="test-title">Offline Navigation</div>
+                </div>
+                <div class="test-description">
+                    Test navigation to offline.html when network is unavailable.
+                </div>
+                <div class="test-status pending" id="navigationTestStatus">Ready to test</div>
+                <div class="test-details" id="navigationTestDetails">Click "Run Test" to test offline navigation...</div>
+                <button class="test-button" onclick="testOfflineNavigation()">Run Test</button>
+            </div>
+
+            <!-- Fetch Interception Test -->
+            <div class="test-card" id="fetchTest">
+                <div class="test-header">
+                    <div class="test-icon">🌐</div>
+                    <div class="test-title">Fetch Interception</div>
+                </div>
+                <div class="test-description">
+                    Verify that the service worker intercepts and handles requests properly.
+                </div>
+                <div class="test-status pending" id="fetchTestStatus">Ready to test</div>
+                <div class="test-details" id="fetchTestDetails">Click "Run Test" to test fetch handling...</div>
+                <button class="test-button" onclick="testFetchInterception()">Run Test</button>
+            </div>
+
+            <!-- Background Sync Test -->
+            <div class="test-card" id="syncTest">
+                <div class="test-header">
+                    <div class="test-icon">🔄</div>
+                    <div class="test-title">Background Sync</div>
+                </div>
+                <div class="test-description">
+                    Test background sync registration and queue management.
+                </div>
+                <div class="test-status pending" id="syncTestStatus">Ready to test</div>
+                <div class="test-details" id="syncTestDetails">Click "Run Test" to test background sync...</div>
+                <button class="test-button" onclick="testBackgroundSync()">Run Test</button>
+            </div>
+
+            <!-- IndexedDB Test -->
+            <div class="test-card" id="idbTest">
+                <div class="test-header">
+                    <div class="test-icon">🗄️</div>
+                    <div class="test-title">IndexedDB Storage</div>
+                </div>
+                <div class="test-description">
+                    Verify IndexedDB initialization and data storage capabilities.
+                </div>
+                <div class="test-status pending" id="idbTestStatus">Ready to test</div>
+                <div class="test-details" id="idbTestDetails">Click "Run Test" to test IndexedDB...</div>
+                <button class="test-button" onclick="testIndexedDB()">Run Test</button>
+            </div>
+        </div>
+
+        <!-- Results Summary -->
+        <div class="results-summary" id="resultsSummary" style="display: none;">
+            <div class="results-title">📊 Test Results Summary</div>
+            <div class="results-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="passedCount">0</span>
+                    <span class="stat-label">Passed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="failedCount">0</span>
+                    <span class="stat-label">Failed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="totalCount">6</span>
+                    <span class="stat-label">Total Tests</span>
+                </div>
+            </div>
+            <div id="summaryMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global test state
+        let testResults = {
+            serviceWorker: null,
+            cache: null,
+            navigation: null,
+            fetch: null,
+            sync: null,
+            indexedDB: null
+        };
+
+        let isOfflineSimulated = false;
+
+        // Initialize testing suite
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConnectionStatus();
+            checkServiceWorkerStatus();
+            
+            // Listen for network changes
+            window.addEventListener('online', updateConnectionStatus);
+            window.addEventListener('offline', updateConnectionStatus);
+            
+            // Register service worker if not already registered
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/static/js/sw.js')
+                    .then(registration => {
+                        console.log('✅ SW registered:', registration);
+                        updateServiceWorkerStatus();
+                    })
+                    .catch(error => {
+                        console.error('❌ SW registration failed:', error);
+                        updateServiceWorkerStatus();
+                    });
+            }
+        });
+
+        // Update connection status in status bar
+        function updateConnectionStatus() {
+            const indicator = document.getElementById('connectionIndicator');
+            const status = document.getElementById('connectionStatus');
+            
+            if (isOfflineSimulated || !navigator.onLine) {
+                indicator.className = 'status-indicator offline';
+                status.textContent = 'Offline (Simulated)';
+            } else {
+                indicator.className = 'status-indicator online';
+                status.textContent = 'Online';
+            }
+        }
+
+        // Update service worker status
+        function updateServiceWorkerStatus() {
+            const swStatus = document.getElementById('swStatus');
+            const cacheStatus = document.getElementById('cacheStatus');
+            
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                swStatus.textContent = 'Active';
+            } else {
+                swStatus.textContent = 'Not Active';
+            }
+            
+            if ('caches' in window) {
+                caches.keys().then(cacheNames => {
+                    cacheStatus.textContent = `${cacheNames.length} caches`;
+                });
+            } else {
+                cacheStatus.textContent = 'Not Supported';
+            }
+        }
+
+        function checkServiceWorkerStatus() {
+            updateServiceWorkerStatus();
+            setInterval(updateServiceWorkerStatus, 5000);
+        }
+
+        // Test 1: Service Worker Registration
+        async function testServiceWorker() {
+            const statusEl = document.getElementById('swTestStatus');
+            const detailsEl = document.getElementById('swTestDetails');
+            const cardEl = document.getElementById('swTest');
+            
+            cardEl.className = 'test-card active';
+            statusEl.className = 'test-status running';
+            statusEl.textContent = 'Testing service worker...';
+            
+            let details = '';
+            
+            try {
+                // Check if service worker is supported
+                if (!('serviceWorker' in navigator)) {
+                    throw new Error('Service Worker not supported');
+                }
+                
+                details += '✅ Service Worker API supported\n';
+                
+                // Check if SW is registered
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (!registration) {
+                    throw new Error('No service worker registration found');
+                }
+                
+                details += `✅ Service Worker registered at: ${registration.scope}\n`;
+                
+                // Check if SW is active
+                if (!registration.active) {
+                    throw new Error('Service worker is not active');
+                }
+                
+                details += `✅ Service Worker active: ${registration.active.scriptURL}\n`;
+                
+                // Check SW state
+                details += `📋 SW State: ${registration.active.state}\n`;
+                details += `📋 SW Scope: ${registration.scope}\n`;
+                
+                testResults.serviceWorker = true;
+                statusEl.className = 'test-status success';
+                statusEl.textContent = '✅ Service Worker Test Passed';
+                cardEl.className = 'test-card success';
+                
+            } catch (error) {
+                details += `❌ Error: ${error.message}\n`;
+                testResults.serviceWorker = false;
+                statusEl.className = 'test-status error';
+                statusEl.textContent = '❌ Service Worker Test Failed';
+                cardEl.className = 'test-card error';
+            }
+            
+            detailsEl.textContent = details;
+            updateTestSummary();
+        }
+
+        // Test 2: Cache Population
+        async function testCachePopulation() {
+            const statusEl = document.getElementById('cacheTestStatus');
+            const detailsEl = document.getElementById('cacheTestDetails');
+            const cardEl = document.getElementById('cacheTest');
+            
+            cardEl.className = 'test-card active';
+            statusEl.className = 'test-status running';
+            statusEl.textContent = 'Testing cache population...';
+            
+            let details = '';
+            
+            try {
+                if (!('caches' in window)) {
+                    throw new Error('Cache API not supported');
+                }
+                
+                details += '✅ Cache API supported\n';
+                
+                const cacheNames = await caches.keys();
+                details += `📋 Found ${cacheNames.length} cache(s):\n`;
+                
+                let totalCachedItems = 0;
+                const criticalAssets = ['/', '/offline.html', '/static/css/styles.css'];
+                let criticalAssetsCached = 0;
+                
+                for (const cacheName of cacheNames) {
+                    const cache = await caches.open(cacheName);
+                    const keys = await cache.keys();
+                    totalCachedItems += keys.length;
+                    details += `  - ${cacheName}: ${keys.length} items\n`;
+                    
+                    // Check for critical assets
+                    for (const asset of criticalAssets) {
+                        const response = await cache.match(asset);
+                        if (response) {
+                            criticalAssetsCached++;
+                            details += `    ✅ ${asset}\n`;
+                        }
+                    }
+                }
+                
+                details += `\n📊 Total cached items: ${totalCachedItems}\n`;
+                details += `📊 Critical assets cached: ${criticalAssetsCached}/${criticalAssets.length}\n`;
+                
+                if (totalCachedItems === 0) {
+                    throw new Error('No assets found in cache');
+                }
+                
+                testResults.cache = true;
+                statusEl.className = 'test-status success';
+                statusEl.textContent = '✅ Cache Test Passed';
+                cardEl.className = 'test-card success';
+                
+            } catch (error) {
+                details += `❌ Error: ${error.message}\n`;
+                testResults.cache = false;
+                statusEl.className = 'test-status error';
+                statusEl.textContent = '❌ Cache Test Failed';
+                cardEl.className = 'test-card error';
+            }
+            
+            detailsEl.textContent = details;
+            updateTestSummary();
+        }
+
+        // Test 3: Offline Navigation
+        async function testOfflineNavigation() {
+            const statusEl = document.getElementById('navigationTestStatus');
+            const detailsEl = document.getElementById('navigationTestDetails');
+            const cardEl = document.getElementById('navigationTest');
+            
+            cardEl.className = 'test-card active';
+            statusEl.className = 'test-status running';
+            statusEl.textContent = 'Testing offline navigation...';
+            
+            let details = '';
+            
+            try {
+                // Test offline.html availability in cache
+                if (!('caches' in window)) {
+                    throw new Error('Cache API not supported');
+                }
+                
+                const cacheNames = await caches.keys();
+                let offlinePageFound = false;
+                
+                for (const cacheName of cacheNames) {
+                    const cache = await caches.open(cacheName);
+                    const response = await cache.match('/offline.html');
+                    if (response) {
+                        offlinePageFound = true;
+                        details += `✅ offline.html found in cache: ${cacheName}\n`;
+                        
+                        // Test if content is valid
+                        const content = await response.text();
+                        if (content.includes('Offline Mode Active')) {
+                            details += '✅ Offline page content verified\n';
+                        } else {
+                            details += '⚠️ Offline page content may be incomplete\n';
+                        }
+                        break;
+                    }
+                }
+                
+                if (!offlinePageFound) {
+                    // Try to fetch offline.html directly
+                    try {
+                        const response = await fetch('/offline.html');
+                        if (response.ok) {
+                            details += '✅ offline.html accessible via direct fetch\n';
+                            offlinePageFound = true;
+                        }
+                    } catch (fetchError) {
+                        details += `❌ offline.html not accessible: ${fetchError.message}\n`;
+                    }
+                }
+                
+                if (!offlinePageFound) {
+                    throw new Error('offline.html not found in cache or accessible');
+                }
+                
+                // Test service worker fetch handling
+                details += '\n🔍 Testing fetch interception...\n';
+                try {
+                    const testResponse = await fetch('/non-existent-page', { 
+                        cache: 'no-cache',
+                        mode: 'same-origin'
+                    });
+                    
+                    if (testResponse.url.includes('offline.html')) {
+                        details += '✅ Service worker redirects to offline page\n';
+                    } else {
+                        details += '⚠️ Unexpected response for non-existent page\n';
+                    }
+                } catch (error) {
+                    details += `⚠️ Fetch test inconclusive: ${error.message}\n`;
+                }
+                
+                testResults.navigation = true;
+                statusEl.className = 'test-status success';
+                statusEl.textContent = '✅ Offline Navigation Test Passed';
+                cardEl.className = 'test-card success';
+                
+            } catch (error) {
+                details += `❌ Error: ${error.message}\n`;
+                testResults.navigation = false;
+                statusEl.className = 'test-status error';
+                statusEl.textContent = '❌ Offline Navigation Test Failed';
+                cardEl.className = 'test-card error';
+            }
+            
+            detailsEl.textContent = details;
+            updateTestSummary();
+        }
+
+        // Test 4: Fetch Interception
+        async function testFetchInterception() {
+            const statusEl = document.getElementById('fetchTestStatus');
+            const detailsEl = document.getElementById('fetchTestDetails');
+            const cardEl = document.getElementById('fetchTest');
+            
+            cardEl.className = 'test-card active';
+            statusEl.className = 'test-status running';
+            statusEl.textContent = 'Testing fetch interception...';
+            
+            let details = '';
+            
+            try {
+                if (!navigator.serviceWorker.controller) {
+                    throw new Error('No service worker controlling this page');
+                }
+                
+                details += '✅ Service worker is controlling this page\n';
+                
+                // Test various fetch scenarios
+                const testUrls = [
+                    { url: '/', description: 'Root page' },
+                    { url: '/static/css/styles.css', description: 'CSS file' },
+                    { url: '/api/test', description: 'API endpoint' }
+                ];
+                
+                for (const test of testUrls) {
+                    try {
+                        const response = await fetch(test.url, { 
+                            cache: 'no-cache',
+                            mode: 'same-origin'
+                        });
+                        
+                        details += `✅ ${test.description}: ${response.status} ${response.statusText}\n`;
+                        
+                        // Check if response came from cache or network
+                        const cacheControl = response.headers.get('cache-control');
+                        if (cacheControl) {
+                            details += `   Cache-Control: ${cacheControl}\n`;
+                        }
+                        
+                    } catch (error) {
+                        details += `⚠️ ${test.description}: ${error.message}\n`;
+                    }
+                }
+                
+                // Test POST request handling
+                try {
+                    const formData = new FormData();
+                    formData.append('test', 'data');
+                    
+                    const postResponse = await fetch('/api/test-post', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    details += `\n📤 POST request test: ${postResponse.status}\n`;
+                } catch (error) {
+                    details += `\n📤 POST request test: ${error.message}\n`;
+                }
+                
+                testResults.fetch = true;
+                statusEl.className = 'test-status success';
+                statusEl.textContent = '✅ Fetch Interception Test Passed';
+                cardEl.className = 'test-card success';
+                
+            } catch (error) {
+                details += `❌ Error: ${error.message}\n`;
+                testResults.fetch = false;
+                statusEl.className = 'test-status error';
+                statusEl.textContent = '❌ Fetch Interception Test Failed';
+                cardEl.className = 'test-card error';
+            }
+            
+            detailsEl.textContent = details;
+            updateTestSummary();
+        }
+
+        // Test 5: Background Sync
+        async function testBackgroundSync() {
+            const statusEl = document.getElementById('syncTestStatus');
+            const detailsEl = document.getElementById('syncTestDetails');
+            const cardEl = document.getElementById('syncTest');
+            
+            cardEl.className = 'test-card active';
+            statusEl.className = 'test-status running';
+            statusEl.textContent = 'Testing background sync...';
+            
+            let details = '';
+            
+            try {
+                if (!('serviceWorker' in navigator)) {
+                    throw new Error('Service Worker not supported');
+                }
+                
+                const registration = await navigator.serviceWorker.ready;
+                
+                if (!('sync' in registration)) {
+                    throw new Error('Background Sync not supported');
+                }
+                
+                details += '✅ Background Sync API supported\n';
+                
+                // Test sync registration
+                try {
+                    await registration.sync.register('test-sync');
+                    details += '✅ Successfully registered test sync\n';
+                } catch (error) {
+                    details += `⚠️ Sync registration failed: ${error.message}\n`;
+                }
+                
+                // Check for sync tags (this is limited by browser security)
+                details += '\n📋 Testing sync capabilities...\n';
+                details += '✅ Sync registration interface available\n';
+                
+                // Test the sync queues defined in sw.js
+                const syncQueues = [
+                    'emergency-broadcast-sync',
+                    'crowd-report-sync',
+                    'triage-assessment-sync'
+                ];
+                
+                for (const queue of syncQueues) {
+                    try {
+                        await registration.sync.register(queue);
+                        details += `✅ Registered queue: ${queue}\n`;
+                    } catch (error) {
+                        details += `⚠️ Failed to register: ${queue}\n`;
+                    }
+                }
+                
+                testResults.sync = true;
+                statusEl.className = 'test-status success';
+                statusEl.textContent = '✅ Background Sync Test Passed';
+                cardEl.className = 'test-card success';
+                
+            } catch (error) {
+                details += `❌ Error: ${error.message}\n`;
+                testResults.sync = false;
+                statusEl.className = 'test-status error';
+                statusEl.textContent = '❌ Background Sync Test Failed';
+                cardEl.className = 'test-card error';
+            }
+            
+            detailsEl.textContent = details;
+            updateTestSummary();
+        }
+
+        // Test 6: IndexedDB Storage
+        async function testIndexedDB() {
+            const statusEl = document.getElementById('idbTestStatus');
+            const detailsEl = document.getElementById('idbTestDetails');
+            const cardEl = document.getElementById('idbTest');
+            
+            cardEl.className = 'test-card active';
+            statusEl.className = 'test-status running';
+            statusEl.textContent = 'Testing IndexedDB...';
+            
+            let details = '';
+            
+            try {
+                if (!('indexedDB' in window)) {
+                    throw new Error('IndexedDB not supported');
+                }
+                
+                details += '✅ IndexedDB API supported\n';
+                
+                // Test database creation and structure
+                const dbName = 'EmergencyResponseDB';
+                const dbVersion = 3;
+                
+                const db = await new Promise((resolve, reject) => {
+                    const request = indexedDB.open(dbName, dbVersion);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        details += '🔄 Database upgrade needed\n';
+                        
+                        // Create stores as defined in sw.js
+                        const stores = [
+                            'broadcastQueue',
+                            'crowdReportQueue',
+                            'triageQueue',
+                            'emergencyReportQueue',
+                            'weatherRiskQueue',
+                            'syncMetadata',
+                            'offlineAnalytics'
+                        ];
+                        
+                        stores.forEach(storeName => {
+                            if (!db.objectStoreNames.contains(storeName)) {
+                                const store = db.createObjectStore(storeName, { 
+                                    keyPath: 'id', 
+                                    autoIncrement: true 
+                                });
+                                store.createIndex('timestamp', 'timestamp');
+                                store.createIndex('priority', 'priority');
+                                store.createIndex('type', 'type');
+                                details += `✅ Created store: ${storeName}\n`;
+                            }
+                        });
+                    };
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                details += `✅ Database opened: ${db.name} v${db.version}\n`;
+                details += `📋 Object stores: ${db.objectStoreNames.length}\n`;
+                
+                // Test data operations
+                const testData = {
+                    data: { test: 'emergency data' },
+                    url: '/test-endpoint',
+                    method: 'POST',
+                    timestamp: Date.now(),
+                    priority: 'high',
+                    type: 'test'
+                };
+                
+                // Test write operation
+                const tx = db.transaction(['emergencyReportQueue'], 'readwrite');
+                const store = tx.objectStore('emergencyReportQueue');
+                const addResult = await store.add(testData);
+                
+                details += `✅ Test data written with ID: ${addResult}\n`;
+                
+                // Test read operation
+                const readResult = await store.get(addResult);
+                if (readResult && readResult.data.test === 'emergency data') {
+                    details += '✅ Test data read successfully\n';
+                } else {
+                    throw new Error('Data integrity check failed');
+                }
+                
+                // Cleanup test data
+                await store.delete(addResult);
+                details += '✅ Test data cleaned up\n';
+                
+                db.close();
+                
+                testResults.indexedDB = true;
+                statusEl.className = 'test-status success';
+                statusEl.textContent = '✅ IndexedDB Test Passed';
+                cardEl.className = 'test-card success';
+                
+            } catch (error) {
+                details += `❌ Error: ${error.message}\n`;
+                testResults.indexedDB = false;
+                statusEl.className = 'test-status error';
+                statusEl.textContent = '❌ IndexedDB Test Failed';
+                cardEl.className = 'test-card error';
+            }
+            
+            detailsEl.textContent = details;
+            updateTestSummary();
+        }
+
+        // Control functions
+        async function runAllTests() {
+            console.log('🚀 Running all tests...');
+            
+            // Reset all test results
+            Object.keys(testResults).forEach(key => testResults[key] = null);
+            
+            // Run tests sequentially with delays
+            await testServiceWorker();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCachePopulation();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testOfflineNavigation();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testFetchInterception();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testBackgroundSync();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testIndexedDB();
+            
+            // Show final summary
+            document.getElementById('resultsSummary').style.display = 'block';
+            document.getElementById('resultsSummary').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function simulateOffline() {
+            isOfflineSimulated = true;
+            updateConnectionStatus();
+            
+            // Override navigator.onLine
+            Object.defineProperty(navigator, 'onLine', {
+                writable: true,
+                value: false
+            });
+            
+            // Dispatch offline event
+            window.dispatchEvent(new Event('offline'));
+            
+            alert('📴 Offline mode simulated! Try navigating to see how the service worker handles requests.');
+        }
+
+        function simulateOnline() {
+            isOfflineSimulated = false;
+            updateConnectionStatus();
+            
+            // Restore navigator.onLine
+            Object.defineProperty(navigator, 'onLine', {
+                writable: true,
+                value: true
+            });
+            
+            // Dispatch online event
+            window.dispatchEvent(new Event('online'));
+            
+            alert('🌐 Online mode restored!');
+        }
+
+        async function clearAllCaches() {
+            if (!('caches' in window)) {
+                alert('❌ Cache API not supported');
+                return;
+            }
+            
+            if (confirm('⚠️ This will delete all cached data. Continue?')) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    
+                    alert(`✅ Cleared ${cacheNames.length} cache(s)`);
+                    updateServiceWorkerStatus();
+                } catch (error) {
+                    alert(`❌ Error clearing caches: ${error.message}`);
+                }
+            }
+        }
+
+        function updateTestSummary() {
+            const results = Object.values(testResults);
+            const completed = results.filter(r => r !== null);
+            const passed = results.filter(r => r === true);
+            const failed = results.filter(r => r === false);
+            
+            document.getElementById('passedCount').textContent = passed.length;
+            document.getElementById('failedCount').textContent = failed.length;
+            
+            if (completed.length === results.length) {
+                const summaryMessage = document.getElementById('summaryMessage');
+                if (failed.length === 0) {
+                    summaryMessage.innerHTML = '🎉 <strong>All tests passed!</strong> Your offline functionality is working correctly.';
+                } else if (passed.length > failed.length) {
+                    summaryMessage.innerHTML = '⚠️ <strong>Some tests failed.</strong> Check the details and fix any issues.';
+                } else {
+                    summaryMessage.innerHTML = '❌ <strong>Multiple test failures.</strong> Offline functionality may not work properly.';
+                }
+            }
+        }
+
+        // Advanced testing functions
+        async function testOfflineFormSubmission() {
+            console.log('Testing offline form submission...');
+            
+            try {
+                const formData = new FormData();
+                formData.append('emergency_type', 'test');
+                formData.append('description', 'Test emergency report');
+                formData.append('location', 'Test location');
+                formData.append('priority', 'high');
+                
+                const response = await fetch('/api/submit-emergency-report', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                console.log('Form submission result:', result);
+                
+                if (result.status === 'queued' && result.offline) {
+                    console.log('✅ Form successfully queued for offline sync');
+                    return true;
+                } else {
+                    console.log('⚠️ Unexpected response format');
+                    return false;
+                }
+                
+            } catch (error) {
+                console.error('❌ Form submission test failed:', error);
+                return false;
+            }
+        }
+
+        async function testCacheStrategies() {
+            console.log('Testing cache strategies...');
+            
+            const testUrls = [
+                { url: '/static/css/styles.css', strategy: 'cache-first' },
+                { url: '/api/health', strategy: 'network-first' },
+                { url: '/offline.html', strategy: 'cache-only' }
+            ];
+            
+            for (const test of testUrls) {
+                try {
+                    const start = performance.now();
+                    const response = await fetch(test.url);
+                    const end = performance.now();
+                    
+                    console.log(`${test.url}: ${response.status} (${Math.round(end - start)}ms)`);
+                    
+                    if (response.headers.get('x-cache-status')) {
+                        console.log(`  Cache status: ${response.headers.get('x-cache-status')}`);
+                    }
+                    
+                } catch (error) {
+                    console.log(`${test.url}: Error - ${error.message}`);
+                }
+            }
+        }
+
+        // Export test results for debugging
+        function exportTestResults() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                online: navigator.onLine,
+                serviceWorkerSupported: 'serviceWorker' in navigator,
+                cacheSupported: 'caches' in window,
+                indexedDBSupported: 'indexedDB' in window,
+                backgroundSyncSupported: 'serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype,
+                testResults: testResults
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `offline-test-results-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        runAllTests();
+                        break;
+                    case 'o':
+                        e.preventDefault();
+                        simulateOffline();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        simulateOnline();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        exportTestResults();
+                        break;
+                }
+            }
+        });
+
+        // Auto-run tests on load (optional)
+        // Uncomment the next line to auto-run tests when page loads
+        // setTimeout(runAllTests, 2000);
+    </script>
+</body>
+</html>

@@ -339,7 +339,32 @@ async def offline_page(request: Request):
 @app.get("/submit-report", response_class=HTMLResponse)
 async def submit_report_page(request: Request):
     """Report submission page"""
-    return templates.TemplateResponse("submit-report.html", {"request": request})
+    return templates.TemplateResponse("submit_report.html", {"request": request})
+
+@app.get("/manifest.json")
+async def manifest():
+    """Serve PWA manifest"""
+    return FileResponse("static/manifest.json", media_type="application/json")
+
+@app.get("/predict", response_class=HTMLResponse)
+async def predict_page(request: Request):
+    """Risk prediction page"""
+    return templates.TemplateResponse("predict.html", {"request": request})
+
+@app.get("/sw.js")
+async def service_worker():
+    """Serve service worker from root path"""
+    return FileResponse("static/js/sw.js", media_type="application/javascript")
+
+@app.get("/triage-form", response_class=HTMLResponse)
+async def triage_form_page(request: Request):
+    """Triage assessment form"""
+    return templates.TemplateResponse("triage_form.html", {"request": request})
+
+@app.get("/test-offline", response_class=HTMLResponse)
+async def test_offline_page(request: Request):
+    """Offline testing suite for service worker validation"""
+    return templates.TemplateResponse("test-offline.html", {"request": request})
 
 # ================================================================================
 # DASHBOARD ROUTES
