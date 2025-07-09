@@ -1,0 +1,770 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Predictive Risk Modeling - Emergency Forecasting{% endblock %}
+{% block page_title %}🔮 Predictive Risk Modeling{% endblock %}
+{% block subtitle %}AI-Enhanced Emergency Forecasting with Full Context{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .risk-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .risk-panel {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .risk-level {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  
+  .risk-low { color: #22c55e; }
+  .risk-medium { color: #f59e0b; }
+  .risk-high { color: #ef4444; }
+  .risk-critical { color: #dc2626; animation: pulse 1s infinite; }
+  
+  .forecast-container {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .forecast-timeline {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 1rem;
+  }
+  
+  .timeline-item {
+    text-align: center;
+    flex: 1;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+  }
+  
+  .timeline-item:hover {
+    background: #f3f4f6;
+  }
+  
+  .timeline-item.active {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .timeline-time {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+  
+  .timeline-item.active .timeline-time {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .forecast-chart {
+    height: 300px;
+    background: #f8fafc;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .chart-placeholder {
+    color: #6b7280;
+    font-size: 1.1rem;
+  }
+  
+  .hazard-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .hazard-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border-left: 4px solid #3b82f6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+  }
+  
+  .hazard-card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .hazard-card.earthquake { border-left-color: #dc2626; }
+  .hazard-card.flood { border-left-color: #2563eb; }
+  .hazard-card.fire { border-left-color: #ea580c; }
+  .hazard-card.weather { border-left-color: #7c3aed; }
+  
+  .hazard-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .hazard-icon {
+    font-size: 1.5rem;
+  }
+  
+  .hazard-title {
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .probability-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+  }
+  
+  .probability-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #f59e0b, #ef4444);
+    transition: width 0.8s ease;
+  }
+  
+  .probability-text {
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+  
+  .context-inputs {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .input-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .input-field label {
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .input-field input,
+  .input-field select {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease;
+  }
+  
+  .input-field input:focus,
+  .input-field select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .scenario-builder {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+  }
+  
+  .scenario-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+  
+  .scenario-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .scenario-option {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+  
+  .scenario-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  .scenario-option.selected {
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid white;
+  }
+  
+  .analysis-results {
+    background: #f0f9ff;
+    border: 2px solid #0ea5e9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: none;
+  }
+  
+  .analysis-results.visible {
+    display: block;
+    animation: slideUp 0.5s ease;
+  }
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .recommendations {
+    background: #f6f8fa;
+    border-left: 4px solid #28a745;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 0 8px 8px 0;
+  }
+  
+  .recommendations h4 {
+    color: #28a745;
+    margin-bottom: 0.5rem;
+  }
+  
+  .recommendation-item {
+    background: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid #28a745;
+  }
+  
+  .confidence-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+    margin-left: 0.5rem;
+  }
+  
+  .confidence-high { background: #16a34a; }
+  .confidence-medium { background: #d97706; }
+  .confidence-low { background: #dc2626; }
+  
+  .real-time-updates {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-family: monospace;
+    font-size: 0.9rem;
+  }
+  
+  .update-stream {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+  }
+  
+  .update-item {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .update-timestamp {
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+  
+  @media (max-width: 768px) {
+    .risk-dashboard {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .input-group {
+      grid-template-columns: 1fr;
+    }
+    
+    .scenario-options {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="risk-dashboard">
+  <div class="risk-panel">
+    <div class="risk-level risk-medium" id="overallRiskLevel">4.2</div>
+    <div style="text-align: center; margin-bottom: 1rem;">
+      <h3>Overall Risk Level</h3>
+      <p style="opacity: 0.8; margin: 0;">Next 24 hours</p>
+    </div>
+    <div class="confidence-indicator confidence-high">
+      High Confidence
+    </div>
+  </div>
+  
+  <div class="risk-panel">
+    <div style="text-align: center; margin-bottom: 1rem;">
+      <h3>🎯 Primary Threat</h3>
+      <div style="font-size: 2rem; margin: 0.5rem 0;">🌪️</div>
+      <p style="font-size: 1.1rem; font-weight: bold; margin: 0;">Severe Weather</p>
+      <p style="opacity: 0.8; margin: 0;">Peak: 2-4 PM today</p>
+    </div>
+    <div class="confidence-indicator confidence-medium">
+      Medium Confidence
+    </div>
+  </div>
+</div>
+
+<div class="context-inputs">
+  <h3 style="margin-bottom: 1rem; color: #1f2937;">🌍 Context & Environmental Factors</h3>
+  
+  <div class="input-group">
+    <div class="input-field">
+      <label for="location">Location</label>
+      <input type="text" id="location" placeholder="Enter location or coordinates" value="San Francisco, CA">
+    </div>
+    <div class="input-field">
+      <label for="population">Population Density</label>
+      <select id="population">
+        <option value="low">Low (Rural)</option>
+        <option value="medium">Medium (Suburban)</option>
+        <option value="high" selected>High (Urban)</option>
+        <option value="very-high">Very High (Metro)</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="input-group">
+    <div class="input-field">
+      <label for="season">Season/Time</label>
+      <select id="season">
+        <option value="spring">Spring</option>
+        <option value="summer" selected>Summer</option>
+        <option value="fall">Fall</option>
+        <option value="winter">Winter</option>
+      </select>
+    </div>
+    <div class="input-field">
+      <label for="infrastructure">Infrastructure Age</label>
+      <select id="infrastructure">
+        <option value="new">New (0-20 years)</option>
+        <option value="moderate" selected>Moderate (20-50 years)</option>
+        <option value="aging">Aging (50+ years)</option>
+        <option value="legacy">Legacy (100+ years)</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="input-group">
+    <div class="input-field">
+      <label for="vulnerability">Vulnerability Factors</label>
+      <select id="vulnerability" multiple style="height: 100px;">
+        <option value="elderly">Elderly Population</option>
+        <option value="low-income">Low Income Areas</option>
+        <option value="language">Language Barriers</option>
+        <option value="medical">Medical Facilities</option>
+        <option value="schools">Schools/Children</option>
+        <option value="tourism">Tourist Areas</option>
+      </select>
+    </div>
+    <div class="input-field">
+      <label for="resources">Available Resources</label>
+      <select id="resources" multiple style="height: 100px;">
+        <option value="fire">Fire Department</option>
+        <option value="police">Police Department</option>
+        <option value="medical">Medical Services</option>
+        <option value="emergency">Emergency Management</option>
+        <option value="utilities">Utility Companies</option>
+        <option value="volunteers">Volunteer Organizations</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="forecast-container">
+  <h3 style="margin-bottom: 1rem; color: #1f2937;">📊 Risk Forecast Timeline</h3>
+  
+  <div class="forecast-timeline">
+    <div class="timeline-item active" data-period="6h">
+      <div class="timeline-time">Next 6 Hours</div>
+      <div style="font-weight: bold; color: #ef4444;">High</div>
+    </div>
+    <div class="timeline-item" data-period="24h">
+      <div class="timeline-time">Next 24 Hours</div>
+      <div style="font-weight: bold; color: #f59e0b;">Medium</div>
+    </div>
+    <div class="timeline-item" data-period="72h">
+      <div class="timeline-time">Next 3 Days</div>
+      <div style="font-weight: bold; color: #22c55e;">Low</div>
+    </div>
+    <div class="timeline-item" data-period="7d">
+      <div class="timeline-time">Next Week</div>
+      <div style="font-weight: bold; color: #22c55e;">Low</div>
+    </div>
+  </div>
+  
+  <div class="forecast-chart" id="forecastChart">
+    <div class="chart-placeholder">📈 Interactive Risk Forecast Chart</div>
+  </div>
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+    <button onclick="updateForecast()" style="background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: bold;">
+      🔄 Update Forecast
+    </button>
+    <span style="color: #6b7280; font-size: 0.9rem;">
+      Last updated: <span id="lastUpdated">Just now</span>
+    </span>
+  </div>
+</div>
+
+<div class="scenario-builder">
+  <div class="scenario-title">🎭 Scenario Builder</div>
+  <p style="margin-bottom: 1rem; opacity: 0.9;">Select conditions to model specific emergency scenarios</p>
+  
+  <div class="scenario-options">
+    <div class="scenario-option" data-scenario="earthquake">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🌍</div>
+      <div>Major Earthquake</div>
+      <div style="font-size: 0.8rem; opacity: 0.8;">7.0+ magnitude</div>
+    </div>
+    <div class="scenario-option" data-scenario="flood">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🌊</div>
+      <div>Severe Flooding</div>
+      <div style="font-size: 0.8rem; opacity: 0.8;">100-year flood</div>
+    </div>
+    <div class="scenario-option" data-scenario="wildfire">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔥</div>
+      <div>Wildfire</div>
+      <div style="font-size: 0.8rem; opacity: 0.8;">Red flag conditions</div>
+    </div>
+    <div class="scenario-option" data-scenario="hurricane">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🌀</div>
+      <div>Hurricane</div>
+      <div style="font-size: 0.8rem; opacity: 0.8;">Category 3+</div>
+    </div>
+    <div class="scenario-option" data-scenario="cyber">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">💻</div>
+      <div>Cyber Attack</div>
+      <div style="font-size: 0.8rem; opacity: 0.8;">Critical infrastructure</div>
+    </div>
+    <div class="scenario-option" data-scenario="pandemic">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🦠</div>
+      <div>Pandemic</div>
+      <div style="font-size: 0.8rem; opacity: 0.8;">Rapid spread</div>
+    </div>
+  </div>
+</div>
+
+<div class="hazard-types">
+  <div class="hazard-card earthquake">
+    <div class="hazard-header">
+      <div class="hazard-icon">🌍</div>
+      <div class="hazard-title">Seismic Activity</div>
+    </div>
+    <div class="probability-bar">
+      <div class="probability-fill" style="width: 15%;"></div>
+    </div>
+    <div class="probability-text">15% probability in next 24h</div>
+    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+      Last update: 3 minutes ago
+    </div>
+  </div>
+  
+  <div class="hazard-card flood">
+    <div class="hazard-header">
+      <div class="hazard-icon">🌊</div>
+      <div class="hazard-title">Flooding Risk</div>
+    </div>
+    <div class="probability-bar">
+      <div class="probability-fill" style="width: 45%;"></div>
+    </div>
+    <div class="probability-text">45% probability in next 24h</div>
+    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+      Last update: 1 minute ago
+    </div>
+  </div>
+  
+  <div class="hazard-card fire">
+    <div class="hazard-header">
+      <div class="hazard-icon">🔥</div>
+      <div class="hazard-title">Fire Weather</div>
+    </div>
+    <div class="probability-bar">
+      <div class="probability-fill" style="width: 75%;"></div>
+    </div>
+    <div class="probability-text">75% probability in next 24h</div>
+    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+      Last update: 30 seconds ago
+    </div>
+  </div>
+  
+  <div class="hazard-card weather">
+    <div class="hazard-header">
+      <div class="hazard-icon">🌪️</div>
+      <div class="hazard-title">Severe Weather</div>
+    </div>
+    <div class="probability-bar">
+      <div class="probability-fill" style="width: 85%;"></div>
+    </div>
+    <div class="probability-text">85% probability in next 24h</div>
+    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+      Last update: 15 seconds ago
+    </div>
+  </div>
+</div>
+
+<div class="analysis-results" id="analysisResults">
+  <h3 style="color: #0369a1; margin-bottom: 1rem;">🧠 AI Analysis Results</h3>
+  
+  <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+    <h4>Risk Assessment Summary</h4>
+    <p>Based on current conditions and historical patterns, the primary threat is severe weather with a <strong>85% probability</strong> in the next 24 hours. Peak impact expected between 2-4 PM today.</p>
+    
+    <div style="margin-top: 1rem; padding: 0.75rem; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 0 6px 6px 0;">
+      <strong>Key Factors:</strong>
+      <ul style="margin: 0.5rem 0; padding-left: 1.2rem;">
+        <li>Atmospheric pressure dropping rapidly</li>
+        <li>High urban density increases vulnerability</li>
+        <li>Aging infrastructure in target area</li>
+        <li>Limited evacuation routes during peak hours</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="recommendations">
+    <h4>🎯 Recommended Actions</h4>
+    
+    <div class="recommendation-item">
+      <strong>Immediate (Next 2 hours):</strong>
+      Issue weather warnings, activate emergency operations center, pre-position resources
+    </div>
+    
+    <div class="recommendation-item">
+      <strong>Short-term (2-6 hours):</strong>
+      Implement traffic management, open emergency shelters, coordinate with utilities
+    </div>
+    
+    <div class="recommendation-item">
+      <strong>Medium-term (6-24 hours):</strong>
+      Deploy emergency personnel, establish communication networks, monitor vulnerable areas
+    </div>
+  </div>
+</div>
+
+<div class="real-time-updates">
+  <h4>📡 Real-Time Intelligence Feed</h4>
+  <div class="update-stream" id="updateStream">
+    <div class="update-item">
+      <span class="update-timestamp">12:34:56</span> - Weather station 7 reports wind gusts 45 mph
+    </div>
+    <div class="update-item">
+      <span class="update-timestamp">12:34:23</span> - Seismic sensor network: all quiet
+    </div>
+    <div class="update-item">
+      <span class="update-timestamp">12:33:45</span> - Satellite imagery shows storm cell intensifying
+    </div>
+    <div class="update-item">
+      <span class="update-timestamp">12:33:12</span> - Emergency services on standby
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/predictive-risk.js"></script>
+<script>
+  // Initialize the predictive risk modeling system
+  document.addEventListener('DOMContentLoaded', function() {
+    initializePredictiveRisk();
+    
+    // Start real-time updates
+    setInterval(updateRealTimeData, 5000);
+    
+    // Initialize scenario builder
+    initializeScenarioBuilder();
+  });
+  
+  function initializePredictiveRisk() {
+    console.log('🔮 Predictive Risk Modeling System Initialized');
+    updateLastUpdated();
+    
+    // Initialize timeline navigation
+    document.querySelectorAll('.timeline-item').forEach(item => {
+      item.addEventListener('click', function() {
+        // Remove active class from all items
+        document.querySelectorAll('.timeline-item').forEach(i => i.classList.remove('active'));
+        // Add active class to clicked item
+        this.classList.add('active');
+        
+        // Update forecast chart based on selected period
+        updateForecastChart(this.dataset.period);
+      });
+    });
+  }
+  
+  function updateForecast() {
+    console.log('🔄 Updating forecast...');
+    
+    // Show loading state
+    const chart = document.getElementById('forecastChart');
+    chart.innerHTML = '<div class="chart-placeholder">🔄 Updating forecast data...</div>';
+    
+    // Simulate API call
+    setTimeout(() => {
+      // Simulate random risk updates
+      const riskLevel = (Math.random() * 5 + 2).toFixed(1);
+      const riskElement = document.getElementById('overallRiskLevel');
+      riskElement.textContent = riskLevel;
+      
+      // Update risk color based on level
+      riskElement.className = 'risk-level ';
+      if (riskLevel < 3) riskElement.className += 'risk-low';
+      else if (riskLevel < 5) riskElement.className += 'risk-medium';
+      else if (riskLevel < 7) riskElement.className += 'risk-high';
+      else riskElement.className += 'risk-critical';
+      
+      // Update probability bars
+      document.querySelectorAll('.probability-fill').forEach(fill => {
+        const newWidth = Math.random() * 100;
+        fill.style.width = newWidth + '%';
+        
+        // Update text
+        const text = fill.parentElement.nextElementSibling;
+        text.textContent = `${Math.round(newWidth)}% probability in next 24h`;
+      });
+      
+      // Show analysis results
+      const results = document.getElementById('analysisResults');
+      results.classList.add('visible');
+      
+      // Update chart
+      chart.innerHTML = '<div class="chart-placeholder">📈 Updated Risk Forecast Chart</div>';
+      
+      updateLastUpdated();
+    }, 2000);
+  }
+  
+  function updateForecastChart(period) {
+    const chart = document.getElementById('forecastChart');
+    chart.innerHTML = `<div class="chart-placeholder">📊 Risk Forecast: ${period.toUpperCase()}</div>`;
+  }
+  
+  function updateLastUpdated() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    document.getElementById('lastUpdated').textContent = timeString;
+  }
+  
+  function initializeScenarioBuilder() {
+    document.querySelectorAll('.scenario-option').forEach(option => {
+      option.addEventListener('click', function() {
+        // Toggle selection
+        this.classList.toggle('selected');
+        
+        // Run scenario analysis
+        runScenarioAnalysis();
+      });
+    });
+  }
+  
+  function runScenarioAnalysis() {
+    const selectedScenarios = document.querySelectorAll('.scenario-option.selected');
+    
+    if (selectedScenarios.length > 0) {
+      console.log('🎭 Running scenario analysis...');
+      
+      // Show results
+      const results = document.getElementById('analysisResults');
+      results.classList.add('visible');
+      
+      // Update analysis based on selected scenarios
+      const scenarioTypes = Array.from(selectedScenarios).map(s => s.dataset.scenario);
+      updateAnalysisForScenarios(scenarioTypes);
+    }
+  }
+  
+  function updateAnalysisForScenarios(scenarios) {
+    // This would integrate with the predictive AI model
+    console.log('🧠 Analyzing scenarios:', scenarios);
+    
+    // Update risk assessment based on scenarios
+    // This is where the real AI integration would happen
+  }
+  
+  function updateRealTimeData() {
+    const stream = document.getElementById('updateStream');
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString();
+    
+    const updates = [
+      'Weather station reports wind speed increase',
+      'Seismic activity detected - minor tremor',
+      'Traffic congestion building in evacuation routes',
+      'Emergency services report ready status',
+      'Satellite data shows storm system moving',
+      'Public alert system test completed',
+      'Resource allocation updated',
+      'Communication network status: optimal'
+    ];
+    
+    const randomUpdate = updates[Math.floor(Math.random() * updates.length)];
+    
+    const newItem = document.createElement('div');
+    newItem.className = 'update-item';
+    newItem.innerHTML = `<span class="update-timestamp">${timestamp}</span> - ${randomUpdate}`;
+    
+    stream.insertBefore(newItem, stream.firstChild);
+    
+    // Keep only last 10 updates
+    while (stream.children.length > 10) {
+      stream.removeChild(stream.lastChild);
+    }
+  }
+</script>
+{% endblock %}
