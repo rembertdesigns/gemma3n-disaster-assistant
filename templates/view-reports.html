@@ -1,4 +1,4 @@
-<!-- templates/view-reports.html -->
+<!-- Enhanced templates/view-reports.html -->
 {% extends "base.html" %}
 
 {% block title %}Reports Viewer - Disaster Response Assistant{% endblock %}
@@ -14,6 +14,9 @@
 </a>
 <a href="/map-reports" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #3b82f6; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
   🗺️ Map View
+</a>
+<a href="/map-snapshot" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #059669; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
+  📍 Map Tool
 </a>
 {% endblock %}
 
@@ -111,6 +114,43 @@
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+  
+  /* Map Tools Section */
+  .map-tools {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .map-tools h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .map-tool-btn {
+    display: block;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    transition: background 0.2s ease;
+  }
+  
+  .map-tool-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    text-decoration: none;
+    color: white;
   }
   
   /* Reports Container */
@@ -215,6 +255,7 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    margin-bottom: 1rem;
   }
   
   .badge {
@@ -264,6 +305,82 @@
   .badge.descriptive {
     background: #059669;
     color: white;
+  }
+  
+  .badge.concerned {
+    background: #ca8a04;
+    color: white;
+  }
+  
+  .badge.neutral {
+    background: #6b7280;
+    color: white;
+  }
+  
+  /* Enhanced Action Buttons */
+  .report-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .action-btn {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .map-btn {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .map-btn:hover {
+    background: #1e40af;
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: white;
+  }
+  
+  .quick-map-btn {
+    background: #059669;
+    color: white;
+  }
+  
+  .quick-map-btn:hover {
+    background: #047857;
+    text-decoration: none;
+    color: white;
+  }
+  
+  .share-btn {
+    background: #6b7280;
+    color: white;
+  }
+  
+  .share-btn:hover {
+    background: #4b5563;
+  }
+  
+  .coord-badge {
+    background: #dcfce7;
+    color: #166534;
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
   }
   
   .highlight {
@@ -349,14 +466,24 @@
       <span>Filter Reports</span>
     </div>
     
+    <!-- Map Tools Section -->
+    <div class="map-tools">
+      <h3>🗺️ Map Tools</h3>
+      <a href="/map-snapshot" class="map-tool-btn" target="_blank">📍 Map Snapshot Tool</a>
+      <a href="/map-reports" class="map-tool-btn">🌐 Live Reports Map</a>
+      <a href="/api/export-map-data?format=kml" class="map-tool-btn">📱 Export KML</a>
+    </div>
+    
     <div class="filter-group">
       <label for="tone-filter" class="filter-label">Tone:</label>
       <select id="tone-filter" class="filter-select">
         <option value="">All Tones</option>
-        <option value="Urgent">Urgent</option>
-        <option value="Frantic">Frantic</option>
-        <option value="Helpless">Helpless</option>
-        <option value="Descriptive">Descriptive</option>
+        <option value="urgent">Urgent</option>
+        <option value="frantic">Frantic</option>
+        <option value="helpless">Helpless</option>
+        <option value="descriptive">Descriptive</option>
+        <option value="concerned">Concerned</option>
+        <option value="neutral">Neutral</option>
       </select>
     </div>
     
@@ -364,10 +491,19 @@
       <label for="escalation-filter" class="filter-label">Priority:</label>
       <select id="escalation-filter" class="filter-select">
         <option value="">All Priorities</option>
-        <option value="Critical">🚨 Critical</option>
-        <option value="High">⚠️ High</option>
-        <option value="Moderate">📊 Moderate</option>
-        <option value="Low">📝 Low</option>
+        <option value="critical">🚨 Critical</option>
+        <option value="high">⚠️ High</option>
+        <option value="moderate">📊 Moderate</option>
+        <option value="low">📝 Low</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label for="location-filter" class="filter-label">Location:</label>
+      <select id="location-filter" class="filter-select">
+        <option value="">All Locations</option>
+        <option value="has-coords">📍 With Coordinates</option>
+        <option value="no-coords">❓ No Coordinates</option>
       </select>
     </div>
     
@@ -376,6 +512,8 @@
       <select id="sort-order" class="filter-select">
         <option value="desc">Newest First</option>
         <option value="asc">Oldest First</option>
+        <option value="priority">Priority Level</option>
+        <option value="location">By Location</option>
       </select>
     </div>
     
@@ -390,7 +528,7 @@
     </div>
     
     <div class="filter-stats">
-      <span class="stat-number" id="report-count">0</span>
+      <span class="stat-number" id="report-count">{{ reports|length }}</span>
       <div class="stat-label">Reports Shown</div>
     </div>
     
@@ -410,13 +548,15 @@
       {% if reports %}
         {% for report in reports %}
           <div class="report-card {{ report.escalation|lower }}"
-               data-tone="{{ report.tone }}"
-               data-escalation="{{ report.escalation }}"
-               data-message="{{ report.message | lower }}"
-               data-timestamp="{{ report.timestamp }}">
+               data-tone="{{ report.tone|lower if report.tone else '' }}"
+               data-escalation="{{ report.escalation|lower }}"
+               data-message="{{ report.message|lower if report.message else '' }}"
+               data-timestamp="{{ report.timestamp if report.timestamp else '' }}"
+               data-has-coords="{{ 'true' if report.latitude and report.longitude else 'false' }}"
+               data-location="{{ report.location|lower if report.location else '' }}">
             
             <div class="report-message message-text">
-              {{ report.message }}
+              {{ report.message or 'No message provided' }}
             </div>
             
             <div class="report-meta">
@@ -426,23 +566,49 @@
               </div>
               <div class="meta-item">
                 <span>🕒</span>
-                <span class="timestamp">{{ report.timestamp }}</span>
+                <span class="timestamp">{{ report.timestamp[:19] if report.timestamp else 'Unknown time' }}</span>
               </div>
+              {% if report.location %}
+              <div class="meta-item">
+                <span>📍</span>
+                <span>{{ report.location }}</span>
+              </div>
+              {% endif %}
+              {% if report.latitude and report.longitude %}
+              <div class="meta-item">
+                <span class="coord-badge">{{ "%.4f"|format(report.latitude) }}, {{ "%.4f"|format(report.longitude) }}</span>
+              </div>
+              {% endif %}
             </div>
             
             <div class="report-badges">
               {% if report.tone %}
-                <span class="badge {{ report.tone|lower }}">{{ report.tone }}</span>
+                <span class="badge {{ report.tone|lower }}">{{ report.tone.title() }}</span>
               {% endif %}
               
               <span class="badge {{ report.escalation|lower }}">
-                {% if report.escalation == "Critical" %}🚨
-                {% elif report.escalation == "High" %}⚠️
-                {% elif report.escalation == "Moderate" %}📊
+                {% if report.escalation == "critical" %}🚨
+                {% elif report.escalation == "high" %}⚠️
+                {% elif report.escalation == "moderate" %}📊
                 {% else %}📝
                 {% endif %}
-                {{ report.escalation }}
+                {{ report.escalation.title() }}
               </span>
+            </div>
+            
+            <!-- Enhanced Action Buttons -->
+            <div class="report-actions">
+              {% if report.latitude and report.longitude %}
+              <a href="/map-snapshot/{{ report.id }}" class="action-btn map-btn" target="_blank" title="View detailed map for this report">
+                🗺️ View Map
+              </a>
+              <a href="/map-snapshot?lat={{ report.latitude }}&lon={{ report.longitude }}" class="action-btn quick-map-btn" target="_blank" title="Quick coordinate map">
+                📍 Quick Map
+              </a>
+              {% endif %}
+              <button onclick="shareReport(event, '{{ report.id }}')" class="action-btn share-btn" title="Share this report">
+                🔗 Share
+              </button>
             </div>
           </div>
         {% endfor %}
@@ -451,6 +617,9 @@
           <div class="no-reports-icon">📭</div>
           <h3>No Reports Available</h3>
           <p>No community reports have been submitted yet.</p>
+          <p style="margin-top: 1rem;">
+            <a href="/submit-crowd-report" style="color: #3b82f6; text-decoration: none; font-weight: 500;">📝 Submit the first report</a>
+          </p>
         </div>
       {% endif %}
     </div>
@@ -459,7 +628,237 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/view-reports.js"></script>
+<script>
+// Enhanced filtering and search functionality
+function applyFilters() {
+  const toneFilter = document.getElementById('tone-filter').value.toLowerCase();
+  const escalationFilter = document.getElementById('escalation-filter').value.toLowerCase();
+  const locationFilter = document.getElementById('location-filter').value;
+  const sortOrder = document.getElementById('sort-order').value;
+  const searchTerm = document.getElementById('keyword-search').value.toLowerCase();
+  
+  const reportCards = Array.from(document.querySelectorAll('.report-card'));
+  let visibleCount = 0;
+  
+  // Filter reports
+  reportCards.forEach(card => {
+    const tone = card.dataset.tone || '';
+    const escalation = card.dataset.escalation || '';
+    const message = card.dataset.message || '';
+    const location = card.dataset.location || '';
+    const hasCoords = card.dataset.hasCoords === 'true';
+    
+    let showCard = true;
+    
+    // Apply filters
+    if (toneFilter && tone !== toneFilter) showCard = false;
+    if (escalationFilter && escalation !== escalationFilter) showCard = false;
+    if (searchTerm && !message.includes(searchTerm) && !location.includes(searchTerm)) showCard = false;
+    
+    // Location filter
+    if (locationFilter === 'has-coords' && !hasCoords) showCard = false;
+    if (locationFilter === 'no-coords' && hasCoords) showCard = false;
+    
+    if (showCard) {
+      card.style.display = 'block';
+      visibleCount++;
+      
+      // Highlight search terms
+      if (searchTerm) {
+        highlightSearchTerms(card, searchTerm);
+      } else {
+        removeHighlight(card);
+      }
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  
+  // Sort visible reports
+  if (sortOrder !== 'desc') {
+    sortReports(reportCards.filter(card => card.style.display !== 'none'), sortOrder);
+  }
+  
+  // Update count
+  const reportCountElement = document.getElementById('report-count');
+  if (reportCountElement) {
+    reportCountElement.textContent = visibleCount;
+  }
+  
+  console.log(`📊 Filtered reports: ${visibleCount} visible`);
+}
+
+function sortReports(cards, order) {
+  const container = document.getElementById('reports-list');
+  if (!container) return;
+  
+  cards.sort((a, b) => {
+    switch (order) {
+      case 'asc':
+        return new Date(a.dataset.timestamp || 0) - new Date(b.dataset.timestamp || 0);
+      case 'priority':
+        const priorities = { critical: 4, high: 3, moderate: 2, low: 1 };
+        return (priorities[b.dataset.escalation] || 0) - (priorities[a.dataset.escalation] || 0);
+      case 'location':
+        return (a.dataset.location || '').localeCompare(b.dataset.location || '');
+      default:
+        return new Date(b.dataset.timestamp || 0) - new Date(a.dataset.timestamp || 0);
+    }
+  });
+  
+  cards.forEach(card => container.appendChild(card));
+}
+
+function highlightSearchTerms(card, searchTerm) {
+  const messageElement = card.querySelector('.message-text');
+  if (messageElement) {
+    const originalText = messageElement.textContent;
+    const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+    messageElement.innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
+  }
+}
+
+function removeHighlight(card) {
+  const messageElement = card.querySelector('.message-text');
+  if (messageElement) {
+    messageElement.innerHTML = messageElement.textContent;
+  }
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function shareReport(event, reportId) {
+  if (event) {
+    event.stopPropagation();
+  }
+  const mapUrl = `${window.location.origin}/map-snapshot/${reportId}`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: `Emergency Report #${reportId}`,
+      text: 'View this emergency report and its location on the map',
+      url: mapUrl
+    }).catch(console.error);
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(mapUrl).then(() => {
+      showToast('📋 Map link copied to clipboard!', 'success');
+    }).catch(() => {
+      prompt('Copy this link:', mapUrl);
+    });
+  } else {
+    prompt('Copy this link:', mapUrl);
+  }
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  const backgroundColor = type === 'success' ? '#16a34a' : '#3b82f6';
+  
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${backgroundColor};
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    z-index: 10000;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
+
+function refreshReports() {
+  console.log('🔄 Refreshing reports...');
+  window.location.reload();
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Add event listeners to filters
+  ['tone-filter', 'escalation-filter', 'location-filter', 'sort-order'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('change', applyFilters);
+    }
+  });
+  
+  // Add search input listener with debounce
+  let searchTimeout;
+  const searchInput = document.getElementById('keyword-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        applyFilters();
+      }, 300);
+    });
+  }
+  
+  console.log('📄 Enhanced Reports Viewer loaded');
+  console.log('🗺️ Map integration: Click map buttons to view locations');
+  console.log('🔍 Use filters to find specific reports');
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    switch(e.key) {
+      case 'f':
+        e.preventDefault();
+        const searchInput = document.getElementById('keyword-search');
+        if (searchInput) {
+          searchInput.focus();
+        }
+        break;
+      case 'm':
+        e.preventDefault();
+        window.open('/map-snapshot', '_blank');
+        break;
+      case 'r':
+        e.preventDefault();
+        refreshReports();
+        break;
+    }
+  }
+});
+
+// Set initial values from URL parameters if needed
+const urlParams = new URLSearchParams(window.location.search);
+const toneParam = urlParams.get('tone');
+const escalationParam = urlParams.get('escalation');
+const keywordParam = urlParams.get('keyword');
+
+if (toneParam) {
+  const toneFilter = document.getElementById('tone-filter');
+  if (toneFilter) {
+    toneFilter.value = toneParam;
+  }
+}
+
+if (escalationParam) {
+  const escalationFilter = document.getElementById('escalation-filter');
+  if (escalationFilter) {
+    escalationFilter.value = escalationParam;
+  }
+}
+
+if (keywordParam) {
+  const keywordSearch = document.getElementById('keyword-search');
+  if (keywordSearch) {
+    keywordSearch.value = keywordParam;
+    setTimeout(applyFilters, 100);
+  }
+}
+</script>
 {% endblock %}
 
 <!-- No AI status needed for reports viewer -->

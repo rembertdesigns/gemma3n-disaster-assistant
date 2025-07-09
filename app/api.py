@@ -231,6 +231,106 @@ async def map_reports_page(request: Request):
     """Enhanced map reports page with demo features"""
     return templates.TemplateResponse("map_reports.html", {"request": request})
 
+@app.get("/map-snapshot", response_class=HTMLResponse)
+async def map_snapshot_view(
+    request: Request,
+    report_id: Optional[int] = Query(None, description="Specific report ID to show"),
+    lat: Optional[float] = Query(None, description="Manual latitude"),
+    lon: Optional[float] = Query(None, description="Manual longitude"),
+    db: Session = Depends(get_db)
+):
+    """Enhanced map snapshot with real report data or manual coordinates"""
+    try:
+        if report_id:
+            # Get specific report from database
+            report = db.query(CrowdReport).filter(CrowdReport.id == report_id).first()
+            if report and report.latitude and report.longitude:
+                return templates.TemplateResponse("map_snapshot.html", {
+                    "request": request,
+                    "report_id": report.id,
+                    "latitude": report.latitude,
+                    "longitude": report.longitude,
+                    "report_message": report.message,
+                    "report_user": report.user or "Anonymous",
+                    "report_escalation": report.escalation,
+                    "report_timestamp": report.timestamp,
+                    "report_location": report.location,
+                    "has_real_data": True
+                })
+            else:
+                logger.warning(f"Report {report_id} not found or has no coordinates")
+        
+        # Use manual coordinates if provided
+        if lat is not None and lon is not None:
+            return templates.TemplateResponse("map_snapshot.html", {
+                "request": request,
+                "report_id": f"Manual-{int(lat*1000)}{int(lon*1000)}",
+                "latitude": lat,
+                "longitude": lon,
+                "report_message": "Manual coordinate plotting",
+                "report_user": "System",
+                "report_escalation": "low",
+                "report_timestamp": datetime.utcnow().isoformat(),
+                "report_location": f"Coordinates: {lat}, {lon}",
+                "has_real_data": False
+            })
+        
+        # Get latest report with coordinates as default
+        latest_report = db.query(CrowdReport).filter(
+            CrowdReport.latitude.isnot(None),
+            CrowdReport.longitude.isnot(None)
+        ).order_by(CrowdReport.timestamp.desc()).first()
+        
+        if latest_report:
+            return templates.TemplateResponse("map_snapshot.html", {
+                "request": request,
+                "report_id": latest_report.id,
+                "latitude": latest_report.latitude,
+                "longitude": latest_report.longitude,
+                "report_message": latest_report.message,
+                "report_user": latest_report.user or "Anonymous",
+                "report_escalation": latest_report.escalation,
+                "report_timestamp": latest_report.timestamp,
+                "report_location": latest_report.location,
+                "has_real_data": True
+            })
+        
+        # Fallback to San Francisco demo coordinates
+        return templates.TemplateResponse("map_snapshot.html", {
+            "request": request,
+            "report_id": "DEMO",
+            "latitude": 37.7749,
+            "longitude": -122.4194,
+            "report_message": "Demo location - San Francisco City Hall",
+            "report_user": "Demo System",
+            "report_escalation": "low",
+            "report_timestamp": datetime.utcnow().isoformat(),
+            "report_location": "San Francisco, CA (Demo)",
+            "has_real_data": False
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading map snapshot: {str(e)}")
+        # Error fallback
+        return templates.TemplateResponse("map_snapshot.html", {
+            "request": request,
+            "report_id": "ERROR",
+            "latitude": 37.7749,
+            "longitude": -122.4194,
+            "report_message": f"Error loading data: {str(e)}",
+            "report_user": "System",
+            "report_escalation": "low",
+            "report_timestamp": datetime.utcnow().isoformat(),
+            "report_location": "Error - Using default coordinates",
+            "has_real_data": False,
+            "error": str(e)
+        })
+
+@app.get("/map-snapshot/{report_id}", response_class=HTMLResponse)
+async def map_snapshot_by_id(report_id: int, request: Request, db: Session = Depends(get_db)):
+    """Direct map snapshot for a specific report ID"""
+    return await map_snapshot_view(request, report_id=report_id, db=db)
+
 @app.get("/offline.html", response_class=HTMLResponse)
 async def offline_page(request: Request):
     """Offline support page"""

@@ -22,7 +22,9 @@
 <a href="/analytics" class="admin-btn">
   📊 Analytics Dashboard
 </a>
-</div>
+<a href="/map-snapshot" class="admin-btn">
+  📍 Map Tool
+</a>
 {% endblock %}
 
 {% block ai_status %}
@@ -121,6 +123,62 @@
     font-size: 0.9rem;
   }
   
+  /* Enhanced Map Tools Section */
+  .map-tools-section {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+  }
+  
+  .map-tools-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  .map-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .map-tool-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.2s ease;
+  }
+  
+  .map-tool-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  .map-tool-card a {
+    text-decoration: none;
+    color: white;
+    display: block;
+  }
+  
+  .map-tool-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+  
+  .map-tool-description {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    line-height: 1.4;
+  }
+  
   .tools-section {
     background: white;
     border: 1px solid #e5e7eb;
@@ -213,6 +271,10 @@
     background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   }
   
+  .admin-btn.map-special {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  }
+  
   .status-indicator {
     display: inline-flex;
     align-items: center;
@@ -231,6 +293,135 @@
     background: #16a34a;
     border-radius: 50%;
     animation: pulse 2s infinite;
+  }
+  
+  /* Quick Actions Section */
+  .quick-actions-section {
+    background: #f8fafc;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .quick-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #374151;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-align: center;
+    justify-content: center;
+  }
+  
+  .quick-action-btn:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    text-decoration: none;
+    color: #1e40af;
+  }
+  
+  /* Recent Activity Section */
+  .recent-activity {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.2s ease;
+  }
+  
+  .activity-item:hover {
+    background: #f8fafc;
+  }
+  
+  .activity-item:last-child {
+    border-bottom: none;
+  }
+  
+  .activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: #f0f9ff;
+    color: #3b82f6;
+  }
+  
+  .activity-content {
+    flex: 1;
+  }
+  
+  .activity-title {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+  }
+  
+  .activity-time {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+  
+  .export-section {
+    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .export-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .export-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .export-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    text-decoration: none;
+    color: white;
   }
 </style>
 {% endblock %}
@@ -279,6 +470,106 @@
     </div>
   </div>
 
+  <!-- Enhanced Map Tools Section -->
+  <div class="map-tools-section">
+    <div class="map-tools-header">
+      🗺️ Enhanced Mapping & Location Tools
+    </div>
+    <div class="map-tools-grid">
+      <div class="map-tool-card">
+        <a href="/map-snapshot">
+          <div class="map-tool-title">📍 Map Snapshot Tool</div>
+          <div class="map-tool-description">Generate printable location maps for emergency reports and coordinates. Perfect for field operations and documentation.</div>
+        </a>
+      </div>
+      
+      <div class="map-tool-card">
+        <a href="/map-reports">
+          <div class="map-tool-title">🌐 Live Reports Map</div>
+          <div class="map-tool-description">Real-time interactive map showing all crowd reports with filtering and live updates.</div>
+        </a>
+      </div>
+      
+      <div class="map-tool-card">
+        <a href="/api/export-map-data?format=kml">
+          <div class="map-tool-title">📱 Export KML</div>
+          <div class="map-tool-description">Download all report locations as KML for use in Google Earth, mobile apps, and GIS systems.</div>
+        </a>
+      </div>
+      
+      <div class="map-tool-card">
+        <a href="/api/map-statistics">
+          <div class="map-tool-title">📊 Map Analytics</div>
+          <div class="map-tool-description">Comprehensive geographic statistics and coverage analysis for emergency reports.</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions-section">
+    <h2 class="category-header">⚡ Quick Actions</h2>
+    <div class="quick-actions-grid">
+      <a href="/view-reports" class="quick-action-btn">
+        📋 View All Reports
+      </a>
+      <a href="/crowd-reports" class="quick-action-btn">
+        📢 Crowd Reports
+      </a>
+      <a href="/patient-list" class="quick-action-btn">
+        🏥 Patient Management
+      </a>
+      <a href="/analytics" class="quick-action-btn">
+        📈 Analytics Dashboard
+      </a>
+      <a href="/submit-crowd-report" class="quick-action-btn">
+        📝 Submit New Report
+      </a>
+      <a href="/triage" class="quick-action-btn">
+        🚑 Triage Assessment
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="recent-activity">
+    <h2 class="category-header">📈 Recent Activity</h2>
+    {% if recent_reports %}
+      {% for report in recent_reports[:5] %}
+      <div class="activity-item">
+        <div class="activity-icon">
+          {% if report.escalation == 'critical' %}🚨
+          {% elif report.escalation == 'high' %}⚠️
+          {% elif report.escalation == 'moderate' %}📊
+          {% else %}📝{% endif %}
+        </div>
+        <div class="activity-content">
+          <div class="activity-title">
+            New {{ report.escalation }} report from {{ report.user or 'Anonymous' }}
+          </div>
+          <div class="activity-time">
+            {{ report.timestamp[:19] if report.timestamp else 'Unknown time' }}
+            {% if report.location %} • {{ report.location }}{% endif %}
+          </div>
+        </div>
+        {% if report.latitude and report.longitude %}
+        <a href="/map-snapshot/{{ report.id }}" target="_blank" class="quick-action-btn" style="padding: 0.5rem; margin: 0;">
+          🗺️ Map
+        </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="activity-item">
+        <div class="activity-icon">📭</div>
+        <div class="activity-content">
+          <div class="activity-title">No recent activity</div>
+          <div class="activity-time">System ready for new reports</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
   <!-- Administrative Tools -->
   <div class="tools-section">
     <h2 class="category-header">🛠️ Administrative Tools</h2>
@@ -320,105 +611,212 @@
       </div>
       
       <div class="tool-card">
-        <a href="/triage">
-          <div class="tool-title">🚑 Triage Form</div>
-          <div class="tool-description">Emergency triage assessment form for rapid patient categorization and prioritization.</div>
+        <a href="/triage-dashboard">
+          <div class="tool-title">🚑 Triage Dashboard</div>
+          <div class="tool-description">Comprehensive triage overview with real-time statistics and priority queues.</div>
         </a>
       </div>
     </div>
+  </div>
 
-    <!-- Quick Actions -->
-    <div class="admin-actions">
-      <a href="/reports" class="admin-btn">
-        📄 View All Reports
+  <!-- Export & Archive Tools -->
+  <div class="export-section">
+    <h2 style="margin: 0 0 1rem 0; color: white;">📦 Export & Archive Tools</h2>
+    <p style="margin: 0 0 1rem 0; opacity: 0.9;">Download and archive your emergency response data in multiple formats</p>
+    <div class="export-buttons">
+      <a href="/export-reports.csv" class="export-btn">
+        📊 Export CSV
       </a>
-      <a href="/reports/export" class="admin-btn secondary">
-        📦 Export Archive
+      <a href="/export-reports.json" class="export-btn">
+        🔧 Export JSON
       </a>
-      <a href="/crowd-reports" class="admin-btn">
-        📢 Crowd Reports
+      <a href="/api/export-map-data?format=kml" class="export-btn">
+        🌍 Export KML
       </a>
-      <a href="/map-reports" class="admin-btn">
-        🗺️ Map View
+      <a href="/export-patients-pdf" class="export-btn">
+        🏥 Patient PDF
+      </a>
+      <a href="/export-full-archive" class="export-btn">
+        📦 Full Archive
       </a>
     </div>
+  </div>
+
+  <!-- Advanced Actions -->
+  <div class="admin-actions">
+    <a href="/debug/create-test-patients-get" class="admin-btn secondary">
+      🧪 Create Test Data
+    </a>
+    <a href="/api/create-demo-reports" class="admin-btn secondary" onclick="return confirm('Create demo crowd reports?')">
+      📝 Generate Demo Reports
+    </a>
+    <a href="/health" class="admin-btn secondary" target="_blank">
+      🔍 System Health Check
+    </a>
+    <a href="/api/demo-status" class="admin-btn secondary" target="_blank">
+      📊 Demo Status
+    </a>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Auto-refresh stats every 30 seconds
-  let statsRefreshInterval;
-  
-  function refreshStats() {
-    fetch('/api/dashboard-stats')
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Update stats numbers
-          document.querySelector('.stats-grid .stats-number').textContent = data.total_reports;
-          // Update other stats as needed
-          console.log('📊 Dashboard stats refreshed');
-        }
-      })
-      .catch(error => {
-        console.warn('⚠️ Stats refresh failed:', error);
-      });
-  }
-  
-  // Start auto-refresh
-  function startStatsRefresh() {
-    statsRefreshInterval = setInterval(refreshStats, 30000);
-    console.log('🔄 Stats auto-refresh started');
-  }
-  
-  // Stop auto-refresh
-  function stopStatsRefresh() {
-    if (statsRefreshInterval) {
-      clearInterval(statsRefreshInterval);
-      console.log('⏸️ Stats auto-refresh stopped');
-    }
-  }
-  
-  // Pause refresh when page is hidden
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      stopStatsRefresh();
-    } else {
-      startStatsRefresh();
-    }
-  });
-  
-  // Initialize on page load
-  window.addEventListener('load', () => {
-    startStatsRefresh();
-    
-    // Add keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-          case 'r':
-            e.preventDefault();
-            window.location.href = '/reports';
-            break;
-          case 'p':
-            e.preventDefault();
-            window.location.href = '/patients';
-            break;
-          case 'h':
-            e.preventDefault();
-            window.location.href = '/hazards';
-            break;
-        }
+// Enhanced admin dashboard functionality
+let statsRefreshInterval;
+
+function refreshStats() {
+  fetch('/api/dashboard-stats')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Update stats numbers with animation
+        updateStatWithAnimation('.stats-grid .stats-number', data.stats.total_reports);
+        console.log('📊 Dashboard stats refreshed');
       }
+    })
+    .catch(error => {
+      console.warn('⚠️ Stats refresh failed:', error);
     });
+}
+
+function updateStatWithAnimation(selector, newValue) {
+  const element = document.querySelector(selector);
+  if (element) {
+    const currentValue = parseInt(element.textContent);
+    if (currentValue !== newValue) {
+      element.style.transform = 'scale(1.1)';
+      element.style.color = '#16a34a';
+      setTimeout(() => {
+        element.textContent = newValue;
+        element.style.transform = 'scale(1)';
+        element.style.color = '#1e40af';
+      }, 200);
+    }
+  }
+}
+
+// Create demo reports via API
+async function createDemoReports() {
+  if (!confirm('Create demo crowd reports? This will add sample data to your system.')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/create-demo-reports', { method: 'POST' });
+    const data = await response.json();
     
-    // Show keyboard shortcuts hint
-    console.log('⌨️ Keyboard shortcuts: Ctrl+R (Reports), Ctrl+P (Patients), Ctrl+H (Hazards)');
+    if (data.success) {
+      alert(`✅ Successfully created ${data.reports_created} demo reports!`);
+      window.location.reload();
+    } else {
+      alert(`ℹ️ ${data.message}`);
+    }
+  } catch (error) {
+    console.error('Error creating demo reports:', error);
+    alert('❌ Failed to create demo reports');
+  }
+}
+
+// Start auto-refresh
+function startStatsRefresh() {
+  statsRefreshInterval = setInterval(refreshStats, 30000);
+  console.log('🔄 Admin stats auto-refresh started');
+}
+
+// Stop auto-refresh
+function stopStatsRefresh() {
+  if (statsRefreshInterval) {
+    clearInterval(statsRefreshInterval);
+    console.log('⏸️ Admin stats auto-refresh stopped');
+  }
+}
+
+// Initialize on page load
+window.addEventListener('load', () => {
+  startStatsRefresh();
+  
+  // Add keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch(e.key) {
+        case 'r':
+          e.preventDefault();
+          window.location.href = '/view-reports';
+          break;
+        case 'p':
+          e.preventDefault();
+          window.location.href = '/patients';
+          break;
+        case 'h':
+          e.preventDefault();
+          window.location.href = '/hazards';
+          break;
+        case 'm':
+          e.preventDefault();
+          window.open('/map-snapshot', '_blank');
+          break;
+        case 'e':
+          e.preventDefault();
+          window.location.href = '/export-full-archive';
+          break;
+      }
+    }
   });
   
-  // Cleanup on page unload
-  window.addEventListener('beforeunload', stopStatsRefresh);
+  // Show keyboard shortcuts hint
+  console.log('⌨️ Admin Keyboard shortcuts:');
+  console.log('  Ctrl+R: Reports | Ctrl+P: Patients | Ctrl+H: Hazards');
+  console.log('  Ctrl+M: Map Tool | Ctrl+E: Export Archive');
+  
+  // Add click handlers for API buttons
+  const apiButtons = document.querySelectorAll('a[href*="/api/"]');
+  apiButtons.forEach(button => {
+    if (button.href.includes('create-demo-reports')) {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        createDemoReports();
+      });
+    }
+  });
+});
+
+// Pause refresh when page is hidden
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopStatsRefresh();
+  } else {
+    startStatsRefresh();
+  }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', stopStatsRefresh);
+
+// Enhanced map tool integration
+function openMapTool() {
+  window.open('/map-snapshot', '_blank', 'width=1200,height=800');
+}
+
+function openMapReports() {
+  window.location.href = '/map-reports';
+}
+
+// Add interactive elements
+document.addEventListener('DOMContentLoaded', () => {
+  // Add hover effects to stats cards
+  const statsCards = document.querySelectorAll('.stats-card');
+  statsCards.forEach(card => {
+    card.addEventListener('mouseenter', () => {
+      card.style.borderLeft = '4px solid #3b82f6';
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.borderLeft = '';
+    });
+  });
+  
+  console.log('👤 Enhanced Admin Dashboard loaded');
+  console.log('🗺️ Map tools integrated and ready');
+});
 </script>
 {% endblock %}

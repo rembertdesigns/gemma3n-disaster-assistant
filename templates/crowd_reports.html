@@ -1,4 +1,3 @@
-<!-- Enhanced templates/crowd_reports.html -->
 {% extends "base.html" %}
 
 {% block title %}Crowd Reports Viewer - Disaster Response Assistant{% endblock %}
@@ -8,6 +7,9 @@
 {% block header_actions %}
 <a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
   ⬅️ Back to Home
+</a>
+<a href="/map-snapshot" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #059669; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
+  🗺️ Map Tool
 </a>
 {% endblock %}
 
@@ -186,6 +188,7 @@
     color: #6b7280;
     border-top: 1px solid #f3f4f6;
     padding-top: 1rem;
+    margin-bottom: 1rem;
   }
   
   .user-info {
@@ -201,6 +204,71 @@
   .location-info {
     color: #3b82f6;
     font-weight: 500;
+  }
+  
+  /* Enhanced Action Buttons */
+  .report-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+    flex-wrap: wrap;
+  }
+  
+  .action-btn {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .map-btn {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .map-btn:hover {
+    background: #1e40af;
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: white;
+  }
+  
+  .share-btn {
+    background: #6b7280;
+    color: white;
+  }
+  
+  .share-btn:hover {
+    background: #4b5563;
+  }
+  
+  .quick-map-btn {
+    background: #059669;
+    color: white;
+  }
+  
+  .quick-map-btn:hover {
+    background: #047857;
+    text-decoration: none;
+    color: white;
+  }
+  
+  .details-btn {
+    background: #7c3aed;
+    color: white;
+  }
+  
+  .details-btn:hover {
+    background: #5b21b6;
   }
   
   .empty-state {
@@ -255,6 +323,17 @@
     margin-bottom: 1rem;
     text-align: center;
   }
+  
+  /* Coordinate badge styling */
+  .coord-badge {
+    background: #dcfce7;
+    color: #166534;
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+  }
 </style>
 {% endblock %}
 
@@ -271,7 +350,7 @@
     <div class="stat-label">Total Reports</div>
   </div>
   <div class="stat-card">
-    <div class="stat-number">{{ reports|selectattr('escalation', 'equalto', 'Critical')|list|length }}</div>
+    <div class="stat-number">{{ reports|selectattr('escalation', 'equalto', 'critical')|list|length }}</div>
     <div class="stat-label">Critical Alerts</div>
   </div>
   <div class="stat-card">
@@ -289,19 +368,21 @@
   <label for="tone">Tone:</label>
   <select name="tone" id="tone" class="filter-select">
     <option value="">All Tones</option>
-    <option value="Urgent" {% if tone == 'Urgent' %}selected{% endif %}>Urgent</option>
-    <option value="Frantic" {% if tone == 'Frantic' %}selected{% endif %}>Frantic</option>
-    <option value="Helpless" {% if tone == 'Helpless' %}selected{% endif %}>Helpless</option>
-    <option value="Descriptive" {% if tone == 'Descriptive' %}selected{% endif %}>Descriptive</option>
+    <option value="urgent" {% if tone == 'urgent' %}selected{% endif %}>Urgent</option>
+    <option value="frantic" {% if tone == 'frantic' %}selected{% endif %}>Frantic</option>
+    <option value="helpless" {% if tone == 'helpless' %}selected{% endif %}>Helpless</option>
+    <option value="descriptive" {% if tone == 'descriptive' %}selected{% endif %}>Descriptive</option>
+    <option value="concerned" {% if tone == 'concerned' %}selected{% endif %}>Concerned</option>
+    <option value="neutral" {% if tone == 'neutral' %}selected{% endif %}>Neutral</option>
   </select>
 
   <label for="escalation">Escalation:</label>
   <select name="escalation" id="escalation" class="filter-select">
     <option value="">All Levels</option>
-    <option value="Critical" {% if escalation == 'Critical' %}selected{% endif %}>Critical</option>
-    <option value="High" {% if escalation == 'High' %}selected{% endif %}>High</option>
-    <option value="Moderate" {% if escalation == 'Moderate' %}selected{% endif %}>Moderate</option>
-    <option value="Low" {% if escalation == 'Low' %}selected{% endif %}>Low</option>
+    <option value="critical" {% if escalation == 'critical' %}selected{% endif %}>Critical</option>
+    <option value="high" {% if escalation == 'high' %}selected{% endif %}>High</option>
+    <option value="moderate" {% if escalation == 'moderate' %}selected{% endif %}>Moderate</option>
+    <option value="low" {% if escalation == 'low' %}selected{% endif %}>Low</option>
   </select>
 
   <input type="text" name="keyword" placeholder="Search messages..." value="{{ keyword or '' }}" class="filter-select" />
@@ -314,15 +395,6 @@
 <div class="export-section">
   <h3 style="margin: 0 0 1rem 0; color: #374151;">📦 Export Options</h3>
   <div class="export-buttons">
-    <form method="post" action="/export-reports/pdf" target="_blank" style="display: inline;">
-      <input type="hidden" name="tone" value="{{ tone or '' }}">
-      <input type="hidden" name="escalation" value="{{ escalation or '' }}">
-      <input type="hidden" name="keyword" value="{{ keyword or '' }}">
-      <button type="submit" class="filter-button" style="background: #1e3a8a;">
-        📄 Export PDF
-      </button>
-    </form>
-    
     <a href="/export-reports.csv?tone={{ tone }}&escalation={{ escalation }}&keyword={{ keyword }}" class="filter-button" style="background: #6d28d9; text-decoration: none; display: inline-block;">
       📊 Export CSV
     </a>
@@ -330,21 +402,25 @@
     <a href="/export-reports.json?tone={{ tone }}&escalation={{ escalation }}&keyword={{ keyword }}" class="filter-button" style="background: #334155; text-decoration: none; display: inline-block;">
       🔧 Export JSON
     </a>
+    
+    <a href="/api/export-map-data?format=kml&tone={{ tone }}&escalation={{ escalation }}" class="filter-button" style="background: #dc2626; text-decoration: none; display: inline-block;">
+      🌍 Export KML
+    </a>
   </div>
 </div>
 
 {% if reports %}
 <div class="reports-grid">
   {% for report in reports %}
-  <div class="report-card {{ report.escalation.lower() }}" onclick="toggleReportDetails({{ report.id }})">
+  <div class="report-card {{ report.escalation | lower }}" onclick="highlightReport('{{ report.id }}')">
     <div class="report-header">
       <div>
         <span class="escalation-badge {{ report.escalation.lower() }}">
-          {% if report.escalation == 'Critical' %}🚨{% elif report.escalation == 'High' %}⚠️{% elif report.escalation == 'Moderate' %}📊{% else %}📝{% endif %}
-          {{ report.escalation }}
+          {% if report.escalation == 'critical' %}🚨{% elif report.escalation == 'high' %}⚠️{% elif report.escalation == 'moderate' %}📊{% else %}📝{% endif %}
+          {{ report.escalation.title() }}
         </span>
         {% if report.tone %}
-          <span class="tone-badge">{{ report.tone }}</span>
+          <span class="tone-badge">{{ report.tone.title() }}</span>
         {% endif %}
       </div>
       <div style="font-size: 0.8rem; color: #6b7280;">
@@ -362,6 +438,9 @@
         {% if report.location %}
           <span class="location-info">📍 {{ report.location }}</span>
         {% endif %}
+        {% if report.latitude and report.longitude %}
+          <span class="coord-badge">{{ "%.4f"|format(report.latitude) }}, {{ "%.4f"|format(report.longitude) }}</span>
+        {% endif %}
       </div>
       <div class="timestamp-info">
         {% if report.timestamp %}
@@ -371,6 +450,24 @@
           <div>Unknown time</div>
         {% endif %}
       </div>
+    </div>
+    
+    <!-- Enhanced Action Buttons -->
+    <div class="report-actions">
+      {% if report.latitude and report.longitude %}
+      <a href="/map-snapshot/{{ report.id }}" class="action-btn map-btn" target="_blank" title="View detailed map for this report">
+        🗺️ View Map
+      </a>
+      <a href="/map-snapshot?lat={{ report.latitude }}&lon={{ report.longitude }}" class="action-btn quick-map-btn" target="_blank" title="Quick coordinate map">
+        📍 Quick Map
+      </a>
+      {% endif %}
+      <button onclick="shareReport(event, '{{ report.id }}')" class="action-btn share-btn" title="Share this report">
+        🔗 Share
+      </button>
+      <button onclick="showReportDetails(event, '{{ report.id }}')" class="action-btn details-btn" title="Show full details">
+        ℹ️ Details
+      </button>
     </div>
   </div>
   {% endfor %}
@@ -392,10 +489,65 @@
 
 {% block scripts %}
 <script>
-// Report interaction
-function toggleReportDetails(reportId) {
+// Enhanced report interaction
+function highlightReport(reportId) {
+  console.log('📋 Report selected:', reportId);
+  // Could add visual feedback here
+}
+
+function shareReport(event, reportId) {
+  event.stopPropagation(); // Prevent card click
+  const reportUrl = `${window.location.origin}/crowd-reports?keyword=${reportId}`;
+  const mapUrl = `${window.location.origin}/map-snapshot/${reportId}`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: `Emergency Report #${reportId}`,
+      text: 'View this emergency report and its location',
+      url: mapUrl
+    }).catch(console.error);
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(mapUrl).then(() => {
+      showToast('📋 Map link copied to clipboard!', 'success');
+    }).catch(() => {
+      prompt('Copy this link:', mapUrl);
+    });
+  } else {
+    prompt('Copy this link:', mapUrl);
+  }
+}
+
+function showReportDetails(event, reportId) {
+  event.stopPropagation(); // Prevent card click
   // Future enhancement: show modal with full details
-  console.log('Report clicked:', reportId);
+  console.log('📝 Show details for report:', reportId);
+  // Could open a modal or navigate to detail page
+  alert(`Report #${reportId} details\n\nThis would show expanded report information in a modal.`);
+}
+
+function showToast(message, type = 'info') {
+  // Simple toast notification
+  const toast = document.createElement('div');
+  const backgroundColor = type === 'success' ? '#16a34a' : '#3b82f6';
+  
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${backgroundColor};
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    z-index: 10000;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
 }
 
 // Auto-refresh functionality
@@ -429,11 +581,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  console.log('📋 Crowd Reports Viewer loaded with auto-refresh');
+  console.log('📋 Enhanced Crowd Reports Viewer loaded');
+  console.log('🗺️ Map integration: Click map buttons to view locations');
 });
 
 // Cleanup
 window.addEventListener('beforeunload', stopAutoRefresh);
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    switch(e.key) {
+      case 'm':
+        e.preventDefault();
+        window.open('/map-snapshot', '_blank');
+        break;
+      case 'r':
+        e.preventDefault();
+        window.location.reload();
+        break;
+    }
+  }
+});
 </script>
 {% endblock %}
 
