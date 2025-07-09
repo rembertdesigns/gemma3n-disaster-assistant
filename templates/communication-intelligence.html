@@ -1,0 +1,1474 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Communication Intelligence - Emergency Messaging{% endblock %}
+{% block page_title %}💬 Communication Intelligence{% endblock %}
+{% block subtitle %}AI-Powered Emergency Messaging in 140+ Languages{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .comm-dashboard {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .message-composer {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .composer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .composer-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .message-type-selector {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .message-type {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+  
+  .message-type:hover {
+    background: #f3f4f6;
+  }
+  
+  .message-type.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+  
+  .message-type.emergency {
+    background: #dc2626;
+    color: white;
+    border-color: #dc2626;
+  }
+  
+  .message-type.warning {
+    background: #d97706;
+    color: white;
+    border-color: #d97706;
+  }
+  
+  .message-type.info {
+    background: #059669;
+    color: white;
+    border-color: #059669;
+  }
+  
+  .message-input {
+    width: 100%;
+    min-height: 120px;
+    padding: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    resize: vertical;
+    font-family: inherit;
+    margin-bottom: 1rem;
+  }
+  
+  .message-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .composer-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .control-group label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+  
+  .control-group select,
+  .control-group input {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  
+  .language-preview {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .preview-header {
+    font-weight: bold;
+    color: #475569;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .preview-content {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #64748b;
+  }
+  
+  .language-item {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .language-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .language-name {
+    font-weight: bold;
+    color: #1e293b;
+    font-size: 0.9rem;
+  }
+  
+  .confidence-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .confidence-high { background: #16a34a; }
+  .confidence-medium { background: #d97706; }
+  .confidence-low { background: #dc2626; }
+  
+  .language-text {
+    font-size: 0.85rem;
+    color: #475569;
+    line-height: 1.4;
+  }
+  
+  .composer-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .action-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .action-btn.primary {
+    background: #3b82f6;
+    color: white;
+  }
+  
+  .action-btn.primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+  }
+  
+  .action-btn.secondary {
+    background: #6b7280;
+    color: white;
+  }
+  
+  .action-btn.secondary:hover {
+    background: #4b5563;
+  }
+  
+  .action-btn.success {
+    background: #16a34a;
+    color: white;
+  }
+  
+  .action-btn.success:hover {
+    background: #15803d;
+  }
+  
+  .comm-stats {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  .stats-header {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+  
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .stat-item:last-child {
+    border-bottom: none;
+  }
+  
+  .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+  
+  .stat-value {
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  
+  .active-channels {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .channels-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .channels-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .channel-filter {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .filter-btn {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 15px;
+    background: white;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .filter-btn.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+  
+  .channels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+  
+  .channel-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .channel-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 10px rgba(59, 130, 246, 0.1);
+  }
+  
+  .channel-card.emergency {
+    border-left: 4px solid #dc2626;
+    background: #fef2f2;
+  }
+  
+  .channel-card.warning {
+    border-left: 4px solid #d97706;
+    background: #fffbeb;
+  }
+  
+  .channel-card.info {
+    border-left: 4px solid #059669;
+    background: #f0fdf4;
+  }
+  
+  .channel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .channel-name {
+    font-weight: bold;
+    color: #1f2937;
+  }
+  
+  .channel-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .status-active { background: #16a34a; }
+  .status-pending { background: #d97706; }
+  .status-paused { background: #6b7280; }
+  
+  .channel-details {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+  }
+  
+  .channel-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .metric {
+    text-align: center;
+    padding: 0.25rem;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 4px;
+  }
+  
+  .metric-value {
+    font-weight: bold;
+    color: #1e40af;
+  }
+  
+  .metric-label {
+    color: #6b7280;
+    font-size: 0.7rem;
+  }
+  
+  .translation-engine {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+  }
+  
+  .engine-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .engine-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+  
+  .engine-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse 2s infinite;
+  }
+  
+  .language-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .language-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  
+  .language-badge:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
+  
+  .language-badge.priority {
+    background: rgba(220, 38, 38, 0.3);
+    border: 1px solid rgba(220, 38, 38, 0.5);
+  }
+  
+  .real-time-feed {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+    font-family: monospace;
+  }
+  
+  .feed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+  }
+  
+  .feed-stream {
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+  }
+  
+  .feed-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .feed-timestamp {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    min-width: 60px;
+  }
+  
+  .feed-type {
+    padding: 0.125rem 0.375rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    min-width: 50px;
+    text-align: center;
+  }
+  
+  .feed-emergency { background: #dc2626; }
+  .feed-warning { background: #d97706; }
+  .feed-info { background: #059669; }
+  .feed-system { background: #6b7280; }
+  
+  .feed-message {
+    flex: 1;
+    font-size: 0.85rem;
+  }
+  
+  .emergency-templates {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .templates-header {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 1rem;
+  }
+  
+  .template-categories {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .template-category {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+  
+  .template-category.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+  
+  .template-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+  
+  .template-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .template-item:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+  }
+  
+  .template-title {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+  
+  .template-preview {
+    font-size: 0.9rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  
+  .template-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+  }
+  
+  @media (max-width: 768px) {
+    .comm-dashboard {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .composer-controls {
+      grid-template-columns: 1fr;
+    }
+    
+    .composer-actions {
+      flex-direction: column;
+    }
+    
+    .channels-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .language-grid {
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="comm-dashboard">
+  <div class="message-composer">
+    <div class="composer-header">
+      <div class="composer-title">✍️ Message Composer</div>
+      <div class="message-type-selector">
+        <div class="message-type emergency active" data-type="emergency">🚨 Emergency</div>
+        <div class="message-type warning" data-type="warning">⚠️ Warning</div>
+        <div class="message-type info" data-type="info">ℹ️ Info</div>
+      </div>
+    </div>
+    
+    <textarea 
+      id="messageInput" 
+      class="message-input" 
+      placeholder="Type your emergency message here... AI will automatically translate to 140+ languages"
+    >EMERGENCY ALERT: Severe weather warning in effect. Seek immediate shelter indoors. Avoid windows and stay away from metal objects. Emergency services are responding.</textarea>
+    
+    <div class="composer-controls">
+      <div class="control-group">
+        <label for="priorityLevel">Priority Level</label>
+        <select id="priorityLevel">
+          <option value="critical">🔴 Critical</option>
+          <option value="high" selected>🟠 High</option>
+          <option value="medium">🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label for="targetAudience">Target Audience</label>
+        <select id="targetAudience">
+          <option value="general-public" selected>General Public</option>
+          <option value="first-responders">First Responders</option>
+          <option value="government-officials">Government Officials</option>
+          <option value="medical-personnel">Medical Personnel</option>
+          <option value="vulnerable-populations">Vulnerable Populations</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label for="distributionScope">Distribution Scope</label>
+        <select id="distributionScope">
+          <option value="citywide" selected>Citywide</option>
+          <option value="regional">Regional</option>
+          <option value="statewide">Statewide</option>
+          <option value="national">National</option>
+          <option value="international">International</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label for="deliveryMethod">Delivery Method</label>
+        <select id="deliveryMethod">
+          <option value="all-channels" selected>All Channels</option>
+          <option value="mobile-only">Mobile Only</option>
+          <option value="broadcast-only">Broadcast Only</option>
+          <option value="digital-signs">Digital Signs</option>
+          <option value="social-media">Social Media</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="language-preview" id="languagePreview">
+      <div class="preview-header">
+        <span>🌐 AI Translation Preview</span>
+        <span style="font-size: 0.8rem; opacity: 0.7;">5 of 142 languages shown</span>
+      </div>
+      <div class="preview-content" id="previewContent">
+        <div class="language-item">
+          <div class="language-header">
+            <div class="language-name">🇪🇸 Spanish (Español)</div>
+            <div class="confidence-badge confidence-high">98%</div>
+          </div>
+          <div class="language-text">ALERTA DE EMERGENCIA: Alerta de clima severo en efecto. Busque refugio inmediato en interiores. Evite las ventanas y manténgase alejado de objetos metálicos.</div>
+        </div>
+        
+        <div class="language-item">
+          <div class="language-header">
+            <div class="language-name">🇫🇷 French (Français)</div>
+            <div class="confidence-badge confidence-high">96%</div>
+          </div>
+          <div class="language-text">ALERTE D'URGENCE: Alerte météorologique sévère en vigueur. Cherchez un abri immédiat à l'intérieur. Évitez les fenêtres et restez loin des objets métalliques.</div>
+        </div>
+        
+        <div class="language-item">
+          <div class="language-header">
+            <div class="language-name">🇨🇳 Chinese (中文)</div>
+            <div class="confidence-badge confidence-medium">94%</div>
+          </div>
+          <div class="language-text">紧急警报：恶劣天气警告生效。立即寻求室内避难所。避开窗户，远离金属物品。紧急服务正在响应。</div>
+        </div>
+        
+        <div class="language-item">
+          <div class="language-header">
+            <div class="language-name">🇦🇪 Arabic (العربية)</div>
+            <div class="confidence-badge confidence-medium">92%</div>
+          </div>
+          <div class="language-text">تنبيه طوارئ: تحذير من طقس شديد ساري المفعول. اطلبوا ملجأ فوري في الداخل. تجنبوا النوافذ وابتعدوا عن الأشياء المعدنية.</div>
+        </div>
+        
+        <div class="language-item">
+          <div class="language-header">
+            <div class="language-name">🇷🇺 Russian (Русский)</div>
+            <div class="confidence-badge confidence-high">97%</div>
+          </div>
+          <div class="language-text">ЭКСТРЕННОЕ ПРЕДУПРЕЖДЕНИЕ: Действует предупреждение о суровой погоде. Немедленно укройтесь в помещении. Избегайте окон и держитесь подальше от металлических предметов.</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="composer-actions">
+      <button class="action-btn primary" onclick="translateMessage()">
+        🌐 Translate to All Languages
+      </button>
+      <button class="action-btn success" onclick="broadcastMessage()">
+        📡 Broadcast Now
+      </button>
+      <button class="action-btn secondary" onclick="scheduleMessage()">
+        ⏰ Schedule
+      </button>
+      <button class="action-btn secondary" onclick="saveTemplate()">
+        💾 Save Template
+      </button>
+    </div>
+  </div>
+  
+  <div class="comm-stats">
+    <div class="stats-header">📊 Communication Metrics</div>
+    
+    <div class="stat-item">
+      <div class="stat-label">Active Languages</div>
+      <div class="stat-value" id="activeLanguages">142</div>
+    </div>
+    
+    <div class="stat-item">
+      <div class="stat-label">Messages Sent Today</div>
+      <div class="stat-value" id="messagesSent">1,247</div>
+    </div>
+    
+    <div class="stat-item">
+      <div class="stat-label">Delivery Success Rate</div>
+      <div class="stat-value" id="deliveryRate">98.7%</div>
+    </div>
+    
+    <div class="stat-item">
+      <div class="stat-label">Avg Translation Time</div>
+      <div class="stat-value" id="translationTime">0.8s</div>
+    </div>
+    
+    <div class="stat-item">
+      <div class="stat-label">Active Channels</div>
+      <div class="stat-value" id="activeChannels">23</div>
+    </div>
+    
+    <div class="stat-item">
+      <div class="stat-label">Coverage Area</div>
+      <div class="stat-value" id="coverageArea">847K</div>
+    </div>
+  </div>
+</div>
+
+<div class="translation-engine">
+  <div class="engine-header">
+    <div class="engine-title">🧠 AI Translation Engine</div>
+    <div class="engine-status">
+      <div class="status-dot"></div>
+      <span>Online • Processing</span>
+    </div>
+  </div>
+  
+  <div style="margin-bottom: 1rem; font-size: 0.9rem; opacity: 0.9;">
+    Neural machine translation powered by advanced language models. Real-time processing with cultural context awareness.
+  </div>
+  
+  <div class="language-grid">
+    <div class="language-badge priority">🇺🇸 English</div>
+    <div class="language-badge priority">🇪🇸 Spanish</div>
+    <div class="language-badge priority">🇫🇷 French</div>
+    <div class="language-badge priority">🇩🇪 German</div>
+    <div class="language-badge priority">🇨🇳 Chinese</div>
+    <div class="language-badge priority">🇯🇵 Japanese</div>
+    <div class="language-badge priority">🇦🇪 Arabic</div>
+    <div class="language-badge priority">🇷🇺 Russian</div>
+    <div class="language-badge">🇮🇹 Italian</div>
+    <div class="language-badge">🇵🇹 Portuguese</div>
+    <div class="language-badge">🇰🇷 Korean</div>
+    <div class="language-badge">🇮🇳 Hindi</div>
+    <div class="language-badge">🇳🇱 Dutch</div>
+    <div class="language-badge">🇸🇪 Swedish</div>
+    <div class="language-badge">🇳🇴 Norwegian</div>
+    <div class="language-badge">🇵🇱 Polish</div>
+    <div class="language-badge">🇹🇷 Turkish</div>
+    <div class="language-badge">🇻🇳 Vietnamese</div>
+    <div class="language-badge">🇹🇭 Thai</div>
+    <div class="language-badge">🇬🇷 Greek</div>
+    <div class="language-badge">🇮🇱 Hebrew</div>
+    <div class="language-badge">🇮🇷 Persian</div>
+    <div class="language-badge">🇺🇦 Ukrainian</div>
+    <div class="language-badge">🇧🇩 Bengali</div>
+    <div class="language-badge">+118 more...</div>
+  </div>
+  
+  <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+    <button onclick="showAllLanguages()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+      🌍 View All 142 Languages
+    </button>
+    <button onclick="configurePriorities()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+      ⚙️ Configure Priorities
+    </button>
+  </div>
+</div>
+
+<div class="emergency-templates">
+  <div class="templates-header">📋 Emergency Message Templates</div>
+  
+  <div class="template-categories">
+    <div class="template-category active" data-category="weather">🌪️ Weather</div>
+    <div class="template-category" data-category="earthquake">🌍 Earthquake</div>
+    <div class="template-category" data-category="fire">🔥 Fire</div>
+    <div class="template-category" data-category="flood">🌊 Flood</div>
+    <div class="template-category" data-category="medical">🚑 Medical</div>
+    <div class="template-category" data-category="security">🚔 Security</div>
+    <div class="template-category" data-category="infrastructure">⚡ Infrastructure</div>
+  </div>
+  
+  <div class="template-list" id="templateList">
+    <div class="template-item" onclick="loadTemplate('severe-weather')">
+      <div class="template-title">Severe Weather Warning</div>
+      <div class="template-preview">EMERGENCY ALERT: Severe weather warning in effect. Seek immediate shelter indoors. Avoid windows and stay away from metal objects...</div>
+      <div class="template-meta">
+        <span>Used 247 times</span>
+        <span>98.5% delivery success</span>
+      </div>
+    </div>
+    
+    <div class="template-item" onclick="loadTemplate('tornado-warning')">
+      <div class="template-title">Tornado Warning</div>
+      <div class="template-preview">TORNADO WARNING: Take shelter immediately. Go to the lowest floor of a sturdy building. Stay away from windows...</div>
+      <div class="template-meta">
+        <span>Used 89 times</span>
+        <span>99.2% delivery success</span>
+      </div>
+    </div>
+    
+    <div class="template-item" onclick="loadTemplate('hurricane-evacuation')">
+      <div class="template-title">Hurricane Evacuation</div>
+      <div class="template-preview">MANDATORY EVACUATION: Hurricane approaching. All residents in evacuation zones must leave immediately...</div>
+      <div class="template-meta">
+        <span>Used 156 times</span>
+        <span>97.8% delivery success</span>
+      </div>
+    </div>
+    
+    <div class="template-item" onclick="loadTemplate('flash-flood')">
+      <div class="template-title">Flash Flood Alert</div>
+      <div class="template-preview">FLASH FLOOD WARNING: Dangerous flooding occurring. Do not drive through flooded roads. Move to higher ground immediately...</div>
+      <div class="template-meta">
+        <span>Used 312 times</span>
+        <span>98.9% delivery success</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="active-channels">
+  <div class="channels-header">
+    <div class="channels-title">📡 Active Communication Channels</div>
+    <div class="channel-filter">
+      <div class="filter-btn active" data-filter="all">All</div>
+      <div class="filter-btn" data-filter="emergency">Emergency</div>
+      <div class="filter-btn" data-filter="warning">Warning</div>
+      <div class="filter-btn" data-filter="info">Info</div>
+    </div>
+  </div>
+  
+  <div class="channels-grid">
+    <div class="channel-card emergency">
+      <div class="channel-header">
+        <div class="channel-name">Emergency Alert System</div>
+        <div class="channel-status status-active">ACTIVE</div>
+      </div>
+      <div class="channel-details">
+        Broadcasts critical emergency alerts to all mobile devices, TV, and radio stations within the affected area.
+      </div>
+      <div class="channel-metrics">
+        <div class="metric">
+          <div class="metric-value">847K</div>
+          <div class="metric-label">Reach</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">0.3s</div>
+          <div class="metric-label">Latency</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">99.1%</div>
+          <div class="metric-label">Success</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="channel-card warning">
+      <div class="channel-header">
+        <div class="channel-name">Social Media Integration</div>
+        <div class="channel-status status-active">ACTIVE</div>
+      </div>
+      <div class="channel-details">
+        Automatically posts emergency updates to Twitter, Facebook, Instagram, and other social platforms in multiple languages.
+      </div>
+      <div class="channel-metrics">
+        <div class="metric">
+          <div class="metric-value">2.1M</div>
+          <div class="metric-label">Followers</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">1.2s</div>
+          <div class="metric-label">Latency</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">97.8%</div>
+          <div class="metric-label">Engagement</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="channel-card info">
+      <div class="channel-header">
+        <div class="channel-name">Digital Signage Network</div>
+        <div class="channel-status status-active">ACTIVE</div>
+      </div>
+      <div class="channel-details">
+        Updates electronic billboards, transit displays, and public digital signs with emergency information in real-time.
+      </div>
+      <div class="channel-metrics">
+        <div class="metric">
+          <div class="metric-value">1,247</div>
+          <div class="metric-label">Signs</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">0.8s</div>
+          <div class="metric-label">Update Time</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">94.5%</div>
+          <div class="metric-label">Online</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="channel-card emergency">
+      <div class="channel-header">
+        <div class="channel-name">Radio & TV Broadcasting</div>
+        <div class="channel-status status-active">ACTIVE</div>
+      </div>
+      <div class="channel-details">
+        Interrupts regular programming on radio and TV stations to broadcast emergency alerts with text-to-speech in multiple languages.
+      </div>
+      <div class="channel-metrics">
+        <div class="metric">
+          <div class="metric-value">156</div>
+          <div class="metric-label">Stations</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">2.1s</div>
+          <div class="metric-label">Activation</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">98.9%</div>
+          <div class="metric-label">Coverage</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="channel-card warning">
+      <div class="channel-header">
+        <div class="channel-name">Community Apps & Websites</div>
+        <div class="channel-status status-pending">PENDING</div>
+      </div>
+      <div class="channel-details">
+        Push notifications and banner alerts on local government apps, news websites, and community platforms.
+      </div>
+      <div class="channel-metrics">
+        <div class="metric">
+          <div class="metric-value">89</div>
+          <div class="metric-label">Platforms</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">3.2s</div>
+          <div class="metric-label">Deploy Time</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">89.7%</div>
+          <div class="metric-label">Active Users</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="channel-card info">
+      <div class="channel-header">
+        <div class="channel-name">Voice Assistance Integration</div>
+        <div class="channel-status status-active">ACTIVE</div>
+      </div>
+      <div class="channel-details">
+        Activates announcements on smart speakers and voice assistants in homes and businesses throughout the area.
+      </div>
+      <div class="channel-metrics">
+        <div class="metric">
+          <div class="metric-value">423K</div>
+          <div class="metric-label">Devices</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">1.7s</div>
+          <div class="metric-label">Response</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Multi-Lang</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="real-time-feed">
+  <div class="feed-header">
+    <span>📡 Real-Time Communication Feed</span>
+    <span style="font-size: 0.8rem; opacity: 0.7;">Live Activity</span>
+  </div>
+  <div class="feed-stream" id="communicationFeed">
+    <div class="feed-item">
+      <span class="feed-timestamp">12:34:56</span>
+      <span class="feed-type feed-emergency">ALERT</span>
+      <span class="feed-message">Severe weather warning broadcast to 847K devices in 23 languages</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-timestamp">12:34:23</span>
+      <span class="feed-type feed-system">SYS</span>
+      <span class="feed-message">Translation engine processing Chinese (Traditional) variant</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-timestamp">12:33:45</span>
+      <span class="feed-type feed-warning">WARN</span>
+      <span class="feed-message">Social media auto-post scheduled for 3 platforms</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-timestamp">12:33:12</span>
+      <span class="feed-type feed-info">INFO</span>
+      <span class="feed-message">Digital signage network updated: 1,247 signs active</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-timestamp">12:32:58</span>
+      <span class="feed-type feed-system">SYS</span>
+      <span class="feed-message">Voice assistant integration deployed to 423K devices</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-timestamp">12:32:34</span>
+      <span class="feed-type feed-emergency">ALERT</span>
+      <span class="feed-message">Emergency broadcast system activated - 156 stations</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/communication-intelligence.js"></script>
+<script>
+  // Initialize the communication intelligence system
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeCommunicationIntelligence();
+    
+    // Start real-time feed updates
+    setInterval(updateCommunicationFeed, 4000);
+    
+    // Initialize message composer
+    initializeMessageComposer();
+    
+    // Initialize template system
+    initializeTemplateSystem();
+    
+    // Initialize channel management
+    initializeChannelManagement();
+  });
+  
+  function initializeCommunicationIntelligence() {
+    console.log('💬 Communication Intelligence System Initialized');
+    updateCommunicationMetrics();
+    
+    // Set up auto-translation on message input
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+      messageInput.addEventListener('input', debounce(autoTranslatePreview, 1000));
+    }
+  }
+  
+  function initializeMessageComposer() {
+    // Message type selector
+    document.querySelectorAll('.message-type').forEach(type => {
+      type.addEventListener('click', function() {
+        document.querySelectorAll('.message-type').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Update UI based on message type
+        updateComposerForType(this.dataset.type);
+      });
+    });
+  }
+  
+  function initializeTemplateSystem() {
+    // Template category switching
+    document.querySelectorAll('.template-category').forEach(category => {
+      category.addEventListener('click', function() {
+        document.querySelectorAll('.template-category').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        
+        loadTemplateCategory(this.dataset.category);
+      });
+    });
+  }
+  
+  function initializeChannelManagement() {
+    // Channel filter buttons
+    document.querySelectorAll('.filter-btn').forEach(filter => {
+      filter.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(f => f.classList.remove('active'));
+        this.classList.add('active');
+        
+        filterChannels(this.dataset.filter);
+      });
+    });
+  }
+  
+  function updateComposerForType(messageType) {
+    const prioritySelect = document.getElementById('priorityLevel');
+    
+    // Auto-adjust priority based on message type
+    switch (messageType) {
+      case 'emergency':
+        prioritySelect.value = 'critical';
+        break;
+      case 'warning':
+        prioritySelect.value = 'high';
+        break;
+      case 'info':
+        prioritySelect.value = 'medium';
+        break;
+    }
+    
+    console.log(`📝 Message composer updated for ${messageType} type`);
+  }
+  
+  function autoTranslatePreview() {
+    const messageText = document.getElementById('messageInput').value;
+    if (messageText.trim().length === 0) return;
+    
+    console.log('🌐 Auto-translating message preview...');
+    
+    // Simulate translation API call
+    setTimeout(() => {
+      updateTranslationPreview(messageText);
+    }, 500);
+  }
+  
+  function updateTranslationPreview(text) {
+    // This would integrate with a real translation API
+    // For demo purposes, we'll simulate realistic translations
+    
+    const previewContent = document.getElementById('previewContent');
+    if (!previewContent) return;
+    
+    // Update preview with new translations
+    // In real implementation, this would call translation API
+    console.log('✅ Translation preview updated');
+  }
+  
+  function translateMessage() {
+    const messageText = document.getElementById('messageInput').value;
+    if (messageText.trim().length === 0) {
+      alert('Please enter a message to translate');
+      return;
+    }
+    
+    console.log('🌐 Translating to all 142 languages...');
+    
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '🔄 Translating...';
+    btn.disabled = true;
+    
+    // Simulate translation process
+    setTimeout(() => {
+      // Update metrics
+      updateTranslationMetrics();
+      
+      // Reset button
+      btn.textContent = originalText;
+      btn.disabled = false;
+      
+      // Show success message
+      addCommunicationFeedItem('system', 'Translation complete: 142 languages processed in 0.8 seconds');
+      
+      console.log('✅ Translation complete');
+    }, 2000);
+  }
+  
+  function broadcastMessage() {
+    const messageText = document.getElementById('messageInput').value;
+    if (messageText.trim().length === 0) {
+      alert('Please enter a message to broadcast');
+      return;
+    }
+    
+    const priority = document.getElementById('priorityLevel').value;
+    const audience = document.getElementById('targetAudience').value;
+    const scope = document.getElementById('distributionScope').value;
+    const method = document.getElementById('deliveryMethod').value;
+    
+    console.log('📡 Broadcasting message...', { priority, audience, scope, method });
+    
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '📡 Broadcasting...';
+    btn.disabled = true;
+    
+    // Simulate broadcast process
+    setTimeout(() => {
+      // Update metrics
+      const messagesSent = document.getElementById('messagesSent');
+      if (messagesSent) {
+        const current = parseInt(messagesSent.textContent.replace(',', ''));
+        messagesSent.textContent = (current + 1).toLocaleString();
+      }
+      
+      // Add to communication feed
+      addCommunicationFeedItem('emergency', `Emergency broadcast sent to ${scope} - ${audience}`);
+      
+      // Reset button
+      btn.textContent = originalText;
+      btn.disabled = false;
+      
+      // Show success notification
+      showSuccessNotification('Message broadcast successfully!');
+      
+      console.log('✅ Broadcast complete');
+    }, 3000);
+  }
+  
+  function scheduleMessage() {
+    const scheduleTime = prompt('Schedule broadcast time (minutes from now):', '15');
+    
+    if (scheduleTime && !isNaN(scheduleTime)) {
+      console.log(`⏰ Message scheduled for ${scheduleTime} minutes from now`);
+      
+      addCommunicationFeedItem('info', `Message scheduled for broadcast in ${scheduleTime} minutes`);
+      
+      // Simulate scheduled broadcast
+      setTimeout(() => {
+        addCommunicationFeedItem('emergency', 'Scheduled message broadcast initiated');
+        broadcastMessage();
+      }, scheduleTime * 60 * 1000);
+      
+      showSuccessNotification(`Message scheduled for ${scheduleTime} minutes from now`);
+    }
+  }
+  
+  function saveTemplate() {
+    const messageText = document.getElementById('messageInput').value;
+    if (messageText.trim().length === 0) {
+      alert('Please enter a message to save as template');
+      return;
+    }
+    
+    const templateName = prompt('Enter template name:', 'Custom Emergency Template');
+    
+    if (templateName) {
+      console.log('💾 Saving template:', templateName);
+      
+      // In real implementation, this would save to database
+      addCommunicationFeedItem('system', `Template "${templateName}" saved successfully`);
+      
+      showSuccessNotification('Template saved successfully!');
+    }
+  }
+  
+  function loadTemplate(templateId) {
+    const templates = {
+      'severe-weather': 'EMERGENCY ALERT: Severe weather warning in effect. Seek immediate shelter indoors. Avoid windows and stay away from metal objects. Emergency services are responding.',
+      'tornado-warning': 'TORNADO WARNING: Take shelter immediately. Go to the lowest floor of a sturdy building. Stay away from windows. Emergency crews are responding.',
+      'hurricane-evacuation': 'MANDATORY EVACUATION: Hurricane approaching. All residents in evacuation zones must leave immediately. Follow designated evacuation routes.',
+      'flash-flood': 'FLASH FLOOD WARNING: Dangerous flooding occurring. Do not drive through flooded roads. Move to higher ground immediately.'
+    };
+    
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput && templates[templateId]) {
+      messageInput.value = templates[templateId];
+      
+      // Auto-translate preview
+      autoTranslatePreview();
+      
+      console.log('📋 Template loaded:', templateId);
+      addCommunicationFeedItem('system', `Template "${templateId}" loaded`);
+    }
+  }
+  
+  function loadTemplateCategory(category) {
+    console.log('📂 Loading template category:', category);
+    
+    // In real implementation, this would load templates from database
+    const templateList = document.getElementById('templateList');
+    if (templateList) {
+      // Update template list based on category
+      // For demo, we'll just log the action
+      addCommunicationFeedItem('system', `Loaded ${category} template category`);
+    }
+  }
+  
+  function filterChannels(filter) {
+    console.log('🔍 Filtering channels:', filter);
+    
+    const channelCards = document.querySelectorAll('.channel-card');
+    
+    channelCards.forEach(card => {
+      if (filter === 'all') {
+        card.style.display = 'block';
+      } else {
+        if (card.classList.contains(filter)) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      }
+    });
+  }
+  
+  function updateCommunicationMetrics() {
+    // Simulate real-time metric updates
+    const metrics = {
+      activeLanguages: 142,
+      messagesSent: Math.floor(1200 + Math.random() * 100),
+      deliveryRate: (97 + Math.random() * 2).toFixed(1),
+      translationTime: (0.7 + Math.random() * 0.3).toFixed(1),
+      activeChannels: 23,
+      coverageArea: Math.floor(840 + Math.random() * 20) + 'K'
+    };
+    
+    Object.entries(metrics).forEach(([key, value]) => {
+      const element = document.getElementById(key);
+      if (element) {
+        element.textContent = value + (key === 'deliveryRate' ? '%' : key === 'translationTime' ? 's' : '');
+      }
+    });
+  }
+  
+  function updateTranslationMetrics() {
+    const translationTime = document.getElementById('translationTime');
+    if (translationTime) {
+      const newTime = (0.6 + Math.random() * 0.4).toFixed(1);
+      translationTime.textContent = newTime + 's';
+    }
+  }
+  
+  function updateCommunicationFeed() {
+    const feedMessages = [
+      { type: 'system', message: 'Language model updated: improved accuracy for 12 languages' },
+      { type: 'info', message: 'Social media integration active: 3 platforms synchronized' },
+      { type: 'warning', message: 'High message volume detected: scaling translation servers' },
+      { type: 'system', message: 'Digital signage network status: 1,247 of 1,250 signs online' },
+      { type: 'info', message: 'Voice assistant deployment completed: 423K devices updated' },
+      { type: 'system', message: 'Real-time translation cache optimized for peak performance' }
+    ];
+    
+    const randomMessage = feedMessages[Math.floor(Math.random() * feedMessages.length)];
+    addCommunicationFeedItem(randomMessage.type, randomMessage.message);
+  }
+  
+  function addCommunicationFeedItem(type, message) {
+    const feed = document.getElementById('communicationFeed');
+    if (!feed) return;
+    
+    const feedItem = document.createElement('div');
+    feedItem.className = 'feed-item';
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const typeLabel = type.toUpperCase();
+    
+    feedItem.innerHTML = `
+      <span class="feed-timestamp">${timestamp}</span>
+      <span class="feed-type feed-${type}">${typeLabel}</span>
+      <span class="feed-message">${message}</span>
+    `;
+    
+    feed.insertBefore(feedItem, feed.firstChild);
+    
+    // Keep only last 20 items
+    while (feed.children.length > 20) {
+      feed.removeChild(feed.lastChild);
+    }
+  }
+  
+  function showSuccessNotification(message) {
+    // Simple notification system
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #16a34a;
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      z-index: 1000;
+      font-weight: bold;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 3000);
+  }
+  
+  function showAllLanguages() {
+    alert('All 142 supported languages:\n\nMajor languages: English, Spanish, French, German, Chinese (Simplified & Traditional), Japanese, Arabic, Russian, Portuguese, Italian, Korean, Hindi, Dutch, Swedish, Norwegian, Polish, Turkish, Vietnamese, Thai, Greek, Hebrew, Persian, Ukrainian, Bengali...\n\n...and 118 additional languages including regional dialects and indigenous languages.');
+  }
+  
+  function configurePriorities() {
+    alert('Language Priority Configuration:\n\n🔴 Priority Languages (instant translation):\n- English, Spanish, French, German, Chinese, Japanese, Arabic, Russian\n\n🟡 Standard Languages (< 2 second translation):\n- All other major world languages\n\n🟢 Extended Languages (< 5 second translation):\n- Regional dialects and less common languages');
+  }
+  
+  // Utility function for debouncing
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+  
+  // Export functions for other modules
+  window.CommunicationIntelligence = {
+    translateMessage,
+    broadcastMessage,
+    scheduleMessage,
+    saveTemplate,
+    loadTemplate,
+    updateCommunicationMetrics
+  };
+</script>
+{% endblock %}
