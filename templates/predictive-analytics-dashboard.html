@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Predictive Analytics Dashboard - AI-Powered Emergency Intelligence</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  
+  <!-- Additional CSS for analytics -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  
+  <style>
+    /* Predictive Analytics Styling */
+    .analytics-header {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .analytics-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
+
+    .stat-trend {
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+    }
+
+    .trend-up { color: #10b981; }
+    .trend-down { color: #ef4444; }
+    .trend-stable { color: #f59e0b; }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .analytics-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+
+    .analytics-panel h3 {
+      margin: 0 0 1rem 0;
+      color: #1f2937;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+
+    .chart-container {
+      height: 300px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .chart-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .prediction-card {
+      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+      color: white;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .prediction-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .prediction-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .prediction-title {
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .confidence-score {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .prediction-details {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      margin-bottom: 0.5rem;
+    }
+
+    .prediction-timeline {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .risk-assessment {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .risk-matrix {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.25rem;
+      margin-top: 1rem;
+    }
+
+    .risk-cell {
+      aspect-ratio: 1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .risk-cell:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .risk-low { background: #16a34a; }
+    .risk-moderate { background: #eab308; }
+    .risk-high { background: #ea580c; }
+    .risk-critical { background: #dc2626; }
+    .risk-extreme { background: #991b1b; animation: pulse-risk 1s infinite; }
+
+    @keyframes pulse-risk {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+    }
+
+    .insights-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .insight-item {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      border-left: 4px solid #8b5cf6;
+      transition: all 0.3s ease;
+    }
+
+    .insight-item:hover {
+      background: #f3f4f6;
+      transform: translateX(4px);
+    }
+
+    .insight-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .insight-title {
+      font-weight: bold;
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .insight-score {
+      background: #8b5cf6;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .insight-description {
+      color: #374151;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .insight-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .insight-action {
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .insight-action:hover {
+      background: #c7d2fe;
+      transform: translateY(-1px);
+    }
+
+    .forecast-timeline {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .timeline-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .timeline-button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.3s ease;
+    }
+
+    .timeline-button.active {
+      background: #8b5cf6;
+      color: white;
+      border-color: #8b5cf6;
+    }
+
+    .timeline-button:hover:not(.active) {
+      background: #f3f4f6;
+    }
+
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .forecast-card {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .forecast-date {
+      color: #6b7280;
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .forecast-prediction {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #1e40af;
+      margin-bottom: 0.5rem;
+    }
+
+    .forecast-confidence {
+      background: #dcfce7;
+      color: #166534;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    .ml-model-status {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .model-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .model-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 1rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .model-name {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .model-accuracy {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+
+    .model-status {
+      opacity: 0.9;
+      font-size: 0.8rem;
+    }
+
+    .alert-recommendations {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .alert-recommendations h4 {
+      color: #92400e;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .recommendation-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .recommendation-item {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #fbbf24;
+      color: #92400e;
+      font-size: 0.9rem;
+    }
+
+    .recommendation-item:last-child {
+      border-bottom: none;
+    }
+
+    .scenario-modeling {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .scenario-tabs {
+      display: flex;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 1rem;
+    }
+
+    .scenario-tab {
+      padding: 0.75rem 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6b7280;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .scenario-tab.active {
+      color: #8b5cf6;
+      border-bottom-color: #8b5cf6;
+    }
+
+    .scenario-content {
+      min-height: 200px;
+    }
+
+    .scenario-result {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .scenario-result h5 {
+      margin: 0 0 0.5rem 0;
+      color: #1f2937;
+    }
+
+    .impact-meter {
+      width: 100%;
+      height: 20px;
+      background: #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 0.5rem 0;
+    }
+
+    .impact-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+
+    .impact-low { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .impact-medium { background: linear-gradient(90deg, #eab308, #fbbf24); }
+    .impact-high { background: linear-gradient(90deg, #ea580c, #f97316); }
+    .impact-critical { background: linear-gradient(90deg, #dc2626, #ef4444); }
+
+    /* Dark theme adjustments */
+    [data-theme="dark"] .analytics-panel {
+      background: #1f2937;
+      border-color: #374151;
+    }
+
+    [data-theme="dark"] .analytics-panel h3 {
+      color: #f9fafb;
+      border-bottom-color: #374151;
+    }
+
+    [data-theme="dark"] .insight-item {
+      background: #111827;
+    }
+
+    [data-theme="dark"] .insight-title {
+      color: #f9fafb;
+    }
+
+    [data-theme="dark"] .forecast-timeline {
+      background: #1f2937;
+    }
+
+    [data-theme="dark"] .forecast-card {
+      background: #111827;
+      border-color: #374151;
+    }
+
+    [data-theme="dark"] .scenario-modeling {
+      background: #1f2937;
+    }
+
+    [data-theme="dark"] .scenario-result {
+      background: #111827;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .analytics-stats {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+      
+      .forecast-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .model-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">🔮</div>
+      <div>
+        <h1 class="title">Predictive Analytics Dashboard</h1>
+        <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+          🧩 Live JSON → PDF Editor
+        </a>
+        <p class="subtitle">AI-Powered Emergency Intelligence & Forecasting</p>
+      </div>
+      <div class="controls">
+        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
+        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
+        <div class="status-bar">
+          <div class="status-indicator status-offline">
+            <div class="status-dot"></div>
+            Offline Ready
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Analytics Header -->
+    <div class="analytics-header">
+      <h2 style="margin: 0; font-size: 1.6rem;">🧠 Predictive Emergency Intelligence</h2>
+      <p style="margin: 0.5rem 0 1rem 0; opacity: 0.9;">AI-powered analytics for proactive emergency management and risk assessment</p>
+      
+      <div class="analytics-stats">
+        <div class="stat-card">
+          <div class="stat-value" id="predictionAccuracy">94.7%</div>
+          <div class="stat-label">Prediction Accuracy</div>
+          <div class="stat-trend trend-up">↗ +2.3% this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="riskScore">7.2</div>
+          <div class="stat-label">Current Risk Score</div>
+          <div class="stat-trend trend-stable">→ Stable</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="predictedIncidents">23</div>
+          <div class="stat-label">Predicted Incidents (24h)</div>
+          <div class="stat-trend trend-down">↘ -15% vs yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="modelConfidence">87%</div>
+          <div class="stat-label">Model Confidence</div>
+          <div class="stat-trend trend-up">↗ +5% this week</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Analytics Grid -->
+    <div class="analytics-grid">
+      <!-- Trend Analysis -->
+      <div class="analytics-panel">
+        <h3>📈 Emergency Trends Analysis</h3>
+        <div class="chart-container">
+          <canvas class="chart-canvas" id="trendsChart"></canvas>
+        </div>
+        <div class="risk-assessment">
+          <h4 style="margin: 0 0 0.5rem 0; color: #1f2937;">Risk Matrix</h4>
+          <div class="risk-matrix" id="riskMatrix">
+            <!-- Risk cells will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Predictions -->
+      <div class="analytics-panel">
+        <h3>🤖 AI Predictions</h3>
+        <div class="insights-list" id="predictionsList">
+          <div class="prediction-card">
+            <div class="prediction-header">
+              <div class="prediction-title">🔥 Fire Risk Elevation</div>
+              <div class="confidence-score">92% confidence</div>
+            </div>
+            <div class="prediction-details">
+              High fire risk predicted for downtown area due to weather conditions and historical patterns.
+            </div>
+            <div class="prediction-timeline">
+              <span>⏰</span>
+              <span>Peak risk: 2:00 PM - 6:00 PM today</span>
+            </div>
+          </div>
+
+          <div class="prediction-card">
+            <div class="prediction-header">
+              <div class="prediction-title">🚗 Traffic Incident Spike</div>
+              <div class="confidence-score">85% confidence</div>
+            </div>
+            <div class="prediction-details">
+              Increased MVA probability on Highway 101 during evening rush hour.
+            </div>
+            <div class="prediction-timeline">
+              <span>⏰</span>
+              <span>Expected: 5:00 PM - 7:00 PM</span>
+            </div>
+          </div>
+
+          <div class="prediction-card">
+            <div class="prediction-header">
+              <div class="prediction-title">🏥 Medical Call Volume</div>
+              <div class="confidence-score">78% confidence</div>
+            </div>
+            <div class="prediction-details">
+              Elevated medical emergency calls predicted due to heat wave conditions.
+            </div>
+            <div class="prediction-timeline">
+              <span>⏰</span>
+              <span>Duration: Next 3 days</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="analytics-panel">
+      <h3>💡 AI-Generated Insights</h3>
+      <div class="insights-list" id="insightsList">
+        <div class="insight-item">
+          <div class="insight-header">
+            <div class="insight-title">Resource Optimization Opportunity</div>
+            <div class="insight-score">High Impact</div>
+          </div>
+          <div class="insight-description">
+            Analysis shows 23% improvement in response times possible by relocating Ambulance 7 to Station 12 during peak hours.
+          </div>
+          <div class="insight-actions">
+            <span class="insight-action" onclick="window.PredictiveAnalytics?.implementRecommendation('resource-optimization')">Implement</span>
+            <span class="insight-action" onclick="window.PredictiveAnalytics?.analyzeImpact('resource-optimization')">Analyze Impact</span>
+          </div>
+        </div>
+
+        <div class="insight-item">
+          <div class="insight-header">
+            <div class="insight-title">Weather-Related Risk Pattern</div>
+            <div class="insight-score">Medium Impact</div>
+          </div>
+          <div class="insight-description">
+            Correlation detected between humidity levels >85% and 34% increase in respiratory emergency calls.
+          </div>
+          <div class="insight-actions">
+            <span class="insight-action" onclick="window.PredictiveAnalytics?.prepareResources('respiratory-surge')">Prepare Resources</span>
+            <span class="insight-action" onclick="window.PredictiveAnalytics?.viewDetails('weather-correlation')">View Details</span>
+          </div>
+        </div>
+
+        <div class="insight-item">
+          <div class="insight-header">
+            <div class="insight-title">Seasonal Incident Prediction</div>
+            <div class="insight-score">Planning Value</div>
+          </div>
+          <div class="insight-description">
+            Historical data predicts 18% increase in water rescue incidents during next month due to seasonal patterns.
+          </div>
+          <div class="insight-actions">
+            <span class="insight-action" onclick="window.PredictiveAnalytics?.scheduleTraining('water-rescue')">Schedule Training</span>
+            <span class="insight-action" onclick="window.PredictiveAnalytics?.alertAgencies('seasonal-prep')">Alert Agencies</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert Recommendations -->
+      <div class="alert-recommendations">
+        <h4>⚠️ Immediate Recommendations</h4>
+        <ul class="recommendation-list">
+          <li class="recommendation-item">Deploy additional fire units to high-risk areas before 2:00 PM</li>
+          <li class="recommendation-item">Increase EMS staffing for evening shift due to predicted call volume</li>
+          <li class="recommendation-item">Pre-position traffic control units on Highway 101 by 4:30 PM</li>
+          <li class="recommendation-item">Activate cooling centers due to heat-related medical risk</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Forecast Timeline -->
+    <div class="forecast-timeline">
+      <div class="timeline-header">
+        <h3>📅 Emergency Forecast Timeline</h3>
+        <div class="timeline-controls">
+          <button class="timeline-button active" onclick="window.PredictiveAnalytics?.setTimeframe('24h')">24 Hours</button>
+          <button class="timeline-button" onclick="window.PredictiveAnalytics?.setTimeframe('7d')">7 Days</button>
+          <button class="timeline-button" onclick="window.PredictiveAnalytics?.setTimeframe('30d')">30 Days</button>
+        </div>
+      </div>
+      
+      <div class="forecast-grid" id="forecastGrid">
+        <div class="forecast-card">
+          <div class="forecast-date">Today 2:00 PM</div>
+          <div class="forecast-prediction">Fire Risk Peak</div>
+          <div class="forecast-confidence">92% Confidence</div>
+        </div>
+        <div class="forecast-card">
+          <div class="forecast-date">Today 5:30 PM</div>
+          <div class="forecast-prediction">Traffic Surge</div>
+          <div class="forecast-confidence">85% Confidence</div>
+        </div>
+        <div class="forecast-card">
+          <div class="forecast-date">Tomorrow 10:00 AM</div>
+          <div class="forecast-prediction">Medical Volume +20%</div>
+          <div class="forecast-confidence">78% Confidence</div>
+        </div>
+        <div class="forecast-card">
+          <div class="forecast-date">Tomorrow 8:00 PM</div>
+          <div class="forecast-prediction">Low Activity Period</div>
+          <div class="forecast-confidence">89% Confidence</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ML Model Status -->
+    <div class="ml-model-status">
+      <h3>🧠 Machine Learning Models Status</h3>
+      <div class="model-grid">
+        <div class="model-card">
+          <div class="model-name">Fire Risk Predictor</div>
+          <div class="model-accuracy">94.7%</div>
+          <div class="model-status">Last updated: 2 hours ago</div>
+        </div>
+        <div class="model-card">
+          <div class="model-name">Traffic Incident Forecaster</div>
+          <div class="model-accuracy">91.3%</div>
+          <div class="model-status">Training in progress</div>
+        </div>
+        <div class="model-card">
+          <div class="model-name">Medical Demand Predictor</div>
+          <div class="model-accuracy">88.9%</div>
+          <div class="model-status">Active and learning</div>
+        </div>
+        <div class="model-card">
+          <div class="model-name">Weather Impact Analyzer</div>
+          <div class="model-accuracy">96.2%</div>
+          <div class="model-status">Real-time processing</div>
+        </div>
+        <div class="model-card">
+          <div class="model-name">Resource Optimizer</div>
+          <div class="model-accuracy">89.5%</div>
+          <div class="model-status">Optimization cycle complete</div>
+        </div>
+        <div class="model-card">
+          <div class="model-name">Seasonal Trend Analyzer</div>
+          <div class="model-accuracy">93.1%</div>
+          <div class="model-status">Processing monthly data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenario Modeling -->
+    <div class="scenario-modeling">
+      <h3>🎯 Scenario Modeling & Simulation</h3>
+      <div class="scenario-tabs">
+        <button class="scenario-tab active" onclick="window.PredictiveAnalytics?.switchScenario('natural-disaster')">
+          Natural Disaster
+        </button>
+        <button class="scenario-tab" onclick="window.PredictiveAnalytics?.switchScenario('mass-casualty')">
+          Mass Casualty
+        </button>
+        <button class="scenario-tab" onclick="window.PredictiveAnalytics?.switchScenario('infrastructure')">
+          Infrastructure Failure
+        </button>
+        <button class="scenario-tab" onclick="window.PredictiveAnalytics?.switchScenario('weather-event')">
+          Severe Weather
+        </button>
+      </div>
+      
+      <div class="scenario-content" id="scenarioContent">
+        <div class="scenario-result">
+          <h5>7.2 Earthquake Scenario Impact Assessment</h5>
+          <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+            Predicted impact based on geological data, building codes, and population density
+          </p>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+              <div style="font-weight: bold; margin-bottom: 0.5rem;">Expected Casualties</div>
+              <div class="impact-meter">
+                <div class="impact-fill impact-high" style="width: 75%;"></div>
+              </div>
+              <div style="font-size: 0.8rem; color: #6b7280;">Critical impact - Major damage expected</div>
+            </div>
+            
+            <div>
+              <div style="font-weight: bold; margin-bottom: 0.5rem;">Response Capacity</div>
+              <div class="impact-meter">
+                <div class="impact-fill impact-medium" style="width: 60%;"></div>
+              </div>
+              <div style="font-size: 0.8rem; color: #6b7280;">Moderate - Additional resources needed</div>
+            </div>
+            
+            <div>
+              <div style="font-weight: bold; margin-bottom: 0.5rem;">Recovery Timeline</div>
+              <div class="impact-meter">
+                <div class="impact-fill impact-high" style="width: 80%;"></div>
+              </div>
+              <div style="font-size: 0.8rem; color: #6b7280;">Long-term - 6-18 months estimated</div>
+            </div>
+          </div>
+          
+          <div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 6px;">
+            <h6 style="margin: 0 0 0.5rem 0; color: #1f2937;">Recommended Preparations:</h6>
+            <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.9rem; color: #374151;">
+              <li>Pre-deploy 15 additional fire units to high-risk zones</li>
+              <li>Activate emergency operations center 2 hours before predicted event</li>
+              <li>Coordinate with neighboring jurisdictions for mutual aid</li>
+              <li>Prepare mass casualty incident protocols and triage areas</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>🔮 Predictive Intelligence | 🧠 AI-Powered | 📊 Data-Driven Decisions</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/static/js/edge-ai.js"></script>
+  <script src="/static/js/predictive-analytics.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    // Theme toggle
+    const themeBtn = document.getElementById('toggleThemeBtn');
+    themeBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // High contrast toggle
+    const contrastBtn = document.getElementById("contrastToggleBtn");
+    contrastBtn.addEventListener("click", () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-contrast');
+      const next = current === 'high' ? 'normal' : 'high';
+      html.setAttribute('data-contrast', next);
+      localStorage.setItem('contrast', next);
+    });
+
+    const savedContrast = localStorage.getItem('contrast');
+    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
+
+    // Connection status
+    function updateConnectionStatus() {
+      const indicator = document.querySelector('.status-indicator');
+      if (navigator.onLine) {
+        indicator.innerHTML = '<div class="status-dot"></div>Online + Offline Ready';
+        indicator.className = 'status-indicator status-online';
+      } else {
+        indicator.innerHTML = '<div class="status-dot"></div>Offline Mode Active';
+        indicator.className = 'status-indicator status-offline';
+      }
+    }
+
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    updateConnectionStatus();
+
+    // Service Worker registration
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/static/js/sw.js")
+        .then((reg) => console.log("✅ Service worker registered:", reg.scope))
+        .catch((err) => console.error("❌ Service worker registration failed:", err));
+    }
+
+    // Initialize Predictive Analytics
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.PredictiveAnalytics) {
+        window.PredictiveAnalytics.initialize();
+      }
+    });
+  </script>
+</body>
+</html>280;">High impact - 1,200-1,800 injuries</div>
+            </div>
+            
+            <div>
+              <div style="font-weight: bold; margin-bottom: 0.5rem;">Infrastructure Damage</div>
+              <div class="impact-meter">
+                <div class="impact-fill impact-critical" style="width: 85%;"></div>
+              </div>
+              <div style="font-size: 0.8rem; color: #6b7
