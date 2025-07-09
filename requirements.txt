@@ -13,3 +13,4 @@ python-multipart
 requests>=2.31.0
 Pillow>=10.0.0  # For fallback map generation
 sqlalchemy>=1.4
+librosa>=0.10.0
