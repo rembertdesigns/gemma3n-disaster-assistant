@@ -1,755 +1,1007 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Advanced Crisis Command Center - Multi-Agency Coordination</title>
-  <link rel="stylesheet" href="/static/css/styles.css" />
-  
-  <!-- Additional CSS for command center -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  
-  <style>
-    /* Crisis Command Center Styling */
-    .command-header {
-      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-      color: white;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+{% extends "base.html" %}
 
-    .command-status {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
+{% block title %}Advanced Crisis Command Center - Multi-Agency Coordination{% endblock %}
 
-    .alert-level {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
+{% block page_title %}🚨 Crisis Command Center{% endblock %}
 
-    .alert-level-1 { background: #16a34a; }
-    .alert-level-2 { background: #eab308; }
-    .alert-level-3 { background: #ea580c; }
-    .alert-level-4 { background: #dc2626; }
-    .alert-level-5 { background: #991b1b; animation: pulse-alert 1s infinite; }
+{% block subtitle %}Advanced Multi-Agency Emergency Coordination{% endblock %}
 
-    @keyframes pulse-alert {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.8; transform: scale(1.05); }
-    }
+{% block header_logo %}🏛️{% endblock %} {# Custom logo for this page in the header #}
 
-    .command-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-bottom: 2rem;
-    }
+{% block header_actions %}
+  {# Keep default theme/contrast toggles from base.html #}
+  <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Theme</button>
+  <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ Contrast</button>
+  <div class="status-bar">
+    <div class="status-indicator status-offline">
+      <div class="status-dot"></div>
+      Offline
+    </div>
+  </div>
+  <a href="/live-generate" class="btn btn-primary btn-small">
+    🧩 Live JSON → PDF Editor
+  </a>
+{% endblock %}
 
-    .command-panel {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e5e7eb;
-    }
+{% block extra_css %}
+{{ super() }} {# Inherits CSS from base.html #}
+<style>
+  /* Crisis Command Center Specific Styling */
+  .command-header {
+    background: linear-gradient(135deg, var(--color-critical) 0%, #991b1b 100%);
+    color: var(--text-color-inverted);
+    padding: 1.5rem 2rem; /* Increased padding */
+    border-radius: 12px; /* More rounded */
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-md);
+  }
 
-    .command-panel h3 {
-      margin: 0 0 1rem 0;
-      color: #1f2937;
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      border-bottom: 2px solid #e5e7eb;
-      padding-bottom: 0.5rem;
-    }
+  .command-status {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem; /* Increased gap */
+  }
 
-    .situation-map {
-      height: 400px;
-      background: #f8fafc;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      position: relative;
-      overflow: hidden;
-    }
+  .alert-level {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem; /* Adjusted padding */
+    border-radius: 24px; /* More rounded pill shape */
+    font-weight: bold;
+    font-size: 1rem; /* Slightly larger font */
+    color: var(--text-color-inverted); /* Ensure text is white */
+  }
 
-    .incident-list {
-      max-height: 350px;
-      overflow-y: auto;
-      background: #f9fafb;
-      border-radius: 8px;
-      padding: 1rem;
-    }
+  /* Specific alert level colors - ensure these use global variables if defined */
+  .alert-level-1 { background: var(--color-optimal); } /* Green */
+  .alert-level-2 { background: var(--color-good); }    /* Orange-yellow */
+  .alert-level-3 { background: #ea580c; } /* Darker Orange */
+  .alert-level-4 { background: var(--color-critical); } /* Red */
+  .alert-level-5 { background: #991b1b; animation: pulse-alert 1s infinite; } /* Darker Red */
 
-    .incident-item {
-      background: white;
-      border-radius: 8px;
-      padding: 1rem;
-      margin-bottom: 0.75rem;
-      border-left: 4px solid #dc2626;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
-    }
+  /* @keyframes pulse-alert is now in base.html */
 
-    .incident-item:hover {
-      transform: translateX(4px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    }
+  .command-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
 
-    .incident-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
+  .command-panel {
+    background: var(--bg-color-card);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+  }
 
-    .incident-title {
-      font-weight: bold;
-      color: #1f2937;
-      font-size: 0.95rem;
-    }
+  .command-panel h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color-base);
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
 
-    .incident-time {
-      color: #6b7280;
-      font-size: 0.8rem;
-    }
+  .situation-map {
+    height: 400px;
+    background: var(--bg-color-light);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+  }
 
-    .incident-details {
-      color: #374151;
-      font-size: 0.85rem;
-      margin-bottom: 0.5rem;
-    }
+  .incident-list {
+    max-height: 350px;
+    overflow-y: auto;
+    background: var(--bg-color-light);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid var(--border-color); /* Added border */
+  }
 
-    .incident-status {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+  .incident-item {
+    background: var(--bg-color-card);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid var(--color-critical); /* Red left border for critical */
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    cursor: pointer; /* Indicate clickability */
+  }
 
-    .priority-badge {
-      padding: 0.25rem 0.5rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
+  .incident-item:hover {
+    transform: translateX(4px);
+    box-shadow: var(--shadow-md);
+  }
 
-    .priority-low { background: #dcfce7; color: #166534; }
-    .priority-medium { background: #fef3c7; color: #92400e; }
-    .priority-high { background: #fecaca; color: #991b1b; }
-    .priority-critical { background: #dc2626; color: white; animation: blink 1s infinite; }
+  .incident-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
+  .incident-title {
+    font-weight: bold;
+    color: var(--text-color-base);
+    font-size: 0.95rem;
+  }
 
-    .response-status {
-      padding: 0.25rem 0.5rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
+  .incident-time {
+    color: var(--text-color-light);
+    font-size: 0.8rem;
+  }
 
-    .status-pending { background: #f3f4f6; color: #374151; }
-    .status-dispatched { background: #dbeafe; color: #1e40af; }
-    .status-enroute { background: #fef3c7; color: #92400e; }
-    .status-onscene { background: #dcfce7; color: #166534; }
-    .status-resolved { background: #e5e7eb; color: #6b7280; }
+  .incident-details {
+    color: var(--text-color-base);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
 
-    .resource-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
+  .incident-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-    .resource-card {
-      background: #f8fafc;
-      border-radius: 8px;
-      padding: 1rem;
-      border: 1px solid #e5e7eb;
-      text-align: center;
-      transition: all 0.3s ease;
-    }
+  .priority-badge {
+    padding: 0.25rem 0.6rem; /* Adjusted padding */
+    border-radius: 16px; /* More rounded */
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-color-inverted); /* White text on colored badges */
+  }
 
-    .resource-card:hover {
-      background: #f1f5f9;
+  /* Priority badge colors */
+  .priority-low { background: var(--color-optimal); }
+  .priority-medium { background: var(--color-good); }
+  .priority-high { background: var(--color-critical); } /* Changed to primary red */
+  .priority-critical { background: #991b1b; animation: blink 1s infinite; } /* Darker red */
+
+  /* @keyframes blink is now in base.html */
+
+  .response-status {
+    padding: 0.25rem 0.6rem; /* Adjusted padding */
+    border-radius: 16px; /* More rounded */
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-color-base); /* Default text color */
+  }
+
+  /* Response status colors */
+  .status-pending { background: var(--border-color); color: var(--text-color-light); }
+  .status-dispatched { background: #dbeafe; color: #1e40af; } /* Blueish */
+  .status-enroute { background: var(--color-good); color: var(--color-warning-text); } /* Orange */
+  .status-onscene { background: var(--color-optimal); color: #166534; } /* Green */
+  .status-resolved { background: var(--secondary-color); color: var(--text-color-inverted); } /* Grey */
+
+  .resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem; /* Increased gap */
+    margin-top: 1rem;
+  }
+
+  .resource-card {
+    background: var(--bg-color-light);
+    border-radius: 8px;
+    padding: 1.5rem; /* Increased padding */
+    border: 1px solid var(--border-color);
+    text-align: center;
+    box-shadow: var(--shadow-sm); /* Added subtle shadow */
+    transition: all 0.3s ease;
+  }
+
+  .resource-card:hover {
+    background: var(--bg-hover, #f1f5f9); /* Use hover variable from base if exists */
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .resource-count {
+    font-size: 2rem; /* Larger count */
+    font-weight: bold;
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem; /* More space */
+  }
+
+  .resource-label {
+    color: var(--text-color-light);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .resource-status {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem; /* Adjusted padding */
+    border-radius: 16px; /* Pill shape */
+    font-weight: bold;
+    color: var(--text-color-inverted); /* White text on status */
+  }
+
+  /* Resource status colors */
+  .status-available { background: var(--color-optimal); }
+  .status-deployed { background: var(--color-good); }
+  .status-unavailable { background: var(--color-critical); }
+
+  .communications-panel {
+    height: 350px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .comms-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1rem;
+  }
+
+  .comms-tab {
+    padding: 0.75rem 1.25rem; /* More prominent tabs */
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color-light);
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+
+  .comms-tab:hover {
+    color: var(--text-color-base);
+  }
+
+  .comms-tab.active {
+    color: var(--primary-dark);
+    border-bottom-color: var(--primary-color);
+    font-weight: bold;
+  }
+
+  .comms-content {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg-color-light);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid var(--border-color); /* Added border */
+  }
+
+  .message-item {
+    background: var(--bg-color-card);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem; /* Increased margin */
+    border-left: 3px solid var(--primary-color);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+
+  .message-sender {
+    font-weight: bold;
+    color: var(--text-color-base);
+    font-size: 0.9rem;
+  }
+
+  .message-time {
+    color: var(--text-color-light);
+    font-size: 0.8rem;
+  }
+
+  .message-content {
+    color: var(--text-color-base);
+    font-size: 0.85rem;
+  }
+
+  .agency-coordination {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #3730a3 100%);
+    color: var(--text-color-inverted);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .agency-coordination h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color-inverted);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 0.5rem;
+  }
+
+  .agency-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem; /* Increased gap */
+  }
+
+  .agency-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .agency-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .agency-name {
+    font-weight: bold;
+    color: var(--text-color-inverted);
+  }
+
+  .agency-status {
+    padding: 0.25rem 0.6rem; /* Adjusted padding */
+    border-radius: 16px; /* Pill shape */
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-color-inverted);
+  }
+
+  /* Agency status colors */
+  .status-active { background: var(--color-optimal); }
+  .status-standby { background: var(--color-good); }
+  .status-offline { background: var(--secondary-color); }
+
+  .agency-details {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .action-button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    color: var(--text-color-inverted); /* Ensure white text */
+  }
+
+  .btn-primary { background: var(--primary-dark); }
+  .btn-primary:hover { background: var(--primary-color); transform: translateY(-1px); }
+
+  .btn-warning { background: #ea580c; }
+  .btn-warning:hover { background: var(--color-critical); transform: translateY(-1px); }
+
+  .btn-success { background: var(--color-optimal); }
+  .btn-success:hover { background: #15803d; transform: translateY(-1px); }
+
+  .timeline-panel {
+    background: var(--bg-color-card);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+  }
+
+  .timeline-panel h3 { /* Override h3 color for this panel */
+    color: var(--text-color-base);
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+    background: var(--bg-color-light);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-left: 1rem;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+  }
+
+  .timeline-item:hover {
+      background: var(--bg-hover, #f1f5f9);
       transform: translateY(-2px);
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 1rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 3px solid var(--bg-color-card); /* Border for dot matches card background */
+    box-shadow: 0 0 0 3px var(--border-color);
+  }
+
+  .timeline-time {
+    color: var(--text-color-light);
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .timeline-title {
+    font-weight: bold;
+    color: var(--text-color-base);
+    margin-bottom: 0.25rem;
+  }
+
+  .timeline-description {
+    color: var(--text-color-base);
+    font-size: 0.9rem;
+  }
+
+  .quick-actions {
+    position: fixed;
+    top: 50%;
+    right: 2rem;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem; /* Slightly larger gap */
+    z-index: 1000;
+  }
+
+  .quick-action {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    color: var(--text-color-inverted);
+    font-size: 1.3rem; /* Slightly larger icon */
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    display: flex; /* For centering icon */
+    align-items: center;
+    justify-content: center;
+  }
+
+  .quick-action:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Quick action button colors */
+  .qa-emergency { background: var(--color-critical); }
+  .qa-dispatch { background: #ea580c; } /* Use specific orange */
+  .qa-comms { background: var(--primary-color); }
+  .qa-resources { background: var(--color-optimal); }
+
+  /* Dark theme adjustments handled by variables in :root[data-theme="dark"] */
+  /* Specific overrides for command center in dark mode */
+  [data-theme="dark"] .command-header {
+    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%); /* Darker red gradient */
+  }
+  [data-theme="dark"] .alert-level {
+    color: var(--text-color-inverted); /* Ensure text is visible */
+  }
+  [data-theme="dark"] .alert-level-5 { animation: pulse-alert-dark 1s infinite; }
+  @keyframes pulse-alert-dark {
+      0%, 100% { opacity: 1; transform: scale(1); background: #b91c1c; } /* Darker pulse color */
+      50% { opacity: 0.8; transform: scale(1.05); background: #dc2626; }
+  }
+
+
+  [data-theme="dark"] .incident-item {
+    background: var(--bg-color-light); /* Darker shade for incident items */
+    border-left-color: var(--color-critical); /* Maintain red border */
+  }
+  [data-theme="dark"] .incident-item:hover {
+    background: #2c3445; /* Darker hover */
+  }
+
+  [data-theme="dark"] .priority-badge,
+  [data-theme="dark"] .response-status,
+  [data-theme="dark"] .resource-status,
+  [data-theme="dark"] .agency-status {
+    color: var(--text-color-inverted); /* Keep text white on badges */
+  }
+
+  [data-theme="dark"] .priority-high { background: var(--color-critical); } /* Maintain red for high */
+  [data-theme="dark"] .priority-critical { background: #991b1b; } /* Maintain dark red for critical */
+
+
+  [data-theme="dark"] .resource-card {
+    background: var(--bg-color-light);
+  }
+  [data-theme="dark"] .resource-card:hover {
+      background: #2c3445;
+  }
+
+  [data-theme="dark"] .comms-content,
+  [data-theme="dark"] .message-item {
+    background: var(--bg-color-light);
+  }
+  [data-theme="dark"] .comms-tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+  }
+
+  [data-theme="dark"] .agency-card {
+    background: rgba(255, 255, 255, 0.08); /* Slightly less opaque in dark mode */
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  [data-theme="dark"] .agency-coordination {
+    background: linear-gradient(135deg, #111827 0%, #2d3748 100%); /* Darker gradient */
+  }
+
+  [data-theme="dark"] .timeline-item {
+    background: var(--bg-color-light);
+    border: 1px solid var(--border-color); /* Added border */
+  }
+  [data-theme="dark"] .timeline-item:hover {
+    background: #2c3445;
+  }
+  [data-theme="dark"] .timeline-item::before {
+    background: var(--primary-color);
+    border-color: var(--bg-color-card); /* Ensure border matches card */
+    box-shadow: 0 0 0 3px var(--border-color);
+  }
+
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .command-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem; /* Reduced gap */
     }
-
-    .resource-count {
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: #1e40af;
-      margin-bottom: 0.25rem;
-    }
-
-    .resource-label {
-      color: #6b7280;
-      font-size: 0.9rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .resource-status {
-      font-size: 0.8rem;
-      padding: 0.25rem;
-      border-radius: 4px;
-    }
-
-    .status-available { background: #dcfce7; color: #166534; }
-    .status-deployed { background: #fef3c7; color: #92400e; }
-    .status-unavailable { background: #fecaca; color: #991b1b; }
-
-    .communications-panel {
-      height: 350px;
-      display: flex;
+    
+    .command-header {
       flex-direction: column;
-    }
-
-    .comms-tabs {
-      display: flex;
-      border-bottom: 2px solid #e5e7eb;
-      margin-bottom: 1rem;
-    }
-
-    .comms-tab {
-      padding: 0.5rem 1rem;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #6b7280;
-      font-weight: 500;
-      border-bottom: 2px solid transparent;
-      transition: all 0.3s ease;
-    }
-
-    .comms-tab.active {
-      color: #1e40af;
-      border-bottom-color: #1e40af;
-    }
-
-    .comms-content {
-      flex: 1;
-      overflow-y: auto;
-      background: #f9fafb;
-      border-radius: 8px;
-      padding: 1rem;
-    }
-
-    .message-item {
-      background: white;
-      border-radius: 8px;
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      border-left: 3px solid #3b82f6;
-    }
-
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.25rem;
-    }
-
-    .message-sender {
-      font-weight: bold;
-      color: #1f2937;
-      font-size: 0.9rem;
-    }
-
-    .message-time {
-      color: #6b7280;
-      font-size: 0.8rem;
-    }
-
-    .message-content {
-      color: #374151;
-      font-size: 0.85rem;
-    }
-
-    .agency-coordination {
-      background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
-      color: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-top: 2rem;
-    }
-
-    .agency-coordination h3 {
-      margin: 0 0 1rem 0;
-      color: white;
-      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-      padding-bottom: 0.5rem;
-    }
-
-    .agency-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1rem;
+      text-align: center;
+      padding: 1rem; /* Smaller padding */
     }
-
-    .agency-card {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 1rem;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+    .command-header h2 {
+        font-size: 1.3rem;
     }
-
-    .agency-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.75rem;
+    .command-header p {
+        font-size: 0.85rem;
     }
-
-    .agency-name {
-      font-weight: bold;
-      color: white;
-    }
-
-    .agency-status {
-      padding: 0.25rem 0.5rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
-
-    .status-active { background: #16a34a; color: white; }
-    .status-standby { background: #eab308; color: white; }
-    .status-offline { background: #6b7280; color: white; }
-
-    .agency-details {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 0.85rem;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .action-button {
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 0.9rem;
-    }
-
-    .btn-primary {
-      background: #1e40af;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #1d4ed8;
-      transform: translateY(-1px);
-    }
-
-    .btn-warning {
-      background: #ea580c;
-      color: white;
-    }
-
-    .btn-warning:hover {
-      background: #dc2626;
-      transform: translateY(-1px);
-    }
-
-    .btn-success {
-      background: #16a34a;
-      color: white;
-    }
-
-    .btn-success:hover {
-      background: #15803d;
-      transform: translateY(-1px);
-    }
-
-    .timeline-panel {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-top: 2rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .timeline {
-      position: relative;
-      padding-left: 2rem;
-    }
-
-    .timeline::before {
-      content: '';
-      position: absolute;
-      left: 1rem;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: #e5e7eb;
-    }
-
-    .timeline-item {
-      position: relative;
-      margin-bottom: 1.5rem;
-      background: #f9fafb;
-      border-radius: 8px;
-      padding: 1rem;
-      margin-left: 1rem;
-    }
-
-    .timeline-item::before {
-      content: '';
-      position: absolute;
-      left: -1.5rem;
-      top: 1rem;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #3b82f6;
-      border: 3px solid white;
-      box-shadow: 0 0 0 3px #e5e7eb;
-    }
-
-    .timeline-time {
-      color: #6b7280;
-      font-size: 0.8rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .timeline-title {
-      font-weight: bold;
-      color: #1f2937;
-      margin-bottom: 0.25rem;
-    }
-
-    .timeline-description {
-      color: #374151;
-      font-size: 0.9rem;
-    }
-
+    
     .quick-actions {
-      position: fixed;
-      top: 50%;
-      right: 2rem;
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      z-index: 1000;
+      position: relative;
+      right: auto;
+      top: auto;
+      transform: none;
+      flex-direction: row;
+      justify-content: center;
+      margin: 2rem 0;
+      width: 100%; /* Take full width */
+      flex-wrap: wrap; /* Allow wrapping of buttons */
     }
-
     .quick-action {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: none;
-      color: white;
-      font-size: 1.2rem;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s ease;
+        width: 50px; /* Smaller quick action buttons */
+        height: 50px;
+        font-size: 1rem;
     }
-
-    .quick-action:hover {
-      transform: scale(1.1);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    
+    .agency-grid {
+      grid-template-columns: 1fr;
     }
-
-    .qa-emergency { background: #dc2626; }
-    .qa-dispatch { background: #ea580c; }
-    .qa-comms { background: #3b82f6; }
-    .qa-resources { background: #16a34a; }
-
-    /* Dark theme adjustments */
-    [data-theme="dark"] .command-panel {
-      background: #1f2937;
-      border-color: #374151;
+    
+    .resource-grid {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Slightly smaller min-width */
     }
-
-    [data-theme="dark"] .command-panel h3 {
-      color: #f9fafb;
-      border-bottom-color: #374151;
+    .command-panel {
+        padding: 1rem; /* Smaller padding for panels */
     }
-
-    [data-theme="dark"] .incident-item {
-      background: #111827;
+    .command-panel h3 {
+        font-size: 1.1rem;
     }
-
-    [data-theme="dark"] .incident-title {
-      color: #f9fafb;
+    .situation-map {
+        height: 300px; /* Adjust map height */
     }
-
-    [data-theme="dark"] .resource-card {
-      background: #111827;
-      border-color: #374151;
+    .comms-content {
+        height: 250px; /* Adjust comms height */
     }
-
-    [data-theme="dark"] .resource-card:hover {
-      background: #1f2937;
+    .incident-list {
+        max-height: 250px; /* Adjust incident list height */
     }
+  }
+</style>
+{% endblock %}
 
-    [data-theme="dark"] .message-item {
-      background: #111827;
-    }
-
-    [data-theme="dark"] .message-sender {
-      color: #f9fafb;
-    }
-
-    [data-theme="dark"] .timeline-panel {
-      background: #1f2937;
-    }
-
-    [data-theme="dark"] .timeline-item {
-      background: #111827;
-    }
-
-    [data-theme="dark"] .timeline-title {
-      color: #f9fafb;
-    }
-
-    /* Responsive design */
-    @media (max-width: 768px) {
-      .command-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .command-header {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-      }
-      
-      .quick-actions {
-        position: relative;
-        right: auto;
-        top: auto;
-        transform: none;
-        flex-direction: row;
-        justify-content: center;
-        margin: 2rem 0;
-      }
-      
-      .agency-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .resource-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      }
-    }
-  </style>
-</head>
-<body>
-  <header class="header">
-    <div class="header-content">
-      <div class="logo">🚨</div>
-      <div>
-        <h1 class="title">Crisis Command Center</h1>
-        <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
-          🧩 Live JSON → PDF Editor
-        </a>
-        <p class="subtitle">Advanced Multi-Agency Emergency Coordination</p>
+{% block content %}
+  <div class="command-header">
+    <div>
+      <h2 style="margin: 0; font-size: 1.5rem;">🏛️ Emergency Operations Center</h2>
+      <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Multi-agency coordination and crisis management</p>
+    </div>
+    <div class="command-status">
+      <div class="alert-level alert-level-3" id="alertLevel">
+        <span>⚠️</span>
+        <span>ALERT LEVEL 3</span>
       </div>
-      <div class="controls">
-        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
-        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
-        <div class="status-bar">
-          <div class="status-indicator status-offline">
-            <div class="status-dot"></div>
-            Offline Ready
-          </div>
-        </div>
+      <div style="text-align: right;">
+        <div style="font-size: 0.9rem; opacity: 0.9;">Active Incidents</div>
+        <div style="font-size: 1.5rem; font-weight: bold;" id="activeIncidents">7</div>
       </div>
     </div>
-  </header>
+  </div>
 
-  <main class="container">
-    <!-- Command Header -->
-    <div class="command-header">
-      <div>
-        <h2 style="margin: 0; font-size: 1.5rem;">🏛️ Emergency Operations Center</h2>
-        <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Multi-agency coordination and crisis management</p>
-      </div>
-      <div class="command-status">
-        <div class="alert-level alert-level-3" id="alertLevel">
-          <span>⚠️</span>
-          <span>ALERT LEVEL 3</span>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-size: 0.9rem; opacity: 0.9;">Active Incidents</div>
-          <div style="font-size: 1.5rem; font-weight: bold;" id="activeIncidents">7</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Command Grid -->
-    <div class="command-grid">
-      <!-- Situation Map -->
-      <div class="command-panel">
-        <h3>🗺️ Situation Map</h3>
-        <div class="situation-map" id="situationMap">
-          <!-- Map will be initialized here -->
-        </div>
-        <div class="action-buttons" style="margin-top: 1rem;">
-          <button class="action-button btn-primary" onclick="window.CrisisCommand?.centerMap()">
-            📍 Center Map
-          </button>
-          <button class="action-button btn-primary" onclick="window.CrisisCommand?.toggleLayers()">
-            🔄 Toggle Layers
-          </button>
-          <button class="action-button btn-success" onclick="window.CrisisCommand?.addMarker()">
-            📌 Add Marker
-          </button>
-        </div>
-      </div>
-
-      <!-- Active Incidents -->
-      <div class="command-panel">
-        <h3>🚨 Active Incidents</h3>
-        <div class="incident-list" id="incidentList">
-          <div class="incident-item">
-            <div class="incident-header">
-              <div class="incident-title">Structure Fire - 425 Oak Street</div>
-              <div class="incident-time">14:32</div>
-            </div>
-            <div class="incident-details">
-              Multi-story residential building. 15 units dispatched. Evacuation in progress.
-            </div>
-            <div class="incident-status">
-              <span class="priority-badge priority-critical">CRITICAL</span>
-              <span class="response-status status-onscene">ON SCENE</span>
-            </div>
-          </div>
-
-          <div class="incident-item">
-            <div class="incident-header">
-              <div class="incident-title">MVA with Injuries - Highway 101</div>
-              <div class="incident-time">14:28</div>
-            </div>
-            <div class="incident-details">
-              Multi-vehicle accident, northbound lanes blocked. 3 ambulances dispatched.
-            </div>
-            <div class="incident-status">
-              <span class="priority-badge priority-high">HIGH</span>
-              <span class="response-status status-enroute">EN ROUTE</span>
-            </div>
-          </div>
-
-          <div class="incident-item">
-            <div class="incident-header">
-              <div class="incident-title">Gas Leak - Downtown Commercial</div>
-              <div class="incident-time">14:15</div>
-            </div>
-            <div class="incident-details">
-              Natural gas leak reported. Hazmat team activated. Area evacuation ordered.
-            </div>
-            <div class="incident-status">
-              <span class="priority-badge priority-high">HIGH</span>
-              <span class="response-status status-onscene">ON SCENE</span>
-            </div>
-          </div>
-
-          <div class="incident-item">
-            <div class="incident-header">
-              <div class="incident-title">Medical Emergency - Senior Center</div>
-              <div class="incident-time">14:05</div>
-            </div>
-            <div class="incident-details">
-              Cardiac event reported. ALS unit dispatched. Patient stable.
-            </div>
-            <div class="incident-status">
-              <span class="priority-badge priority-medium">MEDIUM</span>
-              <span class="response-status status-resolved">RESOLVED</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Resource Management -->
+  <div class="command-grid">
     <div class="command-panel">
-      <h3>🚒 Resource Management</h3>
-      <div class="resource-grid">
-        <div class="resource-card">
-          <div class="resource-count" id="fireUnits">12</div>
-          <div class="resource-label">Fire Units</div>
-          <div class="resource-status status-deployed">8 Deployed</div>
+      <h3>🗺️ Situation Map</h3>
+      <div class="situation-map" id="situationMap">
         </div>
-        <div class="resource-card">
-          <div class="resource-count" id="ambulances">18</div>
-          <div class="resource-label">Ambulances</div>
-          <div class="resource-status status-available">11 Available</div>
-        </div>
-        <div class="resource-card">
-          <div class="resource-count" id="policeUnits">24</div>
-          <div class="resource-label">Police Units</div>
-          <div class="resource-status status-deployed">15 Deployed</div>
-        </div>
-        <div class="resource-card">
-          <div class="resource-count" id="hazmatTeams">4</div>
-          <div class="resource-label">Hazmat Teams</div>
-          <div class="resource-status status-deployed">2 Deployed</div>
-        </div>
-        <div class="resource-card">
-          <div class="resource-count" id="helicopters">3</div>
-          <div class="resource-label">Helicopters</div>
-          <div class="resource-status status-available">3 Available</div>
-        </div>
-        <div class="resource-card">
-          <div class="resource-count" id="searchRescue">6</div>
-          <div class="resource-label">Search & Rescue</div>
-          <div class="resource-status status-available">4 Available</div>
-        </div>
+      <div class="action-buttons" style="margin-top: 1rem;">
+        <button class="action-button btn-primary" onclick="window.CrisisCommand?.centerMap()">
+          📍 Center Map
+        </button>
+        <button class="action-button btn-primary" onclick="window.CrisisCommand?.toggleLayers()">
+          🔄 Toggle Layers
+        </button>
+        <button class="action-button btn-success" onclick="window.CrisisCommand?.addMarker()">
+          📌 Add Marker
+        </button>
       </div>
     </div>
 
-    <!-- Communications Panel -->
     <div class="command-panel">
-      <h3>📡 Communications</h3>
-      <div class="communications-panel">
-        <div class="comms-tabs">
-          <button class="comms-tab active" onclick="window.CrisisCommand?.switchCommsTab('radio')">
-            📻 Radio Traffic
-          </button>
-          <button class="comms-tab" onclick="window.CrisisCommand?.switchCommsTab('dispatch')">
-            📞 Dispatch
-          </button>
-          <button class="comms-tab" onclick="window.CrisisCommand?.switchCommsTab('inter-agency')">
-            🏢 Inter-Agency
-          </button>
+      <h3>🚨 Active Incidents</h3>
+      <div class="incident-list" id="incidentList">
+        <div class="incident-item" onclick="window.location.href='/incident-details/1'">
+          <div class="incident-header">
+            <div class="incident-title">Structure Fire - 425 Oak Street</div>
+            <div class="incident-time">14:32</div>
+          </div>
+          <div class="incident-details">
+            Multi-story residential building. 15 units dispatched. Evacuation in progress.
+          </div>
+          <div class="incident-status">
+            <span class="priority-badge priority-critical">CRITICAL</span>
+            <span class="response-status status-onscene">ON SCENE</span>
+          </div>
+        </div>
+
+        <div class="incident-item" onclick="window.location.href='/incident-details/2'">
+          <div class="incident-header">
+            <div class="incident-title">MVA with Injuries - Highway 101</div>
+            <div class="incident-time">14:28</div>
+          </div>
+          <div class="incident-details">
+            Multi-vehicle accident, northbound lanes blocked. 3 ambulances dispatched.
+          </div>
+          <div class="incident-status">
+            <span class="priority-badge priority-high">HIGH</span>
+            <span class="response-status status-enroute">EN ROUTE</span>
+          </div>
+        </div>
+
+        <div class="incident-item" onclick="window.location.href='/incident-details/3'">
+          <div class="incident-header">
+            <div class="incident-title">Gas Leak - Downtown Commercial</div>
+            <div class="incident-time">14:15</div>
+          </div>
+          <div class="incident-details">
+            Natural gas leak reported. Hazmat team activated. Area evacuation ordered.
+          </div>
+          <div class="incident-status">
+            <span class="priority-badge priority-high">HIGH</span>
+            <span class="response-status status-onscene">ON SCENE</span>
+          </div>
+        </div>
+
+        <div class="incident-item" onclick="window.location.href='/incident-details/4'">
+          <div class="incident-header">
+            <div class="incident-title">Medical Emergency - Senior Center</div>
+            <div class="incident-time">14:05</div>
+          </div>
+          <div class="incident-details">
+            Cardiac event reported. ALS unit dispatched. Patient stable.
+          </div>
+          <div class="incident-status">
+            <span class="priority-badge priority-medium">MEDIUM</span>
+            <span class="response-status status-resolved">RESOLVED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="command-panel">
+    <h3>🚒 Resource Management</h3>
+    <div class="resource-grid">
+      <div class="resource-card">
+        <div class="resource-count" id="fireUnits">12</div>
+        <div class="resource-label">Fire Units</div>
+        <div class="resource-status status-deployed">8 Deployed</div>
+      </div>
+      <div class="resource-card">
+        <div class="resource-count" id="ambulances">18</div>
+        <div class="resource-label">Ambulances</div>
+        <div class="resource-status status-available">11 Available</div>
+      </div>
+      <div class="resource-card">
+        <div class="resource-count" id="policeUnits">24</div>
+        <div class="resource-label">Police Units</div>
+        <div class="resource-status status-deployed">15 Deployed</div>
+      </div>
+      <div class="resource-card">
+        <div class="resource-count" id="hazmatTeams">4</div>
+        <div class="resource-label">Hazmat Teams</div>
+        <div class="resource-status status-deployed">2 Deployed</div>
+      </div>
+      <div class="resource-card">
+        <div class="resource-count" id="helicopters">3</div>
+        <div class="resource-label">Helicopters</div>
+        <div class="resource-status status-available">3 Available</div>
+      </div>
+      <div class="resource-card">
+        <div class="resource-count" id="searchRescue">6</div>
+        <div class="resource-label">Search & Rescue</div>
+        <div class="resource-status status-available">4 Available</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="command-panel">
+    <h3>📡 Communications</h3>
+    <div class="communications-panel">
+      <div class="comms-tabs">
+        <button class="comms-tab active" onclick="window.CrisisCommand?.switchCommsTab('radio')">
+          📻 Radio Traffic
+        </button>
+        <button class="comms-tab" onclick="window.CrisisCommand?.switchCommsTab('dispatch')">
+          📞 Dispatch
+        </button>
+        <button class="comms-tab" onclick="window.CrisisCommand?.switchCommsTab('inter-agency')">
+          🏢 Inter-Agency
+        </button>
+      </div>
+      
+      <div class="comms-content" id="commsContent">
+        <div class="message-item">
+          <div class="message-header">
+            <div class="message-sender">Engine 15</div>
+            <div class="message-time">14:35:12</div>
+          </div>
+          <div class="message-content">
+            "Command, Engine 15 on scene. Working structure fire, requesting additional engine company and ladder truck."
+          </div>
         </div>
         
-        <div class="comms-content" id="commsContent">
-          <div class="message-item">
-            <div class="message-header">
-              <div class="message-sender">Engine 15</div>
-              <div class="message-time">14:35:12</div>
-            </div>
-            <div class="message-content">
-              "Command, Engine 15 on scene. Working structure fire, requesting additional engine company and ladder truck."
-            </div>
+        <div class="message-item">
+          <div class="message-header">
+            <div class="message-sender">Dispatch</div>
+            <div class="message-time">14:35:20</div>
           </div>
-          
-          <div class="message-item">
+          <div class="message-content">
+            "Engine 7 and Ladder 3 dispatched to your location, ETA 4 minutes."
+          </div>
+        </div>
+        
+        <div class="message-item">
+          <div class="message-header">
+            <div class="message-sender">Battalion Chief 2</div>
+            <div class="message-time">14:33:45</div>
+          </div>
+          <div class="message-content">
+            "Establishing command at Oak Street incident. Requesting Red Cross for displaced residents."
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agency-coordination">
+    <h3>🏛️ Multi-Agency Coordination</h3>
+    <div class="agency-grid">
+      <div class="agency-card">
+        <div class="agency-header">
+          <div class="agency-name">Fire Department</div>
+          <div class="agency-status status-active">ACTIVE</div>
+        </div>
+        <div class="agency-details">
+          12 units deployed<br>
+          IC: Battalion Chief Johnson<br>
+          Radio: Channel 1
+        </div>
+      </div>
+
+      <div class="agency-card">
+        <div class="agency-header">
+          <div class="agency-name">Police Department</div>
+          <div class="agency-status status-active">ACTIVE</div>
+        </div>
+        <div class="agency-details">
+          15 units deployed<br>
+          IC: Lieutenant Davis<br>
+          Radio: Channel 3
+        </div>
+      </div>
+
+      <div class="agency-card">
+        <div class="agency-header">
+          <div class="agency-name">EMS Services</div>
+          <div class="agency-status status-active">ACTIVE</div>
+        </div>
+        <div class="agency-details">
+          7 ambulances deployed<br>
+          IC: Paramedic Supervisor<br>
+          Radio: Channel 2
+        </div>
+      </div>
+
+      <div class="agency-card">
+        <div class="agency-header">
+          <div class="agency-name">Public Works</div>
+          <div class="agency-status status-standby">STANDBY</div>
+        </div>
+        <div class="agency-details">
+          2 crews available<br>
+          Contact: Operations Center<br>
+          Radio: Channel 5
+        </div>
+      </div>
+
+      <div class="agency-card">
+        <div class="agency-header">
+          <div class="agency-name">Red Cross</div>
+          <div class="agency-status status-active">ACTIVE</div>
+        </div>
+        <div class="agency-details">
+          Shelter operations active<br>
+          Contact: Emergency Coordinator<br>
+          Phone: (555) 123-4567
+        </div>
+      </div>
+
+      <div class="agency-card">
+        <div class="agency-header">
+          <div class="agency-name">Utility Company</div>
+          <div class="agency-status status-active">ACTIVE</div>
+        </div>
+        <div class="agency-details">
+          Gas isolation in progress<br>
+          Contact: Emergency Response<br>
+          Phone: (555) 987-6543
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline-panel">
+    <h3>⏰ Operations Timeline</h3>
+    <div class="timeline" id="operationsTimeline">
+      <div class="timeline-item">
+        <div class="timeline-time">14:35:20</div>
+        <div class="timeline-title">Additional Units Dispatched</div>
+        <div class="timeline-description">Engine 7 and Ladder 3 dispatched to Oak Street fire, ETA 4 minutes</div>
+      </div>
+      
+      <div class="timeline-item">
+        <div class="timeline-time">14:33:45</div>
+        <div class="timeline-title">Incident Command Established</div>
+        <div class="timeline-description">Battalion Chief 2 establishing command at Oak Street incident</div>
+      </div>
+      
+      <div class="timeline-item">
+        <div class="timeline-time">14:32:15</div>
+        <div class="timeline-title">Structure Fire Reported</div>
+        <div class="timeline-description">Working structure fire at 425 Oak Street, Engine 15 first on scene</div>
+      </div>
+      
+      <div class="timeline-item">
+        <div class="timeline-time">14:28:30</div>
+        <div class="timeline-title">MVA Highway 101</div>
+        <div class="timeline-description">Multi-vehicle accident reported, 3 ambulances and police units dispatched</div>
+      </div>
+      
+      <div class="timeline-item">
+        <div class="timeline-time">14:15:10</div>
+        <div class="timeline-title">Gas Leak Downtown</div>
+        <div class="timeline-description">Natural gas leak reported, hazmat team activated, evacuation ordered</div>
+      </div>
+      
+      <div class="timeline-item">
+        <div class="timeline-time">14:05:45</div>
+        <div class="timeline-title">Medical Emergency Resolved</div>
+        <div class="timeline-description">Cardiac event at Senior Center successfully treated, patient transported</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-actions">
+    <button class="quick-action qa-emergency" title="Declare Emergency" onclick="window.CrisisCommand?.declareEmergency()">
+      🚨
+    </button>
+    <button class="quick-action qa-dispatch" title="Quick Dispatch" onclick="window.CrisisCommand?.quickDispatch()">
+      📞
+    </button>
+    <button class="quick-action qa-comms" title="Broadcast Alert" onclick="window.CrisisCommand?.broadcastAlert()">
+      📢
+    </button>
+    <button class="quick-action qa-resources" title="Resource Status" onclick="window.CrisisCommand?.checkResources()">
+      📊
+    </button>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }} {# Inherits scripts from base.html #}
+<script src="/static/js/crisis-command.js"></script>
+{# Leaflet.js is assumed to be in base.html already #}
+{# <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script> #}
+
+<script>
+  // Theme/contrast/SW registration are handled in base.html.
+  // Only page-specific JavaScript here.
+
+  // Initialize Crisis Command Center
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.CrisisCommand) {
+      window.CrisisCommand.initialize();
+    } else {
+        console.error("window.CrisisCommand is not defined. Ensure crisis-command.js is loaded correctly.");
+    }
+  });
+
+  // Example function for switching comms tabs (if CrisisCommand.js doesn't fully handle it)
+  // This could be part of window.CrisisCommand.js or a separate utility.
+  // Assuming comms tabs logic is simple for direct HTML onclick.
+  window.CrisisCommand = window.CrisisCommand || {}; // Ensure object exists
+  window.CrisisCommand.switchCommsTab = function(tabId) {
+    document.querySelectorAll('.comms-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelector(`.comms-tab[onclick*="${tabId}"]`).classList.add('active');
+    
+    // In a real app, you'd load content into #commsContent here based on tabId
+    const commsContent = document.getElementById('commsContent');
+    if (tabId === 'radio') {
+      commsContent.innerHTML = `
+        <div class="message-item">
+          <div class="message-header">
+            <div class="message-sender">Engine 15</div>
+            <div class="message-time">14:35:12</div>
+          </div>
+          <div class="message-content">
+            "Command, Engine 15 on scene. Working structure fire, requesting additional engine company and ladder truck."
+          </div>
+        </div>
+        <div class="message-item">
             <div class="message-header">
               <div class="message-sender">Dispatch</div>
               <div class="message-time">14:35:20</div>
@@ -758,223 +1010,39 @@
               "Engine 7 and Ladder 3 dispatched to your location, ETA 4 minutes."
             </div>
           </div>
-          
-          <div class="message-item">
-            <div class="message-header">
-              <div class="message-sender">Battalion Chief 2</div>
-              <div class="message-time">14:33:45</div>
-            </div>
-            <div class="message-content">
-              "Establishing command at Oak Street incident. Requesting Red Cross for displaced residents."
-            </div>
+      `;
+    } else if (tabId === 'dispatch') {
+      commsContent.innerHTML = `
+        <div class="message-item">
+          <div class="message-header">
+            <div class="message-sender">Dispatch Console</div>
+            <div class="message-time">14:40:00</div>
+          </div>
+          <div class="message-content">
+            "All units, be advised: Road closure on Main St due to gas leak. Use alternate routes."
           </div>
         </div>
-      </div>
-    </div>
+      `;
+    } else if (tabId === 'inter-agency') {
+      commsContent.innerHTML = `
+        <div class="message-item">
+          <div class="message-header">
+            <div class="message-sender">Red Cross Coordinator</div>
+            <div class="message-time">14:45:00</div>
+          </div>
+          <div class="message-content">
+            "EOC, Red Cross has opened temporary shelter at Community Center. Capacity 200."
+          </div>
+        </div>
+      `;
+    }
+    commsContent.scrollTop = commsContent.scrollHeight; // Scroll to bottom
+  };
+</script>
+{% endblock %}
 
-    <!-- Agency Coordination -->
-    <div class="agency-coordination">
-      <h3>🏛️ Multi-Agency Coordination</h3>
-      <div class="agency-grid">
-        <div class="agency-card">
-          <div class="agency-header">
-            <div class="agency-name">Fire Department</div>
-            <div class="agency-status status-active">ACTIVE</div>
-          </div>
-          <div class="agency-details">
-            12 units deployed<br>
-            IC: Battalion Chief Johnson<br>
-            Radio: Channel 1
-          </div>
-        </div>
-
-        <div class="agency-card">
-          <div class="agency-header">
-            <div class="agency-name">Police Department</div>
-            <div class="agency-status status-active">ACTIVE</div>
-          </div>
-          <div class="agency-details">
-            15 units deployed<br>
-            IC: Lieutenant Davis<br>
-            Radio: Channel 3
-          </div>
-        </div>
-
-        <div class="agency-card">
-          <div class="agency-header">
-            <div class="agency-name">EMS Services</div>
-            <div class="agency-status status-active">ACTIVE</div>
-          </div>
-          <div class="agency-details">
-            7 ambulances deployed<br>
-            IC: Paramedic Supervisor<br>
-            Radio: Channel 2
-          </div>
-        </div>
-
-        <div class="agency-card">
-          <div class="agency-header">
-            <div class="agency-name">Public Works</div>
-            <div class="agency-status status-standby">STANDBY</div>
-          </div>
-          <div class="agency-details">
-            2 crews available<br>
-            Contact: Operations Center<br>
-            Radio: Channel 5
-          </div>
-        </div>
-
-        <div class="agency-card">
-          <div class="agency-header">
-            <div class="agency-name">Red Cross</div>
-            <div class="agency-status status-active">ACTIVE</div>
-          </div>
-          <div class="agency-details">
-            Shelter operations active<br>
-            Contact: Emergency Coordinator<br>
-            Phone: (555) 123-4567
-          </div>
-        </div>
-
-        <div class="agency-card">
-          <div class="agency-header">
-            <div class="agency-name">Utility Company</div>
-            <div class="agency-status status-active">ACTIVE</div>
-          </div>
-          <div class="agency-details">
-            Gas isolation in progress<br>
-            Contact: Emergency Response<br>
-            Phone: (555) 987-6543
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Operations Timeline -->
-    <div class="timeline-panel">
-      <h3>⏰ Operations Timeline</h3>
-      <div class="timeline" id="operationsTimeline">
-        <div class="timeline-item">
-          <div class="timeline-time">14:35:20</div>
-          <div class="timeline-title">Additional Units Dispatched</div>
-          <div class="timeline-description">Engine 7 and Ladder 3 dispatched to Oak Street fire, ETA 4 minutes</div>
-        </div>
-        
-        <div class="timeline-item">
-          <div class="timeline-time">14:33:45</div>
-          <div class="timeline-title">Incident Command Established</div>
-          <div class="timeline-description">Battalion Chief 2 establishing command at Oak Street incident</div>
-        </div>
-        
-        <div class="timeline-item">
-          <div class="timeline-time">14:32:15</div>
-          <div class="timeline-title">Structure Fire Reported</div>
-          <div class="timeline-description">Working structure fire at 425 Oak Street, Engine 15 first on scene</div>
-        </div>
-        
-        <div class="timeline-item">
-          <div class="timeline-time">14:28:30</div>
-          <div class="timeline-title">MVA Highway 101</div>
-          <div class="timeline-description">Multi-vehicle accident reported, 3 ambulances and police units dispatched</div>
-        </div>
-        
-        <div class="timeline-item">
-          <div class="timeline-time">14:15:10</div>
-          <div class="timeline-title">Gas Leak Downtown</div>
-          <div class="timeline-description">Natural gas leak reported, hazmat team activated, evacuation ordered</div>
-        </div>
-        
-        <div class="timeline-item">
-          <div class="timeline-time">14:05:45</div>
-          <div class="timeline-title">Medical Emergency Resolved</div>
-          <div class="timeline-description">Cardiac event at Senior Center successfully treated, patient transported</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Action Buttons -->
-    <div class="quick-actions">
-      <button class="quick-action qa-emergency" title="Declare Emergency" onclick="window.CrisisCommand?.declareEmergency()">
-        🚨
-      </button>
-      <button class="quick-action qa-dispatch" title="Quick Dispatch" onclick="window.CrisisCommand?.quickDispatch()">
-        📞
-      </button>
-      <button class="quick-action qa-comms" title="Broadcast Alert" onclick="window.CrisisCommand?.broadcastAlert()">
-        📢
-      </button>
-      <button class="quick-action qa-resources" title="Resource Status" onclick="window.CrisisCommand?.checkResources()">
-        📊
-      </button>
-    </div>
-  </main>
-
+{% block footer_content %}
   <footer class="footer">
     <p>🔒 Secure Communications | ⚡ Real-time Coordination | 🏛️ Multi-Agency</p>
   </footer>
-
-  <!-- Scripts -->
-  <script src="/static/js/edge-ai.js"></script>
-  <script src="/static/js/crisis-command.js"></script>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <script>
-    // Theme toggle
-    const themeBtn = document.getElementById('toggleThemeBtn');
-    themeBtn.addEventListener('click', () => {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-    });
-
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-
-    // High contrast toggle
-    const contrastBtn = document.getElementById("contrastToggleBtn");
-    contrastBtn.addEventListener("click", () => {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-contrast');
-      const next = current === 'high' ? 'normal' : 'high';
-      html.setAttribute('data-contrast', next);
-      localStorage.setItem('contrast', next);
-    });
-
-    const savedContrast = localStorage.getItem('contrast');
-    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
-
-    // Connection status
-    function updateConnectionStatus() {
-      const indicator = document.querySelector('.status-indicator');
-      if (navigator.onLine) {
-        indicator.innerHTML = '<div class="status-dot"></div>Online + Offline Ready';
-        indicator.className = 'status-indicator status-online';
-      } else {
-        indicator.innerHTML = '<div class="status-dot"></div>Offline Mode Active';
-        indicator.className = 'status-indicator status-offline';
-      }
-    }
-
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
-    updateConnectionStatus();
-
-    // Service Worker registration
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/static/js/sw.js")
-        .then((reg) => console.log("✅ Service worker registered:", reg.scope))
-        .catch((err) => console.error("❌ Service worker registration failed:", err));
-    }
-
-    // Initialize Crisis Command Center
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.CrisisCommand) {
-        window.CrisisCommand.initialize();
-      }
-    });
-  </script>
-</body>
-</html>
+{% endblock %}

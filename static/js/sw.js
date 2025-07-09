@@ -1,20 +1,16 @@
 // ================================================================================
-// ENHANCED SERVICE WORKER - EMERGENCY RESPONSE SYSTEM with GEMMA 3N & OPTIMAL TIER SUPPORT
-// Version: 2.4.0 - Consolidated, Organized & Optimized
-// ================================================================================
-
-// ================================================================================
 // 📋 CONFIGURATION & CONSTANTS
 // ================================================================================
 
 const SW_CONFIG = {
-  VERSION: "v2.4.0", // Updated version to trigger cache refresh
+  VERSION: "v2.4.0-complete", // Updated version to trigger cache refresh
   DB_NAME: "EmergencyResponseDB",
   DB_VERSION: 4, // Increment if schema changes
   NETWORK_TIMEOUT: 5000, // 5 seconds for network requests
   CACHE_TIMEOUT: 1000 // 1 second for cache-first strategy before network
 };
 
+// Update the cache names to reflect the new version
 const CACHE_NAMES = {
   CORE_APP: `disaster-assistant-app-${SW_CONFIG.VERSION}`,
   DATA_API: `disaster-assistant-data-${SW_CONFIG.VERSION}`,
@@ -53,11 +49,16 @@ const DB_STORES = {
   EXPORT_REQUEST_QUEUE: "exportRequestQueue",
   GEMMA_VOICE_SYNC_QUEUE: "gemmaVoiceSyncQueue", // For Gemma 3N voice reports
   GEMMA_MULTIMODAL_SYNC_QUEUE: "gemmaMultimodalSyncQueue", // For Gemma 3N multimodal reports
-  // NEW OPTIMAL TIER QUEUES
+  // Optimal Tier Queues
   RISK_PREDICTION_QUEUE: "riskPredictionQueue",
   RESOURCE_OPTIMIZATION_QUEUE: "resourceOptimizationQueue",
   TRANSLATION_REQUESTS_QUEUE: "translationRequestsQueue",
   VERIFICATION_REQUESTS_QUEUE: "verificationRequestsQueue",
+  // Complete Tier Queues (assuming these also might queue operations)
+  EDGE_AI_PERFORMANCE_QUEUE: "edgeAiPerformanceQueue",
+  CRISIS_COORDINATION_QUEUE: "crisisCoordinationQueue",
+  PREDICTIVE_INSIGHTS_QUEUE: "predictiveInsightsQueue",
+  QUANTUM_SYSTEM_QUEUE: "quantumSystemQueue",
   
   // Data Stores for persistent offline data
   SYNC_METADATA: "syncMetadata",
@@ -87,11 +88,16 @@ const SYNC_TAGS = {
   GEMMA_MULTIMODAL: "gemma3n-multimodal-sync",
   ADMIN_ACTIONS: "admin-actions-sync",
   USER_PREFERENCES: "user-preferences-sync",
-  // 🆕 OPTIMAL TIER SYNC TAGS
+  // Optimal Tier Sync Tags
   RISK_PREDICTION: "risk-prediction-sync",
   RESOURCE_OPTIMIZATION: "resource-optimization-sync",
   TRANSLATION_REQUESTS: "translation-requests-sync",
-  VERIFICATION_REQUESTS: "verification-requests-sync"
+  VERIFICATION_REQUESTS: "verification-requests-sync",
+  // Complete Tier Sync Tags (if needed for background operations)
+  EDGE_AI_PERFORMANCE: "edge-ai-performance-sync",
+  CRISIS_COORDINATION: "crisis-coordination-sync",
+  PREDICTIVE_INSIGHTS: "predictive-insights-sync",
+  QUANTUM_SYSTEM: "quantum-system-sync"
 };
 
 // URLs to pre-cache on install (critical for offline first)
@@ -119,15 +125,21 @@ const PRECACHE_URLS = [
   '/sync-status', '/device-status', '/report-archive', '/onboarding',
   '/feedback', '/help', '/reports/export',
   
-  // 🆕 GEMMA 3N ENHANCED PAGES
+  // Gemma 3N Enhanced Pages
   '/voice-emergency-reporter', '/multimodal-damage-assessment',
   '/context-intelligence-dashboard', '/adaptive-ai-settings',
   
-  // 🆕 OPTIMAL TIER - AI-POWERED EMERGENCY MANAGEMENT PAGES
+  // Optimal Tier - AI-Powered Emergency Management Pages
   '/predictive-risk-modeling',
   '/real-time-resource-optimizer', 
   '/communication-intelligence',
   '/cross-modal-verification',
+  
+  // ⭐ NEW COMPLETE TIER PAGES
+  '/edge-ai-monitor',
+  '/crisis-command-center',
+  '/predictive-analytics-dashboard', 
+  '/quantum-emergency-hub',
   
   // Essential Static Assets & JS modules
   '/static/js/main.js', '/static/js/offline.js', '/static/js/idb.mjs',
@@ -145,11 +157,17 @@ const PRECACHE_URLS = [
   '/static/js/gemma3n-context.js',
   '/static/js/device-performance.js',
   
-  // 🆕 ADD THE NEW OPTIMAL TIER JAVASCRIPT FILES
+  // Optimal Tier JavaScript Files
   '/static/js/predictive-risk.js',
   '/static/js/resource-optimizer.js',
   '/static/js/communication-intelligence.js',
   '/static/js/cross-modal-verification.js',
+  
+  // ⭐ NEW COMPLETE TIER JAVASCRIPT FILES
+  '/static/js/edge-ai-monitor.js',
+  '/static/js/crisis-command.js',
+  '/static/js/predictive-analytics.js',
+  '/static/js/quantum-hub.js',
   
   // Icons and Images (example paths, adjust as needed)
   '/static/icons/icon-72x72.png', '/static/icons/icon-96x96.png',
@@ -181,15 +199,29 @@ const API_ENDPOINTS_TO_HANDLE = [
   '/api/context-analysis', '/api/ai-model-status', '/api/optimize-ai-settings',
   '/api/device-performance', '/api/hazard-analysis',
   
-  // 🆕 OPTIMAL TIER API ENDPOINTS
+  // Optimal Tier API Endpoints
   '/api/risk-forecast',
   '/api/resource-optimization', 
   '/api/translate-emergency-message',
   '/api/verify-report',
   
+  // ⭐ NEW COMPLETE TIER API ENDPOINTS
+  '/api/edge-ai-performance',
+  '/api/crisis-coordination-status', 
+  '/api/predictive-insights',
+  '/api/quantum-system-status',
+  
   // Explicitly handled for queuing if offline
   '/api/patients', // For new patient submissions
   '/patients/', // For updates/discharges (will be queued if POST/PATCH)
+];
+
+// Network-first strategy for real-time Complete tier pages
+const NETWORK_FIRST_PAGES = [
+  '/edge-ai-monitor',
+  '/crisis-command-center', 
+  '/predictive-analytics-dashboard',
+  '/quantum-emergency-hub'
 ];
 
 // ================================================================================
@@ -238,6 +270,28 @@ self.addEventListener("fetch", (event) => {
   
   // Ignore non-http(s) requests (e.g., chrome-extension://)
   if (!request.url.startsWith('http')) return;
+
+  // Handle Complete tier pages with network-first strategy
+  if (NETWORK_FIRST_PAGES.some(page => url.pathname === page)) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Update cache with fresh data if successful (only for 200 OK responses)
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAMES.PAGES).then(cache => { // Cache into the PAGES cache
+              cache.put(event.request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
 
   // Prioritize network for most POST requests that aren't specifically queued
   // and for non-GET API calls that might modify data on the server.
@@ -319,7 +373,7 @@ const cacheManager = {
     const dataCache = await caches.open(CACHE_NAMES.DATA_API);
     await Promise.allSettled(
       API_ENDPOINTS_TO_HANDLE
-        .filter(url => !url.includes('/api/submit') && !url.includes('/api/optimize')) // Only GET endpoints initially
+        .filter(url => !url.includes('/api/submit') && !url.includes('/api/optimize') && !url.includes('/api/translate') && !url.includes('/api/verify')) // Filter out POST/PUT APIs
         .map(url =>
           fetch(url).then(response => {
             if (response.ok) return dataCache.put(url, response.clone());
@@ -543,11 +597,16 @@ const syncManager = {
       [SYNC_TAGS.EXPORT_REQUESTS]: () => this.syncQueuedItems(DB_STORES.EXPORT_REQUEST_QUEUE, "/api/export-reports", true),
       [SYNC_TAGS.GEMMA_VOICE]: () => this.syncQueuedItems(DB_STORES.GEMMA_VOICE_SYNC_QUEUE, "/api/submit-voice-emergency-report", true),
       [SYNC_TAGS.GEMMA_MULTIMODAL]: () => this.syncQueuedItems(DB_STORES.GEMMA_MULTIMODAL_SYNC_QUEUE, "/api/submit-damage-assessment", true),
-      // NEW OPTIMAL TIER SYNC HANDLERS
+      // Optimal Tier Sync Handlers
       [SYNC_TAGS.RISK_PREDICTION]: () => this.syncQueuedItems(DB_STORES.RISK_PREDICTION_QUEUE, "/api/risk-forecast"),
       [SYNC_TAGS.RESOURCE_OPTIMIZATION]: () => this.syncQueuedItems(DB_STORES.RESOURCE_OPTIMIZATION_QUEUE, "/api/resource-optimization"),
       [SYNC_TAGS.TRANSLATION_REQUESTS]: () => this.syncQueuedItems(DB_STORES.TRANSLATION_REQUESTS_QUEUE, "/api/translate-emergency-message", true),
-      [SYNC_TAGS.VERIFICATION_REQUESTS]: () => this.syncQueuedItems(DB_STORES.VERIFICATION_REQUESTS_QUEUE, "/api/verify-report", true)
+      [SYNC_TAGS.VERIFICATION_REQUESTS]: () => this.syncQueuedItems(DB_STORES.VERIFICATION_REQUESTS_QUEUE, "/api/verify-report", true),
+      // Complete Tier Sync Handlers
+      [SYNC_TAGS.EDGE_AI_PERFORMANCE]: () => this.syncQueuedItems(DB_STORES.EDGE_AI_PERFORMANCE_QUEUE, "/api/edge-ai-performance"),
+      [SYNC_TAGS.CRISIS_COORDINATION]: () => this.syncQueuedItems(DB_STORES.CRISIS_COORDINATION_QUEUE, "/api/crisis-coordination-status"),
+      [SYNC_TAGS.PREDICTIVE_INSIGHTS]: () => this.syncQueuedItems(DB_STORES.PREDICTIVE_INSIGHTS_QUEUE, "/api/predictive-insights"),
+      [SYNC_TAGS.QUANTUM_SYSTEM]: () => this.syncQueuedItems(DB_STORES.QUANTUM_SYSTEM_QUEUE, "/api/quantum-system-status")
     };
     
     return syncHandlers[tag];
@@ -766,11 +825,16 @@ const requestHandler = {
       '/api/export-reports': SYNC_TAGS.EXPORT_REQUESTS,
       '/api/patients': SYNC_TAGS.TRIAGE, // For updates to patients
       '/patients/': SYNC_TAGS.TRIAGE, // For updates/discharges
-      // NEW OPTIMAL TIER API ENDPOINTS (for queuing)
+      // Optimal Tier API Endpoints (for queuing)
       '/api/risk-forecast': SYNC_TAGS.RISK_PREDICTION,
       '/api/resource-optimization': SYNC_TAGS.RESOURCE_OPTIMIZATION,
       '/api/translate-emergency-message': SYNC_TAGS.TRANSLATION_REQUESTS,
-      '/api/verify-report': SYNC_TAGS.VERIFICATION_REQUESTS
+      '/api/verify-report': SYNC_TAGS.VERIFICATION_REQUESTS,
+      // Complete Tier API Endpoints (for queuing)
+      '/api/edge-ai-performance': SYNC_TAGS.EDGE_AI_PERFORMANCE,
+      '/api/crisis-coordination-status': SYNC_TAGS.CRISIS_COORDINATION,
+      '/api/predictive-insights': SYNC_TAGS.PREDICTIVE_INSIGHTS,
+      '/api/quantum-system-status': SYNC_TAGS.QUANTUM_SYSTEM
     };
 
     const endpointKey = Object.keys(syncQueueMap).find(key => url.pathname.startsWith(key));
@@ -790,11 +854,16 @@ const requestHandler = {
       case SYNC_TAGS.GEMMA_VOICE: storeName = DB_STORES.GEMMA_VOICE_SYNC_QUEUE; break;
       case SYNC_TAGS.GEMMA_MULTIMODAL: storeName = DB_STORES.GEMMA_MULTIMODAL_SYNC_QUEUE; break;
       case SYNC_TAGS.ADMIN_ACTIONS: storeName = DB_STORES.ADMIN_CACHE; break; // Store admin actions if not immediately synced
-      // NEW OPTIMAL TIER QUEUE STORE NAMES
+      // Optimal Tier Queue Store Names
       case SYNC_TAGS.RISK_PREDICTION: storeName = DB_STORES.RISK_PREDICTION_QUEUE; break;
       case SYNC_TAGS.RESOURCE_OPTIMIZATION: storeName = DB_STORES.RESOURCE_OPTIMIZATION_QUEUE; break;
       case SYNC_TAGS.TRANSLATION_REQUESTS: storeName = DB_STORES.TRANSLATION_REQUESTS_QUEUE; break;
       case SYNC_TAGS.VERIFICATION_REQUESTS: storeName = DB_STORES.VERIFICATION_REQUESTS_QUEUE; break;
+      // Complete Tier Queue Store Names
+      case SYNC_TAGS.EDGE_AI_PERFORMANCE: storeName = DB_STORES.EDGE_AI_PERFORMANCE_QUEUE; break;
+      case SYNC_TAGS.CRISIS_COORDINATION: storeName = DB_STORES.CRISIS_COORDINATION_QUEUE; break;
+      case SYNC_TAGS.PREDICTIVE_INSIGHTS: storeName = DB_STORES.PREDICTIVE_INSIGHTS_QUEUE; break;
+      case SYNC_TAGS.QUANTUM_SYSTEM: storeName = DB_STORES.QUANTUM_SYSTEM_QUEUE; break;
       default: storeName = DB_STORES.CROWD_REPORT_QUEUE;
     }
 
@@ -1351,7 +1420,7 @@ const messageManager = {
         type: 'SYNC_STATUS_RESPONSE',
         payload: {
           syncStatus,
-          timestamp: Date.now(),
+          timestamp: Date.Now(),
           online: navigator.onLine
         }
       });

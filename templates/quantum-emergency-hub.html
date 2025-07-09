@@ -1,932 +1,801 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quantum Emergency Network Hub - Ultimate Command & Control</title>
-  <link rel="stylesheet" href="/static/css/styles.css" />
-  
-  <!-- Additional CSS for quantum hub -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  
-  <style>
-    /* Quantum Hub Styling */
-    .quantum-header {
-      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #7c3aed 50%, #a855f7 75%, #c084fc 100%);
-      color: white;
-      padding: 2rem;
-      border-radius: 16px;
-      margin-bottom: 2rem;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      position: relative;
-      overflow: hidden;
-    }
+{% extends "base.html" %}
 
-    .quantum-header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-      animation: quantum-shimmer 4s infinite;
-    }
+{% block title %}Quantum Emergency Network Hub - Ultimate Command & Control{% endblock %}
 
-    @keyframes quantum-shimmer {
-      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-    }
+{% block page_title %}⚛️ Quantum Emergency Network Hub{% endblock %}
 
-    .quantum-title {
-      position: relative;
-      z-index: 2;
-      margin: 0;
-      font-size: 2.2rem;
-      font-weight: bold;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
+{% block subtitle %}Ultimate AI-Powered Command & Control Ecosystem{% endblock %}
 
-    .quantum-subtitle {
-      position: relative;
-      z-index: 2;
-      margin: 0.5rem 0 1.5rem 0;
-      opacity: 0.9;
-      font-size: 1.1rem;
-    }
+{% block header_logo %}⚛️{% endblock %} {# Custom logo for this page in the header #}
 
-    .quantum-stats {
-      position: relative;
-      z-index: 2;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
-      margin-top: 1.5rem;
-    }
+{% block header_actions %}
+  {# Inherit default theme/contrast toggles from base.html #}
+  <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Theme</button>
+  <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ Contrast</button>
+  <div class="status-bar">
+    <div class="status-indicator status-offline">
+      <div class="status-dot"></div>
+      Offline
+    </div>
+  </div>
+  <a href="/live-generate" class="btn btn-primary btn-small">
+    🧩 Live JSON → PDF Editor
+  </a>
+{% endblock %}
 
-    .quantum-stat {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s ease;
-    }
+{% block extra_css %}
+{{ super() }} {# Inherits CSS from base.html #}
+<style>
+  /* Quantum Hub Specific Styling */
+  .quantum-header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #7c3aed 50%, #a855f7 75%, #c084fc 100%);
+    color: var(--text-color-inverted);
+    padding: 2.5rem 2rem; /* Increased padding */
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
 
-    .quantum-stat:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4);
-    }
+  .quantum-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    animation: quantum-shimmer 4s infinite; /* @keyframes quantum-shimmer in base.html */
+  }
 
-    .stat-value {
-      font-size: 2.5rem;
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
+  .quantum-title {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    font-size: 2.5rem; /* Slightly larger */
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
 
-    .stat-label {
-      opacity: 0.9;
-      font-size: 1rem;
-      margin-bottom: 0.25rem;
-    }
+  .quantum-subtitle {
+    position: relative;
+    z-index: 2;
+    margin: 0.5rem 0 1.5rem 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+  }
 
-    .stat-status {
-      font-size: 0.8rem;
-      opacity: 0.8;
-    }
+  .quantum-stats {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
 
+  .quantum-stat {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm); /* Added subtle shadow */
+  }
+
+  .quantum-stat:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4);
+  }
+
+  .stat-value {
+    font-size: 2.8rem; /* Even larger */
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .stat-label {
+    opacity: 0.9;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .stat-status {
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+
+  .quantum-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; /* Three columns */
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .quantum-panel {
+    background: var(--bg-color-card);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .quantum-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .quantum-panel h3 {
+    margin: 0 0 1.5rem 0;
+    color: var(--text-color-base);
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 3px solid #7c3aed; /* Purple underline */
+    padding-bottom: 0.75rem;
+  }
+
+  .system-status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .status-card {
+    background: var(--bg-color-light);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .status-card:hover {
+    background: var(--bg-hover, #f1f5f9);
+    transform: scale(1.02);
+  }
+
+  .status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .status-name {
+    font-weight: bold;
+    color: var(--text-color-base);
+    font-size: 0.95rem;
+  }
+
+  .status-indicator {
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-color-inverted); /* White text on indicators */
+  }
+
+  /* Status indicator colors */
+  .status-operational { background: var(--color-optimal); }
+  .status-warning { background: var(--color-good); }
+  .status-critical { background: var(--color-critical); }
+  .status-offline { background: var(--secondary-color); }
+
+  .status-details {
+    color: var(--text-color-light);
+    font-size: 0.85rem;
+  }
+
+  .integration-matrix {
+    background: var(--bg-color-light);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); /* Example 6xN matrix */
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .matrix-cell {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--text-color-inverted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .matrix-cell:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Matrix cell colors */
+  .matrix-active { background: var(--color-optimal); }
+  .matrix-syncing { background: var(--color-good); animation: pulse-sync 1.5s infinite; }
+  .matrix-error { background: var(--color-critical); }
+  .matrix-disabled { background: var(--secondary-color); }
+
+  /* @keyframes pulse-sync is in base.html */
+
+  .quantum-control {
+    background: linear-gradient(135deg, #059669 0%, #16a34a 100%); /* Green gradient */
+    color: var(--text-color-inverted);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+
+  .quantum-control::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 50px,
+      rgba(255,255,255,0.05) 50px,
+      rgba(255,255,255,0.05) 52px
+    );
+    animation: scan-lines 3s linear infinite; /* @keyframes scan-lines in base.html */
+  }
+
+  .control-grid {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Adjusted min-width for controls */
+    gap: 2rem;
+  }
+
+  .control-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .control-section h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color-inverted);
+    font-size: 1.2rem;
+  }
+
+  .control-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .quantum-button {
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    position: relative;
+    overflow: hidden;
+    color: var(--text-color-inverted); /* Ensure white text on buttons */
+  }
+
+  .quantum-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .quantum-button:hover::before {
+    left: 100%;
+  }
+
+  .quantum-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Specific button colors (using base.html variables) */
+  .btn-primary { background: var(--primary-color); }
+  .btn-success { background: var(--color-optimal); }
+  .btn-warning { background: #ea580c; } /* Specific orange-red */
+  .btn-danger { background: var(--color-critical); }
+
+  .network-topology {
+    background: var(--bg-color-card);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+  }
+
+  .network-topology h3 {
+      color: var(--text-color-base);
+  }
+
+  .topology-canvas {
+    width: 100%;
+    height: 400px;
+    background: var(--bg-color-light);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .node {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md); /* Use global shadow */
+  }
+
+  .node:hover {
+    transform: scale(1.2);
+    z-index: 10;
+  }
+
+  .node-hub { background: #7c3aed; } /* Purple */
+  .node-command { background: var(--color-critical); }
+  .node-analytics { background: #8b5cf6; } /* Light purple */
+  .node-monitor { background: var(--color-optimal); }
+  .node-crisis { background: #ea580c; } /* Orange-red */
+
+  .connection {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, #7c3aed, #a855f7); /* Purple gradient for connections */
+    transform-origin: left center;
+    animation: data-flow 2s linear infinite;
+  }
+
+  @keyframes data-flow {
+    0% { box-shadow: 0 0 5px #7c3aed; }
+    50% { box-shadow: 0 0 15px #a855f7; }
+    100% { box-shadow: 0 0 5px #7c3aed; }
+  }
+
+  .ai-orchestrator {
+    background: linear-gradient(135deg, #1e1b4b 0%, #7c3aed 100%); /* Dark purple gradient */
+    color: var(--text-color-inverted);
+    border-radius: 16px;
+    padding: 2.5rem 2rem; /* Increased padding */
+    margin-top: 2rem;
+    position: relative;
+    box-shadow: var(--shadow-md);
+  }
+  .ai-orchestrator h3 {
+      color: var(--text-color-inverted);
+  }
+
+  .orchestrator-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .orchestrator-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+  }
+  .orchestrator-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+  }
+
+  .orchestrator-title {
+    font-weight: bold;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-color-inverted);
+  }
+
+  .orchestrator-status {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .orchestrator-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .metric {
+    text-align: center;
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: var(--text-color-inverted);
+  }
+
+  .metric-label {
+    opacity: 0.8;
+    font-size: 0.8rem;
+    color: var(--text-color-inverted);
+  }
+
+  .quantum-logs {
+    background: #111827; /* Dark background for logs */
+    color: var(--color-optimal); /* Green text for logs */
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    font-family: 'Courier New', monospace;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+  }
+
+  .log-entry {
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+    border-left: 3px solid transparent;
+    padding-left: 0.75rem;
+    animation: log-appear 0.5s ease; /* @keyframes log-appear in base.html */
+  }
+
+  /* Log entry border colors */
+  .log-system { border-left-color: var(--primary-color); color: #60a5fa; } /* Blue for system logs */
+  .log-ai { border-left-color: #8b5cf6; color: #a78bfa; } /* Purple for AI logs */
+  .log-emergency { border-left-color: var(--color-critical); color: #f87171; } /* Red for emergency logs */
+  .log-success { border-left-color: var(--color-optimal); color: #34d399; } /* Green for success */
+  .log-warning { border-left-color: var(--color-good); color: #fbbf24; } /* Orange for warning */
+
+  .emergency-protocols {
+    background: #fef2f2; /* Light red background */
+    border: 2px solid #fecaca; /* Red border */
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: none; /* Controlled by JavaScript */
+  }
+
+  .emergency-protocols.active {
+    display: block;
+    animation: emergency-alert 1s ease infinite alternate; /* @keyframes emergency-alert in base.html */
+  }
+
+  .protocol-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    color: #991b1b; /* Dark red text */
+  }
+
+  .protocol-header h3 {
+      color: #991b1b; /* Ensure h3 also uses the dark red */
+  }
+
+  .protocol-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .protocol-action {
+    background: var(--bg-color-card);
+    border-radius: 8px;
+    padding: 1.2rem;
+    border: 1px solid #fecaca; /* Light red border */
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .protocol-action:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+  }
+
+  .action-title {
+    font-weight: bold;
+    color: #991b1b; /* Dark red text */
+    margin-bottom: 0.5rem;
+  }
+
+  .action-description {
+    color: var(--text-color-light);
+    font-size: 0.9rem;
+  }
+
+  /* Responsive design for Quantum Hub */
+  @media (max-width: 1024px) {
     .quantum-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 2rem;
-      margin-bottom: 2rem;
+      grid-template-columns: 1fr 1fr; /* 2 columns on medium screens */
+    }
+  }
+
+  @media (max-width: 768px) {
+    .quantum-grid {
+      grid-template-columns: 1fr; /* Single column on small screens */
+      gap: 1.5rem;
+    }
+    
+    .quantum-header {
+      padding: 1.5rem;
+    }
+    .quantum-title {
+        font-size: 2rem;
+    }
+    .quantum-subtitle {
+        font-size: 1rem;
+    }
+    .quantum-stats {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+    .quantum-stat {
+        padding: 1rem;
+    }
+    .stat-value {
+        font-size: 2rem;
+    }
+    .stat-label {
+        font-size: 0.9rem;
     }
 
     .quantum-panel {
-      background: white;
-      border-radius: 16px;
-      padding: 2rem;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e5e7eb;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s ease;
+        padding: 1rem;
     }
-
-    .quantum-panel:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-    }
-
     .quantum-panel h3 {
-      margin: 0 0 1.5rem 0;
-      color: #1f2937;
-      font-size: 1.4rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      border-bottom: 3px solid #7c3aed;
-      padding-bottom: 0.75rem;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
     }
-
     .system-status-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
+        grid-template-columns: 1fr; /* Stack status cards */
+        gap: 0.75rem;
     }
-
-    .status-card {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 1rem;
-      border: 1px solid #e5e7eb;
-      transition: all 0.3s ease;
-      cursor: pointer;
-    }
-
-    .status-card:hover {
-      background: #f1f5f9;
-      transform: scale(1.02);
-    }
-
-    .status-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
-
-    .status-name {
-      font-weight: bold;
-      color: #1f2937;
-      font-size: 0.95rem;
-    }
-
-    .status-indicator {
-      padding: 0.25rem 0.5rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
-
-    .status-operational { background: #dcfce7; color: #166534; }
-    .status-warning { background: #fef3c7; color: #92400e; }
-    .status-critical { background: #fecaca; color: #991b1b; }
-    .status-offline { background: #f3f4f6; color: #6b7280; }
-
-    .status-details {
-      color: #6b7280;
-      font-size: 0.85rem;
-    }
-
-    .integration-matrix {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 1rem;
-      margin-top: 1rem;
-    }
-
     .matrix-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 0.5rem;
-      margin-top: 1rem;
+        grid-template-columns: repeat(4, 1fr); /* Adjust matrix for smaller screens */
+        gap: 0.25rem;
     }
-
-    .matrix-cell {
-      aspect-ratio: 1;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      font-weight: bold;
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .matrix-cell:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .matrix-active { background: #16a34a; }
-    .matrix-syncing { background: #eab308; animation: pulse-sync 1.5s infinite; }
-    .matrix-error { background: #dc2626; }
-    .matrix-disabled { background: #9ca3af; }
-
-    @keyframes pulse-sync {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(0.95); }
-    }
-
-    .quantum-control {
-      background: linear-gradient(135deg, #059669 0%, #16a34a 100%);
-      color: white;
-      border-radius: 16px;
-      padding: 2rem;
-      margin-top: 2rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .quantum-control::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 50px,
-        rgba(255,255,255,0.05) 50px,
-        rgba(255,255,255,0.05) 52px
-      );
-      animation: scan-lines 3s linear infinite;
-    }
-
-    @keyframes scan-lines {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-
     .control-grid {
-      position: relative;
-      z-index: 2;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
-
-    .control-section {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
-    }
-
-    .control-section h4 {
-      margin: 0 0 1rem 0;
-      color: white;
-      font-size: 1.2rem;
-    }
-
-    .control-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    .quantum-button {
-      padding: 1rem 1.5rem;
-      border: none;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 0.9rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .quantum-button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s ease;
-    }
-
-    .quantum-button:hover::before {
-      left: 100%;
-    }
-
-    .quantum-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    }
-
-    .btn-primary { background: #3b82f6; color: white; }
-    .btn-success { background: #16a34a; color: white; }
-    .btn-warning { background: #ea580c; color: white; }
-    .btn-danger { background: #dc2626; color: white; }
-
-    .network-topology {
-      background: white;
-      border-radius: 16px;
-      padding: 2rem;
-      margin-top: 2rem;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    }
-
-    .topology-canvas {
-      width: 100%;
-      height: 400px;
-      background: #f8fafc;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .node {
-      position: absolute;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 0.8rem;
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .node:hover {
-      transform: scale(1.2);
-      z-index: 10;
-    }
-
-    .node-hub { background: #7c3aed; }
-    .node-command { background: #dc2626; }
-    .node-analytics { background: #8b5cf6; }
-    .node-monitor { background: #059669; }
-    .node-crisis { background: #ea580c; }
-
-    .connection {
-      position: absolute;
-      height: 2px;
-      background: linear-gradient(90deg, #7c3aed, #a855f7);
-      transform-origin: left center;
-      animation: data-flow 2s linear infinite;
-    }
-
-    @keyframes data-flow {
-      0% { box-shadow: 0 0 5px #7c3aed; }
-      50% { box-shadow: 0 0 15px #a855f7; }
-      100% { box-shadow: 0 0 5px #7c3aed; }
-    }
-
-    .ai-orchestrator {
-      background: linear-gradient(135deg, #1e1b4b 0%, #7c3aed 100%);
-      color: white;
-      border-radius: 16px;
-      padding: 2rem;
-      margin-top: 2rem;
-      position: relative;
-    }
-
     .orchestrator-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-      margin-top: 1.5rem;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
-
-    .orchestrator-card {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+    .topology-canvas {
+        height: 300px;
     }
-
-    .orchestrator-title {
-      font-weight: bold;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .orchestrator-status {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 0.9rem;
-      margin-bottom: 1rem;
-    }
-
-    .orchestrator-metrics {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    .metric {
-      text-align: center;
-    }
-
-    .metric-value {
-      font-size: 1.5rem;
-      font-weight: bold;
-      margin-bottom: 0.25rem;
-    }
-
-    .metric-label {
-      opacity: 0.8;
-      font-size: 0.8rem;
-    }
-
     .quantum-logs {
-      background: #111827;
-      color: #10b981;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-top: 2rem;
-      font-family: 'Courier New', monospace;
-      max-height: 300px;
-      overflow-y: auto;
+        padding: 1rem;
     }
-
-    .log-entry {
-      margin-bottom: 0.5rem;
-      padding: 0.25rem 0;
-      border-left: 3px solid transparent;
-      padding-left: 0.75rem;
-      animation: log-appear 0.5s ease;
-    }
-
-    @keyframes log-appear {
-      from { opacity: 0; transform: translateX(-10px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    .log-system { border-left-color: #3b82f6; color: #60a5fa; }
-    .log-ai { border-left-color: #8b5cf6; color: #a78bfa; }
-    .log-emergency { border-left-color: #dc2626; color: #f87171; }
-    .log-success { border-left-color: #10b981; color: #34d399; }
-    .log-warning { border-left-color: #f59e0b; color: #fbbf24; }
-
     .emergency-protocols {
-      background: #fef2f2;
-      border: 2px solid #fecaca;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-top: 2rem;
-      display: none;
+        padding: 1rem;
     }
-
-    .emergency-protocols.active {
-      display: block;
-      animation: emergency-alert 1s ease infinite alternate;
-    }
-
-    @keyframes emergency-alert {
-      0% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
-      100% { box-shadow: 0 0 40px rgba(220, 38, 38, 0.6); }
-    }
-
-    .protocol-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      color: #991b1b;
-    }
-
     .protocol-actions {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-
-    .protocol-action {
-      background: white;
-      border-radius: 8px;
-      padding: 1rem;
-      border: 1px solid #fecaca;
-      text-align: center;
-    }
-
-    .action-title {
-      font-weight: bold;
-      color: #991b1b;
-      margin-bottom: 0.5rem;
-    }
-
-    .action-description {
-      color: #6b7280;
-      font-size: 0.9rem;
-    }
-
-    /* Dark theme adjustments */
-    [data-theme="dark"] .quantum-panel {
-      background: #1f2937;
-      border-color: #374151;
-    }
-
-    [data-theme="dark"] .quantum-panel h3 {
-      color: #f9fafb;
-    }
-
-    [data-theme="dark"] .status-card {
-      background: #111827;
-      border-color: #374151;
-    }
-
-    [data-theme="dark"] .status-name {
-      color: #f9fafb;
-    }
-
-    [data-theme="dark"] .network-topology {
-      background: #1f2937;
-    }
-
-    [data-theme="dark"] .topology-canvas {
-      background: #111827;
-      border-color: #374151;
-    }
-
-    /* Responsive design */
-    @media (max-width: 1024px) {
-      .quantum-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .quantum-grid {
         grid-template-columns: 1fr;
-      }
-      
-      .quantum-stats {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      }
-      
-      .control-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .orchestrator-grid {
-        grid-template-columns: 1fr;
-      }
     }
-  </style>
-</head>
-<body>
-  <header class="header">
-    <div class="header-content">
-      <div class="logo">⚛️</div>
-      <div>
-        <h1 class="title">Quantum Emergency Network Hub</h1>
-        <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
-          🧩 Live JSON → PDF Editor
-        </a>
-        <p class="subtitle">Ultimate AI-Powered Command & Control Ecosystem</p>
+  }
+
+  /* Dark theme adjustments handled by variables in :root[data-theme="dark"] */
+  /* Specific overrides for quantum hub in dark mode */
+  [data-theme="dark"] .quantum-header {
+    background: linear-gradient(135deg, #0f0a29 0%, #1a1740 25%, #4a2185 50%, #6d33b4 75%, #8e49c7 100%);
+  }
+  [data-theme="dark"] .quantum-stat {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  [data-theme="dark"] .quantum-panel {
+    background: var(--bg-color-card);
+    border-color: var(--border-color);
+  }
+  [data-theme="dark"] .quantum-panel h3 {
+    color: var(--text-color-base); /* Text on card, not inverted */
+    border-bottom-color: #7c3aed; /* Maintain purple underline */
+  }
+  [data-theme="dark"] .status-card,
+  [data-theme="dark"] .integration-matrix {
+    background: var(--bg-color-light);
+    border-color: var(--border-color);
+  }
+  [data-theme="dark"] .status-card:hover {
+    background: var(--bg-hover);
+  }
+  [data-theme="dark"] .network-topology {
+    background: var(--bg-color-card);
+  }
+  [data-theme="dark"] .topology-canvas {
+    background: var(--bg-color-light);
+    border-color: var(--border-color);
+  }
+  [data-theme="dark"] .orchestrator-card {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  [data-theme="dark"] .emergency-protocols {
+    background: #2d3748; /* Darker background for alerts */
+    border-color: #dc2626; /* Stronger red border */
+  }
+  [data-theme="dark"] .protocol-action {
+    background: var(--bg-color-light);
+    border-color: var(--border-color);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="quantum-header">
+    <h2 class="quantum-title">⚛️ Quantum Emergency Network Hub</h2>
+    <p class="quantum-subtitle">
+      Unified AI ecosystem orchestrating all emergency management systems with quantum-level coordination
+    </p>
+    
+    <div class="quantum-stats">
+      <div class="quantum-stat">
+        <div class="stat-value" id="systemsOnline">12</div>
+        <div class="stat-label">Systems Online</div>
+        <div class="stat-status">🟢 All operational</div>
       </div>
-      <div class="controls">
-        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
-        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
-        <div class="status-bar">
-          <div class="status-indicator status-offline">
-            <div class="status-dot"></div>
-            Offline Ready
-          </div>
-        </div>
+      <div class="quantum-stat">
+        <div class="stat-value" id="aiModels">47</div>
+        <div class="stat-label">AI Models Active</div>
+        <div class="stat-status">🧠 Learning & adapting</div>
+      </div>
+      <div class="quantum-stat">
+        <div class="stat-value" id="dataStreams">156</div>
+        <div class="stat-label">Data Streams</div>
+        <div class="stat-status">📡 Real-time processing</div>
+      </div>
+      <div class="quantum-stat">
+        <div class="stat-value" id="responseTime">0.3s</div>
+        <div class="stat-label">System Response</div>
+        <div class="stat-status">⚡ Quantum speed</div>
+      </div>
+      <div class="quantum-stat">
+        <div class="stat-value" id="predictions">98.7%</div>
+        <div class="stat-label">Prediction Accuracy</div>
+        <div class="stat-status">🎯 Ultra-precise</div>
       </div>
     </div>
-  </header>
+  </div>
 
-  <main class="container">
-    <!-- Quantum Header -->
-    <div class="quantum-header">
-      <h2 class="quantum-title">⚛️ Quantum Emergency Network Hub</h2>
-      <p class="quantum-subtitle">
-        Unified AI ecosystem orchestrating all emergency management systems with quantum-level coordination
-      </p>
-      
-      <div class="quantum-stats">
-        <div class="quantum-stat">
-          <div class="stat-value" id="systemsOnline">12</div>
-          <div class="stat-label">Systems Online</div>
-          <div class="stat-status">🟢 All operational</div>
-        </div>
-        <div class="quantum-stat">
-          <div class="stat-value" id="aiModels">47</div>
-          <div class="stat-label">AI Models Active</div>
-          <div class="stat-status">🧠 Learning & adapting</div>
-        </div>
-        <div class="quantum-stat">
-          <div class="stat-value" id="dataStreams">156</div>
-          <div class="stat-label">Data Streams</div>
-          <div class="stat-status">📡 Real-time processing</div>
-        </div>
-        <div class="quantum-stat">
-          <div class="stat-value" id="responseTime">0.3s</div>
-          <div class="stat-label">System Response</div>
-          <div class="stat-status">⚡ Quantum speed</div>
-        </div>
-        <div class="quantum-stat">
-          <div class="stat-value" id="predictions">98.7%</div>
-          <div class="stat-label">Prediction Accuracy</div>
-          <div class="stat-status">🎯 Ultra-precise</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Quantum Grid -->
-    <div class="quantum-grid">
-      <!-- System Integration Status -->
-      <div class="quantum-panel">
-        <h3>🔗 System Integration Matrix</h3>
-        <div class="system-status-grid">
-          <div class="status-card" onclick="window.QuantumHub?.openSystem('crisis-command')">
-            <div class="status-header">
-              <div class="status-name">Crisis Command</div>
-              <div class="status-indicator status-operational">ONLINE</div>
-            </div>
-            <div class="status-details">Multi-agency coordination active</div>
+  <div class="quantum-grid">
+    <div class="quantum-panel">
+      <h3>🔗 System Integration Matrix</h3>
+      <div class="system-status-grid">
+        <div class="status-card" onclick="window.QuantumHub?.openSystem('crisis-command')">
+          <div class="status-header">
+            <div class="status-name">Crisis Command</div>
+            <div class="status-indicator status-operational">ONLINE</div>
           </div>
-          
-          <div class="status-card" onclick="window.QuantumHub?.openSystem('edge-ai-monitor')">
-            <div class="status-header">
-              <div class="status-name">AI Monitor</div>
-              <div class="status-indicator status-operational">OPTIMAL</div>
-            </div>
-            <div class="status-details">94.7% performance efficiency</div>
-          </div>
-          
-          <div class="status-card" onclick="window.QuantumHub?.openSystem('predictive-analytics')">
-            <div class="status-header">
-              <div class="status-name">Predictive Analytics</div>
-              <div class="status-indicator status-operational">LEARNING</div>
-            </div>
-            <div class="status-details">47 models actively predicting</div>
-          </div>
-          
-          <div class="status-card" onclick="window.QuantumHub?.openSystem('crowd-intelligence')">
-            <div class="status-header">
-              <div class="status-name">Crowd Intelligence</div>
-              <div class="status-indicator status-operational">ACTIVE</div>
-            </div>
-            <div class="status-details">2,847 reports processed</div>
-          </div>
-          
-          <div class="status-card" onclick="window.QuantumHub?.openSystem('incident-tracker')">
-            <div class="status-header">
-              <div class="status-name">Incident Tracker</div>
-              <div class="status-indicator status-warning">BUSY</div>
-            </div>
-            <div class="status-details">7 active incidents tracked</div>
-          </div>
-          
-          <div class="status-card" onclick="window.QuantumHub?.openSystem('drone-network')">
-            <div class="status-header">
-              <div class="status-name">Drone Network</div>
-              <div class="status-indicator status-operational">DEPLOYED</div>
-            </div>
-            <div class="status-details">12 drones in surveillance mode</div>
-          </div>
+          <div class="status-details">Multi-agency coordination active</div>
         </div>
         
-        <div class="integration-matrix">
-          <h4 style="margin: 0 0 0.5rem 0; color: #1f2937;">Cross-System Integration Map</h4>
-          <div class="matrix-grid" id="integrationMatrix">
-            <!-- Matrix cells will be populated by JavaScript -->
+        <div class="status-card" onclick="window.QuantumHub?.openSystem('edge-ai-monitor')">
+          <div class="status-header">
+            <div class="status-name">AI Monitor</div>
+            <div class="status-indicator status-operational">OPTIMAL</div>
           </div>
+          <div class="status-details">94.7% performance efficiency</div>
+        </div>
+        
+        <div class="status-card" onclick="window.QuantumHub?.openSystem('predictive-analytics')">
+          <div class="status-header">
+            <div class="status-name">Predictive Analytics</div>
+            <div class="status-indicator status-operational">LEARNING</div>
+          </div>
+          <div class="status-details">47 models actively predicting</div>
+        </div>
+        
+        <div class="status-card" onclick="window.QuantumHub?.openSystem('crowd-intelligence')">
+          <div class="status-header">
+            <div class="status-name">Crowd Intelligence</div>
+            <div class="status-indicator status-operational">ACTIVE</div>
+          </div>
+          <div class="status-details">2,847 reports processed</div>
+        </div>
+        
+        <div class="status-card" onclick="window.QuantumHub?.openSystem('incident-tracker')">
+          <div class="status-header">
+            <div class="status-name">Incident Tracker</div>
+            <div class="status-indicator status-warning">BUSY</div>
+          </div>
+          <div class="status-details">7 active incidents tracked</div>
+        </div>
+        
+        <div class="status-card" onclick="window.QuantumHub?.openSystem('drone-network')">
+          <div class="status-header">
+            <div class="status-name">Drone Network</div>
+            <div class="status-indicator status-operational">DEPLOYED</div>
+          </div>
+          <div class="status-details">12 drones in surveillance mode</div>
         </div>
       </div>
-
-      <!-- AI Orchestration Engine -->
-      <div class="quantum-panel">
-        <h3>🧠 AI Orchestration Engine</h3>
-        <div class="orchestrator-grid">
-          <div class="orchestrator-card">
-            <div class="orchestrator-title">
-              <span>🎯</span>
-              <span>Decision Engine</span>
-            </div>
-            <div class="orchestrator-status">
-              Processing 156 data streams for optimal resource allocation
-            </div>
-            <div class="orchestrator-metrics">
-              <div class="metric">
-                <div class="metric-value" id="decisionsPerSec">847</div>
-                <div class="metric-label">Decisions/sec</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value" id="accuracyRate">99.2%</div>
-                <div class="metric-label">Accuracy</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="orchestrator-card">
-            <div class="orchestrator-title">
-              <span>🔮</span>
-              <span>Prediction Core</span>
-            </div>
-            <div class="orchestrator-status">
-              Analyzing patterns across 15 different emergency scenarios
-            </div>
-            <div class="orchestrator-metrics">
-              <div class="metric">
-                <div class="metric-value" id="predictionsActive">234</div>
-                <div class="metric-label">Active</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value" id="confidenceLevel">94.7%</div>
-                <div class="metric-label">Confidence</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="orchestrator-card">
-            <div class="orchestrator-title">
-              <span>⚡</span>
-              <span>Response Optimizer</span>
-            </div>
-            <div class="orchestrator-status">
-              Optimizing resource deployment across all active systems
-            </div>
-            <div class="orchestrator-metrics">
-              <div class="metric">
-                <div class="metric-value" id="optimizations">1,247</div>
-                <div class="metric-label">Today</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value" id="efficiency">87.3%</div>
-                <div class="metric-label">Efficiency</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Network Topology -->
-      <div class="quantum-panel">
-        <h3>🌐 Network Topology</h3>
-        <div class="topology-canvas" id="networkTopology">
-          <!-- Network nodes will be positioned by JavaScript -->
-        </div>
-        <div style="margin-top: 1rem; text-align: center; color: #6b7280; font-size: 0.9rem;">
-          Real-time system interconnections and data flow visualization
+      
+      <div class="integration-matrix">
+        <h4 style="margin: 0 0 0.5rem 0; color: var(--text-color-base);">Cross-System Integration Map</h4>
+        <div class="matrix-grid" id="integrationMatrix">
+          {# Example cells for illustration, JS will populate dynamically #}
+          <div class="matrix-cell matrix-active" onclick="window.QuantumHub?.viewIntegration('hub-command')">H↔C</div>
+          <div class="matrix-cell matrix-syncing" onclick="window.QuantumHub?.viewIntegration('hub-ai-monitor')">H↔A</div>
+          <div class="matrix-cell matrix-error" onclick="window.QuantumHub?.viewIntegration('command-analytics')">C↔P</div>
+          <div class="matrix-cell matrix-disabled" onclick="window.QuantumHub?.viewIntegration('ai-crowd')">A↔CI</div>
         </div>
       </div>
     </div>
 
-    <!-- Quantum Control Center -->
-    <div class="quantum-control">
-      <h3 style="margin: 0 0 1rem 0; color: white; font-size: 1.6rem; position: relative; z-index: 2;">
-        ⚛️ Quantum Control Center
-      </h3>
-      <p style="color: rgba(255,255,255,0.9); margin-bottom: 2rem; position: relative; z-index: 2;">
-        Master control interface for all emergency management systems and AI orchestration
-      </p>
-      
-      <div class="control-grid">
-        <div class="control-section">
-          <h4>🚨 Emergency Protocols</h4>
-          <div class="control-buttons">
-            <button class="quantum-button btn-danger" onclick="window.QuantumHub?.activateEmergencyProtocol()">
-              Activate Emergency
-            </button>
-            <button class="quantum-button btn-warning" onclick="window.QuantumHub?.escalateAlert()">
-              Escalate Alert Level
-            </button>
-            <button class="quantum-button btn-primary" onclick="window.QuantumHub?.deployAllResources()">
-              Deploy All Resources
-            </button>
-            <button class="quantum-button btn-success" onclick="window.QuantumHub?.standDown()">
-              Stand Down
-            </button>
-          </div>
-        </div>
-        
-        <div class="control-section">
-          <h4>🧠 AI Coordination</h4>
-          <div class="control-buttons">
-            <button class="quantum-button btn-primary" onclick="window.QuantumHub?.optimizeAllSystems()">
-              Optimize All Systems
-            </button>
-            <button class="quantum-button btn-success" onclick="window.QuantumHub?.runPredictiveAnalysis()">
-              Run Predictions
-            </button>
-            <button class="quantum-button btn-warning" onclick="window.QuantumHub?.rebalanceResources()">
-              Rebalance Resources
-            </button>
-            <button class="quantum-button btn-primary" onclick="window.QuantumHub?.syncAllSystems()">
-              Sync All Systems
-            </button>
-          </div>
-        </div>
-        
-        <div class="control-section">
-          <h4>📊 System Management</h4>
-          <div class="control-buttons">
-            <button class="quantum-button btn-success" onclick="window.QuantumHub?.generateReport()">
-              Generate Report
-            </button>
-            <button class="quantum-button btn-primary" onclick="window.QuantumHub?.backupAllData()">
-              Backup All Data
-            </button>
-            <button class="quantum-button btn-warning" onclick="window.QuantumHub?.performDiagnostics()">
-              System Diagnostics
-            </button>
-            <button class="quantum-button btn-danger" onclick="window.QuantumHub?.emergencyShutdown()">
-              Emergency Shutdown
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- AI Orchestrator Dashboard -->
-    <div class="ai-orchestrator">
-      <h3 style="margin: 0 0 1rem 0; color: white; font-size: 1.6rem;">
-        🤖 Advanced AI Orchestrator
-      </h3>
-      <p style="color: rgba(255,255,255,0.9); margin-bottom: 1.5rem;">
-        Autonomous AI coordination across all emergency management systems with quantum-level intelligence
-      </p>
-      
+    <div class="quantum-panel">
+      <h3>🧠 AI Orchestration Engine</h3>
       <div class="orchestrator-grid">
         <div class="orchestrator-card">
           <div class="orchestrator-title">
-            <span>🔄</span>
-            <span>Auto-Optimization</span>
+            <span>🎯</span>
+            <span>Decision Engine</span>
           </div>
           <div class="orchestrator-status">
-            Continuously optimizing system performance and resource allocation
+            Processing 156 data streams for optimal resource allocation
           </div>
           <div class="orchestrator-metrics">
             <div class="metric">
-              <div class="metric-value" id="autoOptimizations">2,847</div>
-              <div class="metric-label">Optimizations</div>
+              <div class="metric-value" id="decisionsPerSec">847</div>
+              <div class="metric-label">Decisions/sec</div>
             </div>
             <div class="metric">
-              <div class="metric-value" id="performanceGain">+23%</div>
-              <div class="metric-label">Performance</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="orchestrator-card">
-          <div class="orchestrator-title">
-            <span>🎛️</span>
-            <span>Load Balancer</span>
-          </div>
-          <div class="orchestrator-status">
-            Dynamically distributing workload across all connected systems
-          </div>
-          <div class="orchestrator-metrics">
-            <div class="metric">
-              <div class="metric-value" id="loadDistribution">87%</div>
-              <div class="metric-label">Efficiency</div>
-            </div>
-            <div class="metric">
-              <div class="metric-value" id="systemLoad">34%</div>
-              <div class="metric-label">Avg Load</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="orchestrator-card">
-          <div class="orchestrator-title">
-            <span>🛡️</span>
-            <span>Fault Tolerance</span>
-          </div>
-          <div class="orchestrator-status">
-            Monitoring system health and implementing automatic failover
-          </div>
-          <div class="orchestrator-metrics">
-            <div class="metric">
-              <div class="metric-value" id="systemUptime">99.97%</div>
-              <div class="metric-label">Uptime</div>
-            </div>
-            <div class="metric">
-              <div class="metric-value" id="failoverTime">0.2s</div>
-              <div class="metric-label">Failover</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="orchestrator-card">
-          <div class="orchestrator-title">
-            <span>🧬</span>
-            <span>Self-Learning</span>
-          </div>
-          <div class="orchestrator-status">
-            Continuously learning from all system interactions and outcomes
-          </div>
-          <div class="orchestrator-metrics">
-            <div class="metric">
-              <div class="metric-value" id="learningRate">15.7M</div>
-              <div class="metric-label">Data Points</div>
-            </div>
-            <div class="metric">
-              <div class="metric-value" id="modelAccuracy">98.7%</div>
+              <div class="metric-value" id="accuracyRate">99.2%</div>
               <div class="metric-label">Accuracy</div>
             </div>
           </div>
@@ -935,19 +804,19 @@
         <div class="orchestrator-card">
           <div class="orchestrator-title">
             <span>🔮</span>
-            <span>Quantum Prediction</span>
+            <span>Prediction Core</span>
           </div>
           <div class="orchestrator-status">
-            Using quantum algorithms for ultra-precise emergency forecasting
+            Analyzing patterns across 15 different emergency scenarios
           </div>
           <div class="orchestrator-metrics">
             <div class="metric">
-              <div class="metric-value" id="quantumPredictions">1,247</div>
+              <div class="metric-value" id="predictionsActive">234</div>
               <div class="metric-label">Active</div>
             </div>
             <div class="metric">
-              <div class="metric-value" id="quantumAccuracy">99.4%</div>
-              <div class="metric-label">Precision</div>
+              <div class="metric-value" id="confidenceLevel">94.7%</div>
+              <div class="metric-label">Confidence</div>
             </div>
           </div>
         </div>
@@ -955,34 +824,32 @@
         <div class="orchestrator-card">
           <div class="orchestrator-title">
             <span>⚡</span>
-            <span>Real-time Sync</span>
+            <span>Response Optimizer</span>
           </div>
           <div class="orchestrator-status">
-            Maintaining perfect synchronization across all connected systems
+            Optimizing resource deployment across all active systems
           </div>
           <div class="orchestrator-metrics">
             <div class="metric">
-              <div class="metric-value" id="syncLatency">12ms</div>
-              <div class="metric-label">Latency</div>
+              <div class="metric-value" id="optimizations">1,247</div>
+              <div class="metric-label">Today</div>
             </div>
             <div class="metric">
-              <div class="metric-value" id="dataSync">100%</div>
-              <div class="metric-label">Sync Rate</div>
+              <div class="metric-value" id="efficiency">87.3%</div>
+              <div class="metric-label">Efficiency</div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Network Topology Visualization -->
-    <div class="network-topology">
-      <h3>🌐 Quantum Network Topology</h3>
-      <div class="topology-canvas" id="topologyCanvas">
-        <!-- Network nodes will be dynamically created -->
-      </div>
+    <div class="quantum-panel">
+      <h3>🌐 Network Topology</h3>
+      <div class="topology-canvas" id="networkTopology">
+        </div>
       <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-        <div style="color: #6b7280; font-size: 0.9rem;">
-          Live visualization of system interconnections and quantum data flows
+        <div style="color: var(--text-color-light); font-size: 0.9rem;">
+          Real-time system interconnections and data flow visualization
         </div>
         <div style="display: flex; gap: 1rem; font-size: 0.8rem;">
           <span style="display: flex; align-items: center; gap: 0.25rem;">
@@ -990,24 +857,244 @@
             Quantum Hub
           </span>
           <span style="display: flex; align-items: center; gap: 0.25rem;">
-            <div style="width: 12px; height: 12px; border-radius: 50%; background: #dc2626;"></div>
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--color-critical);"></div>
             Command Systems
           </span>
           <span style="display: flex; align-items: center; gap: 0.25rem;">
-            <div style="width: 12px; height: 12px; border-radius: 50%; background: #059669;"></div>
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--color-optimal);"></div>
             AI Systems
           </span>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Emergency Protocol Activation -->
+  <div class="quantum-control">
+    <h3 style="margin: 0 0 1rem 0; color: var(--text-color-inverted); font-size: 1.6rem; position: relative; z-index: 2;">
+      ⚛️ Quantum Control Center
+    </h3>
+    <p style="color: rgba(255,255,255,0.9); margin-bottom: 2rem; position: relative; z-index: 2;">
+      Master control interface for all emergency management systems and AI orchestration
+    </p>
+    
+    <div class="control-grid">
+      <div class="control-section">
+        <h4>🚨 Emergency Protocols</h4>
+        <div class="control-buttons">
+          <button class="quantum-button btn-danger" onclick="window.QuantumHub?.activateEmergencyProtocol()">
+            Activate Emergency
+          </button>
+          <button class="quantum-button btn-warning" onclick="window.QuantumHub?.escalateAlert()">
+            Escalate Alert Level
+          </button>
+          <button class="quantum-button btn-primary" onclick="window.QuantumHub?.deployAllResources()">
+            Deploy All Resources
+          </button>
+          <button class="quantum-button btn-success" onclick="window.QuantumHub?.standDown()">
+            Stand Down
+          </button>
+        </div>
+      </div>
+      
+      <div class="control-section">
+        <h4>🧠 AI Coordination</h4>
+        <div class="control-buttons">
+          <button class="quantum-button btn-primary" onclick="window.QuantumHub?.optimizeAllSystems()">
+            Optimize All Systems
+          </button>
+          <button class="quantum-button btn-success" onclick="window.QuantumHub?.runPredictiveAnalysis()">
+            Run Predictions
+          </button>
+          <button class="quantum-button btn-warning" onclick="window.QuantumHub?.rebalanceResources()">
+            Rebalance Resources
+          </button>
+          <button class="quantum-button btn-primary" onclick="window.QuantumHub?.syncAllSystems()">
+            Sync All Systems
+          </button>
+        </div>
+      </div>
+      
+      <div class="control-section">
+        <h4>📊 System Management</h4>
+        <div class="control-buttons">
+          <button class="quantum-button btn-success" onclick="window.QuantumHub?.generateReport()">
+            Generate Report
+          </button>
+          <button class="quantum-button btn-primary" onclick="window.QuantumHub?.backupAllData()">
+            Backup All Data
+          </button>
+          <button class="quantum-button btn-warning" onclick="window.QuantumHub?.performDiagnostics()">
+            System Diagnostics
+          </button>
+          <button class="quantum-button btn-danger" onclick="window.QuantumHub?.emergencyShutdown()">
+            Emergency Shutdown
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-orchestrator">
+    <h3 style="margin: 0 0 1rem 0; color: var(--text-color-inverted); font-size: 1.6rem;">
+      🤖 Advanced AI Orchestrator
+    </h3>
+    <p style="color: rgba(255,255,255,0.9); margin-bottom: 1.5rem;">
+      Autonomous AI coordination across all emergency management systems with quantum-level intelligence
+    </p>
+    
+    <div class="orchestrator-grid">
+      <div class="orchestrator-card">
+        <div class="orchestrator-title">
+          <span>🔄</span>
+          <span>Auto-Optimization</span>
+        </div>
+        <div class="orchestrator-status">
+          Continuously optimizing system performance and resource allocation
+        </div>
+        <div class="orchestrator-metrics">
+          <div class="metric">
+            <div class="metric-value" id="autoOptimizations">2,847</div>
+            <div class="metric-label">Optimizations</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="performanceGain">+23%</div>
+            <div class="metric-label">Performance</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="orchestrator-card">
+        <div class="orchestrator-title">
+          <span>🎛️</span>
+          <span>Load Balancer</span>
+        </div>
+        <div class="orchestrator-status">
+          Dynamically distributing workload across all connected systems
+        </div>
+        <div class="orchestrator-metrics">
+          <div class="metric">
+            <div class="metric-value" id="loadDistribution">87%</div>
+            <div class="metric-label">Efficiency</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="systemLoad">34%</div>
+            <div class="metric-label">Avg Load</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="orchestrator-card">
+        <div class="orchestrator-title">
+          <span>🛡️</span>
+          <span>Fault Tolerance</span>
+        </div>
+        <div class="orchestrator-status">
+          Monitoring system health and implementing automatic failover
+        </div>
+        <div class="orchestrator-metrics">
+          <div class="metric">
+            <div class="metric-value" id="systemUptime">99.97%</div>
+            <div class="metric-label">Uptime</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="failoverTime">0.2s</div>
+            <div class="metric-label">Failover</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="orchestrator-card">
+        <div class="orchestrator-title">
+          <span>🧬</span>
+          <span>Self-Learning</span>
+        </div>
+        <div class="orchestrator-status">
+          Continuously learning from all system interactions and outcomes
+        </div>
+        <div class="orchestrator-metrics">
+          <div class="metric">
+            <div class="metric-value" id="learningRate">15.7M</div>
+            <div class="metric-label">Data Points</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="modelAccuracy">98.7%</div>
+            <div class="metric-label">Accuracy</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="orchestrator-card">
+        <div class="orchestrator-title">
+          <span>🔮</span>
+          <span>Quantum Prediction</span>
+        </div>
+        <div class="orchestrator-status">
+          Using quantum algorithms for ultra-precise emergency forecasting
+        </div>
+        <div class="orchestrator-metrics">
+          <div class="metric">
+            <div class="metric-value" id="quantumPredictions">1,247</div>
+            <div class="metric-label">Active</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="quantumAccuracy">99.4%</div>
+            <div class="metric-label">Precision</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="orchestrator-card">
+        <div class="orchestrator-title">
+          <span>⚡</span>
+          <span>Real-time Sync</span>
+        </div>
+        <div class="orchestrator-status">
+          Maintaining perfect synchronization across all connected systems
+        </div>
+        <div class="orchestrator-metrics">
+          <div class="metric">
+            <div class="metric-value" id="syncLatency">12ms</div>
+            <div class="metric-label">Latency</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="dataSync">100%</div>
+            <div class="metric-label">Sync Rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="network-topology">
+    <h3>🌐 Quantum Network Topology</h3>
+    <div class="topology-canvas" id="topologyCanvas">
+      </div>
+    <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+      <div style="color: var(--text-color-light); font-size: 0.9rem;">
+        Live visualization of system interconnections and quantum data flows
+      </div>
+      <div style="display: flex; gap: 1rem; font-size: 0.8rem;">
+        <span style="display: flex; align-items: center; gap: 0.25rem;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #7c3aed;"></div>
+          Quantum Hub
+        </span>
+        <span style="display: flex; align-items: center; gap: 0.25rem;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--color-critical);"></div>
+          Command Systems
+        </span>
+        <span style="display: flex; align-items: center; gap: 0.25rem;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--color-optimal);"></div>
+          AI Systems
+        </span>
+      </div>
+    </div>
+
     <div class="emergency-protocols" id="emergencyProtocols">
       <div class="protocol-header">
         <span style="font-size: 2rem;">🚨</span>
         <div>
-          <h3 style="margin: 0; color: #991b1b;">EMERGENCY PROTOCOL ACTIVATED</h3>
-          <p style="margin: 0; color: #6b7280;">All systems coordinating for maximum emergency response</p>
+          <h3 style="margin: 0; color: var(--color-critical-text);">EMERGENCY PROTOCOL ACTIVATED</h3>
+          <p style="margin: 0; color: var(--text-color-light);">All systems coordinating for maximum emergency response</p>
         </div>
       </div>
       
@@ -1031,9 +1118,8 @@
       </div>
     </div>
 
-    <!-- Quantum System Logs -->
     <div class="quantum-logs" id="quantumLogs">
-      <div style="color: #10b981; font-weight: bold; margin-bottom: 1rem; font-size: 1.1rem;">
+      <div style="color: var(--color-optimal); font-weight: bold; margin-bottom: 1rem; font-size: 1.1rem;">
         ⚛️ QUANTUM SYSTEM LOGS - REAL-TIME STREAM
       </div>
       <div class="log-entry log-system">[2025-07-09 14:45:23] SYSTEM: Quantum Emergency Hub initialized successfully</div>
@@ -1045,74 +1131,73 @@
       <div class="log-entry log-ai">[2025-07-09 14:45:29] AI: Quantum prediction algorithms calibrated</div>
       <div class="log-entry log-system">[2025-07-09 14:45:30] SYSTEM: All subsystems reporting optimal status</div>
     </div>
-  </main>
+{% endblock %}
 
+{% block scripts %}
+{{ super() }} {# Inherits scripts from base.html #}
+<script src="/static/js/quantum-hub.js"></script>
+{# Leaflet.js and edge-ai.js are assumed to be in base.html already #}
+{# <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script> #}
+
+<script>
+  // Theme/contrast/SW registration are handled in base.html.
+  // Only page-specific JavaScript here.
+
+  // Initialize Quantum Hub
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.QuantumHub) {
+      window.QuantumHub.initialize();
+    } else {
+      console.error("window.QuantumHub is not defined. Ensure quantum-hub.js is loaded correctly.");
+    }
+  });
+
+  // Example functions for interaction (if not fully handled by quantum-hub.js)
+  // window.QuantumHub = window.QuantumHub || {}; // Ensure object exists
+  // window.QuantumHub.openSystem = function(systemId) {
+  //   console.log(`Opening system: ${systemId}`);
+  //   // Example: Redirect to /admin, /predictive-analytics-dashboard, etc.
+  //   window.location.href = `/${systemId.replace('-', '_')}`; // Simple mapping
+  // };
+
+  // window.QuantumHub.viewIntegration = function(integrationId) {
+  //   console.log(`Viewing integration details for: ${integrationId}`);
+  //   // Open a modal or show details about specific system connection
+  // };
+
+  // window.QuantumHub.activateEmergencyProtocol = function() {
+  //   console.log("Activating emergency protocol!");
+  //   alert("Emergency Protocol Activated!");
+  //   document.getElementById('emergencyProtocols').classList.add('active');
+  // };
+  // window.QuantumHub.escalateAlert = () => console.log("Escalating alert level...");
+  // window.QuantumHub.deployAllResources = () => console.log("Deploying all resources!");
+  // window.QuantumHub.standDown = () => {
+  //   console.log("Standing down systems.");
+  //   document.getElementById('emergencyProtocols').classList.remove('active');
+  // };
+
+  // window.QuantumHub.optimizeAllSystems = () => console.log("Optimizing all AI systems...");
+  // window.QuantumHub.runPredictiveAnalysis = () => console.log("Running new predictive analysis...");
+  // window.QuantumHub.rebalanceResources = () => console.log("Rebalancing resources...");
+  // window.QuantumHub.syncAllSystems = () => console.log("Syncing all systems...");
+
+  // window.QuantumHub.generateReport = () => console.log("Generating comprehensive report...");
+  // window.QuantumHub.backupAllData = () => console.log("Initiating full data backup...");
+  // window.QuantumHub.performDiagnostics = () => console.log("Performing system diagnostics...");
+  // window.QuantumHub.emergencyShutdown = () => {
+  //   if (confirm("WARNING: Are you sure you want to initiate emergency shutdown of all systems?")) {
+  //     console.warn("EMERGENCY SHUTDOWN INITIATED!");
+  //     alert("All Quantum Emergency Hub systems are shutting down.");
+  //   }
+  // };
+
+  // Add more specific event handlers or data loading functions as needed.
+</script>
+{% endblock %}
+
+{% block footer_content %}
   <footer class="footer">
     <p>⚛️ Quantum-Powered | 🧠 AI-Orchestrated | 🌐 Unified Emergency Ecosystem</p>
   </footer>
-
-  <!-- Scripts -->
-  <script src="/static/js/edge-ai.js"></script>
-  <script src="/static/js/quantum-hub.js"></script>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <script>
-    // Theme toggle
-    const themeBtn = document.getElementById('toggleThemeBtn');
-    themeBtn.addEventListener('click', () => {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-    });
-
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-
-    // High contrast toggle
-    const contrastBtn = document.getElementById("contrastToggleBtn");
-    contrastBtn.addEventListener("click", () => {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-contrast');
-      const next = current === 'high' ? 'normal' : 'high';
-      html.setAttribute('data-contrast', next);
-      localStorage.setItem('contrast', next);
-    });
-
-    const savedContrast = localStorage.getItem('contrast');
-    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
-
-    // Connection status
-    function updateConnectionStatus() {
-      const indicator = document.querySelector('.status-indicator');
-      if (navigator.onLine) {
-        indicator.innerHTML = '<div class="status-dot"></div>Online + Offline Ready';
-        indicator.className = 'status-indicator status-online';
-      } else {
-        indicator.innerHTML = '<div class="status-dot"></div>Offline Mode Active';
-        indicator.className = 'status-indicator status-offline';
-      }
-    }
-
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
-    updateConnectionStatus();
-
-    // Service Worker registration
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/static/js/sw.js")
-        .then((reg) => console.log("✅ Service worker registered:", reg.scope))
-        .catch((err) => console.error("❌ Service worker registration failed:", err));
-    }
-
-    // Initialize Quantum Hub
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.QuantumHub) {
-        window.QuantumHub.initialize();
-      }
-    });
-  </script>
-</body>
-</html>
+{% endblock %}
