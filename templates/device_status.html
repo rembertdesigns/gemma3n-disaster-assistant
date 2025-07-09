@@ -344,7 +344,6 @@
 
 {% block content %}
 <div class="status-grid">
-  <!-- GPS/Location Status -->
   <div class="status-card" id="gpsCard">
     <div class="card-header">
       <div class="card-title">
@@ -376,7 +375,6 @@
     </div>
   </div>
 
-  <!-- Network Connectivity -->
   <div class="status-card" id="networkCard">
     <div class="card-header">
       <div class="card-title">
@@ -410,7 +408,6 @@
     </div>
   </div>
 
-  <!-- Device Health -->
   <div class="status-card" id="deviceCard">
     <div class="card-header">
       <div class="card-title">
@@ -443,7 +440,6 @@
     </div>
   </div>
 
-  <!-- Sensors Status -->
   <div class="status-card" id="sensorsCard">
     <div class="card-header">
       <div class="card-title">
@@ -472,7 +468,6 @@
   </div>
 </div>
 
-<!-- Mesh Network Status -->
 <div class="status-card">
   <div class="card-header">
     <div class="card-title">
@@ -501,12 +496,10 @@
   <div class="mesh-network">
     <h4>Connected Peers</h4>
     <div class="mesh-peers" id="meshPeers">
-      <!-- Peer cards will be populated here -->
-    </div>
+      </div>
   </div>
 </div>
 
-<!-- Diagnostics Panel -->
 <div class="diagnostics-panel">
   <h3>🔧 System Diagnostics</h3>
   
@@ -948,6 +941,10 @@ class DeviceStatusManager {
         result.className = 'metric-value poor';
       }
       
+      this.diagnosticResults.gps = { status: 'pass', accuracy }; // Corrected status to 'pass' and added missing closing brace
+    } catch (error) {
+      result.textContent = '❌ Failed';
+      result.className = 'metric-value poor';
       this.diagnosticResults.gps = { status: 'fail', error: error.message };
     }
   }
@@ -1167,10 +1164,12 @@ function refreshGPS() {
 
 function testSensors() {
   if (deviceManager) {
-    Promise.all([
-      deviceManager.runCameraTest(),
-      deviceManager.runStorageTest()
-    ]);
+    // Only running Camera and Storage tests on this button click
+    // as Accelerometer and Gyroscope status is based on API availability (browser support)
+    // and Microphone status is implicitly checked by the updateSensorStatus on load/interval.
+    // If you need explicit tests for these, you'd add them here.
+    deviceManager.runCameraTest(); 
+    deviceManager.runStorageTest();
   }
 }
 
@@ -1245,8 +1244,4 @@ document.addEventListener('DOMContentLoaded', () => {
   deviceManager = new DeviceStatusManager();
 });
 </script>
-{% endblock %} 'pass', accuracy };
-    } catch (error) {
-      result.textContent = '❌ Failed';
-      result.className = 'metric-value poor';
-      this.diagnosticResults.gps = { status:
+{% endblock %}

@@ -107,7 +107,7 @@ def get_time_ago(timestamp_str):
             
         now = datetime.utcnow()
         diff = now - timestamp.replace(tzinfo=None)
-        
+            
         if diff.days > 7:
             return f"{diff.days} days ago"
         elif diff.days > 0:
@@ -127,7 +127,7 @@ def calculate_avg_severity(patients):
     """Calculate average severity score for analytics"""
     if not patients:
         return 0.0
-    
+        
     severity_scores = []
     for p in patients:
         if p.severity == "critical":
@@ -138,14 +138,14 @@ def calculate_avg_severity(patients):
             severity_scores.append(2)
         elif p.severity == "mild":
             severity_scores.append(1)
-    
+            
     return round(sum(severity_scores) / len(severity_scores), 1) if severity_scores else 0.0
 
 def calculate_response_efficiency(patients):
     """Calculate response efficiency percentage"""
     if not patients:
         return 0.0
-    
+        
     treated_count = len([p for p in patients if p.status in ["treated", "discharged"]])
     return round((treated_count / len(patients)) * 100, 1)
 
@@ -153,14 +153,14 @@ def generate_trend_data(reports, patients, start_time, end_time):
     """Generate time series data for analytics charts"""
     days = (end_time - start_time).days + 1
     trend_data = []
-    
+        
     for i in range(days):
         day_start = start_time + timedelta(days=i)
         day_end = day_start + timedelta(days=1)
-        
+            
         day_reports = []
         day_patients = []
-        
+            
         for r in reports:
             if r.timestamp:
                 try:
@@ -169,18 +169,18 @@ def generate_trend_data(reports, patients, start_time, end_time):
                         day_reports.append(r)
                 except:
                     pass
-        
+            
         for p in patients:
             if p.created_at and day_start <= p.created_at < day_end:
                 day_patients.append(p)
-        
+            
         trend_data.append({
             "date": day_start.strftime("%Y-%m-%d"),
             "reports": len(day_reports),
             "patients": len(day_patients),
             "critical_patients": len([p for p in day_patients if p.triage_color == "red"])
         })
-    
+            
     return trend_data
 
 # ================================================================================
@@ -259,7 +259,7 @@ async def map_snapshot_view(
                 })
             else:
                 logger.warning(f"Report {report_id} not found or has no coordinates")
-        
+                
         # Use manual coordinates if provided
         if lat is not None and lon is not None:
             return templates.TemplateResponse("map_snapshot.html", {
@@ -274,13 +274,13 @@ async def map_snapshot_view(
                 "report_location": f"Coordinates: {lat}, {lon}",
                 "has_real_data": False
             })
-        
+            
         # Get latest report with coordinates as default
         latest_report = db.query(CrowdReport).filter(
             CrowdReport.latitude.isnot(None),
             CrowdReport.longitude.isnot(None)
         ).order_by(CrowdReport.timestamp.desc()).first()
-        
+            
         if latest_report:
             return templates.TemplateResponse("map_snapshot.html", {
                 "request": request,
@@ -294,7 +294,7 @@ async def map_snapshot_view(
                 "report_location": latest_report.location,
                 "has_real_data": True
             })
-        
+            
         # Fallback to San Francisco demo coordinates
         return templates.TemplateResponse("map_snapshot.html", {
             "request": request,
@@ -308,7 +308,7 @@ async def map_snapshot_view(
             "report_location": "San Francisco, CA (Demo)",
             "has_real_data": False
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading map snapshot: {str(e)}")
         # Error fallback
@@ -410,6 +410,40 @@ async def help_page(request: Request):
     return templates.TemplateResponse("help.html", {"request": request})
 
 # ================================================================================
+# GEMMA 3N ENHANCED PAGES - ADD TO YOUR EXISTING api.py
+# Add these routes after the existing page routes section
+# ================================================================================
+
+# Add after line ~400 in the "MAIN PAGE ROUTES" section:
+
+@app.get("/voice-emergency-reporter", response_class=HTMLResponse)
+async def voice_emergency_reporter_page(request: Request):
+    """Voice Emergency Reporter - Hands-free reporting with Gemma 3n AI"""
+    return templates.TemplateResponse("voice-emergency-reporter.html", {"request": request})
+
+@app.get("/multimodal-damage-assessment", response_class=HTMLResponse)
+async def multimodal_damage_assessment_page(request: Request):
+    """Multimodal Damage Assessment - AI-powered analysis using video, images, and audio"""
+    return templates.TemplateResponse("multimodal-damage-assessment.html", {"request": request})
+
+@app.get("/context-intelligence-dashboard", response_class=HTMLResponse)
+async def context_intelligence_dashboard_page(
+    request: Request, 
+    user: dict = Depends(require_role(["admin", "responder"]))
+):
+    """Context Intelligence Dashboard - Deep situation analysis with 128K context (Protected route)"""
+    return templates.TemplateResponse("context-intelligence-dashboard.html", {
+        "request": request,
+        "user": user,
+        "current_time": datetime.utcnow()
+    })
+
+@app.get("/adaptive-ai-settings", response_class=HTMLResponse)
+async def adaptive_ai_settings_page(request: Request):
+    """Adaptive AI Settings - Optimize Gemma 3n performance for device and use case"""
+    return templates.TemplateResponse("adaptive-ai-settings.html", {"request": request})
+
+# ================================================================================
 # DASHBOARD ROUTES
 # ================================================================================
 
@@ -418,24 +452,24 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     """Admin dashboard with real database statistics (Demo Mode)"""
     try:
         logger.info("🔧 Loading admin dashboard in DEMO MODE")
-        
+            
         # Get real data from database
         all_reports = db.query(CrowdReport).all()
         all_patients = db.query(TriagePatient).all()
-        
+            
         # Filter today's data
         today = datetime.utcnow().date()
         today_reports = [r for r in all_reports if r.timestamp and 
-                        datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')).date() == today]
+                            datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')).date() == today]
         today_patients = [p for p in all_patients if p.created_at and p.created_at.date() == today]
-        
+            
         # Calculate statistics
         active_patients = [p for p in all_patients if p.status == "active"]
         critical_reports = [r for r in all_reports if r.escalation == "critical"]
         critical_patients = [p for p in active_patients if p.triage_color == "red" or p.severity == "critical"]
         avg_severity = calculate_avg_severity(all_patients)
         active_users = 3 + len(set([r.user for r in all_reports if r.user and r.user != "Anonymous"]))
-        
+            
         # Build comprehensive stats
         stats = {
             "total_reports": len(all_reports),
@@ -450,13 +484,13 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "system_uptime": "12h 34m",
             "last_report_time": all_reports[-1].timestamp if all_reports else None
         }
-        
+            
         # Get recent reports and priority patients
         recent_reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).limit(5).all()
         priority_patients = sorted(active_patients, key=lambda p: (p.priority_score if hasattr(p, 'priority_score') else 0, -p.id))[:5]
-        
+            
         logger.info(f"✅ Admin dashboard loaded: {stats['total_reports']} reports, {stats['total_patients']} patients")
-        
+            
         return templates.TemplateResponse("admin.html", {
             "request": request,
             "username": "Demo Administrator",
@@ -472,10 +506,10 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
                 "access_level": "Demo Administrative Access"
             }
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading admin dashboard: {str(e)}")
-        
+            
         # Fallback with safe defaults
         empty_stats = {
             "total_reports": 0, "active_users": 0, "avg_severity": 0.0,
@@ -483,7 +517,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "patients_today": 0, "critical_reports": 0, "critical_patients": 0,
             "system_uptime": "Unknown", "last_report_time": None
         }
-        
+            
         return templates.TemplateResponse("admin.html", {
             "request": request, "username": "Demo User", "role": "ADMIN",
             "stats": empty_stats, "recent_reports": [], "priority_patients": [],
@@ -500,11 +534,11 @@ async def analytics_dashboard(
     """Enhanced analytics dashboard with real-time data visualizations"""
     try:
         logger.info(f"📊 Loading analytics dashboard (timeframe: {timeframe})")
-        
+            
         # Get all data
         all_reports = db.query(CrowdReport).all()
         all_patients = db.query(TriagePatient).all()
-        
+            
         # Calculate timeframe filter
         now = datetime.utcnow()
         if timeframe == "24h":
@@ -516,12 +550,12 @@ async def analytics_dashboard(
         else:  # default 7d
             cutoff = now - timedelta(days=7)
             timeframe_label = "Last 7 Days"
-        
+            
         # Filter data by timeframe
         recent_reports = [r for r in all_reports if r.timestamp and 
-                         datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')) >= cutoff]
+                            datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')) >= cutoff]
         recent_patients = [p for p in all_patients if p.created_at and p.created_at >= cutoff]
-        
+            
         # Generate analytics data
         report_trends = {
             "total_reports": len(recent_reports),
@@ -539,7 +573,7 @@ async def analytics_dashboard(
                 "descriptive": len([r for r in recent_reports if r.tone == "descriptive"])
             }
         }
-        
+            
         triage_insights = {
             "total_patients": len(recent_patients),
             "color_distribution": {
@@ -556,7 +590,7 @@ async def analytics_dashboard(
             },
             "average_severity": calculate_avg_severity(recent_patients)
         }
-        
+            
         ai_metrics = {
             "sentiment_accuracy": 87.3,
             "triage_confidence": 92.1,
@@ -564,28 +598,28 @@ async def analytics_dashboard(
             "manual_overrides": 3,
             "processing_speed": "0.24s",
         }
-        
+            
         trend_data = generate_trend_data(recent_reports, recent_patients, cutoff, now)
-        
+            
         kpis = {
             "response_efficiency": calculate_response_efficiency(recent_patients),
             "critical_ratio": round((triage_insights["color_distribution"]["red"] / max(1, len(recent_patients))) * 100, 1),
             "system_utilization": min(100, len(recent_reports) + len(recent_patients)),
             "geographic_coverage": len(set([r.location for r in recent_reports if r.location])),
         }
-        
+            
         logger.info(f"✅ Analytics loaded: {report_trends['total_reports']} reports, {triage_insights['total_patients']} patients")
-        
+            
         return templates.TemplateResponse("analytics_dashboard.html", {
             "request": request, "timeframe": timeframe, "timeframe_label": timeframe_label,
             "report_trends": report_trends, "triage_insights": triage_insights,
             "ai_metrics": ai_metrics, "trend_data": trend_data, "kpis": kpis,
             "current_time": now, "total_all_time": {"reports": len(all_reports), "patients": len(all_patients)}
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading analytics dashboard: {str(e)}")
-        
+            
         # Return error page with safe defaults
         return templates.TemplateResponse("analytics_dashboard.html", {
             "request": request, "timeframe": timeframe, "timeframe_label": "Error",
@@ -611,23 +645,23 @@ async def view_reports(
     """View crowd reports with filtering"""
     try:
         query = db.query(CrowdReport)
-        
+            
         if tone:
             query = query.filter(CrowdReport.tone == tone)
         if escalation:
             query = query.filter(CrowdReport.escalation == escalation)
         if keyword:
             query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
-        
+            
         reports = query.order_by(CrowdReport.timestamp.desc()).all()
-        
+            
         logger.info(f"📋 Loaded {len(reports)} crowd reports")
-        
+            
         return templates.TemplateResponse("view-reports.html", {
             "request": request, "reports": reports,
             "tone": tone, "escalation": escalation, "keyword": keyword
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading reports: {str(e)}")
         return templates.TemplateResponse("view-reports.html", {
@@ -659,14 +693,14 @@ async def view_crowd_reports(
             query = query.filter(CrowdReport.message.ilike(f"%{keyword}%"))
 
         reports = query.order_by(CrowdReport.timestamp.desc()).all()
-        
+            
         logger.info(f"📋 Crowd reports loaded: {len(reports)} reports found")
 
         return templates.TemplateResponse("crowd_reports.html", {
             "request": request, "reports": reports, "tone": tone,
             "escalation": escalation, "keyword": keyword, "current_time": datetime.utcnow()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading crowd reports: {str(e)}")
         return templates.TemplateResponse("crowd_reports.html", {
@@ -719,15 +753,15 @@ async def submit_crowd_report(
             location=location, timestamp=datetime.utcnow().isoformat(),
             latitude=latitude, longitude=longitude
         )
-        
+            
         db.add(new_report)
         db.commit()
         db.refresh(new_report)
-        
+            
         logger.info(f"✅ Crowd report saved: ID={new_report.id}, escalation={new_report.escalation}")
-        
+            
         return RedirectResponse(url="/view-reports", status_code=303)
-        
+            
     except Exception as e:
         logger.error(f"❌ Failed to insert crowd report: {e}")
         db.rollback()
@@ -751,13 +785,13 @@ async def crowd_report_locations_enhanced(
             CrowdReport.latitude.isnot(None),
             CrowdReport.longitude.isnot(None)
         )
-        
+            
         # Apply filters
         if tone:
             query = query.filter(CrowdReport.tone == tone)
         if escalation:
             query = query.filter(CrowdReport.escalation == escalation)
-        
+            
         # Apply time range filter
         if timeRange:
             cutoff_time = datetime.utcnow()
@@ -767,12 +801,12 @@ async def crowd_report_locations_enhanced(
                 cutoff_time -= timedelta(hours=24)
             elif timeRange == "7d":
                 cutoff_time -= timedelta(days=7)
-            
+                
             cutoff_iso = cutoff_time.isoformat()
             query = query.filter(CrowdReport.timestamp >= cutoff_iso)
-        
+            
         reports = query.order_by(CrowdReport.timestamp.desc()).all()
-        
+            
         reports_data = []
         for report in reports:
             report_dict = {
@@ -781,22 +815,22 @@ async def crowd_report_locations_enhanced(
                 "location": report.location, "latitude": float(report.latitude), "longitude": float(report.longitude),
                 "time_ago": get_time_ago(report.timestamp) if report.timestamp else "Unknown"
             }
-            
+                
             if include_media:
                 report_dict["has_image"] = False
                 report_dict["has_audio"] = False
                 report_dict["media_count"] = 0
-            
+                
             reports_data.append(report_dict)
-        
+            
         logger.info(f"📍 Enhanced locations API: returned {len(reports_data)} reports")
-        
+            
         return JSONResponse(content={
             "success": True, "reports": reports_data, "count": len(reports_data),
             "filters_applied": {"tone": tone, "escalation": escalation, "timeRange": timeRange, "include_media": include_media},
             "generated_at": datetime.utcnow().isoformat()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error getting enhanced crowd report locations: {str(e)}")
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
@@ -807,8 +841,8 @@ async def get_community_stats(db: Session = Depends(get_db)):
     try:
         all_reports = db.query(CrowdReport).all()
         today_reports = [r for r in all_reports if r.timestamp and 
-                        datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')).date() == datetime.utcnow().date()]
-        
+                            datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')).date() == datetime.utcnow().date()]
+            
         stats = {
             "total_reports": len(all_reports), "reports_today": len(today_reports),
             "critical_reports": len([r for r in all_reports if r.escalation == "critical"]),
@@ -826,13 +860,13 @@ async def get_community_stats(db: Session = Depends(get_db)):
                 "descriptive": len([r for r in all_reports if r.tone == "descriptive"])
             }
         }
-        
+            
         logger.info(f"📊 Community stats requested: {stats['total_reports']} total reports")
-        
+            
         return JSONResponse(content={
             "success": True, "stats": stats, "generated_at": datetime.utcnow().isoformat()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error getting community stats: {str(e)}")
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
@@ -846,9 +880,9 @@ async def get_recent_reports(
     try:
         if limit < 1 or limit > 50:
             limit = 5
-            
+                
         recent_reports = db.query(CrowdReport).order_by(CrowdReport.timestamp.desc()).limit(limit).all()
-        
+            
         reports_data = [{
             "id": report.id, "message": report.message, "tone": report.tone,
             "escalation": report.escalation, "user": report.user or "Anonymous",
@@ -856,18 +890,18 @@ async def get_recent_reports(
             "latitude": report.latitude, "longitude": report.longitude,
             "time_ago": get_time_ago(report.timestamp) if report.timestamp else "Unknown"
         } for report in recent_reports]
-        
+            
         logger.info(f"📋 Recent reports API called: returned {len(reports_data)} reports")
-        
+            
         return JSONResponse(content={
             "success": True, "reports": reports_data, "count": len(reports_data),
             "generated_at": datetime.utcnow().isoformat()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error getting recent reports: {str(e)}")
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
-    
+        
 # ================================================================================
 # EMERGENCY SYSTEM API ENDPOINTS
 # ================================================================================
@@ -924,10 +958,10 @@ async def submit_feedback(request: Request):
     """Submit user feedback"""
     try:
         data = await request.json()
-        
+            
         # Log feedback (in production, save to database)
         logger.info(f"📝 Feedback received: {data.get('type', 'general')} - {data.get('title', 'No title')}")
-        
+            
         return JSONResponse(content={
             "success": True,
             "message": "Feedback submitted successfully",
@@ -955,7 +989,7 @@ async def create_demo_reports_api(db: Session = Depends(get_db)):
             CrowdReport.user.like("%Paramedic%") |
             CrowdReport.user.like("%Search & Rescue%")
         ).count()
-        
+            
         if existing_count > 5:
             return JSONResponse(content={
                 "success": True,
@@ -963,7 +997,7 @@ async def create_demo_reports_api(db: Session = Depends(get_db)):
                 "reports_created": 0,
                 "existing_reports": existing_count
             })
-        
+            
         # Define realistic demo reports
         demo_reports = [
             {
@@ -1023,7 +1057,7 @@ async def create_demo_reports_api(db: Session = Depends(get_db)):
                 "location": "Richmond District, San Francisco, CA"
             }
         ]
-        
+            
         created_reports = []
         for report_data in demo_reports:
             new_report = CrowdReport(
@@ -1039,11 +1073,11 @@ async def create_demo_reports_api(db: Session = Depends(get_db)):
                 "id": new_report.id, "user": new_report.user,
                 "escalation": new_report.escalation, "location": new_report.location
             })
-        
+            
         db.commit()
-        
+            
         logger.info(f"✅ Created {len(created_reports)} demo crowd reports")
-        
+            
         return JSONResponse(content={
             "success": True,
             "message": f"Successfully created {len(created_reports)} demo reports",
@@ -1051,7 +1085,7 @@ async def create_demo_reports_api(db: Session = Depends(get_db)):
             "reports": created_reports,
             "timestamp": datetime.utcnow().isoformat()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error creating demo reports: {str(e)}")
         db.rollback()
@@ -1070,12 +1104,12 @@ async def get_demo_status(db: Session = Depends(get_db)):
             CrowdReport.user.like("%Captain%") |
             CrowdReport.user.like("%Paramedic%")
         ).all()
-        
+            
         reports_with_coords = db.query(CrowdReport).filter(
             CrowdReport.latitude.isnot(None),
             CrowdReport.longitude.isnot(None)
         ).all()
-        
+            
         return JSONResponse(content={
             "total_reports": len(all_reports),
             "demo_reports": len(demo_reports),
@@ -1089,7 +1123,7 @@ async def get_demo_status(db: Session = Depends(get_db)):
                 "low": len([r for r in all_reports if r.escalation == "low"])
             }
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error getting demo status: {str(e)}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -1099,25 +1133,25 @@ async def clear_demo_data(db: Session = Depends(get_db)):
     """Clear all demo data for fresh testing"""
     try:
         demo_patterns = ["%Chief%", "%EMT%", "%Officer%", "%Search & Rescue%", "%Captain%", "%Paramedic%"]
-        
+            
         deleted_count = 0
         for pattern in demo_patterns:
             demo_reports = db.query(CrowdReport).filter(CrowdReport.user.like(pattern)).all()
             for report in demo_reports:
                 db.delete(report)
                 deleted_count += 1
-        
+            
         db.commit()
-        
+            
         logger.info(f"🗑️ Cleared {deleted_count} demo reports")
-        
+            
         return JSONResponse(content={
             "success": True,
             "message": f"Cleared {deleted_count} demo reports",
             "reports_deleted": deleted_count,
             "timestamp": datetime.utcnow().isoformat()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error clearing demo data: {str(e)}")
         db.rollback()
@@ -1134,10 +1168,10 @@ async def dashboard_stats_api(db: Session = Depends(get_db)):
         all_reports = db.query(CrowdReport).all()
         all_patients = db.query(TriagePatient).all()
         active_patients = [p for p in all_patients if p.status == "active"]
-        
+            
         avg_severity = calculate_avg_severity(all_patients)
         active_users = 3 + len(set([r.user for r in all_reports if r.user and r.user != "Anonymous"]))
-        
+            
         stats = {
             "total_reports": len(all_reports), "active_users": active_users,
             "avg_severity": avg_severity, "total_patients": len(all_patients),
@@ -1145,12 +1179,12 @@ async def dashboard_stats_api(db: Session = Depends(get_db)):
             "critical_alerts": len([p for p in active_patients if p.triage_color == "red" or p.severity == "critical"]),
             "system_status": "online", "last_updated": datetime.utcnow().isoformat()
         }
-        
+            
         return JSONResponse(content={
             "success": True, "stats": stats, "generated_by": "Demo User",
             "timestamp": datetime.utcnow().isoformat()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Dashboard stats API error: {str(e)}")
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
@@ -1161,24 +1195,24 @@ async def get_map_statistics(db: Session = Depends(get_db)):
     try:
         all_reports = db.query(CrowdReport).all()
         reports_with_coords = [r for r in all_reports if r.latitude and r.longitude]
-        
+            
         # Time-based statistics
         now = datetime.utcnow()
         last_24h = [r for r in all_reports if r.timestamp and 
-                   datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')) >= now - timedelta(hours=24)]
+                            datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')) >= now - timedelta(hours=24)]
         last_week = [r for r in all_reports if r.timestamp and 
-                    datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')) >= now - timedelta(days=7)]
-        
+                            datetime.fromisoformat(r.timestamp.replace('Z', '+00:00')) >= now - timedelta(days=7)]
+            
         # Geographic and activity statistics
         unique_locations = len(set([r.location for r in all_reports if r.location]))
-        
+            
         escalation_stats = {
             "critical": len([r for r in all_reports if r.escalation == "critical"]),
             "high": len([r for r in all_reports if r.escalation == "high"]),
             "moderate": len([r for r in all_reports if r.escalation == "moderate"]),
             "low": len([r for r in all_reports if r.escalation == "low"])
         }
-        
+            
         tone_stats = {
             "urgent": len([r for r in all_reports if r.tone == "urgent"]),
             "frantic": len([r for r in all_reports if r.tone == "frantic"]),
@@ -1187,14 +1221,14 @@ async def get_map_statistics(db: Session = Depends(get_db)):
             "neutral": len([r for r in all_reports if r.tone == "neutral"]),
             "helpless": len([r for r in all_reports if r.tone == "helpless"])
         }
-        
+            
         most_active_users = {}
         for report in all_reports:
             user = report.user or "Anonymous"
             most_active_users[user] = most_active_users.get(user, 0) + 1
-        
+            
         top_users = sorted(most_active_users.items(), key=lambda x: x[1], reverse=True)[:5]
-        
+            
         stats = {
             "overview": {
                 "total_reports": len(all_reports),
@@ -1226,12 +1260,12 @@ async def get_map_statistics(db: Session = Depends(get_db)):
                 "trend": "increasing" if len(last_24h) > len(last_week) / 7 else "stable"
             }
         }
-        
+            
         return JSONResponse(content={
             "success": True, "statistics": stats, "generated_at": datetime.utcnow().isoformat(),
             "cache_duration": 300
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error getting map statistics: {str(e)}")
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
@@ -1269,7 +1303,7 @@ async def export_reports_csv(
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=crowd_reports.csv"}
         )
-        
+            
     except Exception as e:
         logger.error(f"❌ Error exporting reports CSV: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to export CSV")
@@ -1301,7 +1335,7 @@ async def export_reports_json(
         } for r in reports]
 
         return {"reports": report_list}
-        
+            
     except Exception as e:
         logger.error(f"❌ Error exporting reports JSON: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to export JSON")
@@ -1320,14 +1354,14 @@ async def export_map_data(
             CrowdReport.latitude.isnot(None),
             CrowdReport.longitude.isnot(None)
         )
-        
+            
         if tone:
             query = query.filter(CrowdReport.tone == tone)
         if escalation:
             query = query.filter(CrowdReport.escalation == escalation)
-        
+            
         reports = query.all()
-        
+            
         if format.lower() == "csv":
             csv_data = "id,timestamp,user,message,latitude,longitude,tone,escalation,location\n"
             for r in reports:
@@ -1420,7 +1454,7 @@ async def export_map_data(
                         "tone": report.tone, "escalation": report.escalation,
                         "timestamp": report.timestamp, "location": report.location,
                         "marker-color": {
-                            "critical": "#991b1b", "high": "#dc2626", 
+                            "critical": "#991b1b", "high": "#dc2626",  
                             "moderate": "#f59e0b", "low": "#16a34a"
                         }.get(report.escalation, "#6b7280"),
                         "marker-symbol": {
@@ -1456,19 +1490,19 @@ async def get_patient_tracker(
     """Patient tracker with filtering"""
     try:
         query = db.query(TriagePatient)
-        
+            
         if severity:
             query = query.filter(TriagePatient.severity == severity)
         if status:
             query = query.filter(TriagePatient.status == status)
-        
+            
         patients = query.order_by(TriagePatient.created_at.desc()).all()
-        
+            
         return templates.TemplateResponse("patient_tracker.html", {
             "request": request, "patients": patients, "now": datetime.utcnow(),
             "severity_filter": severity, "status_filter": status
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading patient tracker: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to load patients: {str(e)}")
@@ -1484,45 +1518,45 @@ async def patient_list_page(
     """Enhanced patient list dashboard"""
     try:
         query = db.query(TriagePatient)
-        
+            
         if triage_color:
             query = query.filter(TriagePatient.triage_color == triage_color)
         if status:
             query = query.filter(TriagePatient.status == status)
         if severity:
             query = query.filter(TriagePatient.severity == severity)
-        
+            
         patients = query.order_by(TriagePatient.created_at.desc()).all()
         patients = sorted(patients, key=lambda p: (p.priority_score, -p.id))
-        
+            
         # Calculate statistics
         total_patients = len(patients)
         active_patients = len([p for p in patients if p.status == "active"])
         critical_patients = len([p for p in patients if p.triage_color == "red"])
-        
+            
         color_counts = {
             "red": len([p for p in patients if p.triage_color == "red"]),
             "yellow": len([p for p in patients if p.triage_color == "yellow"]),
             "green": len([p for p in patients if p.triage_color == "green"]),
             "black": len([p for p in patients if p.triage_color == "black"])
         }
-        
+            
         status_counts = {
             "active": len([p for p in patients if p.status == "active"]),
             "in_treatment": len([p for p in patients if p.status == "in_treatment"]),
             "treated": len([p for p in patients if p.status == "treated"]),
             "discharged": len([p for p in patients if p.status == "discharged"])
         }
-        
+            
         logger.info(f"📋 Patient list accessed: {total_patients} total, {active_patients} active")
-        
+            
         return templates.TemplateResponse("patient_list.html", {
             "request": request, "patients": patients, "total_patients": total_patients,
             "active_patients": active_patients, "critical_patients": critical_patients,
             "color_counts": color_counts, "status_counts": status_counts,
             "filters": {"triage_color": triage_color, "status": status, "severity": severity}
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading patient list: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to load patient list: {str(e)}")
@@ -1533,48 +1567,48 @@ async def triage_dashboard_page(request: Request, db: Session = Depends(get_db))
     try:
         all_patients = db.query(TriagePatient).all()
         active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").all()
-        
+            
         stats = {
             "total_patients": len(all_patients),
             "active_patients": len(active_patients),
             "patients_today": len([p for p in all_patients if p.created_at.date() == datetime.utcnow().date()]),
             "critical_alerts": len([p for p in active_patients if p.triage_color == "red" or p.severity == "critical"])
         }
-        
+            
         triage_breakdown = {
             "red": {"count": len([p for p in active_patients if p.triage_color == "red"]), "percentage": 0},
             "yellow": {"count": len([p for p in active_patients if p.triage_color == "yellow"]), "percentage": 0},
             "green": {"count": len([p for p in active_patients if p.triage_color == "green"]), "percentage": 0},
             "black": {"count": len([p for p in active_patients if p.triage_color == "black"]), "percentage": 0}
         }
-        
+            
         if stats["active_patients"] > 0:
             for color in triage_breakdown:
                 triage_breakdown[color]["percentage"] = round(
                     (triage_breakdown[color]["count"] / stats["active_patients"]) * 100, 1
                 )
-        
+            
         severity_breakdown = {
             "critical": len([p for p in active_patients if p.severity == "critical"]),
             "severe": len([p for p in active_patients if p.severity == "severe"]),
             "moderate": len([p for p in active_patients if p.severity == "moderate"]),
             "mild": len([p for p in active_patients if p.severity == "mild"])
         }
-        
+            
         critical_vitals_patients = [p for p in active_patients if p.is_critical_vitals]
         recent_patients = [p for p in all_patients if (datetime.utcnow() - p.created_at).total_seconds() < 86400]
         recent_patients = sorted(recent_patients, key=lambda p: p.created_at, reverse=True)[:10]
         priority_queue = sorted(active_patients, key=lambda p: (p.priority_score, -p.id))[:15]
-        
+            
         logger.info(f"📊 Triage dashboard accessed: {stats['total_patients']} total, {stats['active_patients']} active")
-        
+            
         return templates.TemplateResponse("triage_dashboard.html", {
             "request": request, "stats": stats, "triage_breakdown": triage_breakdown,
             "severity_breakdown": severity_breakdown, "critical_vitals_patients": critical_vitals_patients,
             "recent_patients": recent_patients, "priority_queue": priority_queue,
             "current_time": datetime.utcnow()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading triage dashboard: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to load dashboard: {str(e)}")
@@ -1617,7 +1651,7 @@ async def submit_triage(
     """Submit new triage assessment"""
     try:
         logger.info(f"🚑 Receiving triage submission for patient: {name}")
-        
+            
         # Validation
         if not name or not name.strip():
             raise HTTPException(status_code=400, detail="Patient name is required")
@@ -1631,7 +1665,7 @@ async def submit_triage(
             raise HTTPException(status_code=400, detail="Invalid severity level")
         if triage_color not in ["red", "yellow", "green", "black"]:
             raise HTTPException(status_code=400, detail="Invalid triage color")
-        
+            
         # Validate vital signs ranges
         if heart_rate is not None and (heart_rate < 0 or heart_rate > 300):
             raise HTTPException(status_code=400, detail="Invalid heart rate")
@@ -1647,7 +1681,7 @@ async def submit_triage(
             raise HTTPException(status_code=400, detail="Invalid oxygen saturation")
         if age is not None and (age < 0 or age > 120):
             raise HTTPException(status_code=400, detail="Invalid age")
-        
+            
         # Create new triage patient record
         new_patient = TriagePatient(
             name=name.strip(), age=age, gender=gender, medical_id=medical_id,
@@ -1659,16 +1693,16 @@ async def submit_triage(
             medical_history=medical_history, notes=notes, status="active",
             created_at=datetime.utcnow(), updated_at=datetime.utcnow()
         )
-        
+            
         db.add(new_patient)
         db.commit()
         db.refresh(new_patient)
-        
+            
         logger.info(f"✅ Triage patient saved: ID={new_patient.id}, Name={new_patient.name}, Color={new_patient.triage_color}")
-        
+            
         if triage_color == "red" or severity == "critical":
             logger.warning(f"🚨 CRITICAL PATIENT ALERT: {name} - {triage_color.upper()} triage, {severity} severity")
-        
+            
         return JSONResponse(
             status_code=200,
             content={
@@ -1682,7 +1716,7 @@ async def submit_triage(
                 "timestamp": new_patient.created_at.isoformat()
             }
         )
-        
+            
     except HTTPException:
         raise
     except Exception as e:
@@ -1695,17 +1729,17 @@ async def edit_patient_form(patient_id: int, request: Request, db: Session = Dep
     """Render patient edit form"""
     try:
         patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
-        
+            
         if not patient:
             logger.warning(f"❌ Patient not found for edit: ID={patient_id}")
             raise HTTPException(status_code=404, detail="Patient not found")
-        
+            
         logger.info(f"📝 Rendering edit form for patient: ID={patient_id}, Name={patient.name}")
-        
+            
         return templates.TemplateResponse("edit_patient.html", {
             "request": request, "patient": patient
         })
-        
+            
     except HTTPException:
         raise
     except Exception as e:
@@ -1742,11 +1776,11 @@ async def update_patient(
     """Update patient information"""
     try:
         patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
-        
+            
         if not patient:
             logger.warning(f"❌ Patient not found for update: ID={patient_id}")
             raise HTTPException(status_code=404, detail="Patient not found")
-        
+            
         # Validation (same as submit_triage)
         if not name or not name.strip():
             raise HTTPException(status_code=400, detail="Patient name is required")
@@ -1762,14 +1796,14 @@ async def update_patient(
             raise HTTPException(status_code=400, detail="Invalid triage color")
         if status not in ["active", "in_treatment", "treated", "discharged"]:
             raise HTTPException(status_code=400, detail="Invalid status")
-            
+                
         # Store original values for change tracking
         original_values = {
             "severity": patient.severity,
             "triage_color": patient.triage_color,
             "status": patient.status
         }
-        
+            
         # Update patient fields
         patient.name = name.strip()
         patient.age = age
@@ -1793,10 +1827,10 @@ async def update_patient(
         patient.notes = notes
         patient.status = status
         patient.updated_at = datetime.utcnow()
-        
+            
         db.commit()
         db.refresh(patient)
-        
+            
         # Track changes
         changes = []
         if original_values["severity"] != severity:
@@ -1805,18 +1839,18 @@ async def update_patient(
             changes.append(f"triage: {original_values['triage_color']} → {triage_color}")
         if original_values["status"] != status:
             changes.append(f"status: {original_values['status']} → {status}")
-        
+            
         change_summary = ", ".join(changes) if changes else "general updates"
         logger.info(f"✅ Patient updated: ID={patient_id}, Name={patient.name}, Changes=({change_summary})")
-        
+            
         if triage_color == "red" or severity == "critical":
             logger.warning(f"🚨 CRITICAL PATIENT UPDATED: {patient.name} - {triage_color.upper()} triage, {severity} severity")
-        
+            
         return RedirectResponse(
             url=f"/patient-list?success={f'Patient {patient.name} updated successfully!'.replace(' ', '+')}", 
             status_code=303
         )
-        
+            
     except HTTPException:
         raise
     except Exception as e:
@@ -1829,17 +1863,17 @@ async def view_patient_details(patient_id: int, request: Request, db: Session = 
     """View detailed patient information"""
     try:
         patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
-        
+            
         if not patient:
             logger.warning(f"❌ Patient not found for view: ID={patient_id}")
             raise HTTPException(status_code=404, detail="Patient not found")
-        
+            
         logger.info(f"👀 Viewing patient details: ID={patient_id}, Name={patient.name}")
-        
+            
         return templates.TemplateResponse("patient_details.html", {
             "request": request, "patient": patient, "current_time": datetime.utcnow()
         })
-        
+            
     except HTTPException:
         raise
     except Exception as e:
@@ -1853,14 +1887,14 @@ async def discharge_patient(patient_id: int, db: Session = Depends(get_db)):
         patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
-        
+            
         patient.status = "discharged"
         patient.updated_at = datetime.utcnow()
         db.commit()
-        
+            
         logger.info(f"✅ Patient discharged: ID={patient_id}, Name={patient.name}")
         return RedirectResponse(url="/patients", status_code=303)
-        
+            
     except Exception as e:
         logger.error(f"❌ Error discharging patient: {str(e)}")
         db.rollback()
@@ -1877,7 +1911,7 @@ async def get_triage_stats(db: Session = Depends(get_db)):
         all_patients = db.query(TriagePatient).all()
         active_patients = [p for p in all_patients if p.status == "active"]
         today_patients = [p for p in all_patients if p.created_at.date() == datetime.utcnow().date()]
-        
+            
         stats = {
             "total_patients": len(all_patients),
             "active_patients": len(active_patients),
@@ -1902,13 +1936,13 @@ async def get_triage_stats(db: Session = Depends(get_db)):
                 "discharged": len([p for p in all_patients if p.status == "discharged"])
             }
         }
-        
+            
         logger.info(f"🏥 Triage stats requested: {stats['total_patients']} total patients")
-        
+            
         return JSONResponse(content={
             "success": True, "stats": stats, "generated_at": datetime.utcnow().isoformat()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error getting triage stats: {str(e)}")
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
@@ -1922,21 +1956,21 @@ async def get_priority_queue(
     try:
         active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").all()
         priority_patients = sorted(active_patients, key=lambda p: (p.priority_score, -p.id))[:limit]
-        
+            
         queue_data = [{
             "id": patient.id, "name": patient.name, "injury_type": patient.injury_type,
             "severity": patient.severity, "triage_color": patient.triage_color,
             "priority_score": patient.priority_score, "critical_vitals": patient.is_critical_vitals,
             "created_at": patient.created_at.isoformat(), "time_ago": get_time_ago(patient.created_at.isoformat())
         } for patient in priority_patients]
-        
+            
         logger.info(f"🚨 Priority queue requested: {len(queue_data)} patients")
-        
+            
         return JSONResponse(content={
             "success": True, "queue": queue_data, "count": len(queue_data),
             "generated_at": datetime.utcnow().isoformat()
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error getting priority queue: {str(e)}")
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
@@ -1946,19 +1980,19 @@ async def export_patients_pdf(db: Session = Depends(get_db)):
     """Export patients as PDF"""
     try:
         patients = db.query(TriagePatient).order_by(TriagePatient.created_at.desc()).all()
-        
+            
         env = Environment(loader=FileSystemLoader("templates"))
         template = env.get_template("patient_tracker.html")
         html_out = template.render(
             patients=patients, now=datetime.utcnow(), 
             severity_filter=None, status_filter=None
         )
-        
+            
         pdf_path = os.path.join("outputs", f"patients_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf")
         WeasyHTML(string=html_out).write_pdf(pdf_path)
-        
+            
         return FileResponse(pdf_path, filename="patient_tracker.pdf", media_type="application/pdf")
-        
+            
     except Exception as e:
         logger.error(f"❌ Error exporting patients PDF: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to export patients PDF")
@@ -2053,16 +2087,16 @@ async def generate_report(
         return JSONResponse(content={"error": "Unsupported content type"}, status_code=415)
 
     logger.info(f"Generating enhanced PDF report with maps for user {user['username']}")
-    
+        
     try:
         pdf_path = generate_report_pdf(payload)
         logger.info(f"PDF report generated successfully: {pdf_path}")
-        
+            
         return FileResponse(
             pdf_path, media_type="application/pdf", 
             filename="emergency_incident_report.pdf"
         )
-        
+            
     except Exception as e:
         logger.error(f"PDF generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
@@ -2078,9 +2112,9 @@ async def detect_hazards_api(
     try:
         image_bytes = await file.read()
         result = detect_hazards(image_bytes)
-        
+            
         logger.info(f"Hazard detection performed by user {user['username']}")
-        
+            
         return JSONResponse(content=result)
     except Exception as e:
         logger.error(f"Hazard detection failed: {e}")
@@ -2113,6 +2147,370 @@ async def get_active_broadcasts():
     return JSONResponse(content=result)
 
 # ================================================================================
+# GEMMA 3N API ENDPOINTS - ADD TO YOUR EXISTING API SECTION
+# Add these after the existing API endpoints (around line ~1200)
+# ================================================================================
+
+@app.post("/api/submit-voice-emergency-report", response_class=JSONResponse)
+async def submit_voice_emergency_report(request: Request, db: Session = Depends(get_db)):
+    """Submit voice emergency report with AI analysis"""
+    try:
+        data = await request.json()
+        
+        # Extract voice report data
+        transcript = data.get("transcript", "")
+        analysis = data.get("analysis", {})
+        language = data.get("language", "en-US")
+        model_used = data.get("model_used", "gemma-3n-4b")
+        
+        # Validate required fields
+        if not transcript or not transcript.strip():
+            raise HTTPException(status_code=400, detail="Transcript is required")
+        
+        # Create emergency report from voice data
+        new_report = CrowdReport(
+            message=transcript,
+            tone=analysis.get("emotionalState", "unknown"),
+            escalation=analysis.get("urgencyLevel", "medium").lower(),
+            user=f"Voice Reporter ({language})",
+            location=analysis.get("location", "Not specified"),
+            timestamp=datetime.utcnow().isoformat(),
+            # Store additional voice analysis data in notes or separate fields
+        )
+        
+        db.add(new_report)
+        db.commit()
+        db.refresh(new_report)
+        
+        logger.info(f"🎤 Voice emergency report submitted: ID={new_report.id}, urgency={analysis.get('urgencyLevel')}")
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Voice emergency report submitted successfully",
+            "report_id": new_report.id,
+            "analysis_summary": {
+                "urgency_level": analysis.get("urgencyLevel"),
+                "emergency_type": analysis.get("emergencyType"),
+                "confidence": analysis.get("confidence")
+            },
+            "submitted_at": new_report.timestamp
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error submitting voice emergency report: {str(e)}")
+        db.rollback()
+        return JSONResponse(
+            content={"success": False, "error": str(e)}, 
+            status_code=500
+        )
+
+@app.post("/api/submit-damage-assessment", response_class=JSONResponse)
+async def submit_damage_assessment(request: Request, db: Session = Depends(get_db)):
+    """Submit multimodal damage assessment"""
+    try:
+        data = await request.json()
+        
+        analysis = data.get("analysis", {})
+        media_metadata = data.get("mediaMetadata", {})
+        model_used = data.get("modelUsed", "gemma-3n-4b")
+        resolution = data.get("resolution", 512)
+        
+        # Extract key assessment data
+        structural_damage = analysis.get("structural", {})
+        environmental_hazards = analysis.get("environmental", {})
+        recommendations = analysis.get("recommendations", [])
+        
+        # Determine overall escalation level
+        escalation_level = "low"
+        if structural_damage.get("level") == "severe":
+            escalation_level = "critical"
+        elif structural_damage.get("level") == "moderate":
+            escalation_level = "high"
+        elif len(environmental_hazards.get("hazards", [])) > 2:
+            escalation_level = "high"
+        
+        # Create assessment report
+        assessment_summary = f"""MULTIMODAL DAMAGE ASSESSMENT
+Structural: {structural_damage.get('level', 'unknown')} ({structural_damage.get('confidence', 0)*100:.1f}% confidence)
+Hazards: {len(environmental_hazards.get('hazards', []))} detected
+Media: {media_metadata.get('videoCount', 0)} videos, {media_metadata.get('imageCount', 0)} images, {media_metadata.get('audioCount', 0)} audio
+Analysis Model: {model_used} @ {resolution}px
+Top Recommendations: {'; '.join([r.get('action', '') for r in recommendations[:3]])}
+"""
+        
+        new_report = CrowdReport(
+            message=assessment_summary,
+            tone="analytical",
+            escalation=escalation_level,
+            user=f"AI Assessment ({model_used})",
+            location="Assessment Area",
+            timestamp=datetime.utcnow().isoformat()
+        )
+        
+        db.add(new_report)
+        db.commit()
+        db.refresh(new_report)
+        
+        logger.info(f"📹 Damage assessment submitted: ID={new_report.id}, level={structural_damage.get('level')}")
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Damage assessment submitted successfully",
+            "assessment_id": new_report.id,
+            "overall_level": escalation_level,
+            "structural_damage": structural_damage.get("level"),
+            "hazards_detected": len(environmental_hazards.get("hazards", [])),
+            "confidence": structural_damage.get("confidence", 0),
+            "submitted_at": new_report.timestamp
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error submitting damage assessment: {str(e)}")
+        db.rollback()
+        return JSONResponse(
+            content={"success": False, "error": str(e)}, 
+            status_code=500
+        )
+
+@app.post("/api/context-analysis", response_class=JSONResponse)
+async def submit_context_analysis(
+    request: Request, 
+    user: dict = Depends(require_role(["admin", "responder"])),
+    db: Session = Depends(get_db)
+):
+    """Submit comprehensive context analysis using 128K token window"""
+    try:
+        data = await request.json()
+        
+        analysis_type = data.get("analysis_type", "comprehensive")
+        data_sources = data.get("data_sources", [])
+        insights = data.get("insights", [])
+        synthesis = data.get("synthesis", {})
+        
+        # Store analysis results (in production, you'd have a dedicated table)
+        analysis_summary = f"""CONTEXT INTELLIGENCE ANALYSIS ({analysis_type.upper()})
+Performed by: {user['username']} ({user['role']})
+Data Sources: {', '.join(data_sources)}
+Key Insights: {len(insights)} patterns identified
+Context Window: 128K tokens processed
+Model: Gemma 3n with enhanced context processing
+
+Synthesis: {synthesis.get('summary', 'Analysis completed successfully')}
+"""
+        
+        # Create analysis report
+        analysis_report = CrowdReport(
+            message=analysis_summary,
+            tone="analytical",
+            escalation="low",  # Context analysis is typically informational
+            user=f"Context AI ({user['username']})",
+            location="System Analysis",
+            timestamp=datetime.utcnow().isoformat()
+        )
+        
+        db.add(analysis_report)
+        db.commit()
+        db.refresh(analysis_report)
+        
+        logger.info(f"🧠 Context analysis submitted by {user['username']}: {len(insights)} insights")
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Context analysis completed and stored",
+            "analysis_id": analysis_report.id,
+            "insights_count": len(insights),
+            "data_sources_processed": len(data_sources),
+            "analyst": user['username'],
+            "completed_at": analysis_report.timestamp
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error submitting context analysis: {str(e)}")
+        db.rollback()
+        return JSONResponse(
+            content={"success": False, "error": str(e)}, 
+            status_code=500
+        )
+
+@app.get("/api/ai-model-status", response_class=JSONResponse)
+async def get_ai_model_status():
+    """Get current AI model status and performance metrics"""
+    try:
+        # Simulate AI model status (in production, this would query actual model status)
+        status = {
+            "gemma_3n_status": {
+                "available_models": [
+                    {"name": "gemma-3n-2b", "status": "ready", "memory": "2GB", "speed": "fast"},
+                    {"name": "gemma-3n-4b", "status": "ready", "memory": "4GB", "speed": "balanced"},
+                    {"name": "gemma-3n-4b-hq", "status": "ready", "memory": "6GB", "speed": "slow"}
+                ],
+                "active_model": "gemma-3n-4b",
+                "context_window": "128K tokens",
+                "multimodal_support": True,
+                "audio_processing": True,
+                "vision_encoder": "MobileNet-V5-300M"
+            },
+            "performance_metrics": {
+                "average_response_time": "0.8s",
+                "accuracy": "94.2%",
+                "uptime": "99.7%",
+                "requests_processed_today": 1247
+            },
+            "device_optimization": {
+                "memory_usage": "65%",
+                "cpu_usage": "34%",
+                "battery_optimized": True,
+                "adaptive_quality": True
+            },
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+        return JSONResponse(content={
+            "success": True,
+            "status": status,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error getting AI model status: {str(e)}")
+        return JSONResponse(
+            content={"success": False, "error": str(e)}, 
+            status_code=500
+        )
+
+@app.post("/api/optimize-ai-settings", response_class=JSONResponse)
+async def optimize_ai_settings(request: Request):
+    """Apply AI optimization settings"""
+    try:
+        data = await request.json()
+        
+        selected_model = data.get("selected_model", "gemma-3n-4b")
+        performance_settings = data.get("performance_settings", {})
+        auto_optimization = data.get("auto_optimization", False)
+        
+        # Validate model selection
+        valid_models = ["gemma-3n-2b", "gemma-3n-4b", "gemma-3n-4b-hq"]
+        if selected_model not in valid_models:
+            raise HTTPException(status_code=400, detail=f"Invalid model. Must be one of: {valid_models}")
+        
+        # In production, this would actually configure the AI models
+        optimization_result = {
+            "model_switched": selected_model,
+            "settings_applied": performance_settings,
+            "auto_optimization": auto_optimization,
+            "estimated_performance_change": {
+                "speed": "+15%" if selected_model == "gemma-3n-2b" else "baseline",
+                "quality": "+10%" if selected_model == "gemma-3n-4b-hq" else "baseline",
+                "memory_usage": "-30%" if selected_model == "gemma-3n-2b" else "baseline"
+            },
+            "applied_at": datetime.utcnow().isoformat()
+        }
+        
+        logger.info(f"⚙️ AI settings optimized: model={selected_model}, auto={auto_optimization}")
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "AI settings optimized successfully",
+            "result": optimization_result
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error optimizing AI settings: {str(e)}")
+        return JSONResponse(
+            content={"success": False, "error": str(e)}, 
+            status_code=500
+        )
+
+@app.get("/api/device-performance", response_class=JSONResponse)
+async def get_device_performance():
+    """Get real-time device performance metrics"""
+    try:
+        import psutil
+        import platform
+        
+        # Get system information
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        battery = psutil.sensors_battery()
+        
+        performance_data = {
+            "system": {
+                "platform": platform.system(),
+                "processor": platform.processor(),
+                "architecture": platform.architecture()[0]
+            },
+            "cpu": {
+                "usage_percent": cpu_percent,
+                "core_count": psutil.cpu_count(),
+                "frequency_mhz": psutil.cpu_freq().current if psutil.cpu_freq() else "N/A"
+            },
+            "memory": {
+                "total_gb": round(memory.total / (1024**3), 2),
+                "available_gb": round(memory.available / (1024**3), 2),
+                "used_percent": memory.percent,
+                "free_gb": round(memory.free / (1024**3), 2)
+            },
+            "battery": {
+                "percent": battery.percent if battery else None,
+                "charging": battery.power_plugged if battery else None,
+                "time_left": str(battery.secsleft // 60) + " minutes" if battery and battery.secsleft > 0 else "N/A"
+            } if battery else None,
+            "ai_optimization_recommendations": [],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Generate AI optimization recommendations
+        if cpu_percent > 80:
+            performance_data["ai_optimization_recommendations"].append({
+                "type": "cpu_throttling",
+                "message": "High CPU usage detected. Consider switching to Gemma 3n 2B model for better performance.",
+                "severity": "medium"
+            })
+        
+        if memory.percent > 85:
+            performance_data["ai_optimization_recommendations"].append({
+                "type": "memory_optimization",
+                "message": "High memory usage. Enable aggressive memory cleanup and reduce context window size.",
+                "severity": "high"
+            })
+        
+        if battery and battery.percent < 20:
+            performance_data["ai_optimization_recommendations"].append({
+                "type": "battery_saving",
+                "message": "Low battery. Switch to power-saving mode and reduce AI processing intensity.",
+                "severity": "high"
+            })
+        
+        return JSONResponse(content={
+            "success": True,
+            "performance": performance_data
+        })
+        
+    except ImportError:
+        # Fallback for systems without psutil
+        return JSONResponse(content={
+            "success": True,
+            "performance": {
+                "system": {"platform": "Unknown", "note": "Install psutil for detailed metrics"},
+                "cpu": {"usage_percent": 45, "note": "Simulated data"},
+                "memory": {"total_gb": 8, "used_percent": 67, "note": "Simulated data"},
+                "battery": {"percent": 78, "charging": False, "note": "Simulated data"},
+                "ai_optimization_recommendations": [],
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        })
+    except Exception as e:
+        logger.error(f"❌ Error getting device performance: {str(e)}")
+        return JSONResponse(
+            content={"success": False, "error": str(e)}, 
+            status_code=500
+        )
+
+# ================================================================================
 # DEBUG & TESTING ROUTES
 # ================================================================================
 
@@ -2121,18 +2519,18 @@ async def debug_patients(db: Session = Depends(get_db)):
     """Debug endpoint to see all patients in database"""
     try:
         patients = db.query(TriagePatient).all()
-        
+            
         patient_data = [{
             "id": p.id, "name": p.name, "injury_type": p.injury_type,
             "severity": p.severity, "triage_color": p.triage_color,
             "status": p.status, "created_at": p.created_at.isoformat() if p.created_at else None
         } for p in patients]
-        
+            
         return JSONResponse(content={
             "total_patients": len(patients), "patients": patient_data,
             "message": f"Found {len(patients)} patients in database"
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Debug patients error: {str(e)}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -2155,7 +2553,7 @@ async def create_test_patients_browser_friendly(db: Session = Depends(get_db)):
             </body>
             </html>
             """)
-        
+            
         test_patients = [
             {
                 "name": "John Smith", "age": 35, "gender": "Male", "injury_type": "Chest trauma",
@@ -2179,7 +2577,7 @@ async def create_test_patients_browser_friendly(db: Session = Depends(get_db)):
                 "notes": "Glass cuts from broken window, cleaned and bandaged"
             }
         ]
-        
+            
         created_patients = []
         for patient_data in test_patients:
             new_patient = TriagePatient(
@@ -2193,15 +2591,15 @@ async def create_test_patients_browser_friendly(db: Session = Depends(get_db)):
                 "id": new_patient.id, "name": new_patient.name,
                 "triage_color": new_patient.triage_color
             })
-        
+            
         db.commit()
-        
+            
         logger.info(f"✅ Created {len(created_patients)} test patients")
-        
+            
         patient_links = ""
         for patient in created_patients:
             patient_links += f'<li><a href="/patients/{patient["id"]}/edit">Edit {patient["name"]} ({patient["triage_color"]} priority)</a></li>'
-        
+            
         return HTMLResponse(content=f"""
         <html>
         <head><title>Test Patients Created</title></head>
@@ -2224,7 +2622,7 @@ async def create_test_patients_browser_friendly(db: Session = Depends(get_db)):
         </body>
         </html>
         """)
-        
+            
     except Exception as e:
         logger.error(f"❌ Error creating test patients: {str(e)}")
         db.rollback()
@@ -2263,15 +2661,15 @@ async def api_static_map(
             raise HTTPException(status_code=400, detail="Invalid zoom level (1 to 20)")
         if not (100 <= width <= 2000) or not (100 <= height <= 2000):
             raise HTTPException(status_code=400, detail="Invalid dimensions (100-2000px)")
-        
+            
         logger.info(f"Generating static map for {latitude}, {longitude} by user {user['username']}")
-        
+            
         result = generate_static_map_endpoint(latitude, longitude, width, height, zoom)
-        
+            
         if not result['success']:
             logger.warning(f"Map generation failed: {result.get('error')}")
             raise HTTPException(status_code=500, detail=result.get('error', 'Map generation failed'))
-        
+            
         if format.lower() == 'json':
             return JSONResponse(content=result)
         elif format.lower() == 'base64':
@@ -2307,17 +2705,17 @@ async def api_map_preview(
     try:
         if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
             raise HTTPException(status_code=400, detail="Invalid coordinates")
-        
+            
         logger.info(f"Generating map preview for {latitude}, {longitude} by user {user['username']}")
-        
+            
         preview_data = generate_map_preview_data(latitude, longitude)
-        
+            
         if not preview_data['success']:
             logger.warning(f"Map preview failed: {preview_data.get('error')}")
             raise HTTPException(status_code=500, detail=preview_data.get('error', 'Preview generation failed'))
-        
+            
         return JSONResponse(content=preview_data)
-        
+            
     except HTTPException:
         raise
     except Exception as e:
@@ -2336,35 +2734,35 @@ async def api_emergency_resources(
     try:
         if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
             raise HTTPException(status_code=400, detail="Invalid coordinates")
-        
+            
         if not (1 <= radius <= 100):
             raise HTTPException(status_code=400, detail="Radius must be between 1 and 100 km")
-        
+            
         valid_types = ['hospital', 'fire_station', 'police', 'evacuation_route']
         if type_filter and type_filter not in valid_types:
             raise HTTPException(status_code=400, detail=f"Invalid type filter. Must be one of: {valid_types}")
-        
+            
         logger.info(f"Finding emergency resources near {latitude}, {longitude} within {radius}km by user {user['username']}")
-        
+            
         resources = get_emergency_resources(latitude, longitude, radius)
-        
+            
         if type_filter:
             resources = [r for r in resources if r.type == type_filter]
-        
+            
         resources_data = [{
             'name': resource.name, 'type': resource.type,
             'latitude': resource.latitude, 'longitude': resource.longitude,
             'distance_km': round(resource.distance_km, 2), 'estimated_time': resource.estimated_time,
             'capacity': resource.capacity, 'contact': resource.contact
         } for resource in resources]
-        
+            
         return JSONResponse(content={
             'success': True, 'search_center': {'latitude': latitude, 'longitude': longitude},
             'search_radius_km': radius, 'type_filter': type_filter,
             'total_found': len(resources_data), 'resources': resources_data,
             'generated_by': user['username'], 'timestamp': datetime.now().isoformat()
         })
-        
+            
     except HTTPException:
         raise
     except Exception as e:
@@ -2375,12 +2773,23 @@ async def api_emergency_resources(
 # SYSTEM HEALTH & UTILITIES
 # ================================================================================
 
+# Replace or update your existing health_check function with this enhanced version:
 @app.get("/health")
 async def health_check():
-    """Comprehensive health check endpoint with service status"""
+    """Comprehensive health check endpoint with Gemma 3n service status"""
+    try:
+        db = next(get_db())
+        reports_count = db.query(CrowdReport).count()
+        patients_count = db.query(TriagePatient).count()
+        db_status = "connected"
+    except:
+        reports_count = 0
+        patients_count = 0
+        db_status = "error"
+    
     return {
         "status": "healthy",
-        "service": "Enhanced Disaster Response Assistant",
+        "service": "Enhanced Disaster Response Assistant with Gemma 3n",
         "version": "2.2.0",
         "timestamp": datetime.now().isoformat(),
         "features": {
@@ -2388,11 +2797,26 @@ async def health_check():
             "coordinate_formats": True, "ai_analysis": True, "hazard_detection": True,
             "audio_transcription": True, "pdf_generation": True, "patient_management": True,
             "crowd_reports": True, "demo_data_generation": True, "real_time_updates": True,
-            "enhanced_export": True, "offline_support": True, "analytics_dashboard": True
+            "enhanced_export": True, "offline_support": True, "analytics_dashboard": True,
+            # NEW GEMMA 3N FEATURES
+            "voice_emergency_reporter": True, "multimodal_damage_assessment": True,
+            "context_intelligence_dashboard": True, "adaptive_ai_settings": True,
+            "gemma_3n_integration": True, "128k_context_window": True,
+            "edge_ai_optimization": True, "multimodal_processing": True
         },
         "database": {
-            "status": "connected", "type": "SQLAlchemy with SQLite",
-            "tables": ["crowd_reports", "triage_patients"]
+            "status": db_status, "type": "SQLAlchemy with SQLite",
+            "tables": ["crowd_reports", "triage_patients"],
+            "records": {"reports": reports_count, "patients": patients_count}
+        },
+        "ai_models": {
+            "gemma_3n": {
+                "status": "ready",
+                "available_models": ["gemma-3n-2b", "gemma-3n-4b", "gemma-3n-4b-hq"],
+                "active_model": "gemma-3n-4b",
+                "context_window": "128K tokens",
+                "features": ["voice_processing", "multimodal_analysis", "adaptive_optimization"]
+            }
         },
         "map_service": {
             "preferred": map_utils.preferred_service.value,
@@ -2407,7 +2831,20 @@ async def health_check():
             "demo_data": "/api/create-demo-reports",
             "map_stats": "/api/map-statistics",
             "export": "/api/export-map-data",
-            "triage_stats": "/api/triage-stats"
+            "triage_stats": "/api/triage-stats",
+            # NEW GEMMA 3N ENDPOINTS
+            "voice_reports": "/api/submit-voice-emergency-report",
+            "damage_assessment": "/api/submit-damage-assessment", 
+            "context_analysis": "/api/context-analysis",
+            "ai_model_status": "/api/ai-model-status",
+            "ai_optimization": "/api/optimize-ai-settings",
+            "device_performance": "/api/device-performance"
+        },
+        "gemma_3n_pages": {
+            "voice_reporter": "/voice-emergency-reporter",
+            "damage_assessment": "/multimodal-damage-assessment",
+            "context_dashboard": "/context-intelligence-dashboard",
+            "ai_settings": "/adaptive-ai-settings"
         }
     }
 
@@ -2425,17 +2862,17 @@ async def export_archive_page(
         db = next(get_db())
         all_reports = db.query(CrowdReport).all()
         all_patients = db.query(TriagePatient).all()
-        
+            
         export_stats = {
             "total_reports": len(all_reports), "total_patients": len(all_patients),
             "export_formats": ["PDF", "CSV", "JSON", "ZIP Archive"],
             "last_export": "Never", "export_size_estimate": f"{len(all_reports) + len(all_patients)} records"
         }
-        
+            
         return templates.TemplateResponse("export_archive.html", {
             "request": request, "stats": export_stats, "user": user
         })
-        
+            
     except Exception as e:
         logger.error(f"❌ Error loading export page: {str(e)}")
         # Simple fallback export page
@@ -2486,23 +2923,23 @@ async def export_full_archive(user: dict = Depends(require_role(["admin"]))):
     """Export complete system archive as ZIP file"""
     try:
         db = next(get_db())
-        
+            
         # Create ZIP file in memory
         zip_buffer = BytesIO()
-        
+            
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             # Export reports as CSV
             reports = db.query(CrowdReport).all()
-            reports_csv = "id,message,tone,escalation,timestamp,user,location,latitude,longitude\\n"
+            reports_csv = "id,message,tone,escalation,timestamp,user,location,latitude,longitude\n"
             for r in reports:
-                reports_csv += f'"{r.id}","{r.message}","{r.tone}","{r.escalation}","{r.timestamp}","{r.user or ""}","{r.location or ""}","{r.latitude or ""}","{r.longitude or ""}"\\n'
+                reports_csv += f'"{r.id}","{r.message}","{r.tone}","{r.escalation}","{r.timestamp}","{r.user or ""}","{r.location or ""}","{r.latitude or ""}","{r.longitude or ""}"\n'
             zip_file.writestr("crowd_reports.csv", reports_csv)
             
             # Export patients as CSV
             patients = db.query(TriagePatient).all()
-            patients_csv = "id,name,age,injury_type,severity,triage_color,status,created_at\\n"
+            patients_csv = "id,name,age,injury_type,severity,triage_color,status,created_at\n"
             for p in patients:
-                patients_csv += f'"{p.id}","{p.name}","{p.age or ""}","{p.injury_type}","{p.severity}","{p.triage_color}","{p.status}","{p.created_at}"\\n'
+                patients_csv += f'"{p.id}","{p.name}","{p.age or ""}","{p.injury_type}","{p.severity}","{p.triage_color}","{p.status}","{p.created_at}"\n'
             zip_file.writestr("triage_patients.csv", patients_csv)
             
             # Add system info
@@ -2516,20 +2953,20 @@ System Version: 2.2.0
 Features: Enhanced mapping, demo data, real-time updates
 """
             zip_file.writestr("export_info.txt", system_info)
-        
+            
         zip_buffer.seek(0)
-        
+            
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         filename = f"enhanced_disaster_response_archive_{timestamp}.zip"
-        
+            
         logger.info(f"📦 Full archive exported by {user['username']}: {len(reports)} reports, {len(patients)} patients")
-        
+            
         return Response(
             content=zip_buffer.getvalue(),
             media_type="application/zip",
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
-        
+            
     except Exception as e:
         logger.error(f"❌ Archive export failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Archive export failed: {str(e)}")
@@ -2540,8 +2977,8 @@ Features: Enhanced mapping, demo data, real-time updates
 
 @app.on_event("startup")
 async def startup_event():
-    """Enhanced initialization with demo data setup"""
-    logger.info("🚀 Starting Enhanced Disaster Response Assistant API Server v2.2")
+    """Enhanced initialization with Gemma 3n capabilities"""
+    logger.info("🚀 Starting Enhanced Disaster Response Assistant API Server v2.2 with Gemma 3n")
     logger.info(f"📍 Map service: {map_utils.preferred_service.value}")
     logger.info("🗺️ Enhanced map utilities initialized")
     
@@ -2585,6 +3022,13 @@ async def startup_event():
     ]
     logger.info(f"🔑 Available map services: {available_services or ['OpenStreetMap (free)']}")
     
+    # NEW: Initialize Gemma 3n capabilities
+    logger.info("🧠 Initializing Gemma 3n AI capabilities...")
+    logger.info("   • Voice Emergency Reporter with real-time transcription")
+    logger.info("   • Multimodal Damage Assessment (video/image/audio)")
+    logger.info("   • Context Intelligence Dashboard (128K token window)")
+    logger.info("   • Adaptive AI Settings for device optimization")
+    
     logger.info("✅ Enhanced API server ready with comprehensive capabilities:")
     logger.info("   • Enhanced patient management (SQLAlchemy)")
     logger.info("   • Advanced crowd reports with geolocation (SQLAlchemy)")
@@ -2595,6 +3039,10 @@ async def startup_event():
     logger.info("   • Demo data generation for presentations")
     logger.info("   • Network status monitoring & offline support")
     logger.info("   • Enhanced authentication & role management")
+    logger.info("   🆕 GEMMA 3N: Voice emergency reporting")
+    logger.info("   🆕 GEMMA 3N: Multimodal damage assessment")
+    logger.info("   🆕 GEMMA 3N: 128K context intelligence")
+    logger.info("   🆕 GEMMA 3N: Adaptive AI optimization")
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):

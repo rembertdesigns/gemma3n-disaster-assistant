@@ -1,0 +1,875 @@
+{% extends "base.html" %}
+
+{% block title %}Adaptive AI Settings - Disaster Response Assistant{% endblock %}
+{% block page_title %}⚙️ Adaptive AI Settings{% endblock %}
+{% block subtitle %}Optimize Gemma 3n performance for your device and use case{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+.adaptive-ai-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.settings-main {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    border: 2px solid #e2e8f0;
+}
+
+.device-monitor {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    border: 2px solid #e2e8f0;
+}
+
+.settings-section {
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.settings-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.section-icon.model { background: #dbeafe; color: #1d4ed8; }
+.section-icon.performance { background: #dcfce7; color: #166534; }
+.section-icon.memory { background: #fef3c7; color: #92400e; }
+.section-icon.power { background: #fecaca; color: #991b1b; }
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.section-description {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.model-selection {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.model-card {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.model-card.selected {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.model-card.recommended::before {
+    content: "✨ Recommended";
+    position: absolute;
+    top: -8px;
+    left: 15px;
+    background: #10b981;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.model-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.model-name {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.model-size {
+    background: #3b82f6;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+}
+
+.model-specs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.spec-item {
+    text-align: center;
+    padding: 8px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 6px;
+}
+
+.spec-value {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.9rem;
+}
+
+.spec-label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+
+.model-description {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-top: 12px;
+}
+
+.performance-sliders {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.slider-group {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.slider-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.slider-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+}
+
+.slider-value {
+    background: #3b82f6;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.slider-input {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e7eb;
+    outline: none;
+    margin-bottom: 8px;
+}
+
+.slider-input::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-description {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.device-status-card {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.device-status-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.good { background: #10b981; }
+.status-indicator.warning { background: #f59e0b; }
+.status-indicator.critical { background: #ef4444; }
+
+.device-metric {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 8px 0;
+    padding: 6px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.device-metric:last-child {
+    border-bottom: none;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.metric-value {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.metric-bar {
+    width: 60px;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-left: 8px;
+}
+
+.metric-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.metric-fill.good { background: #10b981; }
+.metric-fill.warning { background: #f59e0b; }
+.metric-fill.critical { background: #ef4444; }
+
+.optimization-recommendations {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.recommendation-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 12px 0;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.recommendation-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.recommendation-content {
+    flex: 1;
+}
+
+.recommendation-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.recommendation-description {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.auto-optimization {
+    background: #f0fdf4;
+    border: 2px solid #10b981;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.auto-optimization-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.toggle-switch.active {
+    background: #10b981;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.active .toggle-slider {
+    transform: translateX(26px);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-success {
+    background: #10b981;
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #059669;
+    transform: translateY(-2px);
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #d97706;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #4b5563;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 1024px) {
+    .adaptive-ai-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .model-selection {
+        grid-template-columns: 1fr;
+    }
+    
+    .performance-sliders {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .model-specs {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="adaptive-ai-layout">
+    <!-- Main Settings Panel -->
+    <div class="settings-main">
+        <!-- Model Selection Section -->
+        <div class="settings-section">
+            <div class="section-header">
+                <div class="section-icon model">🧠</div>
+                <div>
+                    <div class="section-title">AI Model Selection</div>
+                    <div class="section-description">Choose the optimal Gemma 3n model variant for your needs</div>
+                </div>
+            </div>
+            
+            <div class="model-selection">
+                <div class="model-card recommended selected" data-model="gemma-3n-4b">
+                    <div class="model-header">
+                        <span class="model-name">Gemma 3n 4B</span>
+                        <span class="model-size">4GB</span>
+                    </div>
+                    <div class="model-specs">
+                        <div class="spec-item">
+                            <div class="spec-value">4B</div>
+                            <div class="spec-label">Parameters</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-value">Medium</div>
+                            <div class="spec-label">Speed</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-value">High</div>
+                            <div class="spec-label">Quality</div>
+                        </div>
+                    </div>
+                    <div class="model-description">
+                        Balanced performance and quality. Best for most emergency response scenarios with multimodal capabilities.
+                    </div>
+                </div>
+                
+                <div class="model-card" data-model="gemma-3n-2b">
+                    <div class="model-header">
+                        <span class="model-name">Gemma 3n 2B</span>
+                        <span class="model-size">2GB</span>
+                    </div>
+                    <div class="model-specs">
+                        <div class="spec-item">
+                            <div class="spec-value">2B</div>
+                            <div class="spec-label">Parameters</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-value">Fast</div>
+                            <div class="spec-label">Speed</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-value">Good</div>
+                            <div class="spec-label">Quality</div>
+                        </div>
+                    </div>
+                    <div class="model-description">
+                        Optimized for speed and low memory usage. Ideal for older devices or battery-constrained scenarios.
+                    </div>
+                </div>
+                
+                <div class="model-card" data-model="gemma-3n-4b-hq">
+                    <div class="model-header">
+                        <span class="model-name">Gemma 3n 4B-HQ</span>
+                        <span class="model-size">6GB</span>
+                    </div>
+                    <div class="model-specs">
+                        <div class="spec-item">
+                            <div class="spec-value">4B+</div>
+                            <div class="spec-label">Parameters</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-value">Slow</div>
+                            <div class="spec-label">Speed</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-value">Excellent</div>
+                            <div class="spec-label">Quality</div>
+                        </div>
+                    </div>
+                    <div class="model-description">
+                        Maximum quality analysis with advanced reasoning. Best for complex damage assessments and critical decisions.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Optimization Section -->
+        <div class="settings-section">
+            <div class="section-header">
+                <div class="section-icon performance">⚡</div>
+                <div>
+                    <div class="section-title">Performance Optimization</div>
+                    <div class="section-description">Fine-tune AI performance for your specific device and usage patterns</div>
+                </div>
+            </div>
+            
+            <div class="performance-sliders">
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Quality vs Speed</span>
+                        <span class="slider-value" id="qualityValue">Balanced</span>
+                    </div>
+                    <input type="range" class="slider-input" id="qualitySlider" min="0" max="100" value="50">
+                    <div class="slider-description">Higher quality = better analysis, slower processing</div>
+                </div>
+                
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Memory Usage</span>
+                        <span class="slider-value" id="memoryValue">Auto</span>
+                    </div>
+                    <input type="range" class="slider-input" id="memorySlider" min="0" max="100" value="50">
+                    <div class="slider-description">Adjust memory footprint based on available RAM</div>
+                </div>
+                
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Context Window</span>
+                        <span class="slider-value" id="contextValue">64K</span>
+                    </div>
+                    <input type="range" class="slider-input" id="contextSlider" min="0" max="100" value="50">
+                    <div class="slider-description">Larger context = better understanding, more memory</div>
+                </div>
+                
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Batch Processing</span>
+                        <span class="slider-value" id="batchValue">Medium</span>
+                    </div>
+                    <input type="range" class="slider-input" id="batchSlider" min="0" max="100" value="50">
+                    <div class="slider-description">Process multiple requests together for efficiency</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Memory Management Section -->
+        <div class="settings-section">
+            <div class="section-header">
+                <div class="section-icon memory">💾</div>
+                <div>
+                    <div class="section-title">Memory Management</div>
+                    <div class="section-description">Optimize memory usage with Per-Layer Embeddings and quantization</div>
+                </div>
+            </div>
+            
+            <div class="performance-sliders">
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Quantization Level</span>
+                        <span class="slider-value" id="quantizationValue">8-bit</span>
+                    </div>
+                    <input type="range" class="slider-input" id="quantizationSlider" min="0" max="100" value="50">
+                    <div class="slider-description">Lower precision = less memory, slight quality reduction</div>
+                </div>
+                
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">KV Cache Sharing</span>
+                        <span class="slider-value" id="kvCacheValue">Enabled</span>
+                    </div>
+                    <input type="range" class="slider-input" id="kvCacheSlider" min="0" max="100" value="75">
+                    <div class="slider-description">Share key-value cache for faster prefill processing</div>
+                </div>
+                
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Memory Cleanup</span>
+                        <span class="slider-value" id="cleanupValue">Aggressive</span>
+                    </div>
+                    <input type="range" class="slider-input" id="cleanupSlider" min="0" max="100" value="75">
+                    <div class="slider-description">How aggressively to free unused memory</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Power Management Section -->
+        <div class="settings-section">
+            <div class="section-header">
+                <div class="section-icon power">🔋</div>
+                <div>
+                    <div class="section-title">Power Management</div>
+                    <div class="section-description">Balance AI performance with battery life</div>
+                </div>
+            </div>
+            
+            <div class="performance-sliders">
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">CPU Throttling</span>
+                        <span class="slider-value" id="cpuThrottleValue">Moderate</span>
+                    </div>
+                    <input type="range" class="slider-input" id="cpuThrottleSlider" min="0" max="100" value="30">
+                    <div class="slider-description">Reduce CPU usage to save battery</div>
+                </div>
+                
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Background Processing</span>
+                        <span class="slider-value" id="backgroundValue">Limited</span>
+                    </div>
+                    <input type="range" class="slider-input" id="backgroundSlider" min="0" max="100" value="25">
+                    <div class="slider-description">Allow AI processing when app is in background</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Device Monitor Panel -->
+    <div class="device-monitor">
+        <h3 style="margin-bottom: 15px; color: #1f2937;">📱 Device Status</h3>
+        
+        <div class="device-status-card">
+            <div class="device-status-header">
+                <div class="status-indicator good" id="cpuIndicator"></div>
+                <span style="font-weight: 600;">CPU Performance</span>
+            </div>
+            <div class="device-metric">
+                <span class="metric-label">Usage:</span>
+                <div style="display: flex; align-items: center;">
+                    <span class="metric-value" id="cpuUsage">45%</span>
+                    <div class="metric-bar">
+                        <div class="metric-fill good" id="cpuBar" style="width: 45%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="device-metric">
+                <span class="metric-label">Temperature:</span>
+                <span class="metric-value" id="cpuTemp">38°C</span>
+            </div>
+        </div>
+        
+        <div class="device-status-card">
+            <div class="device-status-header">
+                <div class="status-indicator warning" id="memoryIndicator"></div>
+                <span style="font-weight: 600;">Memory Status</span>
+            </div>
+            <div class="device-metric">
+                <span class="metric-label">Used:</span>
+                <div style="display: flex; align-items: center;">
+                    <span class="metric-value" id="memoryUsage">3.2 GB</span>
+                    <div class="metric-bar">
+                        <div class="metric-fill warning" id="memoryBar" style="width: 65%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="device-metric">
+                <span class="metric-label">Available:</span>
+                <span class="metric-value" id="memoryAvailable">1.8 GB</span>
+            </div>
+        </div>
+        
+        <div class="device-status-card">
+            <div class="device-status-header">
+                <div class="status-indicator good" id="batteryIndicator"></div>
+                <span style="font-weight: 600;">Battery Status</span>
+            </div>
+            <div class="device-metric">
+                <span class="metric-label">Level:</span>
+                <div style="display: flex; align-items: center;">
+                    <span class="metric-value" id="batteryLevel">78%</span>
+                    <div class="metric-bar">
+                        <div class="metric-fill good" id="batteryBar" style="width: 78%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="device-metric">
+                <span class="metric-label">Time Left:</span>
+                <span class="metric-value" id="batteryTime">4h 12m</span>
+            </div>
+        </div>
+        
+        <div class="device-status-card">
+            <div class="device-status-header">
+                <div class="status-indicator good" id="networkIndicator"></div>
+                <span style="font-weight: 600;">Network Status</span>
+            </div>
+            <div class="device-metric">
+                <span class="metric-label">Connection:</span>
+                <span class="metric-value" id="networkType">WiFi</span>
+            </div>
+            <div class="device-metric">
+                <span class="metric-label">Speed:</span>
+                <span class="metric-value" id="networkSpeed">45 Mbps</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Optimization Recommendations -->
+<div class="optimization-recommendations" id="optimizationRecommendations">
+    <h3 style="margin-bottom: 15px;">🎯 AI Optimization Recommendations</h3>
+    
+    <div class="recommendation-item">
+        <div class="recommendation-icon">💡</div>
+        <div class="recommendation-content">
+            <div class="recommendation-title">Switch to Gemma 3n 2B for Better Battery Life</div>
+            <div class="recommendation-description">
+                Your battery is at 78%. Switching to the 2B model could extend usage time by 40% with minimal quality impact.
+            </div>
+        </div>
+    </div>
+    
+    <div class="recommendation-item">
+        <div class="recommendation-icon">⚡</div>
+        <div class="recommendation-content">
+            <div class="recommendation-title">Enable Aggressive Memory Cleanup</div>
+            <div class="recommendation-description">
+                Memory usage is high (65%). Enabling aggressive cleanup could free up 800MB for better performance.
+            </div>
+        </div>
+    </div>
+    
+    <div class="recommendation-item">
+        <div class="recommendation-icon">🧠</div>
+        <div class="recommendation-content">
+            <div class="recommendation-title">Reduce Context Window for Faster Processing</div>
+            <div class="recommendation-description">
+                For emergency scenarios, consider reducing context to 32K tokens for 2x faster response times.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-Optimization -->
+<div class="auto-optimization">
+    <div class="auto-optimization-header">
+        <div>
+            <h4 style="margin: 0; color: #166534;">🤖 Automatic Optimization</h4>
+            <p style="margin: 5px 0 0 0; color: #166534; font-size: 0.9rem;">
+                Let AI automatically adjust settings based on device conditions and usage patterns
+            </p>
+        </div>
+        <div class="toggle-switch" id="autoOptimizationToggle">
+            <div class="toggle-slider"></div>
+        </div>
+    </div>
+    
+    <div style="color: #166534; font-size: 0.9rem;">
+        <strong>When enabled, the system will:</strong><br>
+        • Automatically switch models based on battery level<br>
+        • Adjust memory usage based on available RAM<br>
+        • Optimize performance for emergency vs normal scenarios<br>
+        • Reduce processing during background operation
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="action-buttons">
+    <button class="action-btn btn-primary" id="applySettingsBtn">
+        ✅ Apply Settings
+    </button>
+    <button class="action-btn btn-success" id="testPerformanceBtn">
+        🧪 Test Performance
+    </button>
+    <button class="action-btn btn-warning" id="resetToOptimalBtn">
+        🎯 Reset to Optimal
+    </button>
+    <button class="action-btn btn-secondary" id="exportConfigBtn">
+        📄 Export Config
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/adaptive-ai-settings.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const adaptiveSettings = new AdaptiveAISettings();
+    
+    // Update AI status
+    const aiStatusDot = document.getElementById('aiStatusDot');
+    const aiStatusText = document.getElementById('aiStatusText');
+    
+    if (window.EdgeAI && window.EdgeAI.isReady) {
+        aiStatusDot.className = 'ai-status-dot';
+        aiStatusText.textContent = '🧠 Gemma 3n Adaptive Mode Ready';
+    } else {
+        aiStatusDot.className = 'ai-status-dot loading';
+        aiStatusText.textContent = '🧠 Loading Adaptive AI...';
+    }
+    
+    // Model selection
+    document.querySelectorAll('.model-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            adaptiveSettings.selectModel(this.dataset.model);
+        });
+    });
+    
+    // Auto-optimization toggle
+    document.getElementById('autoOptimizationToggle').addEventListener('click', function() {
+        this.classList.toggle('active');
+        adaptiveSettings.toggleAutoOptimization(this.classList.contains('active'));
+    });
+    
+    // Performance sliders
+    document.querySelectorAll('.slider-input').forEach(slider => {
+        slider.addEventListener('input', function() {
+            adaptiveSettings.updateSlider(this.id, this.value);
+        });
+    });
+});
+</script>
+{% endblock %}primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.btn-
