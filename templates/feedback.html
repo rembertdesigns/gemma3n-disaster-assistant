@@ -1,0 +1,1364 @@
+{% extends "templates/base.html" %}
+
+{% block title %}Feedback - Disaster Response Assistant{% endblock %}
+{% block page_title %}💬 Feedback & Support{% endblock %}
+{% block subtitle %}Help us improve the emergency response system{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .feedback-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .feedback-tabs {
+    display: flex;
+    background: white;
+    border-radius: 12px;
+    padding: 0.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+  }
+
+  .tab-button {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .tab-button:hover {
+    background: #f3f4f6;
+  }
+
+  .tab-button.active {
+    background: #3b82f6;
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  .tab-content {
+    display: none;
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+  }
+
+  .tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .form-input {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-textarea {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    resize: vertical;
+    min-height: 120px;
+    transition: all 0.3s ease;
+  }
+
+  .form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .rating-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+
+  .star-rating {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .star {
+    font-size: 1.5rem;
+    color: #d1d5db;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .star:hover,
+  .star.active {
+    color: #fbbf24;
+    transform: scale(1.1);
+  }
+
+  .feedback-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .feedback-type-card {
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .feedback-type-card:hover {
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .feedback-type-card.selected {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+
+  .feedback-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .feedback-title {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+
+  .feedback-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .priority-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+
+  .priority-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .priority-btn:hover {
+    border-color: #9ca3af;
+  }
+
+  .priority-btn.selected {
+    border-color: #3b82f6;
+    background: #3b82f6;
+    color: white;
+  }
+
+  .priority-low.selected {
+    border-color: #10b981;
+    background: #10b981;
+  }
+
+  .priority-medium.selected {
+    border-color: #f59e0b;
+    background: #f59e0b;
+  }
+
+  .priority-high.selected {
+    border-color: #ef4444;
+    background: #ef4444;
+  }
+
+  .attachment-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    margin: 1.5rem 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .attachment-area:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+  }
+
+  .attachment-area.dragover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+  }
+
+  .attachment-list {
+    margin-top: 1rem;
+  }
+
+  .attachment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: #f3f4f6;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: #6b7280;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #4b5563;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid #d1d5db;
+    color: #374151;
+  }
+
+  .btn-outline:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+
+  .btn-danger {
+    background: #ef4444;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+
+  .success-message {
+    background: #ecfdf5;
+    border: 1px solid #d1fae5;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: none;
+    text-align: center;
+  }
+
+  .success-message.show {
+    display: block;
+    animation: slideInDown 0.5s ease;
+  }
+
+  @keyframes slideInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .faq-section {
+    margin-bottom: 2rem;
+  }
+
+  .faq-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+  }
+
+  .faq-question {
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    color: #374151;
+    transition: background-color 0.3s ease;
+  }
+
+  .faq-question:hover {
+    background: #f9fafb;
+  }
+
+  .faq-answer {
+    padding: 0 1.5rem 1rem;
+    color: #6b7280;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .faq-answer.show {
+    display: block;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 200px; }
+  }
+
+  .suggestion-item {
+    background: #f8fafc;
+    border-left: 4px solid #3b82f6;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .suggestion-title {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  .suggestion-description {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .vote-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .vote-btn {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+  }
+
+  .vote-btn:hover {
+    background: #f3f4f6;
+  }
+
+  .vote-btn.voted {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .contact-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .contact-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .contact-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .contact-title {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  .contact-info {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .feedback-tabs {
+      flex-direction: column;
+    }
+    
+    .feedback-type-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .priority-selector {
+      flex-wrap: wrap;
+    }
+  }
+
+  [data-theme="dark"] .tab-content,
+  [data-theme="dark"] .feedback-tabs {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  [data-theme="dark"] .feedback-type-card {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+
+  [data-theme="dark"] .faq-item {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+
+  [data-theme="dark"] .contact-card {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feedback-container">
+  <!-- Tab Navigation -->
+  <div class="feedback-tabs">
+    <button class="tab-button active" onclick="showTab('general-feedback')">
+      💬 General Feedback
+    </button>
+    <button class="tab-button" onclick="showTab('bug-report')">
+      🐛 Report Bug
+    </button>
+    <button class="tab-button" onclick="showTab('feature-request')">
+      ✨ Feature Request
+    </button>
+    <button class="tab-button" onclick="showTab('suggestions')">
+      💡 View Suggestions
+    </button>
+    <button class="tab-button" onclick="showTab('contact')">
+      📞 Contact Support
+    </button>
+  </div>
+
+  <!-- Success Message -->
+  <div class="success-message" id="successMessage">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+    <h3 style="color: #065f46; margin-bottom: 0.5rem;">Thank you for your feedback!</h3>
+    <p style="color: #047857;">Your submission has been received and will be reviewed by our team.</p>
+  </div>
+
+  <!-- General Feedback Tab -->
+  <div class="tab-content active" id="general-feedback">
+    <h2 style="margin-bottom: 1.5rem; color: #1f2937;">💬 General Feedback</h2>
+    <p style="color: #6b7280; margin-bottom: 2rem;">Help us improve the emergency response system by sharing your thoughts and experiences.</p>
+
+    <form id="generalFeedbackForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Your Name (Optional)</label>
+          <input type="text" class="form-input" name="name" placeholder="Enter your name">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Email (Optional)</label>
+          <input type="email" class="form-input" name="email" placeholder="your.email@example.com">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Your Role</label>
+          <select class="form-input" name="role" required>
+            <option value="">Select your role</option>
+            <option value="citizen">Citizen Reporter</option>
+            <option value="responder">First Responder</option>
+            <option value="coordinator">Emergency Coordinator</option>
+            <option value="admin">Administrator</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">How often do you use the system?</label>
+          <select class="form-input" name="frequency">
+            <option value="">Select frequency</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="rarely">Rarely</option>
+            <option value="first-time">First time user</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="rating-container">
+        <span class="form-label">Overall Experience:</span>
+        <div class="star-rating" data-rating="0">
+          <span class="star" data-value="1">★</span>
+          <span class="star" data-value="2">★</span>
+          <span class="star" data-value="3">★</span>
+          <span class="star" data-value="4">★</span>
+          <span class="star" data-value="5">★</span>
+        </div>
+        <span id="ratingText" style="margin-left: 1rem; color: #6b7280;">Click to rate</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">What did you like most about the system?</label>
+        <textarea class="form-textarea" name="liked" placeholder="Tell us what worked well for you..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">What could be improved?</label>
+        <textarea class="form-textarea" name="improvements" placeholder="Share suggestions for improvement..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Additional Comments</label>
+        <textarea class="form-textarea" name="comments" placeholder="Any other feedback or thoughts..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn btn-primary">📤 Submit Feedback</button>
+        <button type="button" class="btn btn-outline" onclick="clearForm('generalFeedbackForm')">🗑️ Clear Form</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Bug Report Tab -->
+  <div class="tab-content" id="bug-report">
+    <h2 style="margin-bottom: 1.5rem; color: #1f2937;">🐛 Report a Bug</h2>
+    <p style="color: #6b7280; margin-bottom: 2rem;">Found an issue? Help us fix it by providing detailed information about the problem.</p>
+
+    <form id="bugReportForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Bug Title *</label>
+          <input type="text" class="form-input" name="title" placeholder="Brief description of the issue" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Severity</label>
+          <div class="priority-selector">
+            <button type="button" class="priority-btn priority-low" data-priority="low">🟢 Low</button>
+            <button type="button" class="priority-btn priority-medium" data-priority="medium">🟡 Medium</button>
+            <button type="button" class="priority-btn priority-high" data-priority="high">🔴 High</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Device/Browser</label>
+          <input type="text" class="form-input" name="device" placeholder="e.g., Chrome on Android">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Page/Feature</label>
+          <select class="form-input" name="page">
+            <option value="">Where did this occur?</option>
+            <option value="dashboard">Main Dashboard</option>
+            <option value="report">Emergency Reporting</option>
+            <option value="map">Interactive Map</option>
+            <option value="sync">Sync Status</option>
+            <option value="device-status">Device Status</option>
+            <option value="archive">Report Archive</option>
+            <option value="admin">Admin Dashboard</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Steps to Reproduce *</label>
+        <textarea class="form-textarea" name="steps" placeholder="1. Go to...&#10;2. Click on...&#10;3. Enter...&#10;4. See error..." required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Expected Behavior</label>
+        <textarea class="form-textarea" name="expected" placeholder="What should have happened?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Actual Behavior</label>
+        <textarea class="form-textarea" name="actual" placeholder="What actually happened?"></textarea>
+      </div>
+
+      <div class="attachment-area" onclick="triggerFileUpload('bugAttachments')">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📎</div>
+        <div style="font-weight: 500; margin-bottom: 0.25rem;">Attach Screenshots or Files</div>
+        <div style="font-size: 0.875rem; color: #6b7280;">Click here or drag files to upload</div>
+        <input type="file" id="bugAttachments" multiple accept="image/*,.pdf,.txt,.log" style="display: none;">
+      </div>
+      <div class="attachment-list" id="bugAttachmentList"></div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn btn-primary">🐛 Submit Bug Report</button>
+        <button type="button" class="btn btn-outline" onclick="clearForm('bugReportForm')">🗑️ Clear Form</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Feature Request Tab -->
+  <div class="tab-content" id="feature-request">
+    <h2 style="margin-bottom: 1.5rem; color: #1f2937;">✨ Feature Request</h2>
+    <p style="color: #6b7280; margin-bottom: 2rem;">Have an idea for improving the system? We'd love to hear your suggestions!</p>
+
+    <div class="feedback-type-grid">
+      <div class="feedback-type-card" data-type="enhancement">
+        <span class="feedback-icon">⚡</span>
+        <h4 class="feedback-title">Enhancement</h4>
+        <p class="feedback-description">Improve existing features</p>
+      </div>
+      
+      <div class="feedback-type-card" data-type="new-feature">
+        <span class="feedback-icon">🆕</span>
+        <h4 class="feedback-title">New Feature</h4>
+        <p class="feedback-description">Add completely new functionality</p>
+      </div>
+      
+      <div class="feedback-type-card" data-type="integration">
+        <span class="feedback-icon">🔗</span>
+        <h4 class="feedback-title">Integration</h4>
+        <p class="feedback-description">Connect with other systems</p>
+      </div>
+      
+      <div class="feedback-type-card" data-type="ui-ux">
+        <span class="feedback-icon">🎨</span>
+        <h4 class="feedback-title">UI/UX</h4>
+        <p class="feedback-description">Interface improvements</p>
+      </div>
+    </div>
+
+    <form id="featureRequestForm">
+      <input type="hidden" name="requestType" id="requestType">
+      
+      <div class="form-group">
+        <label class="form-label">Feature Title *</label>
+        <input type="text" class="form-input" name="title" placeholder="Brief title for your feature request" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Problem or Need *</label>
+        <textarea class="form-textarea" name="problem" placeholder="What problem would this feature solve? What need does it address?" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Proposed Solution</label>
+        <textarea class="form-textarea" name="solution" placeholder="How do you envision this feature working?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Use Case / Scenario</label>
+        <textarea class="form-textarea" name="useCase" placeholder="Describe a specific scenario where this feature would be useful..."></textarea>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Priority for You</label>
+          <select class="form-input" name="priority">
+            <option value="">How important is this?</option>
+            <option value="nice-to-have">Nice to have</option>
+            <option value="helpful">Would be helpful</option>
+            <option value="important">Important for my work</option>
+            <option value="critical">Critical need</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Estimated Users</label>
+          <select class="form-input" name="userBase">
+            <option value="">Who would benefit?</option>
+            <option value="few">A few users</option>
+            <option value="some">Some users</option>
+            <option value="many">Many users</option>
+            <option value="all">All users</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn btn-primary">✨ Submit Feature Request</button>
+        <button type="button" class="btn btn-outline" onclick="clearForm('featureRequestForm')">🗑️ Clear Form</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Suggestions Tab -->
+  <div class="tab-content" id="suggestions">
+    <h2 style="margin-bottom: 1.5rem; color: #1f2937;">💡 Community Suggestions</h2>
+    <p style="color: #6b7280; margin-bottom: 2rem;">See what others are suggesting and vote on ideas you find valuable.</p>
+
+    <div class="suggestion-item">
+      <div class="suggestion-title">🗺️ Offline Map Caching for Remote Areas</div>
+      <div class="suggestion-description">Allow downloading map tiles for areas with poor connectivity, ensuring maps work even when completely offline during disasters.</div>
+      <div class="vote-buttons">
+        <button class="vote-btn" onclick="vote(this, 'up')">👍 22</button>
+        <button class="vote-btn" onclick="vote(this, 'down')">👎 7</button>
+        <span style="margin-left: 1rem; font-size: 0.75rem; color: #6b7280;">Status: Under Consideration</span>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+      <button class="btn btn-outline" onclick="showTab('feature-request')">
+        ✨ Submit Your Own Suggestion
+      </button>
+    </div>
+  </div>
+
+  <!-- Contact Support Tab -->
+  <div class="tab-content" id="contact">
+    <h2 style="margin-bottom: 1.5rem; color: #1f2937;">📞 Contact Support</h2>
+    <p style="color: #6b7280; margin-bottom: 2rem;">Need immediate help? Choose the best way to reach our support team.</p>
+
+    <div class="contact-grid">
+      <div class="contact-card">
+        <span class="contact-icon">🚨</span>
+        <h4 class="contact-title">Emergency Support</h4>
+        <div class="contact-info">For critical system issues during active emergencies</div>
+        <button class="btn btn-danger" onclick="contactEmergency()">🚨 Emergency Contact</button>
+      </div>
+
+      <div class="contact-card">
+        <span class="contact-icon">💬</span>
+        <h4 class="contact-title">Live Chat</h4>
+        <div class="contact-info">Real-time support for technical issues<br>Available 24/7</div>
+        <button class="btn btn-primary" onclick="openLiveChat()">💬 Start Chat</button>
+      </div>
+
+      <div class="contact-card">
+        <span class="contact-icon">📧</span>
+        <h4 class="contact-title">Email Support</h4>
+        <div class="contact-info">Detailed support for complex issues<br>Response within 4 hours</div>
+        <button class="btn btn-secondary" onclick="openEmailSupport()">📧 Send Email</button>
+      </div>
+
+      <div class="contact-card">
+        <span class="contact-icon">📞</span>
+        <h4 class="contact-title">Phone Support</h4>
+        <div class="contact-info">Direct phone support<br>Mon-Fri 8AM-8PM EST</div>
+        <button class="btn btn-outline" onclick="showPhoneNumber()">📞 Call Support</button>
+      </div>
+
+      <div class="contact-card">
+        <span class="contact-icon">🎓</span>
+        <h4 class="contact-title">Training Request</h4>
+        <div class="contact-info">Schedule training sessions for your team</div>
+        <button class="btn btn-outline" onclick="requestTraining()">🎓 Request Training</button>
+      </div>
+
+      <div class="contact-card">
+        <span class="contact-icon">📋</span>
+        <h4 class="contact-title">Documentation</h4>
+        <div class="contact-info">Comprehensive guides and tutorials</div>
+        <a href="/help" class="btn btn-outline">📖 View Docs</a>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="faq-section">
+      <h3 style="margin-bottom: 1rem; color: #1f2937;">❓ Frequently Asked Questions</h3>
+      
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          How do I report an emergency through the system?
+          <span>➕</span>
+        </div>
+        <div class="faq-answer">
+          Navigate to the main dashboard and click the "Report Emergency" button. Fill out the form with incident details, add photos if safe to do so, and submit. The system works offline and will sync when connectivity returns.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          What should I do if the app isn't working during an emergency?
+          <span>➕</span>
+        </div>
+        <div class="faq-answer">
+          First, call 911 for life-threatening emergencies. For app issues, try refreshing the page or restarting your device. The system is designed to work offline, so reports will be saved locally and sent when connection is restored.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          How do I check if my device is properly connected?
+          <span>➕</span>
+        </div>
+        <div class="faq-answer">
+          Visit the Device Status page to see connectivity, GPS accuracy, battery level, and sensor status. Green indicators mean everything is working properly. Yellow or red indicators may require attention.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          Can I use the system without an internet connection?
+          <span>➕</span>
+        </div>
+        <div class="faq-answer">
+          Yes! The system is designed to work offline. Reports are saved locally and automatically sync when internet connection is restored. Maps and core features remain functional without connectivity.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          How do I update my user information or permissions?
+          <span>➕</span>
+        </div>
+        <div class="faq-answer">
+          Contact your system administrator to update roles or permissions. Basic profile information can be updated in the user settings, but role changes require administrative approval for security reasons.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+class FeedbackManager {
+  constructor() {
+    this.currentTab = 'general-feedback';
+    this.selectedPriority = null;
+    this.selectedRequestType = null;
+    this.attachments = new Map();
+    
+    this.init();
+  }
+
+  init() {
+    this.setupEventListeners();
+    this.setupDragAndDrop();
+    this.populateDeviceInfo();
+  }
+
+  setupEventListeners() {
+    // Star rating functionality
+    document.querySelectorAll('.star-rating').forEach(rating => {
+      rating.addEventListener('mouseover', (e) => {
+        if (e.target.classList.contains('star')) {
+          this.highlightStars(rating, e.target.dataset.value);
+        }
+      });
+
+      rating.addEventListener('mouseleave', () => {
+        const currentRating = rating.dataset.rating;
+        this.highlightStars(rating, currentRating);
+      });
+
+      rating.addEventListener('click', (e) => {
+        if (e.target.classList.contains('star')) {
+          const value = e.target.dataset.value;
+          rating.dataset.rating = value;
+          this.highlightStars(rating, value);
+          this.updateRatingText(value);
+        }
+      });
+    });
+
+    // Priority selector functionality
+    document.querySelectorAll('.priority-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        this.selectedPriority = btn.dataset.priority;
+      });
+    });
+
+    // Feature request type selector
+    document.querySelectorAll('.feedback-type-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.feedback-type-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        this.selectedRequestType = card.dataset.type;
+        document.getElementById('requestType').value = this.selectedRequestType;
+      });
+    });
+
+    // Form submissions
+    document.getElementById('generalFeedbackForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.submitGeneralFeedback(e.target);
+    });
+
+    document.getElementById('bugReportForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.submitBugReport(e.target);
+    });
+
+    document.getElementById('featureRequestForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.submitFeatureRequest(e.target);
+    });
+  }
+
+  setupDragAndDrop() {
+    document.querySelectorAll('.attachment-area').forEach(area => {
+      area.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        area.classList.add('dragover');
+      });
+
+      area.addEventListener('dragleave', () => {
+        area.classList.remove('dragover');
+      });
+
+      area.addEventListener('drop', (e) => {
+        e.preventDefault();
+        area.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files);
+        this.handleFileUpload(files, area);
+      });
+    });
+  }
+
+  populateDeviceInfo() {
+    // Auto-populate device information for bug reports
+    const deviceField = document.querySelector('input[name="device"]');
+    if (deviceField) {
+      const userAgent = navigator.userAgent;
+      let browserInfo = 'Unknown Browser';
+      
+      if (userAgent.includes('Chrome')) browserInfo = 'Chrome';
+      else if (userAgent.includes('Firefox')) browserInfo = 'Firefox';
+      else if (userAgent.includes('Safari')) browserInfo = 'Safari';
+      else if (userAgent.includes('Edge')) browserInfo = 'Edge';
+      
+      const platform = navigator.platform || 'Unknown OS';
+      deviceField.value = `${browserInfo} on ${platform}`;
+    }
+  }
+
+  highlightStars(rating, value) {
+    const stars = rating.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+      if (index < value) {
+        star.classList.add('active');
+      } else {
+        star.classList.remove('active');
+      }
+    });
+  }
+
+  updateRatingText(value) {
+    const text = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][value] || 'Click to rate';
+    document.getElementById('ratingText').textContent = text;
+  }
+
+  handleFileUpload(files, area) {
+    const listId = area.querySelector('input[type="file"]').id + 'List';
+    const list = document.getElementById(listId);
+    
+    files.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+        return;
+      }
+      
+      const id = Date.now() + Math.random();
+      this.attachments.set(id, file);
+      
+      const item = document.createElement('div');
+      item.className = 'attachment-item';
+      item.innerHTML = `
+        <span>📎 ${file.name} (${this.formatFileSize(file.size)})</span>
+        <button type="button" class="btn-danger" onclick="feedbackManager.removeAttachment(${id}, this.parentElement)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">✕</button>
+      `;
+      
+      list.appendChild(item);
+    });
+  }
+
+  removeAttachment(id, element) {
+    this.attachments.delete(id);
+    element.remove();
+  }
+
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  submitGeneralFeedback(form) {
+    const formData = new FormData(form);
+    const rating = document.querySelector('.star-rating').dataset.rating;
+    
+    // Simulate form submission
+    this.showSuccessMessage();
+    
+    // Log submission (in real app, this would send to server)
+    console.log('General Feedback Submitted:', {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      role: formData.get('role'),
+      frequency: formData.get('frequency'),
+      rating: rating,
+      liked: formData.get('liked'),
+      improvements: formData.get('improvements'),
+      comments: formData.get('comments'),
+      timestamp: new Date().toISOString()
+    });
+    
+    this.clearForm('generalFeedbackForm');
+  }
+
+  submitBugReport(form) {
+    const formData = new FormData(form);
+    
+    // Add attachments
+    for (const file of this.attachments.values()) {
+      formData.append('attachments[]', file);
+    }
+    
+    this.showSuccessMessage();
+    
+    console.log('Bug Report Submitted:', {
+      title: formData.get('title'),
+      severity: this.selectedPriority,
+      device: formData.get('device'),
+      page: formData.get('page'),
+      steps: formData.get('steps'),
+      expected: formData.get('expected'),
+      actual: formData.get('actual'),
+      attachments: this.attachments.size,
+      timestamp: new Date().toISOString()
+    });
+    
+    this.clearForm('bugReportForm');
+    this.attachments.clear();
+    document.getElementById('bugAttachmentList').innerHTML = '';
+  }
+
+  submitFeatureRequest(form) {
+    const formData = new FormData(form);
+    
+    this.showSuccessMessage();
+    
+    console.log('Feature Request Submitted:', {
+      type: this.selectedRequestType,
+      title: formData.get('title'),
+      problem: formData.get('problem'),
+      solution: formData.get('solution'),
+      useCase: formData.get('useCase'),
+      priority: formData.get('priority'),
+      userBase: formData.get('userBase'),
+      timestamp: new Date().toISOString()
+    });
+    
+    this.clearForm('featureRequestForm');
+    document.querySelectorAll('.feedback-type-card').forEach(c => c.classList.remove('selected'));
+  }
+
+  showSuccessMessage() {
+    const message = document.getElementById('successMessage');
+    message.classList.add('show');
+    
+    setTimeout(() => {
+      message.classList.remove('show');
+    }, 5000);
+    
+    // Scroll to top to show success message
+    document.querySelector('.feedback-container').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  clearForm(formId) {
+    const form = document.getElementById(formId);
+    form.reset();
+    
+    // Reset star rating
+    document.querySelectorAll('.star-rating').forEach(rating => {
+      rating.dataset.rating = '0';
+      rating.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+    });
+    document.getElementById('ratingText').textContent = 'Click to rate';
+    
+    // Reset priority selection
+    document.querySelectorAll('.priority-btn').forEach(btn => btn.classList.remove('selected'));
+    this.selectedPriority = null;
+    
+    // Reset request type
+    this.selectedRequestType = null;
+  }
+
+  showTab(tabId) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    
+    // Remove active state from all tab buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabId).classList.add('active');
+    
+    // Add active state to clicked tab button
+    event.target.classList.add('active');
+    
+    this.currentTab = tabId;
+  }
+}
+
+// Global feedback manager instance
+let feedbackManager;
+
+// Global functions for button handlers
+function showTab(tabId) {
+  if (feedbackManager) feedbackManager.showTab(tabId);
+}
+
+function clearForm(formId) {
+  if (feedbackManager) feedbackManager.clearForm(formId);
+}
+
+function triggerFileUpload(inputId) {
+  document.getElementById(inputId).click();
+}
+
+function toggleFAQ(element) {
+  const answer = element.nextElementSibling;
+  const icon = element.querySelector('span');
+  
+  if (answer.classList.contains('show')) {
+    answer.classList.remove('show');
+    icon.textContent = '➕';
+  } else {
+    // Close other FAQs
+    document.querySelectorAll('.faq-answer.show').forEach(a => {
+      a.classList.remove('show');
+      a.previousElementSibling.querySelector('span').textContent = '➕';
+    });
+    
+    answer.classList.add('show');
+    icon.textContent = '➖';
+  }
+}
+
+function vote(button, direction) {
+  // Toggle vote
+  if (button.classList.contains('voted')) {
+    button.classList.remove('voted');
+  } else {
+    // Remove vote from other button in same group
+    const parent = button.parentElement;
+    parent.querySelectorAll('.vote-btn').forEach(btn => btn.classList.remove('voted'));
+    button.classList.add('voted');
+  }
+  
+  // In real app, this would send vote to server
+  console.log(`Voted ${direction} on suggestion`);
+}
+
+function contactEmergency() {
+  if (confirm('This will connect you to emergency technical support for critical system issues. Continue?')) {
+    alert('🚨 Emergency Support\n\nPhone: 1-800-EMERGENCY\nEmail: emergency@support.com\n\nFor life-threatening emergencies, call 911 first.');
+  }
+}
+
+function openLiveChat() {
+  alert('💬 Opening live chat window...\n\nConnecting you to a support representative.');
+}
+
+function openEmailSupport() {
+  const subject = encodeURIComponent('Emergency Response System Support Request');
+  const body = encodeURIComponent('Please describe your issue or question:\n\n');
+  window.open(`mailto:support@emergency-system.com?subject=${subject}&body=${body}`);
+}
+
+function showPhoneNumber() {
+  alert('📞 Phone Support\n\nToll-free: 1-800-555-0123\nDirect: +1-555-123-4567\n\nHours: Monday-Friday 8AM-8PM EST\nWeekends: Emergency support only');
+}
+
+function requestTraining() {
+  alert('🎓 Training Request\n\nOur training team will contact you within 24 hours to schedule a session.\n\nEmail: training@emergency-system.com\nPhone: 1-800-555-TRAIN');
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  feedbackManager = new FeedbackManager();
+  
+  // Handle file input changes
+  document.querySelectorAll('input[type="file"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      const area = e.target.closest('.tab-content').querySelector('.attachment-area');
+      feedbackManager.handleFileUpload(files, area);
+    });
+  });
+});
+
+// Auto-save draft functionality
+setInterval(() => {
+  if (feedbackManager) {
+    const activeTab = feedbackManager.currentTab;
+    const activeForm = document.querySelector(`#${activeTab} form`);
+    
+    if (activeForm) {
+      const formData = new FormData(activeForm);
+      const draft = {};
+      
+      for (const [key, value] of formData.entries()) {
+        if (value.trim() !== '') {
+          draft[key] = value;
+        }
+      }
+      
+      if (Object.keys(draft).length > 0) {
+        localStorage.setItem(`feedback_draft_${activeTab}`, JSON.stringify(draft));
+      }
+    }
+  }
+}, 30000); // Save every 30 seconds
+
+// Load drafts on page load
+window.addEventListener('load', () => {
+  ['general-feedback', 'bug-report', 'feature-request'].forEach(tabId => {
+    const draft = localStorage.getItem(`feedback_draft_${tabId}`);
+    if (draft) {
+      try {
+        const data = JSON.parse(draft);
+        const form = document.querySelector(`#${tabId} form`);
+        
+        if (form) {
+          Object.entries(data).forEach(([key, value]) => {
+            const field = form.querySelector(`[name="${key}"]`);
+            if (field) {
+              field.value = value;
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Error loading draft:', e);
+      }
+    }
+  });
+});
+</script>
+{% endblock %} onclick="vote(this, 'up')">👍 42</button>
+        <button class="vote-btn" onclick="vote(this, 'down')">👎 3</button>
+        <span style="margin-left: 1rem; font-size: 0.75rem; color: #6b7280;">Status: Under Review</span>
+      </div>
+    </div>
+
+    <div class="suggestion-item">
+      <div class="suggestion-title">📱 Push Notifications for Nearby Incidents</div>
+      <div class="suggestion-description">Automatically notify users when emergencies occur within their vicinity, with customizable radius settings.</div>
+      <div class="vote-buttons">
+        <button class="vote-btn" onclick="vote(this, 'up')">👍 38</button>
+        <button class="vote-btn" onclick="vote(this, 'down')">👎 1</button>
+        <span style="margin-left: 1rem; font-size: 0.75rem; color: #6b7280;">Status: Planned</span>
+      </div>
+    </div>
+
+    <div class="suggestion-item">
+      <div class="suggestion-title">🤖 AI-Powered Incident Categorization</div>
+      <div class="suggestion-description">Use machine learning to automatically categorize and prioritize incoming reports based on text and image analysis.</div>
+      <div class="vote-buttons">
+        <button class="vote-btn" onclick="vote(this, 'up')">👍 29</button>
+        <button class="vote-btn" onclick="vote(this, 'down')">👎 5</button>
+        <span style="margin-left: 1rem; font-size: 0.75rem; color: #6b7280;">Status: In Development</span>
+      </div>
+    </div>
+
+    <div class="suggestion-item">
+      <div class="suggestion-title">🔄 Two-Way Radio Integration</div>
+      <div class="suggestion-description">Connect with existing radio systems used by emergency services for seamless communication integration.</div>
+      <div class="vote-buttons">
+        <button class="vote-btn" onclick="vote(this, 'up')">👍 25</button>
+        <button class="vote-btn" onclick="vote(this, 'down')">👎 2</button>
+        <span style="margin-left: 1rem; font-size: 0.75rem; color: #6b7280;">Status: Investigating</span>
+      </div>
+    </div>
+
+    <div class="suggestion-item">
+      <div class="suggestion-title">📊 Public Dashboard for Community Awareness</div>
+      <div class="suggestion-description">Create a public-facing dashboard showing non-sensitive incident data to keep communities informed.</div>
+      <div class="vote-buttons">
+        <button class="vote-btn"

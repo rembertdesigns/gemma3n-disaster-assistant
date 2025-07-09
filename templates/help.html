@@ -1,0 +1,1777 @@
+.search-results {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .search-results.show {
+    display: block;
+  }
+
+  .search-result-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .search-result-item:hover {
+    background: #f9fafb;
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+  }
+
+  .search-result-title {
+    font-weight: 500;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+
+  .search-result-snippet {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .breadcrumb a {
+    color: #3b82f6;
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    text-decoration: underline;
+  }
+
+  .video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #f3f4f6;
+    margin: 1.5rem 0;
+  }
+
+  .video-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #6b7280;
+  }
+
+  .video-placeholder-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .quick-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+
+  .quick-link {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    text-decoration: none;
+    color: #374151;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+
+  .quick-link:hover {
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .quick-link-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .quick-link-title {
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+  }
+
+  .quick-link-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  @media (max-width: 1024px) {
+    .help-container {
+      grid-template-columns: 1fr;
+    }
+    
+    .help-sidebar {
+      position: static;
+      order: 2;
+    }
+    
+    .help-content {
+      order: 1;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .feature-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .quick-links {
+      grid-template-columns: 1fr;
+    }
+    
+    .help-container {
+      padding: 0 1rem;
+    }
+  }
+
+  [data-theme="dark"] .help-sidebar,
+  [data-theme="dark"] .help-content {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  [data-theme="dark"] .feature-card {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+
+  [data-theme="dark"] .quick-link {
+    background: #4b5563;
+    border-color: #6b7280;
+    color: #e5e7eb;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-container">
+  <!-- Sidebar Navigation -->
+  <div class="help-sidebar">
+    <div class="search-box">
+      <div class="search-icon">🔍</div>
+      <input type="text" class="search-input" placeholder="Search documentation..." onInput="searchHelp(this.value)">
+      <div class="search-results" id="searchResults"></div>
+    </div>
+
+    <ul class="help-nav">
+      <li class="help-nav-category">Getting Started</li>
+      <li><a class="help-nav-item active" onclick="showSection('overview')">📋 Overview</a></li>
+      <li><a class="help-nav-item" onclick="showSection('quick-start')">🚀 Quick Start Guide</a></li>
+      <li><a class="help-nav-item" onclick="showSection('onboarding')">👋 First Time Setup</a></li>
+
+      <li class="help-nav-category">Core Features</li>
+      <li><a class="help-nav-item" onclick="showSection('emergency-reporting')">🚨 Emergency Reporting</a></li>
+      <li><a class="help-nav-item" onclick="showSection('live-dashboard')">📊 Live Dashboard</a></li>
+      <li><a class="help-nav-item" onclick="showSection('mapping')">🗺️ Interactive Maps</a></li>
+      <li><a class="help-nav-item" onclick="showSection('offline-mode')">📱 Offline Mode</a></li>
+
+      <li class="help-nav-category">Advanced Features</li>
+      <li><a class="help-nav-item" onclick="showSection('ai-analysis')">🧠 AI Analysis</a></li>
+      <li><a class="help-nav-item" onclick="showSection('device-management')">📱 Device Management</a></li>
+      <li><a class="help-nav-item" onclick="showSection('admin-features')">⚙️ Admin Features</a></li>
+      <li><a class="help-nav-item" onclick="showSection('mesh-networking')">🕸️ Mesh Networking</a></li>
+
+      <li class="help-nav-category">Reference</li>
+      <li><a class="help-nav-item" onclick="showSection('keyboard-shortcuts')">⌨️ Keyboard Shortcuts</a></li>
+      <li><a class="help-nav-item" onclick="showSection('troubleshooting')">🔧 Troubleshooting</a></li>
+      <li><a class="help-nav-item" onclick="showSection('faq')">❓ FAQ</a></li>
+      <li><a class="help-nav-item" onclick="showSection('api-docs')">📡 API Documentation</a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="help-content">
+    <!-- Overview Section -->
+    <div class="help-section active" id="overview">
+      <div class="help-header">
+        <h1 class="help-title">🆘 Emergency Response System</h1>
+        <p class="help-description">Your comprehensive guide to using the AI-powered disaster response and recovery assistant.</p>
+      </div>
+
+      <div class="info-box">
+        <div class="info-box-title">🚨 Emergency Notice</div>
+        <p>This system supplements but does not replace calling 911. For life-threatening emergencies, always contact emergency services first.</p>
+      </div>
+
+      <h2>What is the Emergency Response System?</h2>
+      <p>The Emergency Response System is a comprehensive platform designed to facilitate rapid emergency reporting, coordinate response efforts, and support disaster recovery operations. It combines artificial intelligence, offline capabilities, and real-time collaboration to ensure effective emergency management even in challenging conditions.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <span class="feature-icon">🚨</span>
+          <h4 class="feature-title">Emergency Reporting</h4>
+          <p class="feature-description">Quick and detailed incident reporting with photos, GPS location, and priority classification.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🤖</span>
+          <h4 class="feature-title">AI Analysis</h4>
+          <p class="feature-description">Automated situation assessment, severity analysis, and intelligent response recommendations.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">📱</span>
+          <h4 class="feature-title">Offline Ready</h4>
+          <p class="feature-description">Full functionality without internet connection, with automatic sync when connectivity returns.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🗺️</span>
+          <h4 class="feature-title">Live Mapping</h4>
+          <p class="feature-description">Real-time incident tracking, resource mapping, and interactive emergency visualization.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">👥</span>
+          <h4 class="feature-title">Collaboration</h4>
+          <p class="feature-description">Multi-user coordination with role-based access and real-time communication.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🔒</span>
+          <h4 class="feature-title">Security</h4>
+          <p class="feature-description">End-to-end encryption, privacy protection, and compliance with emergency service protocols.</p>
+        </div>
+      </div>
+
+      <h2>Quick Navigation</h2>
+      <div class="quick-links">
+        <a href="#" class="quick-link" onclick="showSection('quick-start')">
+          <span class="quick-link-icon">🚀</span>
+          <div class="quick-link-title">Quick Start</div>
+          <div class="quick-link-description">Get up and running in 5 minutes</div>
+        </a>
+
+        <a href="#" class="quick-link" onclick="showSection('emergency-reporting')">
+          <span class="quick-link-icon">📝</span>
+          <div class="quick-link-title">Report Emergency</div>
+          <div class="quick-link-description">Learn how to submit reports</div>
+        </a>
+
+        <a href="#" class="quick-link" onclick="showSection('troubleshooting')">
+          <span class="quick-link-icon">🔧</span>
+          <div class="quick-link-title">Troubleshooting</div>
+          <div class="quick-link-description">Solve common issues</div>
+        </a>
+
+        <a href="/feedback" class="quick-link">
+          <span class="quick-link-icon">💬</span>
+          <div class="quick-link-title">Get Support</div>
+          <div class="quick-link-description">Contact our support team</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Start Section -->
+    <div class="help-section" id="quick-start">
+      <div class="help-header">
+        <h1 class="help-title">🚀 Quick Start Guide</h1>
+        <p class="help-description">Get up and running with the Emergency Response System in just a few minutes.</p>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('overview')">Home</a> / Quick Start Guide
+      </div>
+
+      <h2>Before You Begin</h2>
+      <p>Make sure you have:</p>
+      <ul>
+        <li>A modern web browser (Chrome, Firefox, Safari, or Edge)</li>
+        <li>Internet connection for initial setup (system works offline after setup)</li>
+        <li>Location permissions enabled for accurate GPS reporting</li>
+        <li>Camera and microphone permissions for enhanced reporting</li>
+      </ul>
+
+      <h2>Step-by-Step Setup</h2>
+      <ol class="step-list">
+        <li>
+          <strong>Complete Onboarding</strong><br>
+          If this is your first time, go through the <a href="/onboarding">onboarding process</a> to set up permissions and learn the basics.
+        </li>
+
+        <li>
+          <strong>Test Your Location</strong><br>
+          Visit <a href="/device-status">Device Status</a> to verify your GPS is working accurately and all sensors are functioning.
+        </li>
+
+        <li>
+          <strong>Explore the Dashboard</strong><br>
+          Familiarize yourself with the <a href="/live-generate">Live Dashboard</a> to understand the interface and available features.
+        </li>
+
+        <li>
+          <strong>Practice Reporting</strong><br>
+          Submit a test emergency report to understand the workflow. Mark it clearly as a "test" in the description.
+        </li>
+
+        <li>
+          <strong>Review Offline Features</strong><br>
+          Check the <a href="/sync-status">Sync Status</a> page to understand how offline mode works and manage queued reports.
+        </li>
+      </ol>
+
+      <div class="info-box success">
+        <div class="info-box-title">✅ You're Ready!</div>
+        <p>Once you've completed these steps, you're fully prepared to use the system during actual emergencies. Remember to bookmark this page for quick access.</p>
+      </div>
+
+      <h2>Emergency Workflow</h2>
+      <p>During an actual emergency, follow this process:</p>
+      <ol>
+        <li><strong>Ensure Safety:</strong> Move to a safe location if possible</li>
+        <li><strong>Call 911:</strong> For life-threatening emergencies, call emergency services first</li>
+        <li><strong>Open System:</strong> Access the emergency response system</li>
+        <li><strong>Report Incident:</strong> Fill out the emergency report form</li>
+        <li><strong>Add Media:</strong> Include photos, video, or audio if safe to do so</li>
+        <li><strong>Submit Report:</strong> Send the report (works offline if needed)</li>
+        <li><strong>Follow Updates:</strong> Monitor for system alerts and response coordination</li>
+      </ol>
+    </div>
+
+    <!-- Emergency Reporting Section -->
+    <div class="help-section" id="emergency-reporting">
+      <div class="help-header">
+        <h1 class="help-title">🚨 Emergency Reporting</h1>
+        <p class="help-description">Learn how to effectively report emergencies using the system.</p>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('overview')">Home</a> / Emergency Reporting
+      </div>
+
+      <div class="info-box warning">
+        <div class="info-box-title">⚠️ Important Safety Notice</div>
+        <p>For immediate life-threatening emergencies, call 911 first. Use this system for coordination and documentation, not as a replacement for emergency services.</p>
+      </div>
+
+      <h2>Types of Incidents</h2>
+      <p>The system supports reporting various emergency types:</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <span class="feature-icon">🔥</span>
+          <h4 class="feature-title">Fire Emergencies</h4>
+          <p class="feature-description">Building fires, wildfires, vehicle fires, smoke reports</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🚑</span>
+          <h4 class="feature-title">Medical Emergencies</h4>
+          <p class="feature-description">Injuries, medical conditions, accident victims</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🌊</span>
+          <h4 class="feature-title">Natural Disasters</h4>
+          <p class="feature-description">Floods, earthquakes, severe weather, landslides</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🚗</span>
+          <h4 class="feature-title">Accidents</h4>
+          <p class="feature-description">Traffic accidents, industrial incidents, structural collapses</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">☢️</span>
+          <h4 class="feature-title">Hazardous Materials</h4>
+          <p class="feature-description">Chemical spills, gas leaks, toxic material exposure</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🚔</span>
+          <h4 class="feature-title">Security Incidents</h4>
+          <p class="feature-description">Threats, suspicious activity, crowd control needs</p>
+        </div>
+      </div>
+
+      <h2>Report Form Fields</h2>
+
+      <h3>Required Information</h3>
+      <ul>
+        <li><strong>Incident Type:</strong> Select the most appropriate category</li>
+        <li><strong>Priority Level:</strong> Low, Medium, High, or Critical</li>
+        <li><strong>Location:</strong> Address or GPS coordinates</li>
+        <li><strong>Description:</strong> Clear, concise description of the situation</li>
+      </ul>
+
+      <h3>Optional But Helpful</h3>
+      <ul>
+        <li><strong>Photos/Video:</strong> Visual evidence of the situation</li>
+        <li><strong>Audio Notes:</strong> Voice descriptions or ambient sounds</li>
+        <li><strong>Number of People Affected:</strong> Casualties, evacuees, or at-risk individuals</li>
+        <li><strong>Resources Needed:</strong> Specific equipment or personnel required</li>
+        <li><strong>Contact Information:</strong> How responders can reach you</li>
+      </ul>
+
+      <h2>Best Practices</h2>
+
+      <div class="info-box">
+        <div class="info-box-title">💡 Pro Tips</div>
+        <ul style="margin: 0.5rem 0 0 0;">
+          <li>Be specific but concise in descriptions</li>
+          <li>Include landmarks or notable features for location accuracy</li>
+          <li>Take photos from multiple angles if safe</li>
+          <li>Report changes or updates as separate follow-up reports</li>
+          <li>Use voice notes when typing is difficult</li>
+        </ul>
+      </div>
+
+      <h2>Priority Guidelines</h2>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Priority</th>
+            <th>Criteria</th>
+            <th>Response Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">Critical</span></td>
+            <td>Life-threatening, immediate danger</td>
+            <td>Immediate (0-5 min)</td>
+          </tr>
+          <tr>
+            <td><span style="background: #f59e0b; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">High</span></td>
+            <td>Serious injury, significant property damage</td>
+            <td>Urgent (5-15 min)</td>
+          </tr>
+          <tr>
+            <td><span style="background: #3b82f6; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">Medium</span></td>
+            <td>Moderate risk, minor injuries</td>
+            <td>Standard (15-30 min)</td>
+          </tr>
+          <tr>
+            <td><span style="background: #10b981; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">Low</span></td>
+            <td>Information only, no immediate risk</td>
+            <td>When available (30+ min)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- AI Analysis Section -->
+    <div class="help-section" id="ai-analysis">
+      <div class="help-header">
+        <h1 class="help-title">🧠 AI Analysis Features</h1>
+        <p class="help-description">Understanding how artificial intelligence enhances emergency response.</p>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('overview')">Home</a> / AI Analysis
+      </div>
+
+      <h2>What the AI Does</h2>
+      <p>The AI system automatically analyzes your emergency reports to provide enhanced situational awareness and response recommendations.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <span class="feature-icon">📸</span>
+          <h4 class="feature-title">Image Analysis</h4>
+          <p class="feature-description">Automatically detects fire, smoke, flooding, structural damage, and other hazards in photos.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🗣️</span>
+          <h4 class="feature-title">Voice Analysis</h4>
+          <p class="feature-description">Analyzes tone and stress levels in voice reports to assess urgency and emotional state.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">📝</span>
+          <h4 class="feature-title">Text Processing</h4>
+          <p class="feature-description">Extracts key information from descriptions and categorizes incidents automatically.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">⚖️</span>
+          <h4 class="feature-title">Severity Assessment</h4>
+          <p class="feature-description">Evaluates multiple factors to determine incident severity and priority level.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">💡</span>
+          <h4 class="feature-title">Smart Recommendations</h4>
+          <p class="feature-description">Suggests appropriate response actions based on incident type and severity.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🔮</span>
+          <h4 class="feature-title">Predictive Insights</h4>
+          <p class="feature-description">Identifies potential risks and escalation patterns to prevent larger incidents.</p>
+        </div>
+      </div>
+
+      <h2>Understanding AI Recommendations</h2>
+      <p>The AI provides suggestions in several categories:</p>
+
+      <h3>Immediate Actions</h3>
+      <ul>
+        <li>Safety measures for reporters and bystanders</li>
+        <li>Emergency service contact recommendations</li>
+        <li>Evacuation or shelter-in-place guidance</li>
+      </ul>
+
+      <h3>Resource Deployment</h3>
+      <ul>
+        <li>Suggested response team composition</li>
+        <li>Equipment and vehicle recommendations</li>
+        <li>Specialized personnel needs</li>
+      </ul>
+
+      <h3>Coordination Support</h3>
+      <ul>
+        <li>Communication priorities</li>
+        <li>Staging area suggestions</li>
+        <li>Traffic and access considerations</li>
+      </ul>
+
+      <div class="info-box warning">
+        <div class="info-box-title">⚠️ Important Note</div>
+        <p>AI recommendations are suggestions based on available data. Always use professional judgment and follow established protocols. The AI is a tool to enhance, not replace, human decision-making.</p>
+      </div>
+
+      <h2>Privacy and Data Processing</h2>
+      <p>The AI system is designed with privacy and security in mind:</p>
+      <ul>
+        <li><strong>Edge Processing:</strong> Much analysis happens on your device, not in the cloud</li>
+        <li><strong>Encrypted Data:</strong> All transmitted data is encrypted end-to-end</li>
+        <li><strong>Minimal Storage:</strong> Personal identifiers are removed from analysis data</li>
+        <li><strong>User Control:</strong> You can disable AI features if needed</li>
+      </ul>
+    </div>
+
+    <!-- Troubleshooting Section -->
+    <div class="help-section" id="troubleshooting">
+      <div class="help-header">
+        <h1 class="help-title">🔧 Troubleshooting</h1>
+        <p class="help-description">Solutions to common issues and problems.</p>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('overview')">Home</a> / Troubleshooting
+      </div>
+
+      <h2>Common Issues</h2>
+
+      <h3>GPS/Location Problems</h3>
+      <div class="info-box">
+        <div class="info-box-title">🛠️ Solutions</div>
+        <ul style="margin: 0.5rem 0 0 0;">
+          <li>Check browser location permissions</li>
+          <li>Ensure GPS is enabled on your device</li>
+          <li>Step outside for better satellite signal</li>
+          <li>Wait 30-60 seconds for GPS lock</li>
+          <li>Try refreshing the page</li>
+        </ul>
+      </div>
+
+      <h3>Camera/Media Issues</h3>
+      <div class="info-box">
+        <div class="info-box-title">🛠️ Solutions</div>
+        <ul style="margin: 0.5rem 0 0 0;">
+          <li>Grant camera/microphone permissions</li>
+          <li>Close other apps using camera</li>
+          <li>Check if camera is covered or blocked</li>
+          <li>Try a different browser</li>
+          <li>Restart your device</li>
+        </ul>
+      </div>
+
+      <h3>Offline/Sync Problems</h3>
+      <div class="info-box">
+        <div class="info-box-title">🛠️ Solutions</div>
+        <ul style="margin: 0.5rem 0 0 0;">
+          <li>Check your internet connection</li>
+          <li>Visit <a href="/sync-status">Sync Status</a> page</li>
+          <li>Try manual sync when back online</li>
+          <li>Clear browser cache if needed</li>
+          <li>Ensure sufficient storage space</li>
+        </ul>
+      </div>
+
+      <h3>Performance Issues</h3>
+      <div class="info-box">
+        <div class="info-box-title">🛠️ Solutions</div>
+        <ul style="margin: 0.5rem 0 0 0;">
+          <li>Close unnecessary browser tabs</li>
+          <li>Update your browser to latest version</li>
+          <li>Clear browser cache and cookies</li>
+          <li>Disable browser extensions temporarily</li>
+          <li>Try incognito/private browsing mode</li>
+        </ul>
+      </div>
+
+      <h2>Browser Compatibility</h2>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Browser</th>
+            <th>Minimum Version</th>
+            <th>Recommended</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Chrome</td>
+            <td>90+</td>
+            <td>Latest</td>
+            <td>Best performance</td>
+          </tr>
+          <tr>
+            <td>Firefox</td>
+            <td>88+</td>
+            <td>Latest</td>
+            <td>Full feature support</td>
+          </tr>
+          <tr>
+            <td>Safari</td>
+            <td>14+</td>
+            <td>Latest</td>
+            <td>iOS 14.5+ required</td>
+          </tr>
+          <tr>
+            <td>Edge</td>
+            <td>90+</td>
+            <td>Latest</td>
+            <td>Chromium-based</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>When to Contact Support</h2>
+      <p>Contact our support team if you experience:</p>
+      <ul>
+        <li>Persistent errors despite troubleshooting</li>
+        <li>Data loss or sync failures</li>
+        <li>Security concerns or suspicious activity</li>
+        <li>Feature requests or system feedback</li>
+      </ul>
+
+      <div class="quick-links">
+        <a href="/feedback" class="quick-link">
+          <span class="quick-link-icon">💬</span>
+          <div class="quick-link-title">Report Issue</div>
+          <div class="quick-link-description">Submit a bug report</div>
+        </a>
+
+        <a href="/device-status" class="quick-link">
+          <span class="quick-link-icon">📱</span>
+          <div class="quick-link-title">Device Status</div>
+          <div class="quick-link-description">Check system health</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Section -->
+    <div class="help-section" id="keyboard-shortcuts">
+      <div class="help-header">
+        <h1 class="help-title">⌨️ Keyboard Shortcuts</h1>
+        <p class="help-description">Speed up your workflow with keyboard shortcuts.</p>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('overview')">Home</a> / Keyboard Shortcuts
+      </div>
+
+      <h2>Global Shortcuts</h2>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Shortcut</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Quick Report</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">R</span></td>
+            <td>Open emergency report form</td>
+          </tr>
+          <tr>
+            <td>Dashboard</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">D</span></td>
+            <td>Go to live dashboard</td>
+          </tr>
+          <tr>
+            <td>Search</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">K</span></td>
+            <td>Focus search box</td>
+          </tr>
+          <tr>
+            <td>Help</td>
+            <td><span class="kbd">F1</span></td>
+            <td>Open help documentation</td>
+          </tr>
+          <tr>
+            <td>Refresh</td>
+            <td><span class="kbd">F5</span></td>
+            <td>Refresh current page</td>
+          </tr>
+          <tr>
+            <td>Toggle Theme</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">T</span></td>
+            <td>Switch dark/light mode</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Admin Dashboard Shortcuts</h2>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Shortcut</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Section Navigation</td>
+            <td><span class="kbd">Alt</span> + <span class="kbd">1-7</span></td>
+            <td>Jump to admin sections</td>
+          </tr>
+          <tr>
+            <td>Refresh Data</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">R</span></td>
+            <td>Refresh current section</td>
+          </tr>
+          <tr>
+            <td>Emergency Alert</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">E</span></td>
+            <td>Open broadcast alert</td>
+          </tr>
+          <tr>
+            <td>Close Modal</td>
+            <td><span class="kbd">Esc</span></td>
+            <td>Close any open modal</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Map Navigation</h2>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Shortcut</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Zoom In</td>
+            <td><span class="kbd">+</span> or <span class="kbd">Scroll Up</span></td>
+            <td>Increase map zoom level</td>
+          </tr>
+          <tr>
+            <td>Zoom Out</td>
+            <td><span class="kbd">-</span> or <span class="kbd">Scroll Down</span></td>
+            <td>Decrease map zoom level</td>
+          </tr>
+          <tr>
+            <td>Pan Map</td>
+            <td><span class="kbd">Arrow Keys</span></td>
+            <td>Move map view</td>
+          </tr>
+          <tr>
+            <td>Find Location</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">L</span></td>
+            <td>Center map on your location</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Form Shortcuts</h2>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Shortcut</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Submit Form</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">Enter</span></td>
+            <td>Submit current form</td>
+          </tr>
+          <tr>
+            <td>Clear Form</td>
+            <td><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">C</span></td>
+            <td>Clear all form fields</td>
+          </tr>
+          <tr>
+            <td>Next Field</td>
+            <td><span class="kbd">Tab</span></td>
+            <td>Move to next form field</td>
+          </tr>
+          <tr>
+            <td>Previous Field</td>
+            <td><span class="kbd">Shift</span> + <span class="kbd">Tab</span></td>
+            <td>Move to previous field</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="help-section" id="faq">
+      <div class="help-header">
+        <h1 class="help-title">❓ Frequently Asked Questions</h1>
+        <p class="help-description">Answers to common questions about the emergency response system.</p>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('overview')">Home</a> / FAQ
+      </div>
+
+      <h2>General Questions</h2>
+
+      <h3>Q: Is this system free to use?</h3>
+      <p>The basic emergency reporting features are free for individual users and small organizations. Enterprise features and large-scale deployments may require a subscription. Contact our sales team for pricing information.</p>
+
+      <h3>Q: Does the system work without internet?</h3>
+      <p>Yes! The system is designed to work offline. Reports are saved locally and automatically sync when internet connectivity returns. Core features like form filling, photo capture, and GPS location work without internet.</p>
+
+      <h3>Q: How accurate is the GPS location?</h3>
+      <p>GPS accuracy typically ranges from 3-5 meters under good conditions. Accuracy depends on device quality, satellite visibility, and environmental factors. The system displays accuracy estimates to help you understand location precision.</p>
+
+      <h3>Q: Can I delete or edit reports after submission?</h3>
+      <p>Reports can be updated or amended, but not completely deleted due to audit trail requirements. Contact an administrator if you need to modify critical information in a submitted report.</p>
+
+      <h2>Technical Questions</h2>
+
+      <h3>Q: What browsers are supported?</h3>
+      <p>The system works on all modern browsers including Chrome, Firefox, Safari, and Edge. For best performance, use the latest version of Chrome or Firefox. Mobile browsers are fully supported.</p>
+
+      <h3>Q: How much storage space does the app use?</h3>
+      <p>The web app itself is small (under 10MB), but offline maps and cached data can use additional space. You can manage storage usage in the device settings page.</p>
+
+      <h3>Q: Is my data secure?</h3>
+      <p>Yes. All data is encrypted in transit and at rest. The system follows industry security standards and emergency service protocols. Location data is only used for emergency response purposes.</p>
+
+      <h3>Q: Can I use this on multiple devices?</h3>
+      <p>Yes! Your account and reports sync across all your devices. You can start a report on your phone and finish it on a computer, or vice versa.</p>
+
+      <h2>Emergency Response Questions</h2>
+
+      <h3>Q: Should I use this instead of calling 911?</h3>
+      <p><strong>No!</strong> For life-threatening emergencies, always call 911 first. Use this system for coordination, documentation, and non-critical incident reporting.</p>
+
+      <h3>Q: How quickly do responders see my reports?</h3>
+      <p>Reports are visible immediately to authorized responders. Critical incidents trigger instant notifications. Response times depend on severity, available resources, and local emergency protocols.</p>
+
+      <h3>Q: What happens if I report a false emergency?</h3>
+      <p>False reports waste valuable resources and may have legal consequences. Always verify information before submitting. Mark training exercises and tests clearly to avoid confusion.</p>
+
+      <h3>Q: Can I report incidents I didn't witness directly?</h3>
+      <p>Yes, but clearly indicate this in your report. Include the source of information and mark your confidence level. Second-hand reports are valuable but should be clearly labeled.</p>
+
+      <h2>Privacy Questions</h2>
+
+      <h3>Q: Who can see my reports?</h3>
+      <p>Reports are visible to authorized emergency responders, system administrators, and relevant government agencies. Personal information is protected according to privacy laws and emergency protocols.</p>
+
+      <h3>Q: Can I report anonymously?</h3>
+      <p>Yes, but providing contact information helps responders follow up if needed. Anonymous reports are accepted but may receive lower priority if they cannot be verified.</p>
+
+      <h3>Q: How long is my data stored?</h3>
+      <p>Emergency reports are typically retained for 2-7 years depending on local regulations and incident severity. You can request data deletion for non-emergency reports.</p>
+
+      <div class="info-box">
+        <div class="info-box-title">💬 Still Have Questions?</div>
+        <p>If you can't find the answer you're looking for, please <a href="/feedback">contact our support team</a>. We're here to help!</p>
+      </div>
+    </div>
+
+    <!-- API Documentation Section -->
+    <div class="help-section" id="api-docs">
+      <div class="help-header">
+        <h1 class="help-title">📡 API Documentation</h1>
+        <p class="help-description">Technical documentation for developers integrating with the emergency response system.</p>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('overview')">Home</a> / API Documentation
+      </div>
+
+      <div class="info-box">
+        <div class="info-box-title">🔑 API Access</div>
+        <p>API access requires authentication and approval. Contact your system administrator or our enterprise team to request API credentials.</p>
+      </div>
+
+      <h2>Authentication</h2>
+      <p>The API uses JWT tokens for authentication. Include the token in the Authorization header:</p>
+      
+      <div style="background: #f3f4f6; padding: 1rem; border-radius: 6px; font-family: monospace; margin: 1rem 0;">
+        Authorization: Bearer YOUR_JWT_TOKEN
+      </div>
+
+      <h2>Base URL</h2>
+      <div style="background: #f3f4f6; padding: 1rem; border-radius: 6px; font-family: monospace; margin: 1rem 0;">
+        https://api.emergency-system.com/v1/
+      </div>
+
+      <h2>Core Endpoints</h2>
+
+      <h3>Submit Emergency Report</h3>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1rem; margin: 1rem 0;">
+        <strong>POST</strong> /incidents<br><br>
+        
+        <strong>Request Body:</strong>
+        <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem; font-family: monospace; font-size: 0.875rem;">
+{<br>
+&nbsp;&nbsp;"type": "fire",<br>
+&nbsp;&nbsp;"priority": "high",<br>
+&nbsp;&nbsp;"location": {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"lat": 34.0522,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"lng": -118.2437,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"address": "123 Main St"<br>
+&nbsp;&nbsp;},<br>
+&nbsp;&nbsp;"description": "Building fire on 2nd floor",<br>
+&nbsp;&nbsp;"reporter": {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"name": "John Doe",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"contact": "555-1234"<br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+      </div>
+
+      <h3>Get Incident Status</h3>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1rem; margin: 1rem 0;">
+        <strong>GET</strong> /incidents/{id}<br><br>
+        
+        <strong>Response:</strong>
+        <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem; font-family: monospace; font-size: 0.875rem;">
+{<br>
+&nbsp;&nbsp;"id": "incident-123",<br>
+&nbsp;&nbsp;"status": "active",<br>
+&nbsp;&nbsp;"assignedTo": "Fire Department Unit 7",<br>
+&nbsp;&nbsp;"estimatedResponse": "8 minutes",<br>
+&nbsp;&nbsp;"updates": [...]<br>
+}
+        </div>
+      </div>
+
+      <h3>Update Incident Status</h3>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1rem; margin: 1rem 0;">
+        <strong>PATCH</strong> /incidents/{id}<br><br>
+        
+        <strong>Request Body:</strong>
+        <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem; font-family: monospace; font-size: 0.875rem;">
+{<br>
+&nbsp;&nbsp;"status": "resolved",<br>
+&nbsp;&nbsp;"resolution": "Fire extinguished, no injuries",<br>
+&nbsp;&nbsp;"responder": "Fire Chief Johnson"<br>
+}
+        </div>
+      </div>
+
+      <h2>Webhook Events</h2>
+      <p>The system can send webhook notifications for important events:</p>
+
+      <ul>
+        <li><strong>incident.created</strong> - New emergency report submitted</li>
+        <li><strong>incident.updated</strong> - Report status or details changed</li>
+        <li><strong>incident.assigned</strong> - Report assigned to responder</li>
+        <li><strong>incident.resolved</strong> - Emergency resolved</li>
+        <li><strong>system.alert</strong> - System-wide emergency alert</li>
+      </ul>
+
+      <h2>Rate Limits</h2>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Endpoint Type</th>
+            <th>Rate Limit</th>
+            <th>Burst Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Emergency Reports</td>
+            <td>100/hour</td>
+            <td>10/minute</td>
+          </tr>
+          <tr>
+            <td>Status Updates</td>
+            <td>1000/hour</td>
+            <td>50/minute</td>
+          </tr>
+          <tr>
+            <td>Data Queries</td>
+            <td>500/hour</td>
+            <td>25/minute</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Error Codes</h2>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>400</td>
+            <td>Bad Request</td>
+            <td>Check request format</td>
+          </tr>
+          <tr>
+            <td>401</td>
+            <td>Unauthorized</td>
+            <td>Verify authentication</td>
+          </tr>
+          <tr>
+            <td>403</td>
+            <td>Forbidden</td>
+            <td>Check permissions</td>
+          </tr>
+          <tr>
+            <td>429</td>
+            <td>Rate Limited</td>
+            <td>Reduce request frequency</td>
+          </tr>
+          <tr>
+            <td>500</td>
+            <td>Server Error</td>
+            <td>Contact support</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="info-box">
+        <div class="info-box-title">🛠️ Developer Resources</div>
+        <p>For detailed API documentation, code examples, and SDKs, visit our developer portal or contact the technical team.</p>
+      </div>
+    </div>
+
+    <!-- Offline Mode Section -->
+    <div class="help-section" id="offline-mode">
+      <div class="help-header">
+        <h1 class="help-title">📱 Offline Mode</h1>
+        <p class="help-description">How the system works without internet connectivity.</p>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="#" onclick="showSection('overview')">Home</a> / Offline Mode
+      </div>
+
+      <h2>How Offline Mode Works</h2>
+      <p>The Emergency Response System is designed to work even when internet connectivity is poor or unavailable - a common scenario during disasters.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <span class="feature-icon">💾</span>
+          <h4 class="feature-title">Local Storage</h4>
+          <p class="feature-description">Reports and data are saved on your device until connectivity returns.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🗺️</span>
+          <h4 class="feature-title">Cached Maps</h4>
+          <p class="feature-description">Essential map data is stored locally for navigation without internet.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">📷</span>
+          <h4 class="feature-title">Media Capture</h4>
+          <p class="feature-description">Photos, videos, and audio can be captured and stored offline.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🔄</span>
+          <h4 class="feature-title">Auto Sync</h4>
+          <p class="feature-description">Automatic synchronization when internet connection is restored.</p>
+        </div>
+      </div>
+
+      <h2>What Works Offline</h2>
+      <ul>
+        <li>✅ Emergency report submission</li>
+        <li>✅ Photo and video capture</li>
+        <li>✅ GPS location detection</li>
+        <li>✅ Audio note recording</li>
+        <li>✅ Basic map navigation</li>
+        <li>✅ Form auto-save</li>
+        <li>✅ Device status monitoring</li>
+      </ul>
+
+      <h2>What Requires Internet</h2>
+      <ul>
+        <li>❌ Real-time incident updates</li>
+        <li>❌ Live dashboard data</li>
+        <li>❌ Report synchronization</li>
+        <li>❌ AI analysis results</li>
+        <li>❌ Admin dashboard features</li>
+        <li>❌ Mesh network discovery</li>
+      </ul>
+
+      <h2>Managing Offline Reports</h2>
+      <p>When working offline, your reports are queued locally. Use the <a href="/sync-status">Sync Status</a> page to:</p>
+      
+      <ul>
+        <li>View queued reports waiting to sync</li>
+        <li>Monitor sync progress and failures</li>
+        <li>Manually retry failed submissions</li>
+        <li>Edit reports before they sync</li>
+      </ul>
+
+      <div class="info-box warning">
+        <div class="info-box-title">⚠️ Storage Limitations</div>
+        <p>Your device has limited storage space. Large photos and videos may fill up local storage. The system will warn you when space is low and suggest clearing old data.</p>
+      </div>
+
+      <h2>Best Practices for Offline Use</h2>
+      <ol>
+        <li><strong>Prepare in advance:</strong> Load the system while online to cache essential data</li>
+        <li><strong>Monitor storage:</strong> Keep adequate free space for reports and media</li>
+        <li><strong>Optimize photos:</strong> Use lower resolution for non-critical documentation</li>
+        <li><strong>Prioritize reports:</strong> Submit critical incidents first when connection returns</li>
+        <li><strong>Check sync status:</strong> Regularly verify that reports have been transmitted</li>
+      </ol>
+
+      <div class="video-container">
+        <div class="video-placeholder">
+          <span class="video-placeholder-icon">📹</span>
+          <div>Video Tutorial: Using Offline Mode</div>
+          <div style="font-size: 0.875rem; margin-top: 0.5rem;">Step-by-step guide to offline functionality</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+class HelpSystem {
+  constructor() {
+    this.currentSection = 'overview';
+    this.searchIndex = this.buildSearchIndex();
+    
+    this.init();
+  }
+
+  init() {
+    this.setupEventListeners();
+    this.handleDeepLinks();
+  }
+
+  setupEventListeners() {
+    // Handle browser back/forward
+    window.addEventListener('popstate', (e) => {
+      if (e.state && e.state.section) {
+        this.showSection(e.state.section, false);
+      }
+    });
+  }
+
+  handleDeepLinks() {
+    // Support direct links to help sections
+    const hash = window.location.hash.substring(1);
+    if (hash && document.getElementById(hash)) {
+      this.showSection(hash, false);
+    }
+  }
+
+  showSection(sectionId, updateHistory = true) {
+    // Hide all sections
+    document.querySelectorAll('.help-section').forEach(section => {
+      section.classList.remove('active');
+    });
+
+    // Remove active state from nav items
+    document.querySelectorAll('.help-nav-item').forEach(item => {
+      item.classList.remove('active');
+    });
+
+    // Show selected section
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.classList.add('active');
+      this.currentSection = sectionId;
+
+      // Update nav active state
+      const navItem = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+      if (navItem) {
+        navItem.classList.add('active');
+      }
+
+      // Update URL and history
+      if (updateHistory) {
+        const newUrl = `${window.location.pathname}#${sectionId}`;
+        history.pushState({ section: sectionId }, '', newUrl);
+      }
+
+      // Scroll to top
+      document.querySelector('.help-content').scrollTop = 0;
+    }
+  }
+
+  buildSearchIndex() {
+    const index = [];
+    
+    // Index all help sections
+    document.querySelectorAll('.help-section').forEach(section => {
+      const id = section.id;
+      const title = section.querySelector('.help-title')?.textContent || '';
+      const content = section.textContent || '';
+      
+      index.push({
+        id,
+        title,
+        content: content.toLowerCase(),
+        snippet: this.generateSnippet(content)
+      });
+    });
+
+    return index;
+  }
+
+  generateSnippet(content) {
+    // Generate a snippet from content
+    const words = content.split(' ').slice(0, 20);
+    return words.join(' ') + (words.length >= 20 ? '...' : '');
+  }
+
+  search(query) {
+    if (!query || query.length < 2) {
+      return [];
+    }
+
+    const lowerQuery = query.toLowerCase();
+    const results = [];
+
+    this.searchIndex.forEach(item => {
+      const titleMatch = item.title.toLowerCase().includes(lowerQuery);
+      const contentMatch = item.content.includes(lowerQuery);
+      
+      if (titleMatch || contentMatch) {
+        let score = 0;
+        if (titleMatch) score += 10;
+        if (contentMatch) score += 1;
+        
+        results.push({
+          ...item,
+          score
+        });
+      }
+    });
+
+    // Sort by relevance score
+    results.sort((a, b) => b.score - a.score);
+    
+    return results.slice(0, 5); // Return top 5 results
+  }
+
+  displaySearchResults(results) {
+    const container = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+      container.innerHTML = '<div class="search-result-item">No results found</div>';
+    } else {
+      container.innerHTML = results.map(result => `
+        <div class="search-result-item" onclick="helpSystem.showSection('${result.id}'); helpSystem.hideSearchResults();">
+          <div class="search-result-title">${result.title}</div>
+          <div class="search-result-snippet">${result.snippet}</div>
+        </div>
+      `).join('');
+    }
+    
+    container.classList.add('show');
+  }
+
+  hideSearchResults() {
+    document.getElementById('searchResults').classList.remove('show');
+  }
+}
+
+// Global help system instance
+let helpSystem;
+
+// Global functions
+function showSection(sectionId) {
+  if (helpSystem) {
+    helpSystem.showSection(sectionId);
+  }
+}
+
+function searchHelp(query) {
+  if (!helpSystem) return;
+  
+  if (query.length < 2) {
+    helpSystem.hideSearchResults();
+    return;
+  }
+  
+  const results = helpSystem.search(query);
+  helpSystem.displaySearchResults(results);
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  helpSystem = new HelpSystem();
+  
+  // Close search results when clicking outside
+  document.addEventListener('click', (e) => {
+    const searchBox = document.querySelector('.search-box');
+    if (!searchBox.contains(e.target)) {
+      helpSystem.hideSearchResults();
+    }
+  });
+});
+
+// Print functionality
+function printHelp() {
+  window.print();
+}
+
+// Copy code snippets
+function copyCode(element) {
+  const code = element.textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    // Show temporary feedback
+    const originalText = element.textContent;
+    element.textContent = 'Copied!';
+    setTimeout(() => {
+      element.textContent = originalText;
+    }, 2000);
+  });
+}
+
+// Add copy buttons to code blocks
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('pre, code').forEach(block => {
+    if (block.textContent.length > 50) {
+      block.style.position = 'relative';
+      block.style.cursor = 'pointer';
+      block.title = 'Click to copy';
+      block.addEventListener('click', () => copyCode(block));
+    }
+  });
+});
+
+// Smooth scrolling for anchor links
+document.addEventListener('click', (e) => {
+  if (e.target.tagName === 'A' && e.target.getAttribute('href')?.startsWith('#')) {
+    e.preventDefault();
+    const targetId = e.target.getAttribute('href').substring(1);
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+});
+
+// Keyboard shortcuts for help system
+document.addEventListener('keydown', (e) => {
+  // Ctrl+K to focus search
+  if (e.ctrlKey && e.key === 'k') {
+    e.preventDefault();
+    document.querySelector('.search-input').focus();
+  }
+  
+  // Escape to close search results
+  if (e.key === 'Escape') {
+    helpSystem.hideSearchResults();
+  }
+  
+  // Arrow keys for section navigation
+  if (e.altKey && ['ArrowUp', 'ArrowDown'].includes(e.key)) {
+    e.preventDefault();
+    const sections = ['overview', 'quick-start', 'emergency-reporting', 'ai-analysis', 'troubleshooting', 'keyboard-shortcuts', 'faq', 'api-docs', 'offline-mode'];
+    const currentIndex = sections.indexOf(helpSystem.currentSection);
+    
+    if (e.key === 'ArrowDown' && currentIndex < sections.length - 1) {
+      helpSystem.showSection(sections[currentIndex + 1]);
+    } else if (e.key === 'ArrowUp' && currentIndex > 0) {
+      helpSystem.showSection(sections[currentIndex - 1]);
+    }
+  }
+});
+
+// Track help usage analytics
+function trackHelpUsage(section) {
+  // In a real application, this would send analytics data
+  console.log(`Help section viewed: ${section}`);
+  
+  // Store in localStorage for admin insights
+  const usage = JSON.parse(localStorage.getItem('helpUsage') || '{}');
+  usage[section] = (usage[section] || 0) + 1;
+  usage.lastAccessed = Date.now();
+  localStorage.setItem('helpUsage', JSON.stringify(usage));
+}
+
+// Track when sections are viewed
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && entry.target.classList.contains('active')) {
+      trackHelpUsage(entry.target.id);
+    }
+  });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('.help-section').forEach(section => {
+  observer.observe(section);
+});
+</script>
+{% endblock %}{% extends "templates/base.html" %}
+
+{% block title %}Help & Documentation - Disaster Response Assistant{% endblock %}
+{% block page_title %}📖 Help & Documentation{% endblock %}
+{% block subtitle %}Comprehensive guides and tutorials for the emergency response system{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+  .help-container {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .help-sidebar {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    height: fit-content;
+    position: sticky;
+    top: 1rem;
+  }
+
+  .help-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .help-nav > li {
+    margin-bottom: 0.5rem;
+  }
+
+  .help-nav-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: #6b7280;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .help-nav-item:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  .help-nav-item.active {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .help-nav-category {
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #9ca3af;
+    padding: 0.5rem 1rem;
+    margin: 1rem 0 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .help-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    min-height: 600px;
+  }
+
+  .help-section {
+    display: none;
+  }
+
+  .help-section.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .help-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .help-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  .help-description {
+    color: #6b7280;
+    font-size: 1.1rem;
+  }
+
+  .help-content h2 {
+    color: #1f2937;
+    margin: 2rem 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+
+  .help-content h3 {
+    color: #374151;
+    margin: 1.5rem 0 0.75rem 0;
+  }
+
+  .help-content p {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    color: #374151;
+  }
+
+  .help-content ul,
+  .help-content ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+  }
+
+  .help-content li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+    color: #374151;
+  }
+
+  .step-list {
+    counter-reset: step-counter;
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .step-list li {
+    counter-increment: step-counter;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+  }
+
+  .step-list li::before {
+    content: counter(step-counter);
+    position: absolute;
+    left: -2rem;
+    top: 1rem;
+    background: #3b82f6;
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.875rem;
+  }
+
+  .info-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .info-box.warning {
+    background: #fffbeb;
+    border-color: #fed7aa;
+  }
+
+  .info-box.danger {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+
+  .info-box.success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+
+  .info-box-title {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .feature-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .feature-title {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-description {
+    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .screenshot-container {
+    background: #f3f4f6;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    margin: 1.5rem 0;
+    color: #6b7280;
+    font-style: italic;
+  }
+
+  .shortcut-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+
+  .shortcut-table th,
+  .shortcut-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .shortcut-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .shortcut-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .kbd {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 0.125rem 0.375rem;
+    font-family: monospace;
+    font-size: 0.875rem;
+    font-weight: bold;
+  }
+
+  .search-box {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+  }
+
+  .search-results {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    max-height: 300px;
+    overflow-

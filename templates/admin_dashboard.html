@@ -1,0 +1,1173 @@
+<button class="btn btn-small btn-outline" onclick="editUser('USR-002')">Edit</button>
+                  <button class="btn btn-small btn-secondary" onclick="promoteUser('USR-002')">Promote</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="user-avatar" style="background: #f59e0b;">MB</div>
+                    <div>
+                      <div style="font-weight: 500;">Mike Brown</div>
+                      <div style="font-size: 0.75rem; color: #6b7280;">ID: USR-003</div>
+                    </div>
+                  </div>
+                </td>
+                <td>mike.brown@ems.org</td>
+                <td><span class="status-badge status-resolved">Responder</span></td>
+                <td><span class="status-badge status-pending">Away</span></td>
+                <td>2 hours ago</td>
+                <td>145</td>
+                <td>
+                  <button class="btn btn-small btn-outline" onclick="editUser('USR-003')">Edit</button>
+                  <button class="btn btn-small btn-primary" onclick="messageUser('USR-003')">Message</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devices Section -->
+    <div class="section" id="devices">
+      <div class="content-header">
+        <h2 class="content-title">Device Management</h2>
+        <div>
+          <button class="btn btn-primary" onclick="registerDevice()">
+            ➕ Register Device
+          </button>
+          <button class="btn btn-secondary" onclick="deviceDiagnostics()">
+            🔧 Run Diagnostics
+          </button>
+        </div>
+      </div>
+      
+      <div class="content-body">
+        <div class="stats-grid">
+          <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+            <div class="stat-number">189</div>
+            <div class="stat-label">Online Devices</div>
+            <div class="stat-change">76% of total</div>
+          </div>
+          
+          <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+            <div class="stat-number">34</div>
+            <div class="stat-label">Offline Devices</div>
+            <div class="stat-change">Requires attention</div>
+          </div>
+          
+          <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+            <div class="stat-number">98.2%</div>
+            <div class="stat-label">System Health</div>
+            <div class="stat-change positive">+0.5% today</div>
+          </div>
+          
+          <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+            <div class="stat-number">47</div>
+            <div class="stat-label">Mesh Nodes</div>
+            <div class="stat-change">Active network</div>
+          </div>
+        </div>
+
+        <div class="data-table">
+          <div class="table-header">
+            <h3 class="table-title">Registered Devices</h3>
+            <div class="table-actions">
+              <button class="btn btn-small btn-outline">📊 Analytics</button>
+              <button class="btn btn-small btn-outline">🔄 Sync All</button>
+            </div>
+          </div>
+          
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Device ID</th>
+                <th>Type</th>
+                <th>User</th>
+                <th>Status</th>
+                <th>Last Seen</th>
+                <th>Battery</th>
+                <th>Location</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>DEV-001</td>
+                <td>📱 Mobile Device</td>
+                <td>John Doe</td>
+                <td><span class="status-badge status-active">Online</span></td>
+                <td>Just now</td>
+                <td>85% 🔋</td>
+                <td>Downtown</td>
+                <td>
+                  <button class="btn btn-small btn-outline" onclick="pingDevice('DEV-001')">Ping</button>
+                  <button class="btn btn-small btn-primary" onclick="locateDevice('DEV-001')">Locate</button>
+                </td>
+              </tr>
+              <tr>
+                <td>DEV-002</td>
+                <td>🚁 Drone Unit</td>
+                <td>Emergency Services</td>
+                <td><span class="status-badge status-active">Active</span></td>
+                <td>3 min ago</td>
+                <td>67% 🔋</td>
+                <td>Fire Zone Alpha</td>
+                <td>
+                  <button class="btn btn-small btn-success" onclick="deployDrone('DEV-002')">Deploy</button>
+                  <button class="btn btn-small btn-outline" onclick="recallDrone('DEV-002')">Recall</button>
+                </td>
+              </tr>
+              <tr>
+                <td>DEV-003</td>
+                <td>📡 Base Station</td>
+                <td>Command Center</td>
+                <td><span class="status-badge status-pending">Maintenance</span></td>
+                <td>1 hour ago</td>
+                <td>UPS Active</td>
+                <td>HQ Building</td>
+                <td>
+                  <button class="btn btn-small btn-danger" onclick="restartDevice('DEV-003')">Restart</button>
+                  <button class="btn btn-small btn-outline" onclick="diagnosticDevice('DEV-003')">Diagnose</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div class="section" id="reports">
+      <div class="content-header">
+        <h2 class="content-title">Analytics & Reports</h2>
+        <div>
+          <button class="btn btn-primary" onclick="generateReport()">
+            📊 New Report
+          </button>
+          <button class="btn btn-secondary" onclick="scheduleReport()">
+            ⏰ Schedule
+          </button>
+        </div>
+      </div>
+      
+      <div class="content-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Report Type</label>
+            <select class="form-input" id="reportType">
+              <option value="incident-summary">Incident Summary</option>
+              <option value="response-performance">Response Performance</option>
+              <option value="user-activity">User Activity</option>
+              <option value="device-health">Device Health</option>
+              <option value="compliance">Compliance Report</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Time Period</label>
+            <select class="form-input" id="timePeriod">
+              <option value="last-24h">Last 24 Hours</option>
+              <option value="last-week">Last Week</option>
+              <option value="last-month">Last Month</option>
+              <option value="last-quarter">Last Quarter</option>
+              <option value="custom">Custom Range</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Format</label>
+            <select class="form-input" id="reportFormat">
+              <option value="pdf">PDF Document</option>
+              <option value="excel">Excel Spreadsheet</option>
+              <option value="json">JSON Data</option>
+              <option value="dashboard">Interactive Dashboard</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h3 style="margin-bottom: 1rem;">Key Performance Metrics</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            <div style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+              <div style="font-size: 2rem; font-weight: bold; color: #10b981;">94.7%</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Response Rate</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+              <div style="font-size: 2rem; font-weight: bold; color: #3b82f6;">3.8min</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Avg Response Time</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+              <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;">23</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Active Incidents</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+              <div style="font-size: 2rem; font-weight: bold; color: #8b5cf6;">847</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Total Reports</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="data-table">
+          <div class="table-header">
+            <h3 class="table-title">Scheduled Reports</h3>
+            <span style="color: #6b7280; font-size: 0.875rem;">Automated report generation</span>
+          </div>
+          
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Report Name</th>
+                <th>Type</th>
+                <th>Schedule</th>
+                <th>Recipients</th>
+                <th>Last Run</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Daily Incident Summary</td>
+                <td>Incident Summary</td>
+                <td>Daily at 9:00 AM</td>
+                <td>Command Staff (5)</td>
+                <td>Today 9:00 AM</td>
+                <td><span class="status-badge status-active">Active</span></td>
+                <td>
+                  <button class="btn btn-small btn-outline" onclick="runReport('daily-summary')">Run Now</button>
+                  <button class="btn btn-small btn-secondary" onclick="editReport('daily-summary')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Weekly Performance</td>
+                <td>Response Performance</td>
+                <td>Weekly on Monday</td>
+                <td>Management (3)</td>
+                <td>Mon 8:00 AM</td>
+                <td><span class="status-badge status-active">Active</span></td>
+                <td>
+                  <button class="btn btn-small btn-outline" onclick="runReport('weekly-perf')">Run Now</button>
+                  <button class="btn btn-small btn-secondary" onclick="editReport('weekly-perf')">Edit</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Section -->
+    <div class="section" id="settings">
+      <div class="content-header">
+        <h2 class="content-title">System Settings</h2>
+        <div>
+          <button class="btn btn-success" onclick="saveSettings()">
+            💾 Save Changes
+          </button>
+          <button class="btn btn-outline" onclick="resetSettings()">
+            🔄 Reset to Defaults
+          </button>
+        </div>
+      </div>
+      
+      <div class="content-body">
+        <div class="alert alert-warning">
+          <strong>⚠️ Warning:</strong> Changes to system settings will affect all users. Please review carefully before saving.
+        </div>
+
+        <div style="display: grid; gap: 2rem;">
+          <!-- Emergency Response Settings -->
+          <div style="background: #f9fafb; border-radius: 8px; padding: 1.5rem;">
+            <h3 style="margin-bottom: 1rem; color: #1f2937;">Emergency Response Configuration</h3>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Default Response Time Target (minutes)</label>
+                <input type="number" class="form-input" value="5" min="1" max="60">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Auto-assignment Rules</label>
+                <select class="form-input">
+                  <option value="proximity">Assign by Proximity</option>
+                  <option value="workload">Assign by Current Workload</option>
+                  <option value="specialty">Assign by Specialty</option>
+                  <option value="manual">Manual Assignment Only</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Critical Incident Threshold</label>
+                <select class="form-input">
+                  <option value="immediate">Immediate (Life-threatening)</option>
+                  <option value="urgent">Urgent (Major damage/injury)</option>
+                  <option value="high">High Priority (Significant risk)</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Escalation Timeout (minutes)</label>
+                <input type="number" class="form-input" value="15" min="5" max="120">
+              </div>
+            </div>
+          </div>
+
+          <!-- Notification Settings -->
+          <div style="background: #f9fafb; border-radius: 8px; padding: 1.5rem;">
+            <h3 style="margin-bottom: 1rem; color: #1f2937;">Notification & Alert Settings</h3>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" checked style="margin-right: 0.5rem;">
+                  Send SMS for Critical Incidents
+                </label>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" checked style="margin-right: 0.5rem;">
+                  Email Notifications for Assignments
+                </label>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" style="margin-right: 0.5rem;">
+                  Push Notifications to Mobile Apps
+                </label>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" checked style="margin-right: 0.5rem;">
+                  Public Emergency Broadcasts
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Data Management -->
+          <div style="background: #f9fafb; border-radius: 8px; padding: 1.5rem;">
+            <h3 style="margin-bottom: 1rem; color: #1f2937;">Data Management & Retention</h3>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Incident Data Retention (months)</label>
+                <input type="number" class="form-input" value="24" min="6" max="120">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">User Activity Logs Retention (months)</label>
+                <input type="number" class="form-input" value="12" min="3" max="60">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Automatic Backup Frequency</label>
+                <select class="form-input">
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" checked style="margin-right: 0.5rem;">
+                  Enable Data Encryption at Rest
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Integration Settings -->
+          <div style="background: #f9fafb; border-radius: 8px; padding: 1.5rem;">
+            <h3 style="margin-bottom: 1rem; color: #1f2937;">External System Integration</h3>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">911 Dispatch System API Endpoint</label>
+                <input type="url" class="form-input" placeholder="https://api.dispatch.local/v1">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Weather Service API Key</label>
+                <input type="password" class="form-input" placeholder="Enter API key">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">GIS Mapping Service</label>
+                <select class="form-input">
+                  <option value="openstreetmap">OpenStreetMap</option>
+                  <option value="google">Google Maps</option>
+                  <option value="esri">ESRI ArcGIS</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" style="margin-right: 0.5rem;">
+                  Enable Social Media Monitoring
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Logs Section -->
+    <div class="section" id="logs">
+      <div class="content-header">
+        <h2 class="content-title">System Logs & Audit Trail</h2>
+        <div>
+          <button class="btn btn-primary" onclick="refreshLogs()">
+            🔄 Refresh
+          </button>
+          <button class="btn btn-secondary" onclick="exportLogs()">
+            📤 Export Logs
+          </button>
+        </div>
+      </div>
+      
+      <div class="content-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Log Level</label>
+            <select class="form-input" onchange="filterLogs(this.value)">
+              <option value="all">All Levels</option>
+              <option value="error">Errors Only</option>
+              <option value="warning">Warnings & Errors</option>
+              <option value="info">Info & Above</option>
+              <option value="debug">Debug (All)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Component</label>
+            <select class="form-input" onchange="filterLogsByComponent(this.value)">
+              <option value="all">All Components</option>
+              <option value="auth">Authentication</option>
+              <option value="incident">Incident Management</option>
+              <option value="notification">Notifications</option>
+              <option value="device">Device Management</option>
+              <option value="api">API Requests</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Time Range</label>
+            <select class="form-input" onchange="filterLogsByTime(this.value)">
+              <option value="1h">Last Hour</option>
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="data-table">
+          <div class="table-header">
+            <h3 class="table-title">Recent System Activity</h3>
+            <div class="real-time-indicator">
+              <div class="pulse-dot"></div>
+              Live Tail
+            </div>
+          </div>
+          
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Level</th>
+                <th>Component</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="logsTable">
+              <tr>
+                <td>2024-12-19 14:23:45</td>
+                <td><span class="status-badge status-critical">ERROR</span></td>
+                <td>Incident</td>
+                <td>system</td>
+                <td>Assignment Failed</td>
+                <td>Unable to assign incident #2024-001 - no available responders</td>
+              </tr>
+              <tr>
+                <td>2024-12-19 14:22:18</td>
+                <td><span class="status-badge status-pending">WARN</span></td>
+                <td>Device</td>
+                <td>DEV-003</td>
+                <td>Connection Lost</td>
+                <td>Base station went offline - switching to backup</td>
+              </tr>
+              <tr>
+                <td>2024-12-19 14:21:33</td>
+                <td><span class="status-badge status-active">INFO</span></td>
+                <td>Auth</td>
+                <td>jane.smith</td>
+                <td>Login Success</td>
+                <td>User logged in from IP 192.168.1.45</td>
+              </tr>
+              <tr>
+                <td>2024-12-19 14:20:55</td>
+                <td><span class="status-badge status-active">INFO</span></td>
+                <td>Incident</td>
+                <td>john.doe</td>
+                <td>Incident Created</td>
+                <td>New fire incident reported at 123 Main St</td>
+              </tr>
+              <tr>
+                <td>2024-12-19 14:19:42</td>
+                <td><span class="status-badge status-resolved">DEBUG</span></td>
+                <td>API</td>
+                <td>mobile-app</td>
+                <td>GPS Update</td>
+                <td>Location updated for device DEV-001</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal" id="broadcastModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">📢 Broadcast Emergency Alert</h3>
+      <button class="close-btn" onclick="closeModal('broadcastModal')">&times;</button>
+    </div>
+    
+    <div style="margin-bottom: 1.5rem;">
+      <div class="form-group">
+        <label class="form-label">Alert Type</label>
+        <select class="form-input">
+          <option value="emergency">🚨 Emergency Alert</option>
+          <option value="warning">⚠️ Warning</option>
+          <option value="info">ℹ️ Information</option>
+          <option value="test">🧪 Test Alert</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Recipients</label>
+        <select class="form-input">
+          <option value="all">All Users</option>
+          <option value="responders">First Responders Only</option>
+          <option value="coordinators">Coordinators Only</option>
+          <option value="zone">Specific Geographic Zone</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Message</label>
+        <textarea class="form-textarea" placeholder="Enter emergency alert message..." maxlength="500"></textarea>
+        <small style="color: #6b7280;">0/500 characters</small>
+      </div>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button class="btn btn-outline" onclick="closeModal('broadcastModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="sendBroadcast()">🚨 Send Alert</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+class AdminDashboard {
+  constructor() {
+    this.currentSection = 'overview';
+    this.refreshInterval = null;
+    this.logTailActive = false;
+    
+    this.init();
+  }
+
+  init() {
+    // Start real-time updates
+    this.startRealTimeUpdates();
+    
+    // Initialize emergency banner check
+    this.checkEmergencyStatus();
+    
+    // Load initial data
+    this.loadDashboardData();
+  }
+
+  startRealTimeUpdates() {
+    // Update dashboard every 30 seconds
+    this.refreshInterval = setInterval(() => {
+      this.updateRealTimeData();
+    }, 30000);
+  }
+
+  updateRealTimeData() {
+    // Simulate real-time data updates
+    const stats = {
+      activeIncidents: Math.floor(Math.random() * 5) + 10,
+      totalUsers: 247 + Math.floor(Math.random() * 10),
+      onlineDevices: 189 + Math.floor(Math.random() * 20) - 10,
+      responseTime: (Math.random() * 2 + 3).toFixed(1)
+    };
+
+    document.getElementById('activeIncidents').textContent = stats.activeIncidents;
+    document.getElementById('totalUsers').textContent = stats.totalUsers;
+    document.getElementById('onlineDevices').textContent = stats.onlineDevices;
+    document.getElementById('responseTime').textContent = stats.responseTime;
+
+    // Update timestamps in tables
+    this.updateTimestamps();
+  }
+
+  updateTimestamps() {
+    // Update "time ago" displays
+    const timeElements = document.querySelectorAll('[data-timestamp]');
+    timeElements.forEach(el => {
+      const timestamp = parseInt(el.dataset.timestamp);
+      const now = Date.now();
+      const diff = now - timestamp;
+      el.textContent = this.formatTimeAgo(diff);
+    });
+  }
+
+  formatTimeAgo(milliseconds) {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days} days ago`;
+    if (hours > 0) return `${hours} hours ago`;
+    if (minutes > 0) return `${minutes} min ago`;
+    return `${seconds} sec ago`;
+  }
+
+  checkEmergencyStatus() {
+    // Check for critical incidents
+    const criticalCount = Math.floor(Math.random() * 3);
+    if (criticalCount > 0) {
+      document.getElementById('emergencyBanner').classList.add('active');
+    }
+  }
+
+  loadDashboardData() {
+    // Load section-specific data based on current view
+    switch (this.currentSection) {
+      case 'incidents':
+        this.loadIncidents();
+        break;
+      case 'users':
+        this.loadUsers();
+        break;
+      case 'devices':
+        this.loadDevices();
+        break;
+      case 'logs':
+        this.loadLogs();
+        break;
+    }
+  }
+
+  loadIncidents() {
+    // Simulated incident loading
+    console.log('Loading incidents data...');
+  }
+
+  loadUsers() {
+    // Simulated user loading
+    console.log('Loading users data...');
+  }
+
+  loadDevices() {
+    // Simulated device loading
+    console.log('Loading devices data...');
+  }
+
+  loadLogs() {
+    // Simulated log loading
+    this.logTailActive = true;
+    console.log('Starting log tail...');
+  }
+
+  showSection(sectionId) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(section => {
+      section.classList.remove('active');
+    });
+
+    // Remove active state from nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.remove('active');
+    });
+
+    // Show selected section
+    document.getElementById(sectionId).classList.add('active');
+    
+    // Add active state to clicked nav link
+    event.target.closest('.nav-link').classList.add('active');
+
+    this.currentSection = sectionId;
+    this.loadDashboardData();
+  }
+
+  // Action handlers
+  broadcastAlert() {
+    document.getElementById('broadcastModal').classList.add('show');
+  }
+
+  sendBroadcast() {
+    // Simulate sending broadcast
+    alert('🚨 Emergency alert sent to all users!');
+    this.closeModal('broadcastModal');
+  }
+
+  closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+  }
+
+  // Incident management
+  viewIncident(incidentId) {
+    alert(`📋 Viewing incident details for #${incidentId}`);
+  }
+
+  assignIncident(incidentId) {
+    const responder = prompt('Assign to responder/team:');
+    if (responder) {
+      alert(`✅ Incident #${incidentId} assigned to ${responder}`);
+    }
+  }
+
+  resolveIncident(incidentId) {
+    if (confirm(`Mark incident #${incidentId} as resolved?`)) {
+      alert(`✅ Incident #${incidentId} marked as resolved`);
+    }
+  }
+
+  // User management
+  editUser(userId) {
+    alert(`✏️ Opening user editor for ${userId}`);
+  }
+
+  suspendUser(userId) {
+    if (confirm(`Suspend user ${userId}? This will immediately revoke their access.`)) {
+      alert(`🚫 User ${userId} has been suspended`);
+    }
+  }
+
+  promoteUser(userId) {
+    const newRole = prompt('Promote to role (admin/coordinator/responder):');
+    if (newRole) {
+      alert(`⬆️ User ${userId} promoted to ${newRole}`);
+    }
+  }
+
+  messageUser(userId) {
+    const message = prompt('Send message to user:');
+    if (message) {
+      alert(`📨 Message sent to ${userId}: "${message}"`);
+    }
+  }
+
+  inviteUser() {
+    const email = prompt('Enter email address to invite:');
+    if (email) {
+      alert(`📧 Invitation sent to ${email}`);
+    }
+  }
+
+  // Device management
+  pingDevice(deviceId) {
+    alert(`📡 Pinging device ${deviceId}... Response: 45ms`);
+  }
+
+  locateDevice(deviceId) {
+    alert(`📍 Device ${deviceId} location: 34.0522°N, 118.2437°W (Downtown LA)`);
+  }
+
+  deployDrone(deviceId) {
+    if (confirm(`Deploy drone ${deviceId} to current incident location?`)) {
+      alert(`🚁 Drone ${deviceId} deployed - ETA 3 minutes`);
+    }
+  }
+
+  recallDrone(deviceId) {
+    if (confirm(`Recall drone ${deviceId} to base?`)) {
+      alert(`🏠 Drone ${deviceId} returning to base`);
+    }
+  }
+
+  restartDevice(deviceId) {
+    if (confirm(`Restart device ${deviceId}? This may cause temporary downtime.`)) {
+      alert(`🔄 Device ${deviceId} restarting...`);
+    }
+  }
+
+  diagnosticDevice(deviceId) {
+    alert(`🔧 Running diagnostics on ${deviceId}...\n\n✅ Network: OK\n✅ GPS: OK\n⚠️ Battery: Low\n✅ Storage: OK`);
+  }
+
+  registerDevice() {
+    alert('📱 Device registration wizard will open here');
+  }
+
+  deviceDiagnostics() {
+    alert('🔧 Running system-wide device diagnostics...\n\nResults will be available in 30 seconds.');
+  }
+
+  // Report management
+  generateReport() {
+    const type = document.getElementById('reportType').value;
+    const period = document.getElementById('timePeriod').value;
+    const format = document.getElementById('reportFormat').value;
+    
+    alert(`📊 Generating ${type} report for ${period} in ${format} format...\n\nReport will be ready in 2-3 minutes.`);
+  }
+
+  scheduleReport() {
+    alert('⏰ Report scheduling interface will open here');
+  }
+
+  runReport(reportId) {
+    alert(`▶️ Running scheduled report: ${reportId}`);
+  }
+
+  editReport(reportId) {
+    alert(`✏️ Editing scheduled report: ${reportId}`);
+  }
+
+  // Settings management
+  saveSettings() {
+    if (confirm('Save all configuration changes? This will apply settings system-wide.')) {
+      alert('💾 Settings saved successfully!');
+    }
+  }
+
+  resetSettings() {
+    if (confirm('Reset all settings to default values? This cannot be undone.')) {
+      alert('🔄 Settings reset to defaults');
+    }
+  }
+
+  // Log management
+  refreshLogs() {
+    alert('🔄 Refreshing system logs...');
+    // Simulate log refresh
+    setTimeout(() => {
+      this.addLogEntry('INFO', 'System', 'admin', 'Manual log refresh initiated');
+    }, 500);
+  }
+
+  exportLogs() {
+    alert('📤 Exporting system logs...\n\nDownload will start shortly.');
+  }
+
+  addLogEntry(level, component, user, action) {
+    const table = document.getElementById('logsTable');
+    const row = table.insertRow(0); // Add to top
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    
+    row.innerHTML = `
+      <td>${timestamp}</td>
+      <td><span class="status-badge status-${level.toLowerCase()}">${level}</span></td>
+      <td>${component}</td>
+      <td>${user}</td>
+      <td>${action}</td>
+      <td>User-initiated action</td>
+    `;
+    
+    // Remove oldest entries if too many
+    if (table.rows.length > 20) {
+      table.deleteRow(table.rows.length - 1);
+    }
+  }
+
+  // Filter functions
+  filterLogs(level) {
+    console.log(`Filtering logs by level: ${level}`);
+  }
+
+  filterLogsByComponent(component) {
+    console.log(`Filtering logs by component: ${component}`);
+  }
+
+  filterLogsByTime(timeRange) {
+    console.log(`Filtering logs by time: ${timeRange}`);
+  }
+
+  filterUsers(searchTerm) {
+    console.log(`Searching users: ${searchTerm}`);
+  }
+
+  filterUsersByRole(role) {
+    console.log(`Filtering users by role: ${role}`);
+  }
+
+  // Utility functions
+  dismissEmergencyBanner() {
+    document.getElementById('emergencyBanner').classList.remove('active');
+  }
+
+  refreshIncidents() {
+    alert('🔄 Refreshing incident data...');
+    this.updateRealTimeData();
+  }
+
+  createIncident() {
+    alert('➕ New incident creation form will open here');
+  }
+
+  exportUsers() {
+    alert('📤 Exporting user data to CSV...\n\nDownload will start shortly.');
+  }
+
+  // Cleanup
+  destroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+    this.logTailActive = false;
+  }
+}
+
+// Global dashboard instance
+let adminDashboard;
+
+// Global functions for button handlers
+function showSection(sectionId) {
+  if (adminDashboard) adminDashboard.showSection(sectionId);
+}
+
+function broadcastAlert() {
+  if (adminDashboard) adminDashboard.broadcastAlert();
+}
+
+function sendBroadcast() {
+  if (adminDashboard) adminDashboard.sendBroadcast();
+}
+
+function closeModal(modalId) {
+  if (adminDashboard) adminDashboard.closeModal(modalId);
+}
+
+function dismissEmergencyBanner() {
+  if (adminDashboard) adminDashboard.dismissEmergencyBanner();
+}
+
+function refreshIncidents() {
+  if (adminDashboard) adminDashboard.refreshIncidents();
+}
+
+function createIncident() {
+  if (adminDashboard) adminDashboard.createIncident();
+}
+
+function viewIncident(id) {
+  if (adminDashboard) adminDashboard.viewIncident(id);
+}
+
+function assignIncident(id) {
+  if (adminDashboard) adminDashboard.assignIncident(id);
+}
+
+function resolveIncident(id) {
+  if (adminDashboard) adminDashboard.resolveIncident(id);
+}
+
+function editUser(id) {
+  if (adminDashboard) adminDashboard.editUser(id);
+}
+
+function suspendUser(id) {
+  if (adminDashboard) adminDashboard.suspendUser(id);
+}
+
+function promoteUser(id) {
+  if (adminDashboard) adminDashboard.promoteUser(id);
+}
+
+function messageUser(id) {
+  if (adminDashboard) adminDashboard.messageUser(id);
+}
+
+function inviteUser() {
+  if (adminDashboard) adminDashboard.inviteUser();
+}
+
+function exportUsers() {
+  if (adminDashboard) adminDashboard.exportUsers();
+}
+
+function filterUsers(term) {
+  if (adminDashboard) adminDashboard.filterUsers(term);
+}
+
+function filterUsersByRole(role) {
+  if (adminDashboard) adminDashboard.filterUsersByRole(role);
+}
+
+function pingDevice(id) {
+  if (adminDashboard) adminDashboard.pingDevice(id);
+}
+
+function locateDevice(id) {
+  if (adminDashboard) adminDashboard.locateDevice(id);
+}
+
+function deployDrone(id) {
+  if (adminDashboard) adminDashboard.deployDrone(id);
+}
+
+function recallDrone(id) {
+  if (adminDashboard) adminDashboard.recallDrone(id);
+}
+
+function restartDevice(id) {
+  if (adminDashboard) adminDashboard.restartDevice(id);
+}
+
+function diagnosticDevice(id) {
+  if (adminDashboard) adminDashboard.diagnosticDevice(id);
+}
+
+function registerDevice() {
+  if (adminDashboard) adminDashboard.registerDevice();
+}
+
+function deviceDiagnostics() {
+  if (adminDashboard) adminDashboard.deviceDiagnostics();
+}
+
+function generateReport() {
+  if (adminDashboard) adminDashboard.generateReport();
+}
+
+function scheduleReport() {
+  if (adminDashboard) adminDashboard.scheduleReport();
+}
+
+function runReport(id) {
+  if (adminDashboard) adminDashboard.runReport(id);
+}
+
+function editReport(id) {
+  if (adminDashboard) adminDashboard.editReport(id);
+}
+
+function saveSettings() {
+  if (adminDashboard) adminDashboard.saveSettings();
+}
+
+function resetSettings() {
+  if (adminDashboard) adminDashboard.resetSettings();
+}
+
+function refreshLogs() {
+  if (adminDashboard) adminDashboard.refreshLogs();
+}
+
+function exportLogs() {
+  if (adminDashboard) adminDashboard.exportLogs();
+}
+
+function filterLogs(level) {
+  if (adminDashboard) adminDashboard.filterLogs(level);
+}
+
+function filterLogsByComponent(component) {
+  if (adminDashboard) adminDashboard.filterLogsByComponent(component);
+}
+
+function filterLogsByTime(timeRange) {
+  if (adminDashboard) adminDashboard.filterLogsByTime(timeRange);
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  adminDashboard = new AdminDashboard();
+});
+
+// Cleanup when page unloads
+window.addEventListener('beforeunload', () => {
+  if (adminDashboard) {
+    adminDashboard.destroy();
+  }
+});
+
+// Handle modal clicks outside content
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal')) {
+    e.target.classList.remove('show');
+  }
+});
+
+// Real-time log simulation
+setInterval(() => {
+  if (adminDashboard && adminDashboard.currentSection === 'logs' && adminDashboard.logTailActive) {
+    const logTypes = ['INFO', 'WARN', 'ERROR', 'DEBUG'];
+    const components = ['Auth', 'Incident', 'Device', 'API', 'Notification'];
+    const users = ['system', 'john.doe', 'jane.smith', 'auto-scheduler'];
+    const actions = [
+      'Login Success', 'Data Sync', 'Status Update', 'Health Check',
+      'Backup Complete', 'Alert Sent', 'Device Ping', 'Report Generated'
+    ];
+
+    const randomLog = {
+      level: logTypes[Math.floor(Math.random() * logTypes.length)],
+      component: components[Math.floor(Math.random() * components.length)],
+      user: users[Math.floor(Math.random() * users.length)],
+      action: actions[Math.floor(Math.random() * actions.length)]
+    };
+
+    // Add random log entry every 10-30 seconds
+    if (Math.random() < 0.3) {
+      adminDashboard.addLogEntry(randomLog.level, randomLog.component, randomLog.user, randomLog.action);
+    }
+  }
+}, 10000);
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  // Alt + number keys for quick section navigation
+  if (e.altKey && !e.shiftKey && !e.ctrlKey) {
+    const sections = ['overview', 'incidents', 'users', 'devices', 'reports', 'settings', 'logs'];
+    const keyNum = parseInt(e.key);
+    if (keyNum >= 1 && keyNum <= sections.length) {
+      e.preventDefault();
+      showSection(sections[keyNum - 1]);
+    }
+  }
+  
+  // Ctrl + R for refresh current section
+  if (e.ctrlKey && e.key === 'r' && !e.shiftKey) {
+    e.preventDefault();
+    if (adminDashboard) {
+      switch (adminDashboard.currentSection) {
+        case 'incidents':
+          refreshIncidents();
+          break;
+        case 'logs':
+          refreshLogs();
+          break;
+        default:
+          adminDashboard.updateRealTimeData();
+      }
+    }
+  }
+  
+  // Esc key to close modals
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal.show').forEach(modal => {
+      modal.classList.remove('show');
+    });
+  }
+});
+</script>
+{% endblock %}{% extends "templates/base.html" %}
