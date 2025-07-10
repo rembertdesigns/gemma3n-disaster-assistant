@@ -1,16 +1,10 @@
 # ================================================================================
-# ENHANCED DISASTER RESPONSE & RECOVERY ASSISTANT API
-# Complete FastAPI Application with Citizen Portal Integration
-# Version: 3.0.0 - Ultimate Emergency Management System
-# ================================================================================
-
-# ================================================================================
 # IMPORTS & DEPENDENCIES
 # ================================================================================
 
 from fastapi import (
     FastAPI, Request, Form, UploadFile, File, Depends, HTTPException,
-    Body, Query, BackgroundTasks, Header
+    Body, Query, BackgroundTasks, Header, WebSocket, WebSocketDisconnect
 )
 from fastapi.responses import (
     HTMLResponse, FileResponse, JSONResponse, RedirectResponse,
@@ -34,19 +28,30 @@ import zipfile
 import io
 import base64
 import logging
+import sys
 import tempfile
 import asyncio
 import hashlib
 import secrets
 from contextlib import asynccontextmanager
+from pydantic import BaseModel, Field, validator, EmailStr
+from enum import Enum
+import time
+import psutil
+from functools import wraps
+from collections import defaultdict, deque
+from threading import Lock
+from dataclasses import dataclass
+import bcrypt
+import jwt
 
-# External dependencies
+# External dependencies with fallback handling
 try:
     from weasyprint import HTML
     WEASYPRINT_AVAILABLE = True
 except ImportError:
     WEASYPRINT_AVAILABLE = False
-    
+
 from jinja2 import Environment, FileSystemLoader
 from io import BytesIO
 
@@ -98,16 +103,160 @@ except ImportError:
     def generate_report_pdf(data): return "simulated_report.pdf"
     def generate_map_preview_data(lat, lon): return {"preview": "simulated"}
 
+# ================================================================================
+# CONFIGURATION MANAGEMENT
+# ================================================================================
+
+@dataclass
+class AppConfig:
+    """Application configuration with environment variable support"""
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    
+    # Database
+    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{Path.cwd()}/data/emergency_response.db")
+    
+    # File uploads
+    MAX_FILE_SIZE_MB: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
+    UPLOAD_FOLDER: str = os.getenv("UPLOAD_FOLDER", "uploads")
+    
+    # AI Configuration
+    AI_MODEL_VARIANT: str = os.getenv("AI_MODEL_VARIANT", "gemma-3n-4b")
+    AI_CONTEXT_WINDOW: int = int(os.getenv("AI_CONTEXT_WINDOW", "64000"))
+    
+    # Rate limiting
+    RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+    RATE_LIMIT_WINDOW: int = int(os.getenv("RATE_LIMIT_WINDOW", "3600"))
+    
+    # Environment
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    
+    # External services
+    ENABLE_NOTIFICATIONS: bool = os.getenv("ENABLE_NOTIFICATIONS", "false").lower() == "true"
+    NOTIFICATION_WEBHOOK_URL: Optional[str] = os.getenv("NOTIFICATION_WEBHOOK_URL")
+    
+    # Logging
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_FORMAT: str = os.getenv("LOG_FORMAT", "detailed")
+
+# Global config instance
+config = AppConfig()
+
+# ================================================================================
+# ENHANCED LOGGING SETUP
+# ================================================================================
+
+def setup_logging():
+    """Setup comprehensive logging system with structured output"""
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    
+    class StructuredFormatter(logging.Formatter):
+        def format(self, record):
+            log_data = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "level": record.levelname,
+                "logger": record.name,
+                "message": record.getMessage(),
+                "module": record.module,
+                "function": record.funcName,
+                "line": record.lineno
+            }
+            if record.exc_info:
+                log_data["exception"] = self.formatException(record.exc_info)
+            if hasattr(record, 'user_id'):
+                log_data["user_id"] = record.user_id
+            if hasattr(record, 'request_id'):
+                log_data["request_id"] = record.request_id
+            if hasattr(record, 'ip_address'):
+                log_data["ip_address"] = record.ip_address
+            return json.dumps(log_data)
+            
+    root_logger = logging.getLogger()
+    root_logger.setLevel(getattr(logging, config.LOG_LEVEL.upper()))
+    
+    # Clear existing handlers
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+        
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    
+    if config.LOG_FORMAT == "structured":
+        console_handler.setFormatter(StructuredFormatter())
+    else:
+        console_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        console_handler.setFormatter(console_formatter)
+    
+    root_logger.addHandler(console_handler)
+    
+    # File handlers
+    file_handler = logging.FileHandler(log_dir / "app.log")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(StructuredFormatter())
+    root_logger.addHandler(file_handler)
+    
+    error_handler = logging.FileHandler(log_dir / "errors.log")
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(StructuredFormatter())
+    root_logger.addHandler(error_handler)
+    
+    # Security audit logger
+    audit_handler = logging.FileHandler(log_dir / "security.log")
+    audit_handler.setLevel(logging.WARNING)
+    audit_handler.setFormatter(StructuredFormatter())
+    
+    audit_logger = logging.getLogger("security_audit")
+    audit_logger.addHandler(audit_handler)
+    audit_logger.setLevel(logging.WARNING)
+    
+    return root_logger
+
+logger = setup_logging()
+
+def log_security_event(event_type: str, details: dict, user_id: str = None, ip_address: str = None):
+    """Log security-related events"""
+    audit_logger = logging.getLogger("security_audit")
+    extra_data = {'event_type': event_type, 'user_id': user_id, 'ip_address': ip_address, **details}
+    audit_logger.warning(f"Security event: {event_type}", extra=extra_data)
+
+def log_api_request(endpoint: str, method: str, user_id: str = None, ip_address: str = None, response_code: int = None):
+    """Log API requests for monitoring"""
+    logger.info(f"API {method} {endpoint}", extra={
+        'endpoint': endpoint, 'method': method, 'user_id': user_id, 
+        'ip_address': ip_address, 'response_code': response_code
+    })
+
+# ================================================================================
+# DATABASE SETUP
+# ================================================================================
+
+# Directory paths
+BASE_DIR = Path(__file__).resolve().parent.parent if __file__.endswith('.py') else Path.cwd()
+STATIC_DIR = BASE_DIR / "static"
+TEMPLATES_DIR = BASE_DIR / "templates"
+UPLOAD_DIR = BASE_DIR / config.UPLOAD_FOLDER
+OUTPUT_DIR = BASE_DIR / "outputs"
+
 try:
     from app.database import get_db, engine
     from app.models import Base
     DATABASE_AVAILABLE = True
 except ImportError:
-    # Create fallback database setup
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     
-    engine = create_engine("sqlite:///emergency_response.db", echo=False)
+    DATABASE_DIR = BASE_DIR / "data"
+    DATABASE_DIR.mkdir(exist_ok=True)
+    
+    engine = create_engine(
+        config.DATABASE_URL, 
+        echo=False, 
+        connect_args={"check_same_thread": False} if "sqlite" in config.DATABASE_URL else {}
+    )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base = declarative_base()
     
@@ -251,25 +400,290 @@ class User(Base):
     permissions = Column(JSON)
 
 # ================================================================================
-# GLOBAL CONFIGURATION
+# INPUT VALIDATION MODELS (PYDANTIC)
 # ================================================================================
 
-# Logging setup
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+class PriorityLevel(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
 
-# Directory paths
-BASE_DIR = Path(__file__).resolve().parent.parent if __file__.endswith('.py') else Path.cwd()
-STATIC_DIR = BASE_DIR / "static"
-TEMPLATES_DIR = BASE_DIR / "templates"
-UPLOAD_DIR = BASE_DIR / "uploads"
-OUTPUT_DIR = BASE_DIR / "outputs"
+class EscalationLevel(str, Enum):
+    LOW = "low"
+    MODERATE = "moderate"
+    HIGH = "high"
+    CRITICAL = "critical"
 
-# Create directories
-for directory in [STATIC_DIR, TEMPLATES_DIR, UPLOAD_DIR, OUTPUT_DIR]:
-    directory.mkdir(exist_ok=True)
+class TriageColor(str, Enum):
+    GREEN = "green"
+    YELLOW = "yellow"
+    RED = "red"
+    BLACK = "black"
 
-# FastAPI app initialization
+class EmergencyReportRequest(BaseModel):
+    type: str = Field(..., min_length=1, max_length=50)
+    description: str = Field(..., min_length=5, max_length=1000)
+    location: str = Field(..., min_length=1, max_length=255)
+    priority: PriorityLevel = PriorityLevel.MEDIUM
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    method: str = Field("text", regex="^(text|voice|image|multimodal)$")
+    
+    @validator('description')
+    def validate_description(cls, v):
+        if not v.strip():
+            raise ValueError('Description cannot be empty')
+        return v.strip()
+
+class CrowdReportRequest(BaseModel):
+    message: str = Field(..., min_length=5, max_length=500)
+    escalation: EscalationLevel
+    tone: Optional[str] = Field(None, regex="^(urgent|concerned|descriptive|frantic|neutral)$")
+    user: str = Field("Anonymous", max_length=100)
+    location: Optional[str] = Field(None, max_length=255)
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+
+class TriagePatientRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    age: int = Field(..., ge=0, le=150)
+    gender: str = Field(..., regex="^(male|female|other)$")
+    injury_type: str = Field(..., min_length=1, max_length=100)
+    severity: str = Field(..., regex="^(mild|moderate|severe|critical)$")
+    triage_color: TriageColor
+    location: Optional[str] = Field(None, max_length=255)
+    notes: Optional[str] = Field(None, max_length=1000)
+
+def validate_file_upload(file: UploadFile, max_size_mb: int = 10, allowed_types: List[str] = None):
+    """Validate uploaded files for size and type"""
+    if not file or not file.filename:
+        return
+    
+    # Check file size
+    if file.size and file.size > max_size_mb * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"File too large. Maximum size: {max_size_mb}MB")
+    
+    # Check file type
+    if allowed_types and file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed: {', '.join(allowed_types)}")
+
+# ================================================================================
+# ENHANCED SECURITY & AUTHENTICATION
+# ================================================================================
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+SECRET_KEY = config.SECRET_KEY
+ACCESS_TOKEN_EXPIRE_MINUTES = config.ACCESS_TOKEN_EXPIRE_MINUTES
+ALGORITHM = "HS256"
+
+def hash_password(password: str) -> str:
+    """Hash password using bcrypt with SHA-256 fallback"""
+    try:
+        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    except Exception:
+        # Fallback to SHA-256 if bcrypt fails
+        return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password against a hash with multiple format support"""
+    try:
+        # Try bcrypt first
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        # Fallback to SHA-256 for older passwords
+        return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
+    except Exception:
+        return False
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Create JWT access token with fallback encoding"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    
+    try:
+        return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    except Exception:
+        # Fallback to base64 encoding if JWT fails
+        return base64.b64encode(json.dumps(to_encode).encode()).decode()
+
+def verify_token(token: str):
+    """Verify JWT token with fallback verification"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: Optional[str] = payload.get("sub")
+        if username is None:
+            return None
+        return {"username": username}
+    except (jwt.PyJWTError, AttributeError):
+        # Fallback verification for base64 tokens
+        try:
+            payload = json.loads(base64.b64decode(token).decode())
+            username = payload.get("sub")
+            exp = payload.get("exp")
+            if exp and datetime.utcfromtimestamp(exp) < datetime.utcnow():
+                return None  # Token expired
+            return {"username": username}
+        except Exception:
+            return None
+
+# Rate limiting implementation
+rate_limit_storage = {}
+
+def rate_limit(max_requests: int = 100, window_seconds: int = 60):
+    """Rate limiting decorator"""
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            request = kwargs.get("request")
+            if not isinstance(request, Request):
+                # Try to find request in args if not in kwargs
+                for arg in args:
+                    if isinstance(arg, Request):
+                        request = arg
+                        break
+            
+            client_ip = "127.0.0.1"
+            if request and hasattr(request, 'client') and request.client:
+                client_ip = request.client.host
+                
+            current_time = time.time()
+            
+            if client_ip not in rate_limit_storage:
+                rate_limit_storage[client_ip] = []
+            
+            # Remove timestamps outside the window
+            rate_limit_storage[client_ip] = [
+                req_time for req_time in rate_limit_storage[client_ip] 
+                if current_time - req_time < window_seconds
+            ]
+            
+            if len(rate_limit_storage[client_ip]) >= max_requests:
+                raise HTTPException(status_code=429, detail="Rate limit exceeded")
+            
+            rate_limit_storage[client_ip].append(current_time)
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Get current authenticated user with proper token verification"""
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        token_data = verify_token(token)
+        if not token_data or "username" not in token_data:
+            raise credentials_exception
+        
+        username: str = token_data["username"]
+        user = db.query(User).filter(User.username == username).first()
+        if user is None:
+            raise credentials_exception
+        
+        return {"username": user.username, "role": user.role, "id": user.id}
+    except Exception:
+        # Fallback for demo mode in non-production environments
+        if config.ENVIRONMENT != "production":
+            return {"username": "demo_user", "role": "admin", "id": 1}
+        raise credentials_exception
+
+def require_role(allowed_roles: List[str]):
+    """Require specific role for endpoint access"""
+    def role_checker(current_user: dict = Depends(get_current_user)):
+        if current_user["role"] not in allowed_roles:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return current_user
+    return role_checker
+
+# ================================================================================
+# PERFORMANCE MONITORING
+# ================================================================================
+
+class PerformanceMonitor:
+    """Real-time performance monitoring system"""
+    def __init__(self):
+        self.metrics = defaultdict(list)
+        self.request_times = defaultdict(deque)
+        self.error_counts = defaultdict(int)
+        self.lock = Lock()
+        self.max_samples = 1000
+
+    def record_request_time(self, endpoint: str, duration: float):
+        with self.lock:
+            self.request_times[endpoint].append({
+                'duration': duration, 
+                'timestamp': time.time()
+            })
+            if len(self.request_times[endpoint]) > self.max_samples:
+                self.request_times[endpoint].popleft()
+
+    def record_error(self, endpoint: str, error_type: str):
+        with self.lock:
+            self.error_counts[f"{endpoint}:{error_type}"] += 1
+
+    def get_stats(self):
+        with self.lock:
+            stats = {
+                "system": self.get_system_stats(),
+                "endpoints": {},
+                "errors": dict(self.error_counts)
+            }
+            
+            for endpoint, times in self.request_times.items():
+                if times:
+                    durations = [t['duration'] for t in times]
+                    stats["endpoints"][endpoint] = {
+                        "avg_duration": sum(durations) / len(durations),
+                        "min_duration": min(durations),
+                        "max_duration": max(durations),
+                        "request_count": len(durations),
+                        "recent_requests": len([
+                            t for t in times 
+                            if time.time() - t['timestamp'] < 300
+                        ])
+                    }
+            return stats
+
+    def get_system_stats(self):
+        try:
+            cpu_percent = psutil.cpu_percent()
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            return {
+                "cpu_usage": cpu_percent,
+                "memory_usage": memory.percent,
+                "memory_available": memory.available,
+                "disk_usage": disk.percent,
+                "disk_free": disk.free
+            }
+        except (ImportError, Exception):
+            return {
+                "cpu_usage": 0,
+                "memory_usage": 0,
+                "memory_available": 0,
+                "disk_usage": 0,
+                "disk_free": 0
+            }
+
+perf_monitor = PerformanceMonitor()
+
+# ================================================================================
+# FASTAPI APPLICATION SETUP
+# ================================================================================
+
+# CORS configuration
+if config.ENVIRONMENT == "production":
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else []
+else:
+    CORS_ORIGINS = ["*"]
+
 app = FastAPI(
     title="Enhanced Emergency Response Assistant",
     description="Complete AI-Powered Emergency Management System with Citizen Portal",
@@ -278,23 +692,46 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# CORS Middleware
+# Middleware setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Static files and templates
+@app.middleware("http")
+async def performance_middleware(request: Request, call_next):
+    """Performance monitoring middleware"""
+    start_time = time.time()
+    
+    try:
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        perf_monitor.record_request_time(request.url.path, process_time)
+        response.headers["X-Process-Time"] = str(process_time)
+        return response
+    except Exception as e:
+        perf_monitor.record_error(request.url.path, type(e).__name__)
+        raise e
+
+# ================================================================================
+# STATIC FILES & TEMPLATES SETUP
+# ================================================================================
+
+# Create required directories
+for directory in [STATIC_DIR, TEMPLATES_DIR, UPLOAD_DIR, OUTPUT_DIR]:
+    directory.mkdir(exist_ok=True)
+
+# Static files mounting
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+# Templates setup
 if TEMPLATES_DIR.exists():
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 else:
-    # Create minimal templates directory with basic template
     TEMPLATES_DIR.mkdir(exist_ok=True)
     basic_template = """
 <!DOCTYPE html>
@@ -321,56 +758,103 @@ else:
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # ================================================================================
-# AUTHENTICATION & SECURITY
+# REAL-TIME FEATURES (WEBSOCKETS)
 # ================================================================================
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
+class ConnectionManager:
+    """WebSocket connection manager for real-time updates"""
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.user_connections: Dict[str, WebSocket] = {}
 
-def hash_password(password: str) -> str:
-    """Hash password using SHA-256 (use bcrypt in production)"""
-    return hashlib.sha256(password.encode()).hexdigest()
+    async def connect(self, websocket: WebSocket, user_id: str = None):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        if user_id:
+            self.user_connections[user_id] = websocket
+        logger.info(f"WebSocket connected: {user_id or 'anonymous'}")
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password"""
-    return hash_password(plain_password) == hashed_password
+    def disconnect(self, websocket: WebSocket, user_id: str = None):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+        if user_id and user_id in self.user_connections:
+            del self.user_connections[user_id]
+        logger.info(f"WebSocket disconnected: {user_id or 'anonymous'}")
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Create JWT token (simplified version)"""
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(hours=24)
-    
-    to_encode.update({"exp": expire})
-    # In production, use proper JWT library
-    return base64.b64encode(json.dumps(to_encode).encode()).decode()
+    async def send_personal_message(self, message: str, user_id: str):
+        if user_id in self.user_connections:
+            await self.user_connections[user_id].send_text(message)
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Get current authenticated user"""
+    async def broadcast(self, message: str):
+        for connection in self.active_connections[:]:  # Iterate over a copy
+            try:
+                await connection.send_text(message)
+            except Exception:
+                self.disconnect(connection)
+
+    async def send_to_admins(self, message: str):
+        # In a real app, you would look up admin users and send only to them
+        await self.broadcast(message)
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/dashboard")
+async def dashboard_websocket(websocket: WebSocket, token: Optional[str] = Query(None)):
+    """WebSocket endpoint for dashboard real-time updates"""
+    user_id = None
     try:
-        # Simplified token verification (use proper JWT in production)
-        payload = json.loads(base64.b64decode(token).decode())
-        username = payload.get("sub")
-        if username is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
+        if token:
+            token_data = verify_token(token)
+            user_id = token_data.get("username") if token_data else None
+        await manager.connect(websocket, user_id)
         
-        user = db.query(User).filter(User.username == username).first()
-        if user is None:
-            raise HTTPException(status_code=401, detail="User not found")
-        return {"username": user.username, "role": user.role, "id": user.id}
-    except:
-        # Fallback for demo mode
-        return {"username": "demo_user", "role": "admin", "id": 1}
+        while True:
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+            
+            if message_data.get("type") == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+            elif message_data.get("type") == "subscribe":
+                await websocket.send_text(json.dumps({
+                    "type": "subscribed", 
+                    "feed": message_data.get("feed")
+                }))
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        manager.disconnect(websocket, user_id)
 
-def require_role(allowed_roles: List[str]):
-    """Require specific role for endpoint access"""
-    def role_checker(current_user: dict = Depends(get_current_user)):
-        if current_user["role"] not in allowed_roles:
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
-        return current_user
-    return role_checker
+@app.websocket("/ws/emergency-updates")
+async def emergency_updates_websocket(websocket: WebSocket):
+    """WebSocket endpoint for emergency updates"""
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await websocket.send_text(f"Echo: {data}")  # Implement real logic as needed
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+async def broadcast_emergency_update(update_type: str, data: dict):
+    """Broadcast emergency updates to all connected clients"""
+    message = json.dumps({
+        "type": "emergency_update",
+        "update_type": update_type,
+        "data": data,
+        "timestamp": datetime.utcnow().isoformat()
+    }, default=str)
+    await manager.broadcast(message)
+
+async def send_admin_notification(notification_type: str, data: dict):
+    """Send notifications to admin users"""
+    message = json.dumps({
+        "type": "admin_notification",
+        "notification_type": notification_type,
+        "data": data,
+        "timestamp": datetime.utcnow().isoformat()
+    }, default=str)
+    await manager.send_to_admins(message)
 
 # ================================================================================
 # AI SIMULATION CLASSES
@@ -718,6 +1202,7 @@ async def view_reports_page(request: Request, db: Session = Depends(get_db)):
 # ================================================================================
 
 @app.post("/api/submit-emergency-report")
+@rate_limit(max_requests=10, window_seconds=60)
 async def submit_emergency_report(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -733,6 +1218,10 @@ async def submit_emergency_report(
 ):
     """Submit emergency report from citizen portal"""
     try:
+        # Validate file upload
+        validate_file_upload(file, max_size_mb=config.MAX_FILE_SIZE_MB, 
+                           allowed_types=["image/jpeg", "image/png", "application/pdf"])
+        
         # Generate unique report ID
         report_id = generate_report_id()
         
@@ -768,6 +1257,17 @@ async def submit_emergency_report(
         # Background processing for high priority
         if priority in ["critical", "high"]:
             background_tasks.add_task(process_emergency_report_background, emergency_report.id)
+            await send_admin_notification("high_priority_report", {
+                "report_id": report_id, 
+                "priority": priority
+            })
+        
+        # Real-time broadcast
+        await broadcast_emergency_update("new_report", {
+            "report_id": report_id, 
+            "priority": priority, 
+            "location": location
+        })
         
         logger.info(f"Emergency report submitted: {report_id} ({priority})")
         
@@ -781,6 +1281,342 @@ async def submit_emergency_report(
         
     except Exception as e:
         logger.error(f"Emergency report submission failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+# ================================================================================
+# API ENDPOINTS - STATISTICS & ANALYTICS
+# ================================================================================
+
+@app.get("/api/dashboard-stats")
+async def get_dashboard_stats(db: Session = Depends(get_db)):
+    """Get comprehensive dashboard statistics"""
+    try:
+        # Basic counts
+        total_reports = db.query(CrowdReport).count()
+        total_patients = db.query(TriagePatient).count()
+        total_emergency_reports = db.query(EmergencyReport).count()
+        
+        # Today's data
+        today = datetime.utcnow().date()
+        reports_today = db.query(CrowdReport).filter(
+            func.date(CrowdReport.timestamp) == today
+        ).count()
+        patients_today = db.query(TriagePatient).filter(
+            func.date(TriagePatient.created_at) == today
+        ).count()
+        
+        # Critical/urgent counts
+        critical_reports = db.query(CrowdReport).filter(
+            CrowdReport.escalation == "critical"
+        ).count()
+        critical_patients = db.query(TriagePatient).filter(
+            or_(TriagePatient.triage_color == "red", TriagePatient.severity == "critical")
+        ).count()
+        
+        # Active patients
+        active_patients = db.query(TriagePatient).filter(
+            TriagePatient.status == "active"
+        ).count()
+        
+        return JSONResponse({
+            "success": True,
+            "stats": {
+                "total_reports": total_reports,
+                "total_patients": total_patients,
+                "total_emergency_reports": total_emergency_reports,
+                "reports_today": reports_today,
+                "patients_today": patients_today,
+                "critical_reports": critical_reports,
+                "critical_patients": critical_patients,
+                "active_patients": active_patients,
+                "system_uptime": "24h 15m",
+                "last_updated": datetime.utcnow().isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting dashboard stats: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/analytics-data")
+async def get_analytics_data(
+    timeframe: str = Query("7d", description="Time range: 24h, 7d, 30d"),
+    db: Session = Depends(get_db)
+):
+    """Get analytics data for charts and graphs"""
+    try:
+        # Calculate timeframe
+        now = datetime.utcnow()
+        if timeframe == "24h":
+            start_time = now - timedelta(hours=24)
+        elif timeframe == "30d":
+            start_time = now - timedelta(days=30)
+        else:
+            start_time = now - timedelta(days=7)
+        
+        # Get reports in timeframe
+        reports = db.query(CrowdReport).filter(
+            CrowdReport.timestamp >= start_time
+        ).all()
+        
+        patients = db.query(TriagePatient).filter(
+            TriagePatient.created_at >= start_time
+        ).all()
+        
+        # Escalation breakdown
+        escalation_counts = {}
+        for level in ["critical", "high", "moderate", "low"]:
+            count = len([r for r in reports if r.escalation == level])
+            escalation_counts[level] = count
+        
+        # Triage color breakdown
+        triage_counts = {}
+        for color in ["red", "yellow", "green", "black"]:
+            count = len([p for p in patients if p.triage_color == color])
+            triage_counts[color] = count
+        
+        # Trend data (daily aggregation)
+        trend_data = []
+        current_date = start_time.date()
+        end_date = now.date()
+        
+        while current_date <= end_date:
+            day_reports = len([r for r in reports if r.timestamp.date() == current_date])
+            day_patients = len([p for p in patients if p.created_at.date() == current_date])
+            
+            trend_data.append({
+                "date": current_date.isoformat(),
+                "reports": day_reports,
+                "patients": day_patients
+            })
+            current_date += timedelta(days=1)
+        
+        return JSONResponse({
+            "success": True,
+            "analytics": {
+                "timeframe": timeframe,
+                "total_reports": len(reports),
+                "total_patients": len(patients),
+                "escalation_breakdown": escalation_counts,
+                "triage_breakdown": triage_counts,
+                "trend_data": trend_data,
+                "average_severity": sum(r.severity for r in reports if r.severity) / max(len(reports), 1)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting analytics data: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/performance-metrics")
+async def get_performance_metrics():
+    """Get system performance metrics"""
+    try:
+        return JSONResponse({
+            "success": True,
+            "metrics": perf_monitor.get_stats()
+        })
+    except Exception as e:
+        logger.error(f"Error getting performance metrics: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+# ================================================================================
+# API ENDPOINTS - EXPORT & UTILITY
+# ================================================================================
+
+@app.get("/api/export-reports")
+async def export_reports(
+    format: str = Query("json", description="Export format: json, csv"),
+    timeframe: str = Query("7d", description="Time range"),
+    db: Session = Depends(get_db)
+):
+    """Export reports in various formats"""
+    try:
+        # Calculate timeframe
+        now = datetime.utcnow()
+        if timeframe == "24h":
+            start_time = now - timedelta(hours=24)
+        elif timeframe == "30d":
+            start_time = now - timedelta(days=30)
+        else:
+            start_time = now - timedelta(days=7)
+        
+        # Get reports
+        reports = db.query(CrowdReport).filter(
+            CrowdReport.timestamp >= start_time
+        ).order_by(desc(CrowdReport.timestamp)).all()
+        
+        if format == "csv":
+            import csv
+            from io import StringIO
+            
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow([
+                "ID", "Message", "Escalation", "Tone", "User", "Location", 
+                "Latitude", "Longitude", "Timestamp", "Severity"
+            ])
+            
+            # Write data
+            for report in reports:
+                writer.writerow([
+                    report.id, report.message, report.escalation, report.tone,
+                    report.user, report.location, report.latitude, report.longitude,
+                    report.timestamp.isoformat(), report.severity
+                ])
+            
+            csv_content = output.getvalue()
+            return Response(
+                content=csv_content,
+                media_type="text/csv",
+                headers={"Content-Disposition": f"attachment; filename=reports_{timeframe}.csv"}
+            )
+        
+        else:  # JSON format
+            reports_data = [
+                {
+                    "id": r.id,
+                    "message": r.message,
+                    "escalation": r.escalation,
+                    "tone": r.tone,
+                    "user": r.user,
+                    "location": r.location,
+                    "latitude": r.latitude,
+                    "longitude": r.longitude,
+                    "timestamp": r.timestamp.isoformat(),
+                    "severity": r.severity,
+                    "time_ago": calculate_time_ago(r.timestamp)
+                }
+                for r in reports
+            ]
+            
+            export_data = {
+                "export_info": {
+                    "timeframe": timeframe,
+                    "export_date": now.isoformat(),
+                    "total_reports": len(reports)
+                },
+                "reports": reports_data
+            }
+            
+            return JSONResponse(export_data)
+        
+    except Exception as e:
+        logger.error(f"Export error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/generate-demo-data")
+async def generate_demo_data(
+    count: int = Query(10, description="Number of demo reports to create"),
+    db: Session = Depends(get_db)
+):
+    """Generate demo data for testing"""
+    try:
+        demo_reports = []
+        demo_locations = [
+            {"name": "Downtown Fire Station", "lat": 37.7749, "lng": -122.4194},
+            {"name": "City Hospital", "lat": 37.7849, "lng": -122.4094},
+            {"name": "Central Park", "lat": 37.7649, "lng": -122.4294},
+            {"name": "Main Street", "lat": 37.7949, "lng": -122.4394},
+            {"name": "Harbor District", "lat": 37.7549, "lng": -122.4494}
+        ]
+        
+        demo_messages = [
+            "Traffic accident on Main Street, multiple vehicles involved",
+            "Fire reported in downtown building, smoke visible",
+            "Medical emergency at City Hospital parking lot",
+            "Flooding in Harbor District due to heavy rain",
+            "Power outage affecting 3 city blocks",
+            "Gas leak reported near Central Park",
+            "Building collapse risk on 5th Avenue",
+            "Multiple injuries from bus accident",
+            "Chemical spill on Highway 101",
+            "Earthquake damage assessment needed"
+        ]
+        
+        escalation_levels = ["low", "moderate", "high", "critical"]
+        tones = ["urgent", "concerned", "descriptive", "frantic"]
+        
+        for i in range(count):
+            location = demo_locations[i % len(demo_locations)]
+            message = demo_messages[i % len(demo_messages)]
+            
+            report = CrowdReport(
+                message=f"DEMO: {message}",
+                escalation=escalation_levels[i % len(escalation_levels)],
+                tone=tones[i % len(tones)],
+                user=f"DemoUser{i+1}",
+                location=location["name"],
+                latitude=location["lat"] + (i * 0.001),  # Slight variation
+                longitude=location["lng"] + (i * 0.001),
+                severity={"critical": 9, "high": 7, "moderate": 5, "low": 3}[escalation_levels[i % len(escalation_levels)]],
+                source="demo_generator"
+            )
+            
+            db.add(report)
+            demo_reports.append(report)
+        
+        db.commit()
+        
+        logger.info(f"Generated {count} demo reports")
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Generated {count} demo reports",
+            "reports_created": len(demo_reports)
+        })
+        
+    except Exception as e:
+        logger.error(f"Demo data generation failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.delete("/api/clear-demo-data")
+async def clear_demo_data(db: Session = Depends(get_db)):
+    """Clear demo data from database"""
+    try:
+        # Delete demo reports
+        demo_reports_deleted = db.query(CrowdReport).filter(
+            CrowdReport.source == "demo_generator"
+        ).delete()
+        
+        # Delete reports with DEMO prefix
+        demo_prefix_deleted = db.query(CrowdReport).filter(
+            CrowdReport.message.like("DEMO:%")
+        ).delete()
+        
+        db.commit()
+        
+        total_deleted = demo_reports_deleted + demo_prefix_deleted
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Cleared {total_deleted} demo reports",
+            "demo_reports_deleted": demo_reports_deleted,
+            "demo_prefix_deleted": demo_prefix_deleted
+        })
+        
+    except Exception as e:
+        logger.error(f"Demo data clearing failed: {e}")
         return JSONResponse({
             "success": False,
             "error": str(e)
@@ -1131,7 +1967,7 @@ async def analyze_image(
 @app.post("/api/analyze-voice")
 async def analyze_voice(
     audio: UploadFile = File(...),
-    background_tasks: BackgroundTasks,
+    background_tasks: BackgroundTasks = Depends(),
     db: Session = Depends(get_db)
 ):
     """Analyze voice recording for emergency content"""
@@ -1480,327 +2316,6 @@ async def get_patients(
         }, status_code=500)
 
 # ================================================================================
-# API ENDPOINTS - STATISTICS & ANALYTICS
-# ================================================================================
-
-@app.get("/api/dashboard-stats")
-async def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Get comprehensive dashboard statistics"""
-    try:
-        # Basic counts
-        total_reports = db.query(CrowdReport).count()
-        total_patients = db.query(TriagePatient).count()
-        total_emergency_reports = db.query(EmergencyReport).count()
-        
-        # Today's data
-        today = datetime.utcnow().date()
-        reports_today = db.query(CrowdReport).filter(
-            func.date(CrowdReport.timestamp) == today
-        ).count()
-        patients_today = db.query(TriagePatient).filter(
-            func.date(TriagePatient.created_at) == today
-        ).count()
-        
-        # Critical/urgent counts
-        critical_reports = db.query(CrowdReport).filter(
-            CrowdReport.escalation == "critical"
-        ).count()
-        critical_patients = db.query(TriagePatient).filter(
-            or_(TriagePatient.triage_color == "red", TriagePatient.severity == "critical")
-        ).count()
-        
-        # Active patients
-        active_patients = db.query(TriagePatient).filter(
-            TriagePatient.status == "active"
-        ).count()
-        
-        return JSONResponse({
-            "success": True,
-            "stats": {
-                "total_reports": total_reports,
-                "total_patients": total_patients,
-                "total_emergency_reports": total_emergency_reports,
-                "reports_today": reports_today,
-                "patients_today": patients_today,
-                "critical_reports": critical_reports,
-                "critical_patients": critical_patients,
-                "active_patients": active_patients,
-                "system_uptime": "24h 15m",
-                "last_updated": datetime.utcnow().isoformat()
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting dashboard stats: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.get("/api/analytics-data")
-async def get_analytics_data(
-    timeframe: str = Query("7d", description="Time range: 24h, 7d, 30d"),
-    db: Session = Depends(get_db)
-):
-    """Get analytics data for charts and graphs"""
-    try:
-        # Calculate timeframe
-        now = datetime.utcnow()
-        if timeframe == "24h":
-            start_time = now - timedelta(hours=24)
-        elif timeframe == "30d":
-            start_time = now - timedelta(days=30)
-        else:
-            start_time = now - timedelta(days=7)
-        
-        # Get reports in timeframe
-        reports = db.query(CrowdReport).filter(
-            CrowdReport.timestamp >= start_time
-        ).all()
-        
-        patients = db.query(TriagePatient).filter(
-            TriagePatient.created_at >= start_time
-        ).all()
-        
-        # Escalation breakdown
-        escalation_counts = {}
-        for level in ["critical", "high", "moderate", "low"]:
-            count = len([r for r in reports if r.escalation == level])
-            escalation_counts[level] = count
-        
-        # Triage color breakdown
-        triage_counts = {}
-        for color in ["red", "yellow", "green", "black"]:
-            count = len([p for p in patients if p.triage_color == color])
-            triage_counts[color] = count
-        
-        # Trend data (daily aggregation)
-        trend_data = []
-        current_date = start_time.date()
-        end_date = now.date()
-        
-        while current_date <= end_date:
-            day_reports = len([r for r in reports if r.timestamp.date() == current_date])
-            day_patients = len([p for p in patients if p.created_at.date() == current_date])
-            
-            trend_data.append({
-                "date": current_date.isoformat(),
-                "reports": day_reports,
-                "patients": day_patients
-            })
-            current_date += timedelta(days=1)
-        
-        return JSONResponse({
-            "success": True,
-            "analytics": {
-                "timeframe": timeframe,
-                "total_reports": len(reports),
-                "total_patients": len(patients),
-                "escalation_breakdown": escalation_counts,
-                "triage_breakdown": triage_counts,
-                "trend_data": trend_data,
-                "average_severity": sum(r.severity for r in reports if r.severity) / max(len(reports), 1)
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting analytics data: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-# ================================================================================
-# API ENDPOINTS - EXPORT & UTILITY
-# ================================================================================
-
-@app.get("/api/export-reports")
-async def export_reports(
-    format: str = Query("json", description="Export format: json, csv"),
-    timeframe: str = Query("7d", description="Time range"),
-    db: Session = Depends(get_db)
-):
-    """Export reports in various formats"""
-    try:
-        # Calculate timeframe
-        now = datetime.utcnow()
-        if timeframe == "24h":
-            start_time = now - timedelta(hours=24)
-        elif timeframe == "30d":
-            start_time = now - timedelta(days=30)
-        else:
-            start_time = now - timedelta(days=7)
-        
-        # Get reports
-        reports = db.query(CrowdReport).filter(
-            CrowdReport.timestamp >= start_time
-        ).order_by(desc(CrowdReport.timestamp)).all()
-        
-        if format == "csv":
-            import csv
-            from io import StringIO
-            
-            output = StringIO()
-            writer = csv.writer(output)
-            
-            # Write header
-            writer.writerow([
-                "ID", "Message", "Escalation", "Tone", "User", "Location", 
-                "Latitude", "Longitude", "Timestamp", "Severity"
-            ])
-            
-            # Write data
-            for report in reports:
-                writer.writerow([
-                    report.id, report.message, report.escalation, report.tone,
-                    report.user, report.location, report.latitude, report.longitude,
-                    report.timestamp.isoformat(), report.severity
-                ])
-            
-            csv_content = output.getvalue()
-            return Response(
-                content=csv_content,
-                media_type="text/csv",
-                headers={"Content-Disposition": f"attachment; filename=reports_{timeframe}.csv"}
-            )
-        
-        else:  # JSON format
-            reports_data = [
-                {
-                    "id": r.id,
-                    "message": r.message,
-                    "escalation": r.escalation,
-                    "tone": r.tone,
-                    "user": r.user,
-                    "location": r.location,
-                    "latitude": r.latitude,
-                    "longitude": r.longitude,
-                    "timestamp": r.timestamp.isoformat(),
-                    "severity": r.severity,
-                    "time_ago": calculate_time_ago(r.timestamp)
-                }
-                for r in reports
-            ]
-            
-            export_data = {
-                "export_info": {
-                    "timeframe": timeframe,
-                    "export_date": now.isoformat(),
-                    "total_reports": len(reports)
-                },
-                "reports": reports_data
-            }
-            
-            return JSONResponse(export_data)
-        
-    except Exception as e:
-        logger.error(f"Export error: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.get("/api/generate-demo-data")
-async def generate_demo_data(
-    count: int = Query(10, description="Number of demo reports to create"),
-    db: Session = Depends(get_db)
-):
-    """Generate demo data for testing"""
-    try:
-        demo_reports = []
-        demo_locations = [
-            {"name": "Downtown Fire Station", "lat": 37.7749, "lng": -122.4194},
-            {"name": "City Hospital", "lat": 37.7849, "lng": -122.4094},
-            {"name": "Central Park", "lat": 37.7649, "lng": -122.4294},
-            {"name": "Main Street", "lat": 37.7949, "lng": -122.4394},
-            {"name": "Harbor District", "lat": 37.7549, "lng": -122.4494}
-        ]
-        
-        demo_messages = [
-            "Traffic accident on Main Street, multiple vehicles involved",
-            "Fire reported in downtown building, smoke visible",
-            "Medical emergency at City Hospital parking lot",
-            "Flooding in Harbor District due to heavy rain",
-            "Power outage affecting 3 city blocks",
-            "Gas leak reported near Central Park",
-            "Building collapse risk on 5th Avenue",
-            "Multiple injuries from bus accident",
-            "Chemical spill on Highway 101",
-            "Earthquake damage assessment needed"
-        ]
-        
-        escalation_levels = ["low", "moderate", "high", "critical"]
-        tones = ["urgent", "concerned", "descriptive", "frantic"]
-        
-        for i in range(count):
-            location = demo_locations[i % len(demo_locations)]
-            message = demo_messages[i % len(demo_messages)]
-            
-            report = CrowdReport(
-                message=f"DEMO: {message}",
-                escalation=escalation_levels[i % len(escalation_levels)],
-                tone=tones[i % len(tones)],
-                user=f"DemoUser{i+1}",
-                location=location["name"],
-                latitude=location["lat"] + (i * 0.001),  # Slight variation
-                longitude=location["lng"] + (i * 0.001),
-                severity={"critical": 9, "high": 7, "moderate": 5, "low": 3}[escalation_levels[i % len(escalation_levels)]],
-                source="demo_generator"
-            )
-            
-            db.add(report)
-            demo_reports.append(report)
-        
-        db.commit()
-        
-        logger.info(f"Generated {count} demo reports")
-        
-        return JSONResponse({
-            "success": True,
-            "message": f"Generated {count} demo reports",
-            "reports_created": len(demo_reports)
-        })
-        
-    except Exception as e:
-        logger.error(f"Demo data generation failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.delete("/api/clear-demo-data")
-async def clear_demo_data(db: Session = Depends(get_db)):
-    """Clear demo data from database"""
-    try:
-        # Delete demo reports
-        demo_reports_deleted = db.query(CrowdReport).filter(
-            CrowdReport.source == "demo_generator"
-        ).delete()
-        
-        # Delete reports with DEMO prefix
-        demo_prefix_deleted = db.query(CrowdReport).filter(
-            CrowdReport.message.like("DEMO:%")
-        ).delete()
-        
-        db.commit()
-        
-        total_deleted = demo_reports_deleted + demo_prefix_deleted
-        
-        return JSONResponse({
-            "success": True,
-            "message": f"Cleared {total_deleted} demo reports",
-            "demo_reports_deleted": demo_reports_deleted,
-            "demo_prefix_deleted": demo_prefix_deleted
-        })
-        
-    except Exception as e:
-        logger.error(f"Demo data clearing failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-# ================================================================================
 # MAP & LOCATION ROUTES
 # ================================================================================
 
@@ -1948,26 +2463,51 @@ async def login_for_access_token(
 ):
     """Login endpoint to get access token"""
     try:
-        # Simple demo authentication
-        if form_data.username == "admin" and form_data.password == "admin":
-            access_token = create_access_token(data={"sub": form_data.username})
+        # Check database for user
+        user = db.query(User).filter(User.username == form_data.username).first()
+        
+        if user and verify_password(form_data.password, user.hashed_password):
+            # Update last login
+            user.last_login = datetime.utcnow()
+            db.commit()
+            
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token = create_access_token(
+                data={"sub": user.username}, expires_delta=access_token_expires
+            )
+            
+            log_security_event("successful_login", {"username": user.username})
+            
             return {
                 "access_token": access_token,
                 "token_type": "bearer",
-                "role": "admin"
+                "role": user.role,
+                "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
             }
-        elif form_data.username == "demo" and form_data.password == "demo":
-            access_token = create_access_token(data={"sub": form_data.username})
-            return {
-                "access_token": access_token,
-                "token_type": "bearer", 
-                "role": "user"
-            }
-        else:
-            raise HTTPException(
-                status_code=401,
-                detail="Incorrect username or password"
-            )
+        
+        # Fallback demo authentication for development
+        elif config.ENVIRONMENT != "production":
+            if form_data.username == "admin" and form_data.password == "admin":
+                access_token = create_access_token(data={"sub": form_data.username})
+                return {
+                    "access_token": access_token,
+                    "token_type": "bearer",
+                    "role": "admin"
+                }
+            elif form_data.username == "demo" and form_data.password == "demo":
+                access_token = create_access_token(data={"sub": form_data.username})
+                return {
+                    "access_token": access_token,
+                    "token_type": "bearer", 
+                    "role": "user"
+                }
+        
+        log_security_event("failed_login", {"username": form_data.username})
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password"
+        )
+        
     except HTTPException:
         raise
     except Exception as e:
@@ -1989,6 +2529,10 @@ async def register_user(
         if not all([username, email, password]):
             raise HTTPException(status_code=400, detail="All fields required")
         
+        # Validate password strength
+        if len(password) < 8:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+        
         # Check if user exists
         existing_user = db.query(User).filter(
             or_(User.username == username, User.email == email)
@@ -2008,6 +2552,8 @@ async def register_user(
         db.add(user)
         db.commit()
         db.refresh(user)
+        
+        log_security_event("user_registered", {"username": username, "email": email})
         
         return JSONResponse({
             "success": True,
@@ -2032,6 +2578,15 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         "user": current_user
     })
 
+@app.post("/api/logout")
+async def logout_user(current_user: dict = Depends(get_current_user)):
+    """Logout user (mainly for logging purposes)"""
+    log_security_event("user_logout", {"username": current_user["username"]})
+    return JSONResponse({
+        "success": True,
+        "message": "Logged out successfully"
+    })
+
 # ================================================================================
 # SYSTEM HEALTH & UTILITIES
 # ================================================================================
@@ -2045,10 +2600,11 @@ async def health_check():
         total_reports = db.query(CrowdReport).count()
         total_patients = db.query(TriagePatient).count()
         total_emergency_reports = db.query(EmergencyReport).count()
+        total_users = db.query(User).count()
         db_status = "healthy"
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
-        total_reports = total_patients = total_emergency_reports = 0
+        total_reports = total_patients = total_emergency_reports = total_users = 0
         db_status = "error"
     
     # AI model status
@@ -2059,18 +2615,28 @@ async def health_check():
         logger.error(f"AI health check failed: {e}")
         ai_status = "error"
     
+    # System performance
+    try:
+        system_stats = perf_monitor.get_system_stats()
+        system_status = "healthy"
+    except Exception:
+        system_stats = {}
+        system_status = "limited"
+    
     return JSONResponse({
         "status": "healthy",
         "service": "Enhanced Emergency Response Assistant",
         "version": "3.0.0",
         "timestamp": datetime.utcnow().isoformat(),
+        "environment": config.ENVIRONMENT,
         "components": {
             "database": {
                 "status": db_status,
                 "records": {
                     "crowd_reports": total_reports,
                     "triage_patients": total_patients,
-                    "emergency_reports": total_emergency_reports
+                    "emergency_reports": total_emergency_reports,
+                    "users": total_users
                 }
             },
             "ai_models": {
@@ -2079,6 +2645,10 @@ async def health_check():
                     "active_model": ai_optimizer.current_config.model_variant,
                     "optimization_level": ai_optimizer.current_config.optimization_level
                 }
+            },
+            "system_performance": {
+                "status": system_status,
+                **system_stats
             },
             "features": {
                 "citizen_portal": True,
@@ -2093,7 +2663,12 @@ async def health_check():
                 "demo_data_generation": True,
                 "offline_support": True,
                 "multimodal_analysis": True,
-                "ai_optimization": True
+                "ai_optimization": True,
+                "real_time_updates": True,
+                "websocket_support": True,
+                "rate_limiting": True,
+                "authentication": True,
+                "role_based_access": True
             }
         },
         "endpoints": {
@@ -2104,7 +2679,9 @@ async def health_check():
             "emergency_reports": "/api/emergency-reports",
             "crowd_reports": "/api/crowd-reports",
             "patients": "/api/patients",
-            "analytics": "/api/analytics-data"
+            "analytics": "/api/analytics-data",
+            "websocket_dashboard": "/ws/dashboard",
+            "websocket_emergency": "/ws/emergency-updates"
         }
     })
 
@@ -2127,17 +2704,32 @@ async def get_system_info():
             "application": {
                 "name": "Enhanced Emergency Response Assistant",
                 "version": "3.0.0",
+                "environment": config.ENVIRONMENT,
                 "base_directory": str(BASE_DIR),
                 "upload_directory": str(UPLOAD_DIR),
                 "templates_available": TEMPLATES_DIR.exists(),
-                "static_files_available": STATIC_DIR.exists()
+                "static_files_available": STATIC_DIR.exists(),
+                "debug_mode": config.DEBUG
+            },
+            "configuration": {
+                "database_url": config.DATABASE_URL.replace(config.SECRET_KEY, "***") if config.SECRET_KEY in config.DATABASE_URL else config.DATABASE_URL,
+                "max_file_size_mb": config.MAX_FILE_SIZE_MB,
+                "ai_model_variant": config.AI_MODEL_VARIANT,
+                "ai_context_window": config.AI_CONTEXT_WINDOW,
+                "rate_limit_requests": config.RATE_LIMIT_REQUESTS,
+                "rate_limit_window": config.RATE_LIMIT_WINDOW,
+                "access_token_expire_minutes": config.ACCESS_TOKEN_EXPIRE_MINUTES
             },
             "capabilities": {
                 "weasyprint_pdf": WEASYPRINT_AVAILABLE,
                 "database": DATABASE_AVAILABLE,
                 "ai_processing": True,
                 "file_uploads": True,
-                "background_tasks": True
+                "background_tasks": True,
+                "websockets": True,
+                "rate_limiting": True,
+                "jwt_authentication": True,
+                "performance_monitoring": True
             }
         })
         
@@ -2149,7 +2741,7 @@ async def get_system_info():
         }, status_code=500)
 
 # ================================================================================
-# STATIC FILE HANDLERS & UTILITIES
+# STATIC FILE HANDLERS & PWA SUPPORT
 # ================================================================================
 
 @app.get("/favicon.ico")
@@ -2182,13 +2774,18 @@ async def get_manifest():
                     "src": "/static/icon-192.png",
                     "sizes": "192x192",
                     "type": "image/png"
+                },
+                {
+                    "src": "/static/icon-512.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
                 }
             ]
         })
 
 @app.get("/sw.js")
 async def get_service_worker():
-    """Serve service worker"""
+    """Serve service worker for offline support"""
     sw_path = STATIC_DIR / "js" / "sw.js"
     if sw_path.exists():
         return FileResponse(sw_path, media_type="application/javascript")
@@ -2196,18 +2793,24 @@ async def get_service_worker():
         # Return basic service worker
         return Response(
             content="""
-// Basic service worker for offline support
-const CACHE_NAME = 'emergency-app-v1';
+// Enhanced service worker for offline support
+const CACHE_NAME = 'emergency-app-v3.0.0';
 const urlsToCache = [
   '/',
   '/offline',
-  '/static/css/styles.css'
+  '/static/css/styles.css',
+  '/static/js/app.js',
+  '/api/dashboard-stats',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+      .then(cache => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
@@ -2215,12 +2818,32 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
+        // Return cached version or fetch from network
         if (response) {
           return response;
         }
-        return fetch(event.request);
+        return fetch(event.request).catch(() => {
+          // If both cache and network fail, show offline page
+          if (event.request.destination === 'document') {
+            return caches.match('/offline');
+          }
+        });
       })
-      .catch(() => caches.match('/offline'))
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
 });
             """,
@@ -2233,12 +2856,13 @@ self.addEventListener('fetch', event => {
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
-    """Enhanced 404 handler"""
+    """Enhanced 404 handler with helpful suggestions"""
     return JSONResponse(
         status_code=404,
         content={
             "error": "Endpoint not found",
             "path": str(request.url),
+            "method": request.method,
             "suggestions": [
                 "Try /api/docs for API documentation",
                 "Visit / for the citizen portal",
@@ -2249,25 +2873,43 @@ async def not_found_handler(request: Request, exc):
                 "citizen_portal": "/",
                 "admin_dashboard": "/admin", 
                 "api_docs": "/api/docs",
-                "health_check": "/health"
+                "health_check": "/health",
+                "websocket_dashboard": "/ws/dashboard"
             }
         }
     )
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
-    """Enhanced 500 handler"""
-    logger.error(f"Internal server error: {exc}", exc_info=True)
+    """Enhanced 500 handler with debugging info"""
+    logger.error(f"Internal server error on {request.method} {request.url}: {exc}", exc_info=True)
+    
+    error_id = uuid.uuid4().hex[:8]
+    
     return JSONResponse(
         status_code=500,
         content={
             "error": "Internal server error",
+            "error_id": error_id,
             "message": "An unexpected error occurred. Please try again.",
+            "debug_info": str(exc) if config.DEBUG else None,
             "support_info": {
                 "health_check": "/health",
                 "system_info": "/api/system-info",
-                "contact": "Check system logs for details"
+                "contact": f"Reference error ID: {error_id}"
             }
+        }
+    )
+
+@app.exception_handler(429)
+async def rate_limit_handler(request: Request, exc):
+    """Rate limit exceeded handler"""
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": "Rate limit exceeded",
+            "message": "Too many requests. Please slow down and try again later.",
+            "retry_after": 60
         }
     )
 
@@ -2279,14 +2921,33 @@ async def internal_error_handler(request: Request, exc):
 async def startup_event():
     """Application startup initialization"""
     logger.info("🚀 Starting Enhanced Emergency Response Assistant v3.0.0")
+    logger.info(f"🌍 Environment: {config.ENVIRONMENT}")
+    logger.info(f"🔧 Debug mode: {config.DEBUG}")
     
     # Create database tables
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables created/verified")
         
-        # Initialize demo data if database is empty
+        # Initialize default data if needed
         db = next(get_db())
+        
+        # Create default admin user if no users exist
+        if db.query(User).count() == 0:
+            logger.info("📝 No users found. Creating default admin user...")
+            admin_user = User(
+                username="admin",
+                email="admin@example.com",
+                hashed_password=hash_password("admin"),
+                role="admin",
+                is_active=True,
+                permissions={"all": True}
+            )
+            db.add(admin_user)
+            db.commit()
+            logger.info("✅ Default admin user created (username: admin, password: admin)")
+        
+        # Add welcome data if database is empty
         if db.query(CrowdReport).count() == 0:
             logger.info("📝 Initializing with welcome data...")
             
@@ -2304,6 +2965,7 @@ async def startup_event():
             
             db.add(welcome_report)
             db.commit()
+            logger.info("✅ Welcome data initialized")
             
     except Exception as e:
         logger.error(f"❌ Database initialization error: {e}")
@@ -2321,18 +2983,22 @@ async def startup_event():
     
     # Log available features
     logger.info("🎯 Available features:")
-    logger.info("     • Citizen Emergency Portal (main interface)")
-    logger.info("     • Voice Emergency Reporter with real-time transcription")
-    logger.info("     • Multimodal AI Analysis (text + image + audio)")
-    logger.info("     • Professional Admin Dashboard")
-    logger.info("     • Patient Triage Management")
-    logger.info("     • Crowd Report System with geolocation")
-    logger.info("     • Analytics Dashboard with real-time charts")
-    logger.info("     • Map Visualization with interactive reports")
-    logger.info("     • Export functionality (JSON, CSV)")
-    logger.info("     • Demo data generation for testing")
-    logger.info("     • Offline support with service worker")
-    logger.info("     • RESTful API with comprehensive documentation")
+    logger.info("     • 🌐 Citizen Emergency Portal (main interface)")
+    logger.info("     • 🎤 Voice Emergency Reporter with real-time transcription")
+    logger.info("     • 🤖 Multimodal AI Analysis (text + image + audio)")
+    logger.info("     • 📊 Professional Admin Dashboard")
+    logger.info("     • 🏥 Patient Triage Management")
+    logger.info("     • 📢 Crowd Report System with geolocation")
+    logger.info("     • 📈 Analytics Dashboard with real-time charts")
+    logger.info("     • 🗺️ Map Visualization with interactive reports")
+    logger.info("     • 📁 Export functionality (JSON, CSV)")
+    logger.info("     • 🎭 Demo data generation for testing")
+    logger.info("     • 📱 Offline support with service worker")
+    logger.info("     • ⚡ Real-time updates via WebSockets")
+    logger.info("     • 🔐 JWT Authentication with role-based access")
+    logger.info("     • 🛡️ Rate limiting and security monitoring")
+    logger.info("     • 📊 Performance monitoring and metrics")
+    logger.info("     • 🔧 RESTful API with comprehensive documentation")
     
     logger.info("✅ Enhanced Emergency Response Assistant ready!")
     logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
@@ -2349,10 +3015,18 @@ async def shutdown_event():
     try:
         temp_files = list(UPLOAD_DIR.glob("temp_*"))
         for temp_file in temp_files:
-            temp_file.unlink()
+            temp_file.unlink(missing_ok=True)
         logger.info(f"🧹 Cleaned up {len(temp_files)} temporary files")
     except Exception as e:
         logger.error(f"❌ Cleanup error: {e}")
+    
+    # Close WebSocket connections
+    try:
+        for connection in manager.active_connections[:]:
+            await connection.close()
+        logger.info("🔌 WebSocket connections closed")
+    except Exception as e:
+        logger.error(f"❌ WebSocket cleanup error: {e}")
     
     logger.info("✅ Shutdown complete")
 
@@ -2373,6 +3047,7 @@ if __name__ == "__main__":
         app,
         host="0.0.0.0",
         port=8000,
-        reload=True,
-        log_level="info"
+        reload=config.DEBUG,
+        log_level="info",
+        access_log=True
     )
