@@ -103,6 +103,12 @@ except ImportError:
     def generate_report_pdf(data): return "simulated_report.pdf"
     def generate_map_preview_data(lat, lon): return {"preview": "simulated"}
 
+try:
+    from celery_app import schedule_emergency_analysis
+    CELERY_INTEGRATION = True
+except ImportError:
+    CELERY_INTEGRATION = False
+
 # ================================================================================
 # CONFIGURATION MANAGEMENT
 # ================================================================================
@@ -1250,17 +1256,30 @@ async def submit_emergency_report(
             reporter="citizen_portal"
         )
         
+        # If Celery is integrated, schedule background AI analysis for high-priority reports
+        if CELERY_INTEGRATION and priority in ["critical", "high"]:
+            # Use the file path if a file was saved
+            saved_file_path = str(UPLOAD_DIR / evidence_file) if evidence_file else None
+            
+            task_ids = schedule_emergency_analysis(
+                audio_path=saved_file_path,  # Use the same path for both
+                image_path=saved_file_path,
+                text_input=description,
+                urgency_level=priority
+            )
+            
+            # Store task IDs for tracking
+            emergency_report.ai_analysis = {"celery_tasks": task_ids}
+            logger.info(f"Scheduled Celery tasks for report {report_id}: {task_ids}")
+            
+        # Fallback to FastAPI's BackgroundTasks if Celery is not available
+        elif not CELERY_INTEGRATION and priority in ["critical", "high"]:
+             background_tasks.add_task(process_emergency_report_background, emergency_report.id)
+             logger.warning(f"Celery not available. Using default background task for report {report_id}.")
+
         db.add(emergency_report)
         db.commit()
         db.refresh(emergency_report)
-        
-        # Background processing for high priority
-        if priority in ["critical", "high"]:
-            background_tasks.add_task(process_emergency_report_background, emergency_report.id)
-            await send_admin_notification("high_priority_report", {
-                "report_id": report_id, 
-                "priority": priority
-            })
         
         # Real-time broadcast
         await broadcast_emergency_update("new_report", {
