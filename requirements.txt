@@ -1,16 +1,26 @@
-streamlit
-numpy
-pillow
-torch
-sentence-transformers
-chromadb
-whisper
-ffmpeg-python
-fastapi
-uvicorn
-jinja2
-python-multipart
-requests>=2.31.0
-Pillow>=10.0.0  # For fallback map generation
-sqlalchemy>=1.4
+# Existing dependencies (keep these)
+fastapi>=0.104.0
+uvicorn>=0.24.0
+sqlalchemy>=2.0.0
+jinja2>=3.1.0
+python-multipart>=0.0.6
+
+# Enhanced AI dependencies
+torch>=2.1.0
+transformers>=4.35.0
+accelerate>=0.24.0
 librosa>=0.10.0
+scipy>=1.11.0
+psutil>=5.9.0
+
+# Audio processing
+openai-whisper>=20230918
+soundfile>=0.12.0
+
+# Advanced ML features
+datasets>=2.14.0
+optimum>=1.14.0
+
+# Performance monitoring
+gpustat>=1.1.0  # Optional, for GPU monitoring
+py3nvml>=0.2.7  # Optional, for NVIDIA GPU monitoring
