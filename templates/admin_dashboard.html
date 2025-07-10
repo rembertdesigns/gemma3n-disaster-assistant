@@ -1,3 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Professional Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-grid">
+    <a href="/predict" class="admin-card">🧠 Risk Prediction</a>
+    <a href="/live-generate" class="admin-card">📊 Live Data</a>
+    <a href="/submit-crowd-report" class="admin-card">📝 Advanced Reporting</a>
+    <a href="/view-reports" class="admin-card">📋 All Reports</a>
 <button class="btn btn-small btn-outline" onclick="editUser('USR-002')">Edit</button>
                   <button class="btn btn-small btn-secondary" onclick="promoteUser('USR-002')">Promote</button>
                 </td>
