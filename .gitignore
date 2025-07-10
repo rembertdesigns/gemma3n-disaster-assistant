@@ -1,141 +1,207 @@
-# ---- Python ----
+# ====================
+# 🛡️ SECURITY & SECRETS
+# ====================
+.env
+.env.local
+.env.production
+.env.staging
+*.key
+*.pem
+*.crt
+secrets/
+credentials/
+
+# ====================
+# 🐍 PYTHON
+# ====================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-*.egg
-*.egg-info/
-*.manifest
-*.spec
-*.pyo
-*.pyd
-*.py,cover
-*.mo
-*.pot
-
-# Distribution/Packaging
 build/
+develop-eggs/
 dist/
 downloads/
 eggs/
-develop-eggs/
+.eggs/
 lib/
 lib64/
 parts/
 sdist/
+var/
 wheels/
-share/python-wheels/
+*.egg-info/
 .installed.cfg
+*.egg
+MANIFEST
 
-# Unit Test / Coverage
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-.hypothesis/
-.pytest_cache/
-cover/
-
-# Django / Flask / DBs
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-instance/
-.webassets-cache
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter / IPython
-.ipynb_checkpoints
-profile_default/
-ipython_config.py
-
-# Pyre / Mypy / Pytype
-.pyre/
-.mypy_cache/
-.pytype/
-.dmypy.json
-dmypy.json
-
-# Environments
-.env
-.venv
-env/
+# Virtual environments
 venv/
+env/
 ENV/
 env.bak/
 venv.bak/
+.venv/
 
-# ---- Node.js ----
+# ====================
+# 📊 DATA & UPLOADS
+# ====================
+uploads/
+outputs/
+models/
+logs/
+backups/
+data/
+*.db
+*.sqlite
+*.sqlite3
+app.db
+test_app.db
+
+# ====================
+# 🧠 AI MODELS & CACHE
+# ====================
+models/
+.cache/
+.huggingface/
+torch/
+transformers_cache/
+whisper_cache/
+*.safetensors
+*.bin
+model_cache/
+
+# ====================
+# 🗺️ MAP CACHE
+# ====================
+map_cache/
+static_maps/
+*.kml
+*.gpx
+
+# ====================
+# 💻 IDE & EDITORS
+# ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ====================
+# 📦 DEPENDENCIES
+# ====================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
-# ---- Editor / IDE ----
-.vscode/
-.idea/
-.spyderproject
-.spyproject
-.ropeproject
-.pypirc
+# ====================
+# 🐳 DOCKER
+# ====================
+docker-compose.override.yml
+.dockerignore
 
-# ---- Package Managers ----
-# pipenv / poetry / pdm
-Pipfile.lock
-poetry.lock
-.pdm.toml
-.pdm-python
-.pdm-build/
-.pdm.lock
+# ====================
+# 📋 REPORTS & EXPORTS
+# ====================
+*.pdf
+exports/
+archives/
+reports/
+*.zip
+*.tar.gz
 
-# ---- OS ----
-.DS_Store
-Thumbs.db
+# ====================
+# ⚙️ SYSTEM FILES
+# ====================
+.pytest_cache/
+.coverage
+.nyc_output
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
 
-# ---- AI / Model Files ----
-/models/*
-!/models/*.js     # Allow JS logic like socket-server.js
+# ====================
+# 🔧 CONFIGURATION
+# ====================
+instance/
+.webassets-cache
+.scrapy
 
-# ---- Build / Output ----
+# ====================
+# 📱 MOBILE
+# ====================
+.expo/
+.expo-shared/
+
+# ====================
+# 🌐 WEB
+# ====================
+.next/
+out/
+.nuxt/
 dist/
-build/
-.site
-docs/_build/
-coverage/
-share/
-static/sw-cache/
+.cache/
+public/uploads/
 
-# ---- Web Assets / Caches ----
-sw-cache/
-*.map
-*.gz
-*.br
+# ====================
+# 📊 JUPYTER
+# ====================
+.ipynb_checkpoints/
+*.ipynb
 
-# ---- AI Tools / Dev Tools ----
-.ruff_cache/
-.cursorignore
-.cursorindexingignore
-.abstra/
-
-# ---- Misc ----
-*.bak
+# ====================
+# 🔄 TEMPORARY FILES
+# ====================
 *.tmp
-*.swp
-*.swo
-*.swn
-*.orig
-*.lock
+*.temp
+.tmp/
+temp/
+tmp/
 
-# ---- GitHub Actions / Logs ----
-*.log
-logs/
+# ====================
+# 📈 MONITORING
+# ====================
+prometheus_data/
+grafana_data/
+elasticsearch_data/
+
+# ====================
+# 🎯 PROJECT SPECIFIC
+# ====================
+# Large demo files
+static/demo_videos/
+static/demo_audio/
+static/large_images/
+
+# Generated documentation
+docs/_build/
+site/
+
+# Backup files
+*.bak
+*.backup
+
+# Test files
+test_uploads/
+test_outputs/
+test_data/
+
+# ====================
+# ✅ ALWAYS INCLUDE
+# ====================
+# These files should always be included:
+# - README.md
+# - requirements.txt
+# - setup.py
+# - docker-compose.yml
+# - Dockerfile
+# - .env.example
+# - app/ directory (source code)
+# - templates/ directory
+# - static/ directory (excluding large files)
