@@ -34,7 +34,7 @@ import asyncio
 import hashlib
 import secrets
 from contextlib import asynccontextmanager
-from pydantic import BaseModel, Field, validator, EmailStr
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from enum import Enum
 import time
 import psutil
@@ -241,7 +241,7 @@ def log_api_request(endpoint: str, method: str, user_id: str = None, ip_address:
 # ================================================================================
 
 # Directory paths
-BASE_DIR = Path(__file__).resolve().parent.parent if __file__.endswith('.py') else Path.cwd()
+BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
 UPLOAD_DIR = BASE_DIR / config.UPLOAD_FOLDER
@@ -276,136 +276,6 @@ except ImportError:
     DATABASE_AVAILABLE = True
 
 # ================================================================================
-# ENHANCED DATABASE MODELS
-# ================================================================================
-
-class CrowdReport(Base):
-    __tablename__ = "crowd_reports"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    message = Column(Text, nullable=False)
-    tone = Column(String(50))
-    escalation = Column(String(20))
-    user = Column(String(100), default="Anonymous")
-    location = Column(String(255))
-    latitude = Column(Float)
-    longitude = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    severity = Column(Integer, default=5)
-    source = Column(String(50), default="web")
-    metadata = Column(JSON)
-    status = Column(String(20), default="pending")
-    priority_score = Column(Float, default=0.0)
-
-class TriagePatient(Base):
-    __tablename__ = "triage_patients"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100))
-    age = Column(Integer)
-    gender = Column(String(10))
-    injury_type = Column(String(100))
-    severity = Column(String(20))
-    triage_color = Column(String(10))
-    status = Column(String(20), default="active")
-    location = Column(String(255))
-    assigned_to = Column(String(100))
-    notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
-    priority_score = Column(Float, default=0.0)
-
-class EmergencyReport(Base):
-    __tablename__ = "emergency_reports"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    report_id = Column(String(50), unique=True, index=True)
-    type = Column(String(50))
-    description = Column(Text)
-    location = Column(String(255))
-    latitude = Column(Float)
-    longitude = Column(Float)
-    priority = Column(String(20))
-    status = Column(String(20), default="pending")
-    reporter = Column(String(100))
-    evidence_file = Column(String(255))
-    method = Column(String(20), default="text")
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    ai_analysis = Column(JSON)
-    response_units = Column(JSON)
-
-class VoiceAnalysis(Base):
-    __tablename__ = "voice_analyses"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    audio_file_path = Column(String(255))
-    transcript = Column(Text)
-    confidence = Column(Float, default=0.0)
-    urgency_level = Column(String(20))
-    emotional_state = Column(JSON)
-    hazards_detected = Column(JSON)
-    location_extracted = Column(String(255))
-    processing_metadata = Column(JSON)
-    analyst_id = Column(String(100))
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class MultimodalAssessment(Base):
-    __tablename__ = "multimodal_assessments"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    assessment_type = Column(String(50))
-    text_input = Column(Text)
-    image_path = Column(String(255))
-    audio_path = Column(String(255))
-    severity_score = Column(Float, default=0.0)
-    emergency_type = Column(String(100))
-    risk_factors = Column(JSON)
-    resource_requirements = Column(JSON)
-    ai_confidence = Column(Float, default=0.0)
-    analyst_id = Column(String(100))
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class ContextAnalysis(Base):
-    __tablename__ = "context_analyses"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    analysis_type = Column(String(50), nullable=False)
-    input_tokens = Column(Integer, default=0)
-    output_summary = Column(Text)
-    confidence = Column(Float, default=0.0)
-    analyst_id = Column(String(100))
-    processing_time = Column(Float, default=0.0)
-    metadata = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class DevicePerformance(Base):
-    __tablename__ = "device_performance"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    device_id = Column(String(100))
-    cpu_usage = Column(Float)
-    memory_usage = Column(Float)
-    gpu_usage = Column(Float)
-    battery_level = Column(Float)
-    model_config = Column(JSON)
-    inference_speed = Column(Float)
-    temperature = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-
-class User(Base):
-    __tablename__ = "users"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, index=True)
-    email = Column(String(100), unique=True, index=True)
-    hashed_password = Column(String(255))
-    role = Column(String(20), default="user")
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_login = Column(DateTime)
-    permissions = Column(JSON)
-
-# ================================================================================
 # INPUT VALIDATION MODELS (PYDANTIC)
 # ================================================================================
 
@@ -434,9 +304,10 @@ class EmergencyReportRequest(BaseModel):
     priority: PriorityLevel = PriorityLevel.MEDIUM
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
-    method: str = Field("text", regex="^(text|voice|image|multimodal)$")
+    method: str = Field("text", pattern="^(text|voice|image|multimodal)$")
     
-    @validator('description')
+    @field_validator('description')
+    @classmethod
     def validate_description(cls, v):
         if not v.strip():
             raise ValueError('Description cannot be empty')
@@ -445,7 +316,7 @@ class EmergencyReportRequest(BaseModel):
 class CrowdReportRequest(BaseModel):
     message: str = Field(..., min_length=5, max_length=500)
     escalation: EscalationLevel
-    tone: Optional[str] = Field(None, regex="^(urgent|concerned|descriptive|frantic|neutral)$")
+    tone: Optional[str] = Field(None, pattern="^(urgent|concerned|descriptive|frantic|neutral)$")
     user: str = Field("Anonymous", max_length=100)
     location: Optional[str] = Field(None, max_length=255)
     latitude: Optional[float] = Field(None, ge=-90, le=90)
@@ -454,9 +325,9 @@ class CrowdReportRequest(BaseModel):
 class TriagePatientRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     age: int = Field(..., ge=0, le=150)
-    gender: str = Field(..., regex="^(male|female|other)$")
+    gender: str = Field(..., pattern="^(male|female|other)$")
     injury_type: str = Field(..., min_length=1, max_length=100)
-    severity: str = Field(..., regex="^(mild|moderate|severe|critical)$")
+    severity: str = Field(..., pattern="^(mild|moderate|severe|critical)$")
     triage_color: TriageColor
     location: Optional[str] = Field(None, max_length=255)
     notes: Optional[str] = Field(None, max_length=1000)
@@ -1983,10 +1854,10 @@ async def analyze_image(
             "error": str(e)
         }, status_code=500)
 
-@app.post("/api/analyze-voice")
 async def analyze_voice(
     audio: UploadFile = File(...),
-    background_tasks: BackgroundTasks = Depends(),
+    context: Optional[str] = Form(None),
+    background_tasks: BackgroundTasks = BackgroundTasks()
     db: Session = Depends(get_db)
 ):
     """Analyze voice recording for emergency content"""

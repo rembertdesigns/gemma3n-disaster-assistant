@@ -26,7 +26,7 @@ class CrowdReport(Base):
     ai_analysis = Column(JSON, nullable=True)  # Full AI analysis results
     source = Column(String, default="manual", index=True)  # manual, voice_analysis_system, multimodal_ai
     reporter_id = Column(String, nullable=True)  # Enhanced reporter tracking
-    metadata = Column(JSON, nullable=True)  # Additional metadata
+    report_metadata = Column(JSON, nullable=True)  # Additional metadata
     
     # Voice analysis fields
     voice_analysis_id = Column(Integer, nullable=True, index=True)  # Link to VoiceAnalysis
@@ -370,7 +370,7 @@ class ContextAnalysis(Base):
     accuracy_score = Column(Float)  # Accuracy if validated
     
     # Metadata
-    metadata = Column(JSON)  # Additional metadata
+    analysis_metadata = Column(JSON)  # Additional metadata
     model_config = Column(JSON)  # Model configuration used
     
     # System fields

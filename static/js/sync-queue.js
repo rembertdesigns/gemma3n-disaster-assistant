@@ -446,7 +446,7 @@ async function moveToFailures(db, report, reason) {
       originalTimestamp: report.timestamp,
       retryCount: report.retryCount,
       failureReason: reason,
-      metadata: report.metadata
+      metadata: report.report_metadata
     };
     
     const tx = db.transaction([CONFIG.STORES.FAILURES], 'readwrite');
