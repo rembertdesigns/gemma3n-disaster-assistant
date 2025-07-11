@@ -1119,6 +1119,26 @@ async def offline_page(request: Request):
         <p>This app works offline! Your reports are saved locally.</p>
         </body></html>
         """)
+    
+@app.get("/offline.html")
+async def offline_page_alt(request: Request):
+    """Offline page for PWA support"""
+    return templates.TemplateResponse("offline.html", {"request": request})
+
+@app.get("/hazards")
+async def hazards_page(request: Request):
+    """Hazards information page"""
+    try:
+        return templates.TemplateResponse("hazards.html", {"request": request})
+    except:
+        return HTMLResponse("""
+        <html><head><title>Hazards</title></head>
+        <body>
+        <h1>🌪️ Hazards Information</h1>
+        <p>Hazard detection and monitoring page</p>
+        <a href="/">← Back to Home</a>
+        </body></html>
+        """)
 
 # ================================================================================
 # PROFESSIONAL DASHBOARD ROUTES
