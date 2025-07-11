@@ -12,7 +12,7 @@
     <a href="#voice" class="nav-btn" onclick="portal.goToStep(3)">🎤 Voice</a>
     <a href="#reports" class="nav-btn" onclick="portal.goToStep(4)">📋 Track</a>
     
-    <!-- New Buttons for Onboarding and Offline Access -->
+    <!-- Additional Navigation -->
     <a href="/onboarding.html" class="nav-btn">🎓 How It Works</a>
     <a href="/offline.html" class="nav-btn">📴 Offline Mode</a>
 </nav>
@@ -20,10 +20,9 @@
 
 {% block extra_css %}
     {{ super() }}
-    <!-- Link to the dedicated CSS file for this portal -->
+    <!-- Portal-specific CSS -->
     <link rel="stylesheet" href="/static/css/portal.css" />
 {% endblock %}
-
 
 {% block content %}
 <!-- Dynamic Alert Banner (managed by JS) -->
@@ -39,12 +38,29 @@
     <!-- Step Indicator -->
     <div class="step-indicator">
         <div class="steps">
-            <div class="progress-line"><div class="progress-fill" id="progressFill"></div></div>
-            <div class="step active" data-step="0"><div class="step-number">1</div><div class="step-label">Welcome</div></div>
-            <div class="step" data-step="1"><div class="step-number">2</div><div class="step-label">Setup</div></div>
-            <div class="step" data-step="2"><div class="step-number">3</div><div class="step-label">Report</div></div>
-            <div class="step" data-step="3"><div class="step-number">4</div><div class="step-label">Voice</div></div>
-            <div class="step" data-step="4"><div class="step-number">5</div><div class="step-label">Track</div></div>
+            <div class="progress-line">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="step active" data-step="0">
+                <div class="step-number">1</div>
+                <div class="step-label">Welcome</div>
+            </div>
+            <div class="step" data-step="1">
+                <div class="step-number">2</div>
+                <div class="step-label">Setup</div>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-number">3</div>
+                <div class="step-label">Report</div>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-number">4</div>
+                <div class="step-label">Voice</div>
+            </div>
+            <div class="step" data-step="4">
+                <div class="step-number">5</div>
+                <div class="step-label">Track</div>
+            </div>
         </div>
     </div>
 
@@ -66,57 +82,141 @@
             <h1 class="hero-title">Emergency Response Assistant</h1>
             <p class="hero-subtitle">Your direct line to AI-powered emergency support.</p>
         </div>
+        
         <div class="features-grid">
-            <div class="feature-card" onclick="portal.goToStep(2)"><span class="feature-icon">📱</span><h3 class="feature-title">Submit Report</h3><p class="feature-description">Send details with text, photos, and location.</p></div>
-            <div class="feature-card" onclick="portal.goToStep(3)"><span class="feature-icon">🎤</span><h3 class="feature-title">Voice Reporting</h3><p class="feature-description">Hands-free reporting using AI voice analysis.</p></div>
-            <div class="feature-card risk-prediction" onclick="portal.showRiskPrediction()"><span class="feature-icon">🔮</span><h3 class="feature-title">Risk Prediction</h3><p class="feature-description">AI-powered local hazard forecasting.</p></div>
-            <div class="feature-card" onclick="portal.goToStep(4)"><span class="feature-icon">📊</span><h3 class="feature-title">Track My Reports</h3><p class="feature-description">Monitor your submissions and get updates.</p></div>
+            <div class="feature-card" onclick="portal.goToStep(2)">
+                <span class="feature-icon">📱</span>
+                <h3 class="feature-title">Submit Report</h3>
+                <p class="feature-description">Send details with text, photos, and location.</p>
+            </div>
+            <div class="feature-card" onclick="portal.goToStep(3)">
+                <span class="feature-icon">🎤</span>
+                <h3 class="feature-title">Voice Reporting</h3>
+                <p class="feature-description">Hands-free reporting using AI voice analysis.</p>
+            </div>
+            <div class="feature-card risk-prediction" onclick="portal.showRiskPrediction()">
+                <span class="feature-icon">🔮</span>
+                <h3 class="feature-title">Risk Prediction</h3>
+                <p class="feature-description">AI-powered local hazard forecasting.</p>
+            </div>
+            <div class="feature-card" onclick="portal.goToStep(4)">
+                <span class="feature-icon">📊</span>
+                <h3 class="feature-title">Track My Reports</h3>
+                <p class="feature-description">Monitor your submissions and get updates.</p>
+            </div>
         </div>
-        <div class="navigation-buttons"><div></div><button class="btn btn-primary" onclick="portal.goToStep(1)">Get Started 🚀</button></div>
+        
+        <div class="navigation-buttons">
+            <div></div>
+            <button class="btn btn-primary" onclick="portal.goToStep(1)">Get Started 🚀</button>
+        </div>
     </div>
 
     <!-- === STEP 1: SETUP === -->
     <div class="content-section" id="step-1">
         <h2>🛠️ Setup Your Emergency Profile</h2>
         <p>Granting permissions helps us provide faster and more accurate assistance.</p>
-        <div class="form-group"><label class="form-label">📍 Location Access</label><button class="btn btn-primary" onclick="portal.requestLocation(this)">Enable GPS</button><p id="locationStatus" class="form-text">Helps responders find you quickly.</p></div>
-        <div class="form-group"><label class="form-label">🎤 Microphone Access</label><button class="btn btn-primary" onclick="portal.requestMicrophone(this)">Enable Voice</button><p class="form-text">Enables hands-free voice reporting.</p></div>
-        <div class="form-group"><label class="form-label">📷 Camera Access</label><button class="btn btn-primary" onclick="portal.requestCamera(this)">Enable Camera</button><p class="form-text">Allows you to attach photo evidence.</p></div>
-        <div class="form-group"><label class="form-label">🔔 Notifications</label><button class="btn btn-primary" onclick="portal.requestNotifications(this)">Enable Alerts</button><p class="form-text">Receive updates on your reports and local emergencies.</p></div>
-        <div class="navigation-buttons"><button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back</button><button class="btn btn-primary" onclick="portal.goToStep(2)">Continue to Reporting 📱</button></div>
+        
+        <div class="form-group">
+            <label class="form-label">📍 Location Access</label>
+            <button class="btn btn-primary" onclick="portal.requestLocation(this)">Enable GPS</button>
+            <p id="locationStatus" class="form-text">Helps responders find you quickly.</p>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">🎤 Microphone Access</label>
+            <button class="btn btn-primary" onclick="portal.requestMicrophone(this)">Enable Voice</button>
+            <p class="form-text">Enables hands-free voice reporting.</p>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">📷 Camera Access</label>
+            <button class="btn btn-primary" onclick="portal.requestCamera(this)">Enable Camera</button>
+            <p class="form-text">Allows you to attach photo evidence.</p>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">🔔 Notifications</label>
+            <button class="btn btn-primary" onclick="portal.requestNotifications(this)">Enable Alerts</button>
+            <p class="form-text">Receive updates on your reports and local emergencies.</p>
+        </div>
+        
+        <div class="navigation-buttons">
+            <button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back</button>
+            <button class="btn btn-primary" onclick="portal.goToStep(2)">Continue to Reporting 📱</button>
+        </div>
     </div>
 
     <!-- === STEP 2: REPORT FORM === -->
     <div class="content-section" id="step-2">
         <h2>📱 Submit Emergency Report</h2>
         <p>Choose a method and provide details. AI will analyze your input in real-time.</p>
+        
         <div class="report-method-selector">
-            <div class="method-card selected" data-method="text" onclick="portal.selectMethod(this, 'text')"><span class="method-icon">📝</span><h3 class="method-title">Text Report</h3><p class="method-description">Type your details.</p></div>
-            <div class="method-card" data-method="photo" onclick="portal.selectMethod(this, 'photo')"><span class="method-icon">📸</span><h3 class="method-title">Photo Evidence</h3><p class="method-description">Upload an image.</p></div>
-            <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')"><span class="method-icon">📍</span><h3 class="method-title">Location Only</h3><p class="method-description">Pin a location on a map.</p></div>
+            <div class="method-card selected" data-method="text" onclick="portal.selectMethod(this, 'text')">
+                <span class="method-icon">📝</span>
+                <h3 class="method-title">Text Report</h3>
+                <p class="method-description">Type your details.</p>
+            </div>
+            <div class="method-card" data-method="photo" onclick="portal.selectMethod(this, 'photo')">
+                <span class="method-icon">📸</span>
+                <h3 class="method-title">Photo Evidence</h3>
+                <p class="method-description">Upload an image.</p>
+            </div>
+            <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')">
+                <span class="method-icon">📍</span>
+                <h3 class="method-title">Location Only</h3>
+                <p class="method-description">Pin a location on a map.</p>
+            </div>
         </div>
-        <form id="emergencyReportForm" autocomplete="off"><!-- Form fields are added dynamically by JS --></form>
-        <div class="navigation-buttons"><button class="btn btn-secondary" onclick="portal.goToStep(1)">← Back</button><button class="btn btn-success" onclick="portal.submitReport()">📤 Submit Report</button></div>
+        
+        <form id="emergencyReportForm" autocomplete="off">
+            <!-- Form fields are added dynamically by JS -->
+        </form>
+        
+        <div class="navigation-buttons">
+            <button class="btn btn-secondary" onclick="portal.goToStep(1)">← Back</button>
+            <button class="btn btn-success" onclick="portal.submitReport()">📤 Submit Report</button>
+        </div>
     </div>
 
     <!-- === STEP 3: VOICE REPORTING === -->
     <div class="content-section" id="step-3">
         <h2>🎤 Voice Emergency Reporter</h2>
         <p>Tap the button and speak clearly. AI will transcribe and analyze your report.</p>
+        
         <div class="voice-interface">
             <button class="record-button" id="recordButton" onclick="portal.toggleRecording()">🎤</button>
             <div class="voice-status" id="voiceStatus">Tap to start voice recording</div>
             <div class="transcript-box" id="transcriptBox">Your voice transcript will appear here...</div>
         </div>
+        
         <div id="voiceAnalysis" style="display: none;">
             <h3>🧠 AI Analysis Results</h3>
             <div class="features-grid">
-                <div class="feature-card"><span class="feature-icon">⚡</span><h4>Urgency Level</h4><p id="urgencyLevel">Analyzing...</p></div>
-                <div class="feature-card"><span class="feature-icon">😰</span><h4>Emotion</h4><p id="emotionLevel">Analyzing...</p></div>
-                <div class="feature-card"><span class="feature-icon">📍</span><h4>Location Detected</h4><p id="detectedLocation">Analyzing...</p></div>
-                <div class="feature-card"><span class="feature-icon">💡</span><h4>AI Recommendation</h4><p id="aiRecommendation">Analyzing...</p></div>
+                <div class="feature-card">
+                    <span class="feature-icon">⚡</span>
+                    <h4>Urgency Level</h4>
+                    <p id="urgencyLevel">Analyzing...</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">😰</span>
+                    <h4>Emotion</h4>
+                    <p id="emotionLevel">Analyzing...</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📍</span>
+                    <h4>Location Detected</h4>
+                    <p id="detectedLocation">Analyzing...</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">💡</span>
+                    <h4>AI Recommendation</h4>
+                    <p id="aiRecommendation">Analyzing...</p>
+                </div>
             </div>
         </div>
+        
         <div class="navigation-buttons">
             <button class="btn btn-secondary" onclick="portal.goToStep(2)">← Back to Text Report</button>
             <button class="btn btn-success" id="submitVoiceReport" onclick="portal.submitVoiceReport()" disabled>📤 Submit Voice Report</button>
@@ -127,10 +227,15 @@
     <div class="content-section" id="step-4">
         <h2>📋 My Emergency Reports</h2>
         <p>Track the status of your submitted reports and view community updates.</p>
+        
         <div class="reports-filters">
             <!-- Filter controls will be added here by JS -->
         </div>
-        <div class="reports-grid" id="reportsGrid"><!-- Reports will be populated dynamically --></div>
+        
+        <div class="reports-grid" id="reportsGrid">
+            <!-- Reports will be populated dynamically -->
+        </div>
+        
         <div class="navigation-buttons">
             <button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back to Home</button>
             <button class="btn btn-primary" onclick="portal.goToStep(2)">📱 Submit New Report</button>
@@ -144,9 +249,8 @@
 </div>
 {% endblock %}
 
-
 {% block scripts %}
     {{ super() }}
-    <!-- All of the JavaScript for the portal's functionality -->
+    <!-- Portal JavaScript functionality -->
     <script src="/static/js/portal.js"></script>
 {% endblock %}
