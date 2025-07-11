@@ -1,23 +1,25 @@
-# ====================
-# 🛡️ SECURITY & SECRETS
-# ====================
-.env
-.env.local
-.env.production
-.env.staging
-*.key
-*.pem
-*.crt
-secrets/
-credentials/
+# Emergency Response Assistant .gitignore
 
-# ====================
-# 🐍 PYTHON
-# ====================
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.key
+secrets.json
+
+# Virtual Environment
+venv/
+env/
+.venv/
+.virtualenv/
+
+# Python Cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Distribution / Packaging
 .Python
 build/
 develop-eggs/
@@ -36,161 +38,86 @@ wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-.venv/
+# Database Files
+*.db
+*.sqlite3
+*.sqlite
+data/
+backups/
 
-# ====================
-# 📊 DATA & UPLOADS
-# ====================
+# Uploads & Generated Content
 uploads/
 outputs/
-models/
 logs/
-backups/
-data/
-*.db
-*.sqlite
-*.sqlite3
-app.db
-test_app.db
+temp/
+tmp/
 
-# ====================
-# 🧠 AI MODELS & CACHE
-# ====================
+# AI Models (can be large)
 models/
-.cache/
-.huggingface/
-torch/
-transformers_cache/
-whisper_cache/
-*.safetensors
+*.model
 *.bin
-model_cache/
+*.safetensors
 
-# ====================
-# 🗺️ MAP CACHE
-# ====================
-map_cache/
-static_maps/
-*.kml
-*.gpx
-
-# ====================
-# 💻 IDE & EDITORS
-# ====================
+# IDE & Editor Files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# OS Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# ====================
-# 📦 DEPENDENCIES
-# ====================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# ====================
-# 🐳 DOCKER
-# ====================
-docker-compose.override.yml
-.dockerignore
-
-# ====================
-# 📋 REPORTS & EXPORTS
-# ====================
-*.pdf
-exports/
-archives/
-reports/
-*.zip
-*.tar.gz
-
-# ====================
-# ⚙️ SYSTEM FILES
-# ====================
+# Testing
 .pytest_cache/
 .coverage
-.nyc_output
-coverage.xml
-*.cover
-.hypothesis/
+htmlcov/
 .tox/
+.nox/
 
-# ====================
-# 🔧 CONFIGURATION
-# ====================
-instance/
-.webassets-cache
-.scrapy
-
-# ====================
-# 📱 MOBILE
-# ====================
-.expo/
-.expo-shared/
-
-# ====================
-# 🌐 WEB
-# ====================
-.next/
-out/
-.nuxt/
-dist/
-.cache/
-public/uploads/
-
-# ====================
-# 📊 JUPYTER
-# ====================
-.ipynb_checkpoints/
-*.ipynb
-
-# ====================
-# 🔄 TEMPORARY FILES
-# ====================
-*.tmp
-*.temp
-.tmp/
-temp/
-tmp/
-
-# ====================
-# 📈 MONITORING
-# ====================
-prometheus_data/
-grafana_data/
-elasticsearch_data/
-
-# ====================
-# 🎯 PROJECT SPECIFIC
-# ====================
-# Large demo files
-static/demo_videos/
-static/demo_audio/
-static/large_images/
-
-# Generated documentation
+# Documentation builds
 docs/_build/
-site/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # Backup files
-*.bak
 *.backup
+*.bak
 
-# Test files
-test_uploads/
-test_outputs/
-test_data/
+# Temporary fix scripts (optional - you can include these if you want)
+complete_fix.py
+quick_migration.py
 
 # ====================
 # ✅ ALWAYS INCLUDE

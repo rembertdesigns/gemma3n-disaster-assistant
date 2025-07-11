@@ -55,7 +55,7 @@ except ImportError:
 from jinja2 import Environment, FileSystemLoader
 from io import BytesIO
 
-# Internal modules with fallback implementations
+# Internal modules with comprehensive fallback implementations
 try:
     from app.predictive_engine import calculate_risk_score
 except ImportError:
@@ -70,7 +70,7 @@ except ImportError:
 try:
     from app.sentiment_utils import analyze_sentiment
 except ImportError:
-    def analyze_sentiment(text): return "neutral"
+    def analyze_sentiment(text): return {"sentiment": "neutral", "tone": "descriptive", "escalation": "low"}
 
 try:
     from app.map_snapshot import generate_map_image
@@ -88,26 +88,81 @@ except ImportError:
     def preprocess_input(data): return data
 
 try:
-    from app.inference import run_disaster_analysis
+    from app.inference import run_disaster_analysis, Gemma3nEmergencyProcessor, analyze_voice_emergency
+    from app.audio_transcription import VoiceEmergencyProcessor
+    from app.adaptive_ai_settings import adaptive_optimizer
 except ImportError:
-    def run_disaster_analysis(data): return {"type": "simulated", "confidence": 0.8}
-
-try:
-    from app.audio_transcription import transcribe_audio
-except ImportError:
-    def transcribe_audio(audio_path): return {"transcript": "Simulated transcription", "confidence": 0.9}
+    # Use comprehensive fallback implementations
+    try:
+        from app.fallback_ai import (
+            gemma_processor as Gemma3nEmergencyProcessor,
+            voice_processor as VoiceEmergencyProcessor, 
+            ai_optimizer as adaptive_optimizer,
+            analyze_voice_emergency,
+            detect_hazards,
+            transcribe_audio
+        )
+        
+        def run_disaster_analysis(data):
+            if data.get("type") == "text":
+                return Gemma3nEmergencyProcessor.analyze_multimodal_emergency(text=data.get("content"))
+            return {"type": "simulated", "confidence": 0.8}
+            
+    except ImportError:
+        # Ultimate fallback if even fallback_ai doesn't exist
+        class MockProcessor:
+            def analyze_multimodal_emergency(self, **kwargs):
+                return {"severity": {"overall_score": 5, "confidence": 0.8}, "emergency_type": {"primary": "general"}}
+            def process_emergency_call(self, audio_path, context=None):
+                return {"transcript": "Mock transcript", "overall_urgency": "medium", "confidence": 0.8}
+        
+        class MockOptimizer:
+            def __init__(self):
+                self.current_config = type('Config', (), {'model_variant': 'mock', 'context_window': 4000})()
+                self.device_caps = type('Caps', (), {'cpu_cores': 4, 'memory_gb': 8, 'gpu_available': False})()
+            def monitor_performance(self):
+                return type('Perf', (), {'cpu_usage': 50, 'memory_usage': 60, 'inference_speed': 10})()
+        
+        Gemma3nEmergencyProcessor = MockProcessor()
+        VoiceEmergencyProcessor = MockProcessor()
+        adaptive_optimizer = MockOptimizer()
+        
+        def analyze_voice_emergency(transcript, audio_features, emotional_state):
+            return {"urgency": "medium", "emergency_type": "general", "confidence": 0.8}
+        
+        def run_disaster_analysis(data):
+            return {"type": "simulated", "confidence": 0.8}
+        
+        def detect_hazards(image_data):
+            return ["simulated_hazard"]
+        
+        def transcribe_audio(audio_path):
+            return {"transcript": "Mock transcription", "confidence": 0.8}
 
 try:
     from app.report_utils import generate_report_pdf, generate_map_preview_data
 except ImportError:
-    def generate_report_pdf(data): return "simulated_report.pdf"
-    def generate_map_preview_data(lat, lon): return {"preview": "simulated"}
+    def generate_report_pdf(data): 
+        return f"mock_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+    def generate_map_preview_data(lat, lon): 
+        return {"preview": "simulated", "coordinates": {"latitude": lat, "longitude": lon}}
 
 try:
     from celery_app import schedule_emergency_analysis
     CELERY_INTEGRATION = True
 except ImportError:
     CELERY_INTEGRATION = False
+    def schedule_emergency_analysis(**kwargs):
+        return {"status": "mock", "message": "Celery not available"}
+
+# Create global instances for use throughout the application
+try:
+    # Try to use the real processors
+    gemma_processor = Gemma3nEmergencyProcessor()
+    voice_processor = VoiceEmergencyProcessor()
+except:
+    # If that fails, they're already mocked above
+    pass
 
 # ================================================================================
 # CONFIGURATION MANAGEMENT
@@ -237,7 +292,7 @@ def log_api_request(endpoint: str, method: str, user_id: str = None, ip_address:
     })
 
 # ================================================================================
-# DATABASE SETUP
+# DATABASE SETUP WITH ALL MODELS
 # ================================================================================
 
 # Directory paths
@@ -249,7 +304,17 @@ OUTPUT_DIR = BASE_DIR / "outputs"
 
 try:
     from app.database import get_db, engine
-    from app.models import Base
+    from app.models import (
+        Base, 
+        User,  # Added missing User model
+        CrowdReport, 
+        TriagePatient, 
+        EmergencyReport,  # Added missing EmergencyReport model
+        VoiceAnalysis,  # Added missing VoiceAnalysis model
+        MultimodalAssessment,  # Added missing MultimodalAssessment model
+        ContextAnalysis,  # Added missing ContextAnalysis model
+        DevicePerformance  # Added missing DevicePerformance model
+    )
     DATABASE_AVAILABLE = True
 except ImportError:
     from sqlalchemy import create_engine
@@ -272,6 +337,121 @@ except ImportError:
             yield db
         finally:
             db.close()
+    
+    # Create fallback models if imports failed
+    class User(Base):
+        __tablename__ = "users"
+        id = Column(Integer, primary_key=True, index=True)
+        username = Column(String(50), unique=True, index=True, nullable=False)
+        email = Column(String(100), unique=True, index=True, nullable=False)
+        hashed_password = Column(String(255), nullable=False)
+        role = Column(String(20), default="user", index=True)
+        is_active = Column(Boolean, default=True)
+        created_at = Column(DateTime, default=datetime.utcnow)
+        last_login = Column(DateTime, nullable=True)
+    
+    class EmergencyReport(Base):
+        __tablename__ = "emergency_reports"
+        id = Column(Integer, primary_key=True, index=True)
+        report_id = Column(String(50), unique=True, index=True)
+        type = Column(String(100), nullable=False)
+        description = Column(Text, nullable=False)
+        location = Column(String(255), nullable=False)
+        latitude = Column(Float, nullable=True)
+        longitude = Column(Float, nullable=True)
+        priority = Column(String(20), default="medium", index=True)
+        status = Column(String(20), default="pending", index=True)
+        method = Column(String(20), default="text")
+        reporter = Column(String(100), nullable=True)
+        evidence_file = Column(String(255), nullable=True)
+        ai_analysis = Column(JSON, nullable=True)
+        timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    class CrowdReport(Base):
+        __tablename__ = "crowd_reports"
+        id = Column(Integer, primary_key=True, index=True)
+        message = Column(Text)
+        tone = Column(String)
+        escalation = Column(String)
+        user = Column(String)
+        location = Column(String)
+        timestamp = Column(DateTime, default=datetime.utcnow)
+        latitude = Column(Float, nullable=True)
+        longitude = Column(Float, nullable=True)
+        severity = Column(Integer, nullable=True, index=True)
+        confidence_score = Column(Float, nullable=True)
+        ai_analysis = Column(JSON, nullable=True)
+        source = Column(String, default="manual", index=True)
+        verified = Column(Boolean, default=False)
+        response_dispatched = Column(Boolean, default=False)
+    
+    class TriagePatient(Base):
+        __tablename__ = "triage_patients"
+        id = Column(Integer, primary_key=True, index=True)
+        name = Column(String, nullable=False, index=True)
+        age = Column(Integer, nullable=True)
+        gender = Column(String, nullable=True)
+        injury_type = Column(String, nullable=False)
+        consciousness = Column(String, nullable=False)
+        breathing = Column(String, nullable=False)
+        severity = Column(String, nullable=False)
+        triage_color = Column(String, nullable=False, index=True)
+        status = Column(String, default="active", index=True)
+        notes = Column(Text, nullable=True)
+        created_at = Column(DateTime, default=datetime.utcnow, index=True)
+        updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    class VoiceAnalysis(Base):
+        __tablename__ = "voice_analyses"
+        id = Column(Integer, primary_key=True, index=True)
+        audio_file_path = Column(String(255))
+        transcript = Column(Text)
+        confidence = Column(Float, default=0.0)
+        urgency_level = Column(String(20), index=True)
+        emergency_type = Column(String(100))
+        hazards_detected = Column(JSON)
+        emotional_state = Column(JSON)
+        analyst_id = Column(String(100))
+        created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    class MultimodalAssessment(Base):
+        __tablename__ = "multimodal_assessments"
+        id = Column(Integer, primary_key=True, index=True)
+        assessment_type = Column(String(50), index=True)
+        text_input = Column(Text)
+        image_path = Column(String(255))
+        audio_path = Column(String(255))
+        severity_score = Column(Float, default=0.0, index=True)
+        emergency_type = Column(String(100), index=True)
+        risk_factors = Column(JSON)
+        resource_requirements = Column(JSON)
+        ai_confidence = Column(Float, default=0.0)
+        analyst_id = Column(String(100))
+        created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    class ContextAnalysis(Base):
+        __tablename__ = "context_analyses"
+        id = Column(Integer, primary_key=True, index=True)
+        analysis_type = Column(String(50), index=True)
+        input_tokens = Column(Integer, default=0)
+        output_summary = Column(Text)
+        key_insights = Column(JSON)
+        confidence = Column(Float, default=0.0)
+        analyst_id = Column(String(100))
+        created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    class DevicePerformance(Base):
+        __tablename__ = "device_performance"
+        id = Column(Integer, primary_key=True, index=True)
+        device_id = Column(String(100), index=True)
+        cpu_usage = Column(Float)
+        memory_usage = Column(Float)
+        gpu_usage = Column(Float)
+        battery_level = Column(Float)
+        temperature = Column(Float)
+        inference_speed = Column(Float)
+        optimization_level = Column(String(20))
+        timestamp = Column(DateTime, default=datetime.utcnow, index=True)
     
     DATABASE_AVAILABLE = True
 
@@ -1857,7 +2037,7 @@ async def analyze_image(
 async def analyze_voice(
     audio: UploadFile = File(...),
     context: Optional[str] = Form(None),
-    background_tasks: BackgroundTasks = BackgroundTasks()
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db)
 ):
     """Analyze voice recording for emergency content"""

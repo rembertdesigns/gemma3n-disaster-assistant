@@ -1,207 +1,130 @@
-# app/models.py - Enhanced with Gemma 3n AI Models
+# app/models.py - Complete models with all missing classes
 
-from sqlalchemy import Column, Integer, String, DateTime, Float, Text, Boolean, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Float, Text, Boolean, JSON, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
 
 # ==========================
-# 📣 Enhanced Crowd Report Model
+# 👤 USER MODEL
+# ==========================
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    email = Column(String(100), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    full_name = Column(String(100), nullable=True)
+    
+    # Role and permissions
+    role = Column(String(20), default="user", index=True)  # user, admin, responder, viewer
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    permissions = Column(JSON, nullable=True)  # Additional permissions
+    
+    # System fields
+    last_login = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}', role='{self.role}')>"
+
+# ==========================
+# 🚨 EMERGENCY REPORT MODEL
+# ==========================
+class EmergencyReport(Base):
+    __tablename__ = "emergency_reports"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    report_id = Column(String(50), unique=True, index=True)  # Unique report identifier
+    
+    # Core report information
+    type = Column(String(100), nullable=False)  # fire, medical, accident, etc.
+    description = Column(Text, nullable=False)
+    location = Column(String(255), nullable=False)
+    
+    # Geographic coordinates
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    
+    # Priority and status
+    priority = Column(String(20), default="medium", index=True)  # low, medium, high, critical
+    status = Column(String(20), default="pending", index=True)  # pending, active, resolved, closed
+    severity = Column(Integer, nullable=True)  # 1-10 scale
+    
+    # Input method and source
+    method = Column(String(20), default="text")  # text, voice, image, multimodal
+    reporter = Column(String(100), nullable=True)  # Who reported it
+    
+    # File attachments
+    evidence_file = Column(String(255), nullable=True)  # Evidence file path
+    
+    # AI Analysis results
+    ai_analysis = Column(JSON, nullable=True)  # AI processing results
+    confidence_score = Column(Float, nullable=True)  # AI confidence 0.0-1.0
+    
+    # System fields
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<EmergencyReport(id={self.id}, type='{self.type}', priority='{self.priority}')>"
+
+# ==========================
+# 📣 CROWD REPORT MODEL
 # ==========================
 class CrowdReport(Base):
     __tablename__ = "crowd_reports"
     
     id = Column(Integer, primary_key=True, index=True)
-    message = Column(Text)  # Changed to Text for longer messages
+    message = Column(Text)
     tone = Column(String)
     escalation = Column(String)
     user = Column(String)
     location = Column(String)
-    timestamp = Column(String)  # Keep as String for ISO format compatibility
+    timestamp = Column(DateTime, default=datetime.utcnow)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     
-    # NEW: Enhanced fields for Gemma 3n
+    # Enhanced fields
     severity = Column(Integer, nullable=True, index=True)  # 1-10 severity score
     confidence_score = Column(Float, nullable=True)  # AI confidence 0.0-1.0
     ai_analysis = Column(JSON, nullable=True)  # Full AI analysis results
-    source = Column(String, default="manual", index=True)  # manual, voice_analysis_system, multimodal_ai
-    reporter_id = Column(String, nullable=True)  # Enhanced reporter tracking
-    report_metadata = Column(JSON, nullable=True)  # Additional metadata
-    
-    # Voice analysis fields
-    voice_analysis_id = Column(Integer, nullable=True, index=True)  # Link to VoiceAnalysis
-    emotional_state = Column(JSON, nullable=True)  # Emotional analysis from voice
-    urgency_detected = Column(String, nullable=True)  # critical, high, medium, low
-    
-    # Verification fields
+    source = Column(String, default="manual", index=True)  # manual, voice_analysis_system, etc.
     verified = Column(Boolean, default=False)  # Human verification
-    verified_by = Column(String, nullable=True)  # Who verified
-    verified_at = Column(DateTime, nullable=True)  # When verified
-    
-    # Response tracking
     response_dispatched = Column(Boolean, default=False)
-    response_time = Column(DateTime, nullable=True)
-    response_units = Column(JSON, nullable=True)  # Units dispatched
     
     def __repr__(self):
-        return f"<CrowdReport(id={self.id}, escalation='{self.escalation}', severity={self.severity}, source='{self.source}')>"
-    
-    @property
-    def priority_level(self):
-        """Calculate priority level based on escalation and severity"""
-        if self.escalation == "critical" or (self.severity and self.severity >= 8):
-            return "priority_1"
-        elif self.escalation == "high" or (self.severity and self.severity >= 6):
-            return "priority_2"
-        elif self.escalation == "moderate" or (self.severity and self.severity >= 4):
-            return "priority_3"
-        else:
-            return "priority_4"
-    
-    @property
-    def is_ai_generated(self):
-        """Check if report was generated by AI systems"""
-        return self.source in ["voice_analysis_system", "multimodal_ai", "batch_analysis"]
-    
-    @property
-    def needs_verification(self):
-        """Check if report needs human verification"""
-        return (
-            not self.verified and 
-            (self.is_ai_generated or 
-             (self.confidence_score and self.confidence_score < 0.7) or
-             self.escalation in ["critical", "high"])
-        )
+        return f"<CrowdReport(id={self.id}, escalation='{self.escalation}', severity={self.severity})>"
 
 # ==========================
-# 🏥 Enhanced Triage Patient Model
+# 🏥 TRIAGE PATIENT MODEL
 # ==========================
 class TriagePatient(Base):
     __tablename__ = "triage_patients"
     
-    # Primary Key
     id = Column(Integer, primary_key=True, index=True)
-    
-    # Patient Information
     name = Column(String, nullable=False, index=True)
     age = Column(Integer, nullable=True)
     gender = Column(String, nullable=True)
-    medical_id = Column(String, nullable=True)
-    
-    # Medical Assessment
     injury_type = Column(String, nullable=False)
-    mechanism = Column(String, nullable=True)
     consciousness = Column(String, nullable=False)
     breathing = Column(String, nullable=False)
-    
-    # Vital Signs
-    heart_rate = Column(Integer, nullable=True)
-    bp_systolic = Column(Integer, nullable=True)
-    bp_diastolic = Column(Integer, nullable=True)
-    respiratory_rate = Column(Integer, nullable=True)
-    temperature = Column(Float, nullable=True)
-    oxygen_sat = Column(Integer, nullable=True)
-    
-    # Assessment Results
     severity = Column(String, nullable=False)
     triage_color = Column(String, nullable=False, index=True)
-    
-    # Additional Medical Information
-    allergies = Column(Text, nullable=True)
-    medications = Column(Text, nullable=True)
-    medical_history = Column(Text, nullable=True)
-    notes = Column(Text, nullable=True)
-    
-    # System Fields
     status = Column(String, default="active", index=True)
-    assigned_staff = Column(String, nullable=True)
-    
-    # Timestamps
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     timestamp = Column(DateTime, default=datetime.utcnow)  # Legacy compatibility
     
-    # NEW: AI Enhancement fields
-    ai_assessment = Column(JSON, nullable=True)  # AI-generated assessment
-    risk_prediction = Column(Float, nullable=True)  # Risk prediction score 0.0-1.0
-    deterioration_risk = Column(String, nullable=True)  # low, medium, high, critical
-    estimated_wait_time = Column(Integer, nullable=True)  # Minutes
-    
-    # Enhanced tracking
-    treatment_plan = Column(JSON, nullable=True)  # Treatment recommendations
-    discharge_prediction = Column(DateTime, nullable=True)  # Estimated discharge
-    resource_requirements = Column(JSON, nullable=True)  # Required resources
-    
     def __repr__(self):
-        return f"<TriagePatient(id={self.id}, name='{self.name}', triage_color='{self.triage_color}', severity='{self.severity}')>"
-    
-    @property
-    def priority_score(self):
-        """Enhanced priority score calculation"""
-        color_priority = {"red": 1, "yellow": 2, "green": 3, "black": 4}
-        base_score = color_priority.get(self.triage_color, 5)
-        
-        # Adjust for AI risk prediction
-        if self.risk_prediction:
-            risk_adjustment = (1 - self.risk_prediction) * 0.5
-            base_score += risk_adjustment
-        
-        # Adjust for critical vitals
-        if self.is_critical_vitals:
-            base_score -= 0.5
-        
-        return max(1, base_score)
-    
-    @property
-    def vital_signs_dict(self):
-        """Return vital signs as a dictionary"""
-        return {
-            "heart_rate": self.heart_rate,
-            "bp_systolic": self.bp_systolic,
-            "bp_diastolic": self.bp_diastolic,
-            "respiratory_rate": self.respiratory_rate,
-            "temperature": self.temperature,
-            "oxygen_sat": self.oxygen_sat
-        }
-    
-    @property
-    def is_critical_vitals(self):
-        """Enhanced critical vitals check"""
-        critical_indicators = []
-        
-        if self.heart_rate and (self.heart_rate < 50 or self.heart_rate > 120):
-            critical_indicators.append("heart_rate")
-        if self.oxygen_sat and self.oxygen_sat < 90:
-            critical_indicators.append("oxygen_saturation")
-        if self.bp_systolic and (self.bp_systolic < 80 or self.bp_systolic > 180):
-            critical_indicators.append("blood_pressure")
-        if self.temperature and (self.temperature < 95 or self.temperature > 104):
-            critical_indicators.append("temperature")
-        if self.respiratory_rate and (self.respiratory_rate < 10 or self.respiratory_rate > 30):
-            critical_indicators.append("respiratory_rate")
-        
-        return len(critical_indicators) > 0
-    
-    @property
-    def critical_vitals_list(self):
-        """Get list of critical vital signs"""
-        critical_indicators = []
-        
-        if self.heart_rate and (self.heart_rate < 50 or self.heart_rate > 120):
-            critical_indicators.append(f"Heart Rate: {self.heart_rate} BPM")
-        if self.oxygen_sat and self.oxygen_sat < 90:
-            critical_indicators.append(f"O2 Sat: {self.oxygen_sat}%")
-        if self.bp_systolic and (self.bp_systolic < 80 or self.bp_systolic > 180):
-            critical_indicators.append(f"BP: {self.bp_systolic}/{self.bp_diastolic}")
-        if self.temperature and (self.temperature < 95 or self.temperature > 104):
-            critical_indicators.append(f"Temp: {self.temperature}°F")
-        if self.respiratory_rate and (self.respiratory_rate < 10 or self.respiratory_rate > 30):
-            critical_indicators.append(f"RR: {self.respiratory_rate}")
-        
-        return critical_indicators
+        return f"<TriagePatient(id={self.id}, name='{self.name}', triage_color='{self.triage_color}')>"
 
 # ==========================
-# 🎤 NEW: Voice Analysis Model
+# 🎤 VOICE ANALYSIS MODEL
 # ==========================
 class VoiceAnalysis(Base):
     __tablename__ = "voice_analyses"
@@ -210,279 +133,75 @@ class VoiceAnalysis(Base):
     audio_file_path = Column(String(255))
     transcript = Column(Text)
     confidence = Column(Float, default=0.0)
-    language = Column(String(10), default="en-US")
-    
-    # Emergency detection
-    urgency_level = Column(String(20), index=True)  # critical, high, medium, low, routine
-    emergency_type = Column(String(100))  # fire, medical, violence, natural_disaster, etc.
+    urgency_level = Column(String(20), index=True)  # critical, high, medium, low
+    emergency_type = Column(String(100))  # fire, medical, violence, etc.
     hazards_detected = Column(JSON)  # List of detected hazards
-    
-    # Emotional analysis
     emotional_state = Column(JSON)  # Emotional analysis results
-    stress_level = Column(Float)  # 0.0-1.0 stress level
-    caller_state = Column(String(50))  # high_distress, moderate_distress, stable
-    
-    # Location extraction
-    location_extracted = Column(String(255))
-    location_confidence = Column(Float)
-    coordinates_mentioned = Column(JSON)  # Extracted coordinates if any
-    
-    # Audio quality metrics
-    audio_quality = Column(JSON)  # Audio quality assessment
-    background_noise = Column(Float)  # Noise level
-    signal_clarity = Column(Float)  # Signal clarity
-    
-    # Processing metadata
-    processing_metadata = Column(JSON)  # Processing details and performance
-    model_used = Column(String(100))  # AI model used for analysis
-    processing_time = Column(Float)  # Processing time in seconds
-    
-    # Response tracking
-    auto_dispatch_triggered = Column(Boolean, default=False)
-    dispatch_recommendations = Column(JSON)  # Recommended dispatch actions
-    priority_level = Column(String(20))  # priority_1, priority_2, etc.
-    
-    # System fields
     analyst_id = Column(String(100))  # Who processed the analysis
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f"<VoiceAnalysis(id={self.id}, urgency='{self.urgency_level}', emergency_type='{self.emergency_type}')>"
-    
-    @property
-    def needs_immediate_response(self):
-        """Check if voice analysis indicates immediate response needed"""
-        return (
-            self.urgency_level in ["critical", "high"] or
-            self.stress_level > 0.8 or
-            any(hazard.get("severity", 0) >= 8 for hazard in (self.hazards_detected or []))
-        )
-    
-    @property
-    def dispatch_priority(self):
-        """Get dispatch priority based on analysis"""
-        if self.urgency_level == "critical":
-            return 1
-        elif self.urgency_level == "high":
-            return 2
-        elif self.urgency_level == "medium":
-            return 3
-        else:
-            return 4
+        return f"<VoiceAnalysis(id={self.id}, urgency='{self.urgency_level}')>"
 
 # ==========================
-# 🔀 NEW: Multimodal Assessment Model
+# 🔀 MULTIMODAL ASSESSMENT MODEL
 # ==========================
 class MultimodalAssessment(Base):
     __tablename__ = "multimodal_assessments"
     
     id = Column(Integer, primary_key=True, index=True)
     assessment_type = Column(String(50), index=True)  # comprehensive, damage, medical, etc.
-    
-    # Input data
     text_input = Column(Text)
     image_path = Column(String(255))
     audio_path = Column(String(255))
-    video_path = Column(String(255))
-    
-    # Analysis results
     severity_score = Column(Float, default=0.0, index=True)  # 0.0-10.0
     emergency_type = Column(String(100), index=True)  # Primary emergency classification
-    secondary_types = Column(JSON)  # Additional emergency types
-    
-    # Risk assessment
     risk_factors = Column(JSON)  # Identified risk factors
-    immediate_risks = Column(JSON)  # Immediate dangers
-    environmental_hazards = Column(JSON)  # Environmental concerns
-    
-    # Impact assessment
-    casualty_estimate = Column(JSON)  # Casualty estimates
-    damage_assessment = Column(JSON)  # Damage level assessment
-    evacuation_recommendation = Column(JSON)  # Evacuation needs
-    
-    # Resource requirements
     resource_requirements = Column(JSON)  # Required resources
-    estimated_response_time = Column(Integer)  # Minutes
-    specialized_equipment = Column(JSON)  # Special equipment needed
-    
-    # AI metrics
     ai_confidence = Column(Float, default=0.0)  # Overall AI confidence
-    model_performance = Column(JSON)  # Model performance metrics
-    processing_metadata = Column(JSON)  # Processing details
-    
-    # Verification and validation
-    human_verified = Column(Boolean, default=False)
-    verification_notes = Column(Text)
-    verified_by = Column(String(100))
-    verified_at = Column(DateTime)
-    
-    # System fields
     analyst_id = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f"<MultimodalAssessment(id={self.id}, type='{self.assessment_type}', severity={self.severity_score})>"
-    
-    @property
-    def is_high_confidence(self):
-        """Check if assessment has high confidence"""
-        return self.ai_confidence >= 0.8
-    
-    @property
-    def requires_immediate_action(self):
-        """Check if assessment requires immediate action"""
-        return (
-            self.severity_score >= 7.0 or
-            any(risk.get("probability", 0) > 0.8 for risk in (self.immediate_risks or []))
-        )
+        return f"<MultimodalAssessment(id={self.id}, type='{self.assessment_type}')>"
 
 # ==========================
-# 🧠 NEW: Context Analysis Model
+# 🧠 CONTEXT ANALYSIS MODEL
 # ==========================
 class ContextAnalysis(Base):
     __tablename__ = "context_analyses"
     
     id = Column(Integer, primary_key=True, index=True)
-    analysis_type = Column(String(50), index=True)  # comprehensive, batch_summary, trend_analysis
-    
-    # Input metrics
+    analysis_type = Column(String(50), index=True)  # comprehensive, batch_summary, etc.
     input_tokens = Column(Integer, default=0)  # Tokens processed
-    data_sources = Column(JSON)  # Sources of data analyzed
-    context_window_used = Column(Integer, default=0)  # Context window utilization
-    
-    # Analysis results
     output_summary = Column(Text)  # Analysis summary
     key_insights = Column(JSON)  # Key insights extracted
-    patterns_detected = Column(JSON)  # Patterns identified
-    anomalies = Column(JSON)  # Anomalies detected
-    
-    # Predictions and recommendations
-    trend_predictions = Column(JSON)  # Trend predictions
-    risk_assessment = Column(JSON)  # Risk assessment
-    recommendations = Column(JSON)  # Action recommendations
-    resource_optimization = Column(JSON)  # Resource optimization suggestions
-    
-    # Performance metrics
     confidence = Column(Float, default=0.0)  # Analysis confidence
-    processing_time = Column(Float, default=0.0)  # Processing time
-    accuracy_score = Column(Float)  # Accuracy if validated
-    
-    # Metadata
-    analysis_metadata = Column(JSON)  # Additional metadata
-    model_config = Column(JSON)  # Model configuration used
-    
-    # System fields
     analyst_id = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f"<ContextAnalysis(id={self.id}, type='{self.analysis_type}', confidence={self.confidence})>"
-    
-    @property
-    def token_efficiency(self):
-        """Calculate token usage efficiency"""
-        if self.context_window_used > 0:
-            return (self.input_tokens / self.context_window_used) * 100
-        return 0.0
+        return f"<ContextAnalysis(id={self.id}, type='{self.analysis_type}')>"
 
 # ==========================
-# ⚡ NEW: Device Performance Model
+# ⚡ DEVICE PERFORMANCE MODEL
 # ==========================
 class DevicePerformance(Base):
     __tablename__ = "device_performance"
     
     id = Column(Integer, primary_key=True, index=True)
     device_id = Column(String(100), index=True)  # Device identifier
-    
-    # Performance metrics
     cpu_usage = Column(Float)  # CPU usage percentage
     memory_usage = Column(Float)  # Memory usage percentage
     gpu_usage = Column(Float)  # GPU usage percentage
-    gpu_memory_usage = Column(Float)  # GPU memory usage percentage
-    
-    # System metrics
     battery_level = Column(Float)  # Battery level percentage
     temperature = Column(Float)  # CPU temperature
-    disk_usage = Column(Float)  # Disk usage percentage
-    network_latency = Column(Float)  # Network latency in ms
-    
-    # AI performance metrics
     inference_speed = Column(Float)  # Tokens per second
-    model_load_time = Column(Float)  # Model loading time
-    power_consumption = Column(Float)  # Power consumption in watts
-    
-    # Configuration
-    model_config = Column(JSON)  # Current model configuration
     optimization_level = Column(String(20))  # speed, balanced, quality
-    auto_optimization_enabled = Column(Boolean, default=True)
-    
-    # Alerts and recommendations
-    performance_alerts = Column(JSON)  # Performance alerts
-    optimization_recommendations = Column(JSON)  # Optimization recommendations
-    throttling_active = Column(Boolean, default=False)  # If performance throttling is active
-    
-    # System fields
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-    session_id = Column(String(100))  # Session identifier
     
     def __repr__(self):
-        return f"<DevicePerformance(device='{self.device_id}', cpu={self.cpu_usage}%, memory={self.memory_usage}%)>"
-    
-    @property
-    def overall_performance_score(self):
-        """Calculate overall performance score (0-100)"""
-        scores = []
-        
-        # CPU score (lower usage = higher score)
-        if self.cpu_usage is not None:
-            scores.append(max(0, 100 - self.cpu_usage))
-        
-        # Memory score (lower usage = higher score)
-        if self.memory_usage is not None:
-            scores.append(max(0, 100 - self.memory_usage))
-        
-        # Temperature score (lower temp = higher score)
-        if self.temperature is not None:
-            temp_score = max(0, 100 - (self.temperature / 100 * 100))
-            scores.append(temp_score)
-        
-        # Inference speed score (higher speed = higher score)
-        if self.inference_speed is not None:
-            speed_score = min(100, (self.inference_speed / 20) * 100)
-            scores.append(speed_score)
-        
-        # Battery score
-        if self.battery_level is not None:
-            scores.append(self.battery_level)
-        
-        return round(sum(scores) / len(scores), 1) if scores else 0.0
-    
-    @property
-    def needs_optimization(self):
-        """Check if device needs performance optimization"""
-        return (
-            (self.cpu_usage and self.cpu_usage > 80) or
-            (self.memory_usage and self.memory_usage > 85) or
-            (self.temperature and self.temperature > 80) or
-            (self.inference_speed and self.inference_speed < 5) or
-            (self.battery_level and self.battery_level < 20)
-        )
-
-# ==========================
-# 🔗 NEW: Analysis Relationships
-# ==========================
-# You can add relationships between models if needed:
-# from sqlalchemy.orm import relationship
-# from sqlalchemy import ForeignKey
-
-# Example of how to add relationships:
-# class CrowdReport(Base):
-#     # ... existing fields ...
-#     voice_analysis = relationship("VoiceAnalysis", backref="crowd_report", uselist=False)
-#     multimodal_assessments = relationship("MultimodalAssessment", backref="crowd_report")
-
-# Example foreign key:
-# voice_analysis_id = Column(Integer, ForeignKey('voice_analyses.id'), nullable=True)
+        return f"<DevicePerformance(device='{self.device_id}', cpu={self.cpu_usage}%)>"
