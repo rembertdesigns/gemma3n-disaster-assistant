@@ -4,18 +4,39 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}Disaster Response & Recovery Assistant{% endblock %}</title>
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Emergency Response">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta name="color-scheme" content="light dark">
+
   <link rel="stylesheet" href="/static/css/styles.css" />
   
-  <!-- Block for additional CSS -->
   {% block extra_css %}
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   {% endblock %}
   
-  <!-- Block for additional head content -->
-  {% block extra_head %}{% endblock %}
-
   <style>
+    /* Light/Dark Mode Color & Style Variables */
+    :root[data-theme="light"] {
+      --surface-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+      --border-subtle: #e2e8f0;
+    }
+    :root[data-theme="dark"] {
+      --surface-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      --border-subtle: #475569;
+    }
+    
+    /* Apply new theme variables */
+    .main-content, .step-indicator {
+      background: var(--surface-gradient);
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--border-subtle);
+    }
+    
     /* Edge AI Status Indicators */
     .ai-status-bar {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -37,13 +58,8 @@
       animation: pulse 2s infinite;
     }
     
-    .ai-status-dot.loading {
-      background: #ffaa00;
-    }
-    
-    .ai-status-dot.error {
-      background: #ff0000;
-    }
+    .ai-status-dot.loading { background: #ffaa00; }
+    .ai-status-dot.error { background: #ff0000; }
     
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -61,10 +77,7 @@
       transition: all 0.3s ease;
     }
     
-    .realtime-analysis.visible {
-      display: block;
-      animation: slideIn 0.3s ease;
-    }
+    .realtime-analysis.visible { display: block; animation: slideIn 0.3s ease; }
     
     @keyframes slideIn {
       from { opacity: 0; transform: translateY(-10px); }
@@ -122,142 +135,60 @@
       border-radius: 0 8px 8px 0;
     }
     
-    .ai-recommendations h4 {
-      margin: 0 0 0.5rem 0;
-      color: #1e40af;
-      font-size: 0.9rem;
-    }
+    .ai-recommendations h4 { margin: 0 0 0.5rem 0; color: #1e40af; font-size: 0.9rem; }
+    .ai-recommendations ul { margin: 0; padding-left: 1.2rem; }
+    .ai-recommendations li { margin-bottom: 0.25rem; font-size: 0.85rem; color: #374151; }
     
-    .ai-recommendations ul {
-      margin: 0;
-      padding-left: 1.2rem;
-    }
+    .processing-indicator { display: none; align-items: center; gap: 0.5rem; color: #6b7280; font-size: 0.8rem; margin-top: 0.5rem; }
+    .processing-indicator.active { display: flex; }
     
-    .ai-recommendations li {
-      margin-bottom: 0.25rem;
-      font-size: 0.85rem;
-      color: #374151;
-    }
+    .spinner { width: 16px; height: 16px; border: 2px solid #e5e7eb; border-top: 2px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
     
-    .processing-indicator {
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-      color: #6b7280;
-      font-size: 0.8rem;
-      margin-top: 0.5rem;
-    }
-    
-    .processing-indicator.active {
-      display: flex;
-    }
-    
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid #e5e7eb;
-      border-top: 2px solid #3b82f6;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     
     /* Image Analysis Preview */
-    .image-analysis-preview {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: #f9fafb;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      display: none;
-    }
+    .image-analysis-preview { margin-top: 1rem; padding: 1rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; display: none; }
+    .image-analysis-preview.visible { display: block; animation: fadeIn 0.5s ease; }
     
-    .image-analysis-preview.visible {
-      display: block;
-      animation: fadeIn 0.5s ease;
-    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+    .hazard-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .hazard-tag { background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
     
-    .hazard-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
-    
-    .hazard-tag {
-      background: #dc2626;
-      color: white;
-      padding: 0.25rem 0.5rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
-    
-    .confidence-bar {
+    /* AI Confidence Meter */
+    .ai-confidence-meter {
       width: 100%;
-      height: 6px;
-      background: #e5e7eb;
-      border-radius: 3px;
-      overflow: hidden;
-      margin-top: 0.5rem;
+      background-color: #f3f4f6; /* Use theme variable later */
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-top: 1rem;
+      display: none; /* Controlled by JS */
     }
-    
-    .confidence-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #dc2626, #16a34a);
-      transition: width 0.5s ease;
+    .confidence-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #4b5563;
+      margin-bottom: 0.5rem;
     }
+    .confidence-bar { width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+    .confidence-fill { height: 100%; background: linear-gradient(90deg, #fca5a5, #6ee7b7); transition: width 0.5s ease; }
 
     /* Drone-specific styling */
-    .drone-section {
-      background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
-      color: white;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-top: 1rem;
-    }
-    
-    .drone-section label {
-      color: white;
-      font-weight: bold;
-    }
-    
-    #droneImageAnalysisPreview {
-      background: rgba(14, 165, 233, 0.1);
-      border: 2px solid #0ea5e9;
-    }
-    
-    #droneImageAnalysisPreview h4 {
-      color: #0369a1;
-    }
+    .drone-section { background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+    .drone-section label { color: white; font-weight: bold; }
+    #droneImageAnalysisPreview { background: rgba(14, 165, 233, 0.1); border: 2px solid #0ea5e9; }
+    #droneImageAnalysisPreview h4 { color: #0369a1; }
 
     /* Context selector styling */
-    .context-select {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      background: white;
-    }
-
-    .context-select:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
+    .context-select { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; background: white; }
+    .context-select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
   </style>
 
-  <!-- Block for additional styles - moved outside style tag -->
-  {% block extra_styles %}{% endblock %}
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <header class="header">
@@ -265,11 +196,13 @@
       <div class="logo">🆘</div>
       <div>
         <h1 class="title">{% block page_title %}Disaster Response & Recovery Assistant{% endblock %}</h1>
-        {% block header_actions %}
-        <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
-          🧩 Live JSON → PDF Editor
-        </a>
-        {% endblock %}        
+        <div class="header-actions">
+            {% block header_actions %}
+            <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+              🧩 Live JSON → PDF Editor
+            </a>
+            {% endblock %}
+        </div>
         <p class="subtitle">{% block subtitle %}AI-Powered Emergency Analysis & Support{% endblock %}</p>
       </div>
       <div class="controls">
@@ -285,8 +218,7 @@
     </div>
   </header>
 
-  <main class="container">
-    <!-- Edge AI Status Bar (only show on pages that use AI) -->
+  <main class="container main-content">
     {% block ai_status %}
     <div class="ai-status-bar" id="aiStatusBar">
       <div class="ai-status-dot loading" id="aiStatusDot"></div>
@@ -297,10 +229,18 @@
     </div>
     {% endblock %}
 
-    <!-- Main content block -->
+    <div class="ai-confidence-meter" id="aiConfidence" style="display: none;">
+      <div class="confidence-header">
+        <span>🤖 AI Analysis Confidence</span>
+        <span id="confidenceScore">--%</span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" id="confidenceFill" style="width: 0%;"></div>
+      </div>
+    </div>
+
     {% block content %}{% endblock %}
 
-    <!-- Sync Queue UI (only show on pages that need it) -->
     {% block sync_queue %}
     <div class="sync-queue-card" id="syncQueueCard" style="display: none; margin-top: 2rem; padding: 1rem; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px;">
       <h3 style="margin-bottom: 0.5rem;">📡 Offline Report Sync Queue</h3>
@@ -309,7 +249,6 @@
     </div>
     {% endblock %}
 
-    <!-- Manual Mesh Pairing UI (only show on pages that need it) -->
     {% block mesh_pairing %}
     <div id="pairing-ui" style="margin-top: 2rem; padding: 1rem; background: #eef2ff; border: 1px solid #93c5fd; border-radius: 8px;">
       <h3 style="margin-bottom: 0.5rem;">Manual Mesh Pairing (Offline Mode)</h3>
@@ -325,17 +264,16 @@
     <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
   </footer>
 
-  <!-- Base scripts -->
   {% block base_scripts %}
-  <!-- Load Edge AI Engine (only on pages that need it) -->
   <script src="/static/js/edge-ai.js"></script>
   
-  <!-- Leaflet JS (only on pages that need maps) -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   {% endblock %}
 
-  <!-- Core functionality scripts -->
   <script>
+    // Initialize a global namespace if it doesn't exist
+    window.portal = window.portal || {};
+
     // Theme toggle
     const themeBtn = document.getElementById('toggleThemeBtn');
     themeBtn.addEventListener('click', () => {
@@ -385,6 +323,31 @@
         .then((reg) => console.log("✅ Service worker registered:", reg.scope))
         .catch((err) => console.error("❌ Service worker registration failed:", err));
     }
+
+    // PWA Install Prompt Logic
+    window.portal.setupPWA = function() {
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const headerActions = document.querySelector('.header-actions');
+        if (headerActions && !document.querySelector('.install-app-btn')) {
+            const installBtn = document.createElement('button');
+            installBtn.className = 'btn btn-primary install-app-btn';
+            installBtn.innerHTML = '📱 Install App';
+            installBtn.style.marginLeft = '1rem';
+            installBtn.onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    installBtn.remove();
+                }
+            };
+            headerActions.appendChild(installBtn);
+        }
+      });
+    };
 
     // Manual Signal Handler for P2P
     function handleManualSignal() {
@@ -442,15 +405,18 @@
         showSyncQueue();
       });
     }
-
+    
+    // Initial calls on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      window.portal.setupPWA();
+      showSyncQueue();
+    });
     window.addEventListener('online', showSyncQueue);
-    window.addEventListener('load', showSyncQueue);
+
   </script>
 
-  <!-- Page-specific scripts -->
   {% block scripts %}{% endblock %}
 
-  <!-- P2P Module loading (only on pages that need it) -->
   {% block p2p_scripts %}
   <script type="module">
     import { manualSignalOffer } from '/static/js/p2p/fallback-webrtc.js';

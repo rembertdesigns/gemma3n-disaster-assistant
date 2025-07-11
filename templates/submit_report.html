@@ -1,280 +1,45 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Submit Emergency Report - Disaster Response Assistant</title>
-  <link rel="stylesheet" href="/static/css/styles.css" />
-  
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  
-  <style>
-    /* Enhanced AI Status Indicators */
-    .ai-status-bar {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      font-size: 0.9rem;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    }
-    
-    .ai-status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #00ff00;
-      animation: pulse 2s infinite;
-      flex-shrink: 0;
-    }
-    
-    .ai-status-dot.loading {
-      background: #ffaa00;
-    }
-    
-    .ai-status-dot.error {
-      background: #ff0000;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(0.9); }
-    }
-    
-    /* Enhanced Real-time Analysis Panel */
-    .realtime-analysis {
-      background: rgba(37, 99, 235, 0.05);
-      border: 2px solid #2563eb;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-top: 1rem;
-      display: none;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-    }
-    
-    .realtime-analysis.visible {
-      display: block;
-      animation: slideIn 0.3s ease;
-    }
-    
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .analysis-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      font-weight: bold;
-      color: #1e40af;
-    }
-    
-    .severity-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 1rem;
-      border-radius: 25px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      color: white;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .severity-low { background: linear-gradient(135deg, #16a34a, #22c55e); }
-    .severity-medium { background: linear-gradient(135deg, #d97706, #f59e0b); }
-    .severity-high { background: linear-gradient(135deg, #dc2626, #ef4444); }
-    .severity-critical { 
-      background: linear-gradient(135deg, #991b1b, #dc2626); 
-      animation: criticalBlink 1s infinite;
-      box-shadow: 0 0 15px rgba(153, 27, 27, 0.5);
-    }
-    
-    @keyframes criticalBlink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
-    }
-    
-    .panic-indicator {
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      margin-left: 0.5rem;
-      text-transform: uppercase;
-    }
-    
-    .panic-calm { background: #dcfce7; color: #166534; }
-    .panic-concerned { background: #fef3c7; color: #92400e; }
-    .panic-elevated { background: #fecaca; color: #991b1b; }
-    .panic-critical { 
-      background: #dc2626; 
-      color: white; 
-      animation: criticalBlink 1s infinite;
-    }
-    
-    .ai-recommendations {
-      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-      border-left: 4px solid #3b82f6;
-      padding: 1rem;
-      margin-top: 1rem;
-      border-radius: 0 8px 8px 0;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .ai-recommendations h4 {
-      margin: 0 0 0.5rem 0;
-      color: #1e40af;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .ai-recommendations ul {
-      margin: 0;
-      padding-left: 1.2rem;
-    }
-    
-    .ai-recommendations li {
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-      color: #374151;
-      line-height: 1.4;
-    }
-    
-    /* Enhanced Processing Indicator */
-    .processing-indicator {
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-      color: #6b7280;
-      font-size: 0.85rem;
-      margin-top: 0.75rem;
-      padding: 0.5rem;
-      background: rgba(107, 114, 128, 0.1);
-      border-radius: 6px;
-    }
-    
-    .processing-indicator.active {
-      display: flex;
-    }
-    
-    .spinner {
-      width: 18px;
-      height: 18px;
-      border: 2px solid #e5e7eb;
-      border-top: 2px solid #3b82f6;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    /* Enhanced Image Analysis Preview */
-    .image-analysis-preview {
-      margin-top: 1rem;
-      padding: 1.5rem;
-      background: linear-gradient(135deg, #f9fafb, #f3f4f6);
-      border-radius: 12px;
-      border: 2px solid #e5e7eb;
-      display: none;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    
-    .image-analysis-preview.visible {
-      display: block;
-      animation: fadeIn 0.5s ease;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .hazard-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-    }
-    
-    .hazard-tag {
-      background: linear-gradient(135deg, #dc2626, #ef4444);
-      color: white;
-      padding: 0.4rem 0.8rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
-    }
-    
-    .confidence-bar {
-      width: 100%;
-      height: 8px;
-      background: #e5e7eb;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-top: 0.75rem;
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-    }
-    
-    .confidence-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #dc2626, #f59e0b, #16a34a);
-      transition: width 0.8s ease;
-    }
+{% extends "base.html" %}
 
-    /* Enhanced Form Styling */
+{% block title %}Submit Emergency Report - Disaster Response Assistant{% endblock %}
+{% block page_title %}📝 Submit Emergency Report{% endblock %}
+{% block subtitle %}Provide details below. AI will assist in real-time.{% endblock %}
+
+{% block header_actions %}
+  <a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #6b7280; color: #fff; border-radius: 6px; text-decoration: none;">
+    ⬅️ Back to Home
+  </a>
+{% endblock %}
+
+{% block extra_css %}
+  {{ super() }}
+  <style>
     .form-container {
-      background: white;
+      background: var(--bg-secondary);
       border-radius: 12px;
       padding: 2rem;
       margin-bottom: 2rem;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-      border: 1px solid #e5e7eb;
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--border-subtle);
     }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-      color: #374151;
-    }
-
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary); }
     .form-group input,
     .form-group textarea,
     .form-group select {
       width: 100%;
       padding: 0.75rem;
-      border: 2px solid #d1d5db;
+      border: 2px solid var(--border-color);
       border-radius: 8px;
       font-size: 0.9rem;
       transition: border-color 0.2s ease;
+      background: var(--bg-primary);
+      color: var(--text-primary);
     }
-
     .form-group input:focus,
     .form-group textarea:focus,
     .form-group select:focus {
       outline: none;
-      border-color: #3b82f6;
+      border-color: var(--primary-color);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
@@ -294,956 +59,321 @@
       justify-content: center;
       min-width: 200px;
     }
-
-    .submit-btn:hover {
+    .submit-btn:hover:not(:disabled) {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     }
-
     .submit-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
       transform: none;
     }
 
-    /* Offline Status Indicator */
-    .offline-indicator {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 600;
-    }
-
-    .offline-indicator.visible {
-      display: flex;
-    }
-
-    /* Enhanced Sync Queue */
-    .sync-queue-card {
-      background: linear-gradient(135deg, #fff7ed, #fed7aa);
-      border: 2px solid #fdba74;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-top: 2rem;
-      display: none;
-    }
-
-    .sync-queue-card.visible {
-      display: block;
-      animation: slideIn 0.3s ease;
-    }
-
-    .sync-queue-card h3 {
-      margin: 0 0 1rem 0;
-      color: #92400e;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .queue-item {
-      background: rgba(255, 255, 255, 0.8);
-      padding: 0.75rem;
-      border-radius: 6px;
-      margin-bottom: 0.5rem;
-      border-left: 4px solid #f59e0b;
-    }
-
-    .sync-now-btn {
-      background: linear-gradient(135deg, #16a34a, #22c55e);
-      color: white;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s ease;
-    }
-
-    .sync-now-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
-    }
-
-    /* Map Container */
     .map-container {
       height: 300px;
       border-radius: 8px;
       overflow: hidden;
       margin-top: 1rem;
-      border: 2px solid #e5e7eb;
+      border: 2px solid var(--border-color);
     }
-
-    /* Context selector styling */
-    .context-select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 2px solid #d1d5db;
+    
+    .notification {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      padding: 1rem 1.5rem;
       border-radius: 8px;
-      font-size: 0.9rem;
-      background: white;
-      transition: border-color 0.2s ease;
-    }
-
-    .context-select:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    /* Dark mode adjustments */
-    [data-theme="dark"] .form-container {
-      background: #1f2937;
-      border-color: #374151;
-    }
-
-    [data-theme="dark"] .form-group input,
-    [data-theme="dark"] .form-group textarea,
-    [data-theme="dark"] .form-group select {
-      background: #374151;
-      border-color: #4b5563;
       color: white;
+      font-weight: 600;
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
+    .notification.success { background: linear-gradient(135deg, #16a34a, #22c55e); }
+    .notification.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .notification.error { background: linear-gradient(135deg, #dc2626, #ef4444); }
 
-    [data-theme="dark"] .image-analysis-preview {
-      background: linear-gradient(135deg, #1f2937, #374151);
-      border-color: #4b5563;
-    }
-
-    [data-theme="dark"] .ai-recommendations {
-      background: linear-gradient(135deg, #1f2937, #374151);
-    }
   </style>
-</head>
-<body>
-  <header class="header">
-    <div class="header-content">
-      <div class="logo">🆘</div>
-      <div>
-        <h1 class="title">Submit Emergency Report</h1>
-        <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
-          🧩 Live JSON → PDF Editor
-        </a>
-        <p class="subtitle">AI-Powered Emergency Analysis & Support</p>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+  <form id="emergencyReportForm" autocomplete="off">
+    <div class="form-group">
+      <label for="reportType">🚨 Emergency Type</label>
+      <select id="reportType" name="type" required>
+        <option value="">Select emergency type...</option>
+        <option value="fire">🔥 Fire</option>
+        <option value="medical">🏥 Medical Emergency</option>
+        <option value="accident">🚗 Traffic Accident</option>
+        <option value="weather">🌪️ Severe Weather</option>
+        <option value="other">❓ Other</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="priority">📊 Priority Level</label>
+      <select id="priority" name="priority" required>
+        <option value="low">🟢 Low</option>
+        <option value="medium" selected>🟡 Medium</option>
+        <option value="high">🟠 High</option>
+        <option value="critical">🔴 Critical</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="description">📝 Detailed Description</label>
+      <textarea id="description" name="description" rows="4" placeholder="Describe what is happening..." required></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label for="file">📸 Upload Image (Optional)</label>
+      <input type="file" id="file" name="file" accept="image/*">
+    </div>
+
+    <div class="image-analysis-preview" id="imageAnalysisPreview">
+      <h4>📸 Image Analysis Results</h4>
+      <p id="imageAnalysisText">Upload an image for AI analysis.</p>
+      <div class="hazard-tags" id="hazardTags"></div>
+    </div>
+    
+    <div class="form-group">
+      <label for="location">📍 Location</label>
+      <input type="text" id="location" name="location" placeholder="Enter address or click map" required>
+      <button type="button" id="getLocationBtn" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-top: 0.5rem;">Use Current Location</button>
+    </div>
+
+    <div class="map-container" id="map"></div>
+
+    <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border-subtle);">
+    
+    <div class="realtime-analysis" id="realtimeAnalysis">
+      <div class="analysis-header"><span>🤖</span><span>Real-time AI Analysis</span></div>
+      <div id="analysisContent">
+        <div class="severity-indicator severity-medium" id="aiSeverity"><span>⚠️</span><span>Medium Risk</span></div>
+        <div class="ai-recommendations">
+          <h4>🎯 AI Recommendations</h4>
+          <ul id="recommendationsList"><li>Enter details to get recommendations.</li></ul>
+        </div>
       </div>
-      <div class="controls">
-        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
-        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
-        <div class="status-bar">
-          <div class="status-indicator status-offline">
-            <div class="status-dot"></div>
-            Offline Ready
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="container">
-    <!-- Edge AI Status Bar -->
-    <div class="ai-status-bar" id="aiStatusBar">
-      <div class="ai-status-dot loading" id="aiStatusDot"></div>
-      <span id="aiStatusText">🧠 Loading Edge AI models...</span>
-      <button onclick="window.EdgeAI?.runDiagnostics()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-left: auto;">
-        🧪 Test AI
-      </button>
+      <div class="processing-indicator" id="processingIndicator"><div class="spinner"></div><span>Analyzing report with AI...</span></div>
     </div>
 
-    <!-- Offline Indicator -->
-    <div class="offline-indicator" id="offlineIndicator">
-      <span>📴</span>
-      <span>You're offline. Reports will be saved locally and submitted when connection is restored.</span>
-    </div>
+    <button type="submit" class="submit-btn" id="submitBtn" style="margin-top: 1.5rem;">
+      <span>🚨</span>
+      <span>Submit Emergency Report</span>
+    </button>
+  </form>
+</div>
 
-    <!-- Emergency Report Form -->
-    <div class="form-container">
-      <form id="emergencyReportForm">
-        <div class="form-group">
-          <label for="reportType">🚨 Emergency Type</label>
-          <select id="reportType" name="reportType" required>
-            <option value="">Select emergency type...</option>
-            <option value="fire">🔥 Fire</option>
-            <option value="flood">🌊 Flood</option>
-            <option value="earthquake">🌍 Earthquake</option>
-            <option value="medical">🏥 Medical Emergency</option>
-            <option value="accident">🚗 Traffic Accident</option>
-            <option value="violence">⚠️ Violence/Security</option>
-            <option value="infrastructure">🏗️ Infrastructure Failure</option>
-            <option value="weather">🌪️ Severe Weather</option>
-            <option value="hazmat">☢️ Hazardous Materials</option>
-            <option value="other">❓ Other</option>
-          </select>
-        </div>
+<div class="sync-queue-card" id="syncQueueCard">
+  <h3>📡 Offline Report Sync Queue</h3>
+  <div id="queueItems"></div>
+  <button class="sync-now-btn" id="syncNowBtn">🔄 Sync Now</button>
+</div>
+{% endblock %}
 
-        <div class="form-group">
-          <label for="severity">📊 Severity Level</label>
-          <select id="severity" name="severity" required>
-            <option value="">Select severity...</option>
-            <option value="low">🟢 Low - Minor incident</option>
-            <option value="medium">🟡 Medium - Moderate impact</option>
-            <option value="high">🟠 High - Significant danger</option>
-            <option value="critical">🔴 Critical - Life-threatening</option>
-          </select>
-        </div>
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // STATE
+    let map, marker, aiAnalysisTimeout;
 
-        <div class="form-group">
-          <label for="location">📍 Location</label>
-          <input type="text" id="location" name="location" placeholder="Enter address or description" required>
-        </div>
+    // ELEMENTS
+    const form = document.getElementById('emergencyReportForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const offlineIndicator = document.getElementById('offlineIndicator');
+    const imageInput = document.getElementById('file');
+    const imagePreview = document.getElementById('imageAnalysisPreview');
+    const locationInput = document.getElementById('location');
 
-        <div class="form-group">
-          <label for="description">📝 Detailed Description</label>
-          <textarea id="description" name="description" rows="4" placeholder="Describe the emergency situation in detail..." required></textarea>
-        </div>
+    // --- INITIALIZATION ---
+    function initialize() {
+        initMap();
+        setupEventListeners();
+        updateOnlineStatus();
+        console.log("✅ Report submission form initialized.");
+    }
 
-        <div class="form-group">
-          <label for="peopleAffected">👥 Number of People Affected</label>
-          <input type="number" id="peopleAffected" name="peopleAffected" min="0" placeholder="0">
-        </div>
-
-        <div class="form-group">
-          <label for="emergencyServices">🚑 Emergency Services Contacted</label>
-          <select id="emergencyServices" name="emergencyServices">
-            <option value="none">Not yet contacted</option>
-            <option value="police">👮 Police</option>
-            <option value="fire">🚒 Fire Department</option>
-            <option value="ems">🚑 EMS/Ambulance</option>
-            <option value="multiple">Multiple services</option>
-            <option value="unknown">Unknown</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="contactInfo">📞 Your Contact Information (Optional)</label>
-          <input type="text" id="contactInfo" name="contactInfo" placeholder="Phone number or email">
-        </div>
-
-        <div class="form-group">
-          <label for="hazardImage">📸 Upload Image (Optional)</label>
-          <input type="file" id="hazardImage" name="hazardImage" accept="image/*">
-        </div>
-
-        <!-- Real-time AI Analysis -->
-        <div class="realtime-analysis" id="realtimeAnalysis">
-          <div class="analysis-header">
-            <span>🤖</span>
-            <span>AI Analysis Results</span>
-          </div>
-          
-          <div id="analysisContent">
-            <div class="severity-indicator severity-medium" id="aiSeverity">
-              <span>⚠️</span>
-              <span>Medium Risk</span>
-            </div>
-            
-            <span class="panic-indicator panic-concerned" id="panicLevel">Concerned</span>
-            
-            <div class="ai-recommendations">
-              <h4>🎯 AI Recommendations</h4>
-              <ul id="recommendationsList">
-                <li>Ensure personal safety first</li>
-                <li>Document the situation if safe to do so</li>
-                <li>Contact appropriate emergency services</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="processing-indicator" id="processingIndicator">
-            <div class="spinner"></div>
-            <span>Analyzing report with AI...</span>
-          </div>
-        </div>
-
-        <!-- Image Analysis Preview -->
-        <div class="image-analysis-preview" id="imageAnalysisPreview">
-          <h4>📸 Image Analysis Results</h4>
-          <p id="imageAnalysisText">No hazards detected in uploaded image.</p>
-          
-          <div class="hazard-tags" id="hazardTags">
-            <!-- Hazard tags will be added dynamically -->
-          </div>
-          
-          <div style="margin-top: 1rem;">
-            <small style="color: #6b7280;">Confidence Level:</small>
-            <div class="confidence-bar">
-              <div class="confidence-fill" id="confidenceFill" style="width: 75%;"></div>
-            </div>
-            <small style="color: #6b7280;"><span id="confidenceText">75%</span> confident in analysis</small>
-          </div>
-        </div>
-
-        <!-- Location Map -->
-        <div class="form-group">
-          <label>🗺️ Location on Map (Click to select)</label>
-          <div class="map-container" id="map"></div>
-        </div>
-
-        <button type="submit" class="submit-btn" id="submitBtn">
-          <span>🚨</span>
-          <span>Submit Emergency Report</span>
-        </button>
-      </form>
-    </div>
-
-    <!-- Sync Queue -->
-    <div class="sync-queue-card" id="syncQueueCard">
-      <h3>📡 Offline Report Sync Queue</h3>
-      <div id="queueItems"></div>
-      <button class="sync-now-btn" id="syncNowBtn">
-        <span>🔄</span>
-        <span>Sync Now</span>
-      </button>
-    </div>
-  </main>
-
-  <footer class="footer">
-    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
-  </footer>
-
-  <!-- Scripts -->
-  <script src="/static/js/edge-ai.js"></script>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  
-  <script>
-    // Enhanced application state
-    let map;
-    let selectedLocation = null;
-    let aiAnalysisTimeout = null;
-
-    // Initialize map
-    function initializeMap() {
-      map = L.map('map').setView([40.7128, -74.0060], 13); // Default to NYC
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-
-      // Add click handler for location selection
-      map.on('click', function(e) {
-        if (selectedLocation) {
-          map.removeLayer(selectedLocation);
-        }
-        
-        selectedLocation = L.marker([e.latlng.lat, e.latlng.lng])
-          .addTo(map)
-          .bindPopup('📍 Selected emergency location')
-          .openPopup();
-          
-        // Update location input
-        document.getElementById('location').value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-        
-        // Trigger AI analysis
-        triggerAIAnalysis();
-      });
-
-      // Try to get user's current location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          map.setView([lat, lng], 15);
+    function setupEventListeners() {
+        form.addEventListener('submit', handleFormSubmission);
+        imageInput.addEventListener('change', (e) => e.target.files[0] ? analyzeImage(e.target.files[0]) : imagePreview.classList.remove('visible'));
+        document.getElementById('getLocationBtn').addEventListener('click', getCurrentLocation);
+        ['reportType', 'priority', 'description', 'location'].forEach(id => {
+            document.getElementById(id).addEventListener('input', triggerAIAnalysis);
         });
-      }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
     }
 
-    // Enhanced AI Analysis
-    function triggerAIAnalysis() {
-      clearTimeout(aiAnalysisTimeout);
-      
-      aiAnalysisTimeout = setTimeout(() => {
-        const formData = getFormData();
-        
-        if (formData.reportType || formData.description || formData.severity) {
-          showProcessingIndicator();
-          performAIAnalysis(formData);
+    // --- MAP LOGIC ---
+    function initMap() {
+        map = L.map('map').setView([40.7128, -74.0060], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{y}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+        map.on('click', onMapClick);
+        getCurrentLocation(); // Attempt to get location on load
+    }
+
+    function onMapClick(e) {
+        const { lat, lng } = e.latlng;
+        addMarker(lat, lng);
+        locationInput.value = `Selected: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        triggerAIAnalysis();
+    }
+
+    function addMarker(lat, lng) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map).bindPopup("Emergency Location").openPopup();
+    }
+
+    function getCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude, longitude } = pos.coords;
+                map.setView([latitude, longitude], 15);
+                addMarker(latitude, longitude);
+                locationInput.value = `Current Location: (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+            }, () => showNotification("Could not get location.", "error"));
         }
-      }, 1000); // Debounce for 1 second
     }
 
-    function getFormData() {
-      return {
-        reportType: document.getElementById('reportType').value,
-        severity: document.getElementById('severity').value,
-        description: document.getElementById('description').value,
-        location: document.getElementById('location').value,
-        peopleAffected: document.getElementById('peopleAffected').value,
-        emergencyServices: document.getElementById('emergencyServices').value
-      };
+    // --- AI ANALYSIS ---
+    function triggerAIAnalysis() {
+        clearTimeout(aiAnalysisTimeout);
+        aiAnalysisTimeout = setTimeout(() => {
+            const formData = Object.fromEntries(new FormData(form).entries());
+            if (formData.type || formData.description || formData.priority) {
+                showProcessingIndicator(true);
+                performAIAnalysis(formData);
+            }
+        }, 800); // Debounce
     }
 
-    function showProcessingIndicator() {
-      document.getElementById('processingIndicator').classList.add('active');
-    }
-
-    function hideProcessingIndicator() {
-      document.getElementById('processingIndicator').classList.remove('active');
-    }
-
-    async function performAIAnalysis(formData) {
-      try {
-        // Simulate AI analysis (replace with actual Edge AI when ready)
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Mock AI results based on form data
-        const analysis = generateMockAnalysis(formData);
-        
+    async function performAIAnalysis(data) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        const analysis = generateMockAnalysis(data);
         displayAIAnalysis(analysis);
-        hideProcessingIndicator();
-        
-      } catch (error) {
-        console.error('AI Analysis failed:', error);
-        hideProcessingIndicator();
-      }
+        showProcessingIndicator(false);
     }
 
-    function generateMockAnalysis(formData) {
-      const severityMap = {
-        'critical': { level: 'critical', panic: 'critical', color: 'severity-critical' },
-        'high': { level: 'high', panic: 'elevated', color: 'severity-high' },
-        'medium': { level: 'medium', panic: 'concerned', color: 'severity-medium' },
-        'low': { level: 'low', panic: 'calm', color: 'severity-low' }
-      };
-      
-      const severity = severityMap[formData.severity] || severityMap['medium'];
-      
-      const recommendations = generateRecommendations(formData);
-      
-      return {
-        severity: severity,
-        confidence: Math.floor(Math.random() * 30) + 70, // 70-100%
-        recommendations: recommendations,
-        riskFactors: ['Location accessible to emergency services', 'Weather conditions favorable']
-      };
-    }
-
-    function generateRecommendations(formData) {
-      const baseRecommendations = [
-        'Ensure personal safety as top priority',
-        'Contact emergency services if not already done',
-        'Document the situation if safe to do so'
-      ];
-      
-      const typeSpecificRecommendations = {
-        'fire': [
-          'Evacuate immediately if in danger',
-          'Stay low to avoid smoke inhalation',
-          'Do not use elevators'
-        ],
-        'flood': [
-          'Move to higher ground immediately',
-          'Avoid walking or driving through flood water',
-          'Turn off electricity if water is rising'
-        ],
-        'medical': [
-          'Call 911 immediately',
-          'Provide first aid if trained',
-          'Keep the person calm and comfortable'
-        ],
-        'earthquake': [
-          'Drop, cover, and hold on',
-          'Stay away from windows and heavy objects',
-          'Be prepared for aftershocks'
-        ]
-      };
-      
-      return [
-        ...baseRecommendations,
-        ...(typeSpecificRecommendations[formData.reportType] || [])
-      ].slice(0, 5); // Limit to 5 recommendations
+    function generateMockAnalysis(data) {
+        const severityMap = {'critical': 0.95, 'high': 0.8, 'medium': 0.6, 'low': 0.3};
+        const typeRecs = {
+            'fire': ['Evacuate area', 'Alert nearby people'],
+            'medical': ['Do not move patient', 'Provide clear access for paramedics']
+        };
+        return {
+            severityScore: severityMap[data.priority] || 0.5,
+            recommendations: ['Ensure personal safety', ...(typeRecs[data.type] || ['Document scene if safe'])]
+        };
     }
 
     function displayAIAnalysis(analysis) {
-      const analysisPanel = document.getElementById('realtimeAnalysis');
-      const severityIndicator = document.getElementById('aiSeverity');
-      const panicLevel = document.getElementById('panicLevel');
-      const recommendationsList = document.getElementById('recommendationsList');
-      
-      // Update severity indicator
-      severityIndicator.className = `severity-indicator ${analysis.severity.color}`;
-      severityIndicator.innerHTML = `
-        <span>${getSeverityIcon(analysis.severity.level)}</span>
-        <span>${analysis.severity.level.toUpperCase()} Risk</span>
-      `;
-      
-      // Update panic level
-      panicLevel.className = `panic-indicator panic-${analysis.severity.panic}`;
-      panicLevel.textContent = analysis.severity.panic.toUpperCase();
-      
-      // Update recommendations
-      recommendationsList.innerHTML = analysis.recommendations
-        .map(rec => `<li>${rec}</li>`)
-        .join('');
-      
-      // Show analysis panel
-      analysisPanel.classList.add('visible');
+        const analysisPanel = document.getElementById('realtimeAnalysis');
+        const severityIndicator = document.getElementById('aiSeverity');
+        const recList = document.getElementById('recommendationsList');
+        
+        const score = analysis.severityScore;
+        let level, color;
+        if(score >= 0.9) { level = 'Critical'; color = 'severity-critical'; }
+        else if(score >= 0.7) { level = 'High'; color = 'severity-high'; }
+        else if(score >= 0.5) { level = 'Medium'; color = 'severity-medium'; }
+        else { level = 'Low'; color = 'severity-low'; }
+
+        severityIndicator.className = `severity-indicator ${color}`;
+        severityIndicator.innerHTML = `<span>⚠️</span><span>${level} Risk</span>`;
+        recList.innerHTML = analysis.recommendations.map(rec => `<li>${rec}</li>`).join('');
+        analysisPanel.classList.add('visible');
     }
 
-    function getSeverityIcon(level) {
-      const icons = {
-        'low': '🟢',
-        'medium': '🟡',
-        'high': '🟠',
-        'critical': '🔴'
-      };
-      return icons[level] || '⚪';
+    function showProcessingIndicator(isProcessing) {
+        document.getElementById('processingIndicator').classList.toggle('active', isProcessing);
     }
-
-    // Image Analysis
-    document.getElementById('hazardImage').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        analyzeImage(file);
-      }
-    });
-
+    
+    // --- MEDIA & SUBMISSION ---
     async function analyzeImage(file) {
-      try {
-        // Show processing
-        showProcessingIndicator();
-        
-        // Simulate image analysis
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // Mock analysis results
-        const analysis = {
-          hazards: ['Structural damage', 'Debris'],
-          confidence: Math.floor(Math.random() * 20) + 80,
-          description: 'AI detected potential structural damage and scattered debris in the image.'
-        };
-        
-        displayImageAnalysis(analysis);
-        hideProcessingIndicator();
-        
-      } catch (error) {
-        console.error('Image analysis failed:', error);
-        hideProcessingIndicator();
-      }
+        imagePreview.classList.add('visible');
+        const analysisText = document.getElementById('imageAnalysisText');
+        const hazardTags = document.getElementById('hazardTags');
+        analysisText.textContent = "Analyzing image with AI...";
+        hazardTags.innerHTML = '';
+        await new Promise(res => setTimeout(res, 1500));
+        analysisText.textContent = "AI detected potential structural damage and debris.";
+        hazardTags.innerHTML = ['Structural Damage', 'Debris'].map(h => `<span class="hazard-tag">${h}</span>`).join('');
     }
 
-    function displayImageAnalysis(analysis) {
-      const previewPanel = document.getElementById('imageAnalysisPreview');
-      const analysisText = document.getElementById('imageAnalysisText');
-      const hazardTags = document.getElementById('hazardTags');
-      const confidenceFill = document.getElementById('confidenceFill');
-      const confidenceText = document.getElementById('confidenceText');
-      
-      // Update analysis text
-      analysisText.textContent = analysis.description;
-      
-      // Update hazard tags
-      hazardTags.innerHTML = analysis.hazards
-        .map(hazard => `<span class="hazard-tag">${hazard}</span>`)
-        .join('');
-      
-      // Update confidence
-      confidenceFill.style.width = `${analysis.confidence}%`;
-      confidenceText.textContent = `${analysis.confidence}%`;
-      
-      // Show preview panel
-      previewPanel.classList.add('visible');
-      
-      // Trigger overall AI analysis update
-      triggerAIAnalysis();
+    async function handleFormSubmission(e) {
+        e.preventDefault();
+        const originalBtnHTML = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="spinner"></div><span>Submitting...</span>';
+
+        const formData = new FormData(form);
+        if (marker) {
+            formData.append('latitude', marker.getLatLng().lat);
+            formData.append('longitude', marker.getLatLng().lng);
+        }
+
+        try {
+            if (!navigator.onLine) throw new Error("Offline");
+            const response = await fetch('/api/submit-emergency-report', { method: 'POST', body: formData });
+            if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
+            showNotification('✅ Report submitted successfully!', 'success');
+            form.reset();
+            resetUI();
+        } catch (error) {
+            console.warn("Submission failed, saving offline.", error.message);
+            saveReportOffline(formData);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHTML;
+        }
     }
 
-    // Form submission with offline support
-    document.getElementById('emergencyReportForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const submitBtn = document.getElementById('submitBtn');
-      const originalContent = submitBtn.innerHTML;
-      
-      // Show loading state
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `
-        <div class="spinner"></div>
-        <span>Submitting...</span>
-      `;
-      
-      try {
-        const formData = new FormData(this);
-        
-        // Add location coordinates if available
-        if (selectedLocation) {
-          const latlng = selectedLocation.getLatLng();
-          formData.append('latitude', latlng.lat);
-          formData.append('longitude', latlng.lng);
-        }
-        
-        // Add timestamp
-        formData.append('timestamp', new Date().toISOString());
-        
-        const response = await fetch('/api/submit-emergency-report', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (response.ok) {
-          showSuccessMessage('Emergency report submitted successfully!');
-          this.reset();
-          resetForm();
-        } else {
-          throw new Error(`Server error: ${response.status}`);
-        }
-        
-      } catch (error) {
-        console.log('Submission failed, handling offline:', error);
-        
-        // Store in local queue for offline sync
-        await storeReportOffline(new FormData(this));
-        showOfflineMessage('Report saved locally. Will be submitted when connection is restored.');
-        
-        this.reset();
-        resetForm();
-      } finally {
-        // Restore button state
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalContent;
-      }
-    });
-
-    async function storeReportOffline(formData) {
-      const reportData = {};
-      
-      // Convert FormData to regular object
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          // Convert file to base64 for storage
-          reportData[key] = await fileToBase64(value);
-        } else {
-          reportData[key] = value;
-        }
-      }
-      
-      // Add to sync queue
-      const syncQueue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
-      syncQueue.push({
-        type: 'emergency-report',
-        data: reportData,
-        timestamp: Date.now(),
-        priority: reportData.severity === 'critical' ? 'critical' : 'high'
-      });
-      
-      localStorage.setItem('syncQueue', JSON.stringify(syncQueue));
-      updateSyncQueueDisplay();
+    function resetUI() {
+        if(marker) map.removeLayer(marker);
+        imagePreview.classList.remove('visible');
+        document.getElementById('realtimeAnalysis').classList.remove('visible');
     }
 
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
+    // --- OFFLINE & UTILS ---
+    function updateOnlineStatus() {
+        offlineIndicator.classList.toggle('visible', !navigator.onLine);
+    }
+    
+    async function saveReportOffline(formData) {
+        const report = {};
+        for (const [key, value] of formData.entries()) {
+            report[key] = (value instanceof File) ? await toBase64(value) : value;
+        }
+        const queue = JSON.parse(localStorage.getItem('offlineReports') || '[]');
+        queue.push(report);
+        localStorage.setItem('offlineReports', JSON.stringify(queue));
+        showNotification('📱 Report saved locally. Will be sent when you reconnect.', 'warning');
+    }
+
+    const toBase64 = file => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
-    }
-
-    function resetForm() {
-      // Reset AI analysis
-      document.getElementById('realtimeAnalysis').classList.remove('visible');
-      document.getElementById('imageAnalysisPreview').classList.remove('visible');
-      
-      // Reset map marker
-      if (selectedLocation) {
-        map.removeLayer(selectedLocation);
-        selectedLocation = null;
-      }
-      
-      // Clear any timeouts
-      clearTimeout(aiAnalysisTimeout);
-    }
-
-    function showSuccessMessage(message) {
-      const notification = createNotification(message, 'success');
-      document.body.appendChild(notification);
-      
-      setTimeout(() => {
-        notification.remove();
-      }, 5000);
-    }
-
-    function showOfflineMessage(message) {
-      const notification = createNotification(message, 'warning');
-      document.body.appendChild(notification);
-      
-      setTimeout(() => {
-        notification.remove();
-      }, 8000);
-    }
-
-    function createNotification(message, type) {
-      const notification = document.createElement('div');
-      notification.className = `notification notification-${type}`;
-      notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        color: white;
-        font-weight: 600;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-        max-width: 400px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      `;
-      
-      if (type === 'success') {
-        notification.style.background = 'linear-gradient(135deg, #16a34a, #22c55e)';
-        notification.innerHTML = `✅ ${message}`;
-      } else if (type === 'warning') {
-        notification.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
-        notification.innerHTML = `⚠️ ${message}`;
-      }
-      
-      return notification;
-    }
-
-    // Sync Queue Management
-    function updateSyncQueueDisplay() {
-      const syncQueue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
-      const queueCard = document.getElementById('syncQueueCard');
-      const queueItems = document.getElementById('queueItems');
-      
-      if (syncQueue.length > 0) {
-        queueItems.innerHTML = syncQueue.map((item, index) => `
-          <div class="queue-item">
-            <strong>Report #${index + 1}</strong> - ${item.type}
-            <br>
-            <small>Priority: ${item.priority} | ${new Date(item.timestamp).toLocaleString()}</small>
-          </div>
-        `).join('');
-        
-        queueCard.classList.add('visible');
-      } else {
-        queueCard.classList.remove('visible');
-      }
-    }
-
-    // Sync Now functionality
-    document.getElementById('syncNowBtn').addEventListener('click', async function() {
-      const btn = this;
-      const originalContent = btn.innerHTML;
-      
-      btn.disabled = true;
-      btn.innerHTML = `
-        <div class="spinner"></div>
-        <span>Syncing...</span>
-      `;
-      
-      try {
-        const syncQueue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
-        let syncedCount = 0;
-        
-        for (const item of syncQueue) {
-          try {
-            const formData = new FormData();
-            
-            // Convert stored data back to FormData
-            for (const [key, value] of Object.entries(item.data)) {
-              if (typeof value === 'string' && value.startsWith('data:')) {
-                // Convert base64 back to file
-                const response = await fetch(value);
-                const blob = await response.blob();
-                formData.append(key, blob, 'uploaded_file');
-              } else {
-                formData.append(key, value);
-              }
-            }
-            
-            const response = await fetch('/api/submit-emergency-report', {
-              method: 'POST',
-              body: formData
-            });
-            
-            if (response.ok) {
-              syncedCount++;
-            } else {
-              console.error('Failed to sync item:', response.status);
-            }
-          } catch (error) {
-            console.error('Error syncing item:', error);
-          }
-        }
-        
-        // Clear synced items
-        localStorage.removeItem('syncQueue');
-        updateSyncQueueDisplay();
-        
-        showSuccessMessage(`Successfully synced ${syncedCount} reports!`);
-        
-      } catch (error) {
-        console.error('Sync failed:', error);
-        showOfflineMessage('Sync failed. Please try again when connection is stable.');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalContent;
-      }
+        reader.onerror = reject;
     });
 
-    // Enhanced connection status monitoring
-    function updateConnectionStatus() {
-      const indicator = document.querySelector('.status-indicator');
-      const offlineIndicator = document.getElementById('offlineIndicator');
-      
-      if (navigator.onLine) {
-        indicator.innerHTML = '<div class="status-dot"></div>Online + Offline Ready';
-        indicator.className = 'status-indicator status-online';
-        offlineIndicator.classList.remove('visible');
-      } else {
-        indicator.innerHTML = '<div class="status-dot"></div>Offline Mode Active';
-        indicator.className = 'status-indicator status-offline';
-        offlineIndicator.classList.add('visible');
-      }
-      
-      updateSyncQueueDisplay();
+    function showNotification(message, type) {
+        const el = document.createElement('div');
+        el.className = `notification ${type}`;
+        el.textContent = message;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 5000);
     }
 
-    // Form input event listeners for real-time AI analysis
-    ['reportType', 'severity', 'description', 'location', 'peopleAffected'].forEach(fieldId => {
-      document.getElementById(fieldId).addEventListener('input', triggerAIAnalysis);
-      document.getElementById(fieldId).addEventListener('change', triggerAIAnalysis);
-    });
-
-    // Theme toggle functionality
-    const themeBtn = document.getElementById('toggleThemeBtn');
-    themeBtn.addEventListener('click', () => {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-    });
-
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-
-    // High contrast toggle
-    const contrastBtn = document.getElementById("contrastToggleBtn");
-    contrastBtn.addEventListener("click", () => {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-contrast');
-      const next = current === 'high' ? 'normal' : 'high';
-      html.setAttribute('data-contrast', next);
-      localStorage.setItem('contrast', next);
-    });
-
-    const savedContrast = localStorage.getItem('contrast');
-    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
-
-    // Service Worker registration
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/static/js/sw.js")
-        .then((reg) => {
-          console.log("✅ Service worker registered:", reg.scope);
-          
-          // Listen for sync events
-          reg.addEventListener('sync', (event) => {
-            if (event.tag.includes('emergency')) {
-              updateSyncQueueDisplay();
-            }
-          });
-        })
-        .catch((err) => console.error("❌ Service worker registration failed:", err));
-    }
-
-    // Initialize everything when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      initializeMap();
-      updateConnectionStatus();
-      updateSyncQueueDisplay();
-      
-      // Simulate Edge AI loading
-      setTimeout(() => {
-        const statusDot = document.getElementById('aiStatusDot');
-        const statusText = document.getElementById('aiStatusText');
-        
-        statusDot.className = 'ai-status-dot';
-        statusText.textContent = '🧠 Edge AI Ready - Real-time analysis enabled';
-      }, 2000);
-    });
-
-    // Connection event listeners
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
-
-    // Add notification styles
-    const notificationStyles = document.createElement('style');
-    notificationStyles.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-      
-      .notification {
-        animation: slideIn 0.3s ease;
-      }
-    `;
-    document.head.appendChild(notificationStyles);
-
-    // Geolocation for automatic location detection
-    function getCurrentLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            // Update map view
-            map.setView([lat, lng], 15);
-            
-            // Reverse geocoding (simplified)
-            document.getElementById('location').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            
-            // Add marker
-            if (selectedLocation) {
-              map.removeLayer(selectedLocation);
-            }
-            
-            selectedLocation = L.marker([lat, lng])
-              .addTo(map)
-              .bindPopup('📍 Your current location')
-              .openPopup();
-              
-            triggerAIAnalysis();
-          },
-          function(error) {
-            console.warn('Geolocation failed:', error);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000
-          }
-        );
-      }
-    }
-
-    // Add location button
-    const locationBtn = document.createElement('button');
-    locationBtn.type = 'button';
-    locationBtn.innerHTML = '📍 Use Current Location';
-    locationBtn.style.cssText = `
-      margin-top: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #6b7280;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-    `;
-    locationBtn.addEventListener('click', getCurrentLocation);
-    
-    document.getElementById('location').parentNode.appendChild(locationBtn);
+    // --- START ---
+    initialize();
+});
   </script>
 </body>
 </html>

@@ -1,865 +1,367 @@
-<!-- Enhanced templates/view-reports.html -->
 {% extends "base.html" %}
 
-{% block title %}Reports Viewer - Disaster Response Assistant{% endblock %}
-{% block page_title %}📄 Community Reports Viewer{% endblock %}
-{% block subtitle %}Filter, Search & Monitor Emergency Reports{% endblock %}
+{% block title %}Voice Emergency Reporter - Disaster Response Assistant{% endblock %}
+{% block page_title %}🎤 Voice Emergency Reporter{% endblock %}
+{% block subtitle %}Hands-free emergency reporting powered by Gemma 3n AI{% endblock %}
 
 {% block header_actions %}
 <a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #6b7280; color: #fff; border-radius: 6px; text-decoration: none;">
   ⬅️ Back to Home
 </a>
-<a href="/submit-crowd-report" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #16a34a; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
-  📝 Submit Report
-</a>
-<a href="/map-reports" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #3b82f6; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
-  🗺️ Map View
-</a>
-<a href="/map-snapshot" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #059669; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
-  📍 Map Tool
-</a>
 {% endblock %}
 
-{% block extra_styles %}
+
+{% block extra_css %}
+{{ super() }}
 <style>
-  .reports-layout {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 2rem;
-    align-items: start;
-  }
-  
-  /* Filter Panel */
-  .filter-panel {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    padding: 1.5rem;
-    position: sticky;
-    top: 2rem;
-  }
-  
-  .filter-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #1e40af;
-  }
-  
-  .filter-group {
-    margin-bottom: 1.5rem;
-  }
-  
-  .filter-label {
-    display: block;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .filter-select {
-    width: 100%;
-    padding: 0.5rem;
-    border: 2px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    background: white;
-    transition: border-color 0.2s ease;
-  }
-  
-  .filter-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-  }
-  
-  .search-input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 2px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    background: white;
-    transition: all 0.2s ease;
-  }
-  
-  .search-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-  
-  .filter-stats {
-    background: #f8fafc;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-    text-align: center;
-  }
-  
-  .stat-number {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #1e40af;
-    display: block;
-  }
-  
-  .stat-label {
-    font-size: 0.8rem;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  
-  /* Map Tools Section */
-  .map-tools {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: white;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-  }
-  
-  .map-tools h3 {
-    margin: 0 0 0.75rem 0;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .map-tool-btn {
-    display: block;
-    width: 100%;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    text-decoration: none;
-    padding: 0.5rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    margin-bottom: 0.5rem;
-    text-align: center;
-    transition: background 0.2s ease;
-  }
-  
-  .map-tool-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    text-decoration: none;
-    color: white;
-  }
-  
-  /* Reports Container */
-  .reports-container {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-  }
-  
-  .reports-header {
-    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-    color: white;
-    padding: 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .reports-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin: 0;
-  }
-  
-  .reports-count {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-  
-  .reports-list {
-    padding: 1.5rem;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  
-  .report-card {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    border-left: 6px solid #6b7280;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    transition: all 0.3s ease;
-    position: relative;
-  }
-  
-  .report-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    border-left-color: #3b82f6;
-  }
-  
-  .report-card.critical {
-    border-left-color: #dc2626;
-    background: linear-gradient(135deg, #fef2f2 0%, #f8fafc 100%);
-  }
-  
-  .report-card.high {
-    border-left-color: #f59e0b;
-    background: linear-gradient(135deg, #fffbeb 0%, #f8fafc 100%);
-  }
-  
-  .report-card.moderate {
-    border-left-color: #3b82f6;
-    background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
-  }
-  
-  .report-card.low {
-    border-left-color: #16a34a;
-    background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
-  }
-  
-  .report-message {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #374151;
-    margin-bottom: 1rem;
-    font-weight: 500;
-  }
-  
-  .report-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    align-items: center;
-    font-size: 0.85rem;
-    color: #6b7280;
-    margin-bottom: 1rem;
-  }
-  
-  .meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-  
-  .report-badges {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-  }
-  
-  .badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-  }
-  
-  .badge.critical {
-    background: #dc2626;
-    color: white;
-  }
-  
-  .badge.high {
-    background: #f59e0b;
-    color: white;
-  }
-  
-  .badge.moderate {
-    background: #3b82f6;
-    color: white;
-  }
-  
-  .badge.low {
-    background: #16a34a;
-    color: white;
-  }
-  
-  .badge.urgent {
-    background: #dc2626;
-    color: white;
-  }
-  
-  .badge.frantic {
-    background: #7c2d12;
-    color: white;
-  }
-  
-  .badge.helpless {
-    background: #7c3aed;
-    color: white;
-  }
-  
-  .badge.descriptive {
-    background: #059669;
-    color: white;
-  }
-  
-  .badge.concerned {
-    background: #ca8a04;
-    color: white;
-  }
-  
-  .badge.neutral {
-    background: #6b7280;
-    color: white;
-  }
-  
-  /* Enhanced Action Buttons */
-  .report-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-  }
-  
-  .action-btn {
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 0.75rem;
-    font-weight: 500;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-  
-  .map-btn {
-    background: #3b82f6;
-    color: white;
-  }
-  
-  .map-btn:hover {
-    background: #1e40af;
-    transform: translateY(-1px);
-    text-decoration: none;
-    color: white;
-  }
-  
-  .quick-map-btn {
-    background: #059669;
-    color: white;
-  }
-  
-  .quick-map-btn:hover {
-    background: #047857;
-    text-decoration: none;
-    color: white;
-  }
-  
-  .share-btn {
-    background: #6b7280;
-    color: white;
-  }
-  
-  .share-btn:hover {
-    background: #4b5563;
-  }
-  
-  .coord-badge {
-    background: #dcfce7;
-    color: #166534;
-    padding: 0.2rem 0.5rem;
-    border-radius: 8px;
-    font-size: 0.7rem;
-    font-family: 'Courier New', monospace;
-    font-weight: 500;
-  }
-  
-  .highlight {
-    background: linear-gradient(120deg, #fef08a 0%, #fde047 100%);
-    padding: 0.1rem 0.2rem;
-    border-radius: 3px;
-    font-weight: bold;
-  }
-  
-  .no-reports {
-    text-align: center;
-    padding: 3rem;
-    color: #6b7280;
-  }
-  
-  .no-reports-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-  }
-  
-  .refresh-button {
-    background: #16a34a;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.2s ease;
-    margin-top: 1rem;
-    width: 100%;
-  }
-  
-  .refresh-button:hover {
-    background: #15803d;
-  }
-  
-  .timestamp {
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 1024px) {
-    .reports-layout {
-      grid-template-columns: 1fr;
-      gap: 1rem;
+    .voice-interface {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .voice-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .record-button {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid #ef4444;
+        background: #ef4444;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .record-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+    }
+
+    .record-button.recording {
+        background: #dc2626;
+        animation: pulse 1.5s infinite;
+    }
+
+    .record-button.processing {
+        background: #f59e0b;
+        animation: spin 2s infinite linear;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .status-text {
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .audio-visualizer {
+        width: 100%;
+        height: 60px;
+        margin: 20px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+    }
+
+    .audio-bar {
+        width: 4px;
+        background: #3b82f6;
+        border-radius: 2px;
+        transition: height 0.1s ease;
+    }
+
+    .transcript-container {
+        background: #f8fafc;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        min-height: 150px;
+        border: 2px solid #e2e8f0;
+    }
+
+    .transcript-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+
+    .transcript-text {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        min-height: 80px;
+        border: 2px dashed #cbd5e1;
+        color: #374151;
+    }
+
+    .transcription-live {
+        border-left: 4px solid var(--primary-color);
+        padding-left: 1rem;
+        margin: 1rem 0;
+        background: var(--bg-secondary);
+        border-radius: var(--radius);
+        min-height: 3rem;
+        display: flex;
+        align-items: center;
     }
     
-    .filter-panel {
-      position: static;
-      order: 2;
+    .typing-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        animation: typing 1.4s infinite ease-in-out;
     }
     
-    .reports-container {
-      order: 1;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .report-meta {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
+    .typing-indicator:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator:nth-child(2) { animation-delay: -0.16s; }
     
-    .reports-header {
-      flex-direction: column;
-      gap: 0.5rem;
-      text-align: center;
+    @keyframes typing {
+        0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+        40% { transform: scale(1); opacity: 1; }
     }
-  }
+
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .analysis-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .analysis-card h3 {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #1f2937;
+    }
+
+    .urgency-meter {
+        width: 100%;
+        height: 20px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+
+    .urgency-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+
+    .emergency-details { background: #f8fafc; border-radius: 10px; padding: 15px; margin-top: 10px; }
+    .detail-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+    .detail-item:last-child { border-bottom: none; }
+    .detail-label { font-weight: 600; color: #6b7280; }
+    .detail-value { color: #374151; font-weight: 500; }
+
+    .action-buttons { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+    .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+    .btn-success { background: #10b981; color: white; }
+    .btn-success:hover:not(:disabled) { background: #059669; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+    .btn-warning { background: #f59e0b; color: white; }
+    .btn-warning:hover:not(:disabled) { background: #d97706; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); }
+
+    .settings-panel { background: white; border-radius: 15px; padding: 20px; margin-top: 20px; border: 1px solid #e2e8f0; }
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+    .setting-item { display: flex; flex-direction: column; gap: 8px; }
+    .setting-item label { font-weight: 600; font-size: 0.9rem; color: #374151; }
+    .setting-item select, .setting-item input[type="range"] { padding: 8px; border-radius: 8px; border: 1px solid #d1d5db; background: white; color: #374151; font-size: 0.9rem; }
+    .setting-item select:focus, .setting-item input[type="range"]:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+    @media (max-width: 768px) {
+        .voice-interface { padding: 20px; }
+        .record-button { width: 100px; height: 100px; font-size: 1.5rem; }
+        .analysis-grid, .settings-grid { grid-template-columns: 1fr; }
+        .action-buttons { flex-direction: column; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="reports-layout">
-  <!-- Filter Panel -->
-  <div class="filter-panel">
-    <div class="filter-header">
-      <span>🔍</span>
-      <span>Filter Reports</span>
+<div class="voice-interface">
+    <div class="voice-controls">
+        <button class="record-button" id="recordButton">
+            <span id="recordIcon">🎤</span>
+        </button>
+        <div class="status-text" id="statusText">Tap the microphone to start voice recording</div>
+        <div class="audio-visualizer" id="audioVisualizer"></div>
     </div>
-    
-    <!-- Map Tools Section -->
-    <div class="map-tools">
-      <h3>🗺️ Map Tools</h3>
-      <a href="/map-snapshot" class="map-tool-btn" target="_blank">📍 Map Snapshot Tool</a>
-      <a href="/map-reports" class="map-tool-btn">🌐 Live Reports Map</a>
-      <a href="/api/export-map-data?format=kml" class="map-tool-btn">📱 Export KML</a>
+</div>
+
+<div class="transcript-container">
+    <div class="transcript-header">
+        <h3>📝 Live Transcript</h3>
+        <span id="confidence" class="text-sm text-gray-600">Confidence: --%</span>
     </div>
-    
-    <div class="filter-group">
-      <label for="tone-filter" class="filter-label">Tone:</label>
-      <select id="tone-filter" class="filter-select">
-        <option value="">All Tones</option>
-        <option value="urgent">Urgent</option>
-        <option value="frantic">Frantic</option>
-        <option value="helpless">Helpless</option>
-        <option value="descriptive">Descriptive</option>
-        <option value="concerned">Concerned</option>
-        <option value="neutral">Neutral</option>
-      </select>
+    <div class="transcript-text" id="transcriptText">
+        Click the microphone and speak to start recording your emergency report...
     </div>
-    
-    <div class="filter-group">
-      <label for="escalation-filter" class="filter-label">Priority:</label>
-      <select id="escalation-filter" class="filter-select">
-        <option value="">All Priorities</option>
-        <option value="critical">🚨 Critical</option>
-        <option value="high">⚠️ High</option>
-        <option value="moderate">📊 Moderate</option>
-        <option value="low">📝 Low</option>
-      </select>
+</div>
+
+<div class="ai-confidence-meter" id="aiConfidence" style="display: none;">
+    <div class="confidence-header">
+        <span>🤖 AI Analysis Confidence</span>
+        <span id="confidenceScore">--%</span>
     </div>
-    
-    <div class="filter-group">
-      <label for="location-filter" class="filter-label">Location:</label>
-      <select id="location-filter" class="filter-select">
-        <option value="">All Locations</option>
-        <option value="has-coords">📍 With Coordinates</option>
-        <option value="no-coords">❓ No Coordinates</option>
-      </select>
+    <div class="confidence-bar">
+        <div class="confidence-fill" id="confidenceFill" style="width: 0%;"></div>
     </div>
-    
-    <div class="filter-group">
-      <label for="sort-order" class="filter-label">Sort by:</label>
-      <select id="sort-order" class="filter-select">
-        <option value="desc">Newest First</option>
-        <option value="asc">Oldest First</option>
-        <option value="priority">Priority Level</option>
-        <option value="location">By Location</option>
-      </select>
-    </div>
-    
-    <div class="filter-group">
-      <label for="keyword-search" class="filter-label">Search:</label>
-      <input 
-        type="text" 
-        id="keyword-search" 
-        class="search-input" 
-        placeholder="e.g. fire, flood, medical..."
-      >
-    </div>
-    
-    <div class="filter-stats">
-      <span class="stat-number" id="report-count">{{ reports|length }}</span>
-      <div class="stat-label">Reports Shown</div>
-    </div>
-    
-    <button class="refresh-button" onclick="refreshReports()">
-      🔄 Refresh Data
-    </button>
-  </div>
-  
-  <!-- Reports Container -->
-  <div class="reports-container">
-    <div class="reports-header">
-      <h2 class="reports-title">📋 Emergency Reports</h2>
-      <div class="reports-count" id="total-count">{{ reports|length }} total</div>
-    </div>
-    
-    <div class="reports-list" id="reports-list">
-      {% if reports %}
-        {% for report in reports %}
-          <div class="report-card {{ report.escalation|lower }}"
-               data-tone="{{ report.tone|lower if report.tone else '' }}"
-               data-escalation="{{ report.escalation|lower }}"
-               data-message="{{ report.message|lower if report.message else '' }}"
-               data-timestamp="{{ report.timestamp if report.timestamp else '' }}"
-               data-has-coords="{{ 'true' if report.latitude and report.longitude else 'false' }}"
-               data-location="{{ report.location|lower if report.location else '' }}">
-            
-            <div class="report-message message-text">
-              {{ report.message or 'No message provided' }}
-            </div>
-            
-            <div class="report-meta">
-              <div class="meta-item">
-                <span>👤</span>
-                <span>{{ report.user or 'Anonymous' }}</span>
-              </div>
-              <div class="meta-item">
-                <span>🕒</span>
-                <span class="timestamp">{{ report.timestamp[:19] if report.timestamp else 'Unknown time' }}</span>
-              </div>
-              {% if report.location %}
-              <div class="meta-item">
-                <span>📍</span>
-                <span>{{ report.location }}</span>
-              </div>
-              {% endif %}
-              {% if report.latitude and report.longitude %}
-              <div class="meta-item">
-                <span class="coord-badge">{{ "%.4f"|format(report.latitude) }}, {{ "%.4f"|format(report.longitude) }}</span>
-              </div>
-              {% endif %}
-            </div>
-            
-            <div class="report-badges">
-              {% if report.tone %}
-                <span class="badge {{ report.tone|lower }}">{{ report.tone.title() }}</span>
-              {% endif %}
-              
-              <span class="badge {{ report.escalation|lower }}">
-                {% if report.escalation == "critical" %}🚨
-                {% elif report.escalation == "high" %}⚠️
-                {% elif report.escalation == "moderate" %}📊
-                {% else %}📝
-                {% endif %}
-                {{ report.escalation.title() }}
-              </span>
-            </div>
-            
-            <!-- Enhanced Action Buttons -->
-            <div class="report-actions">
-              {% if report.latitude and report.longitude %}
-              <a href="/map-snapshot/{{ report.id }}" class="action-btn map-btn" target="_blank" title="View detailed map for this report">
-                🗺️ View Map
-              </a>
-              <a href="/map-snapshot?lat={{ report.latitude }}&lon={{ report.longitude }}" class="action-btn quick-map-btn" target="_blank" title="Quick coordinate map">
-                📍 Quick Map
-              </a>
-              {% endif %}
-              <button onclick="shareReport(event, '{{ report.id }}')" class="action-btn share-btn" title="Share this report">
-                🔗 Share
-              </button>
-            </div>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="no-reports">
-          <div class="no-reports-icon">📭</div>
-          <h3>No Reports Available</h3>
-          <p>No community reports have been submitted yet.</p>
-          <p style="margin-top: 1rem;">
-            <a href="/submit-crowd-report" style="color: #3b82f6; text-decoration: none; font-weight: 500;">📝 Submit the first report</a>
-          </p>
+</div>
+
+<div class="realtime-analysis" id="realtimeAnalysis">
+    <div class="analysis-header"><span>🧠</span><span>AI Analysis Results</span></div>
+    <div class="analysis-grid">
+        <div class="analysis-card">
+            <h3>🚨 Urgency Level</h3>
+            <div class="urgency-meter"><div class="urgency-fill" id="urgencyFill" style="width: 0%"></div></div>
+            <div id="urgencyText">Not analyzed</div>
         </div>
-      {% endif %}
+        <div class="analysis-card">
+            <h3>😰 Emotion Analysis</h3>
+            <div class="emergency-details">
+                <div class="detail-item"><span class="detail-label">Stress Level:</span><span class="detail-value" id="stressLevel">--</span></div>
+                <div class="detail-item"><span class="detail-label">Clarity:</span><span class="detail-value" id="clarityLevel">--</span></div>
+                <div class="detail-item"><span class="detail-label">Confidence:</span><span class="detail-value" id="speakerConfidence">--</span></div>
+            </div>
+        </div>
+        <div class="analysis-card">
+            <h3>📊 Emergency Details</h3>
+            <div class="emergency-details">
+                <div class="detail-item"><span class="detail-label">Type:</span><span class="detail-value" id="emergencyType">Unknown</span></div>
+                <div class="detail-item"><span class="detail-label">Location:</span><span class="detail-value" id="emergencyLocation">Not specified</span></div>
+                <div class="detail-item"><span class="detail-label">People Affected:</span><span class="detail-value" id="peopleAffected">Unknown</span></div>
+                <div class="detail-item"><span class="detail-label">Immediate Needs:</span><span class="detail-value" id="immediateNeeds">None identified</span></div>
+            </div>
+        </div>
+        <div class="analysis-card">
+            <h3>💡 AI Recommendations</h3>
+            <div class="ai-recommendations" id="recommendations">
+                <p>🤖 AI will provide response recommendations after analyzing your voice report...</p>
+            </div>
+        </div>
     </div>
-  </div>
+</div>
+
+<div class="action-buttons">
+    <button class="btn btn-primary" id="submitReportBtn" disabled>📤 Submit Emergency Report</button>
+    <button class="btn btn-warning" id="retryBtn" disabled>🔄 Re-record</button>
+    <button class="btn btn-success" id="exportBtn" disabled>💾 Export Transcript</button>
+</div>
+
+<div class="settings-panel">
+    <h3>⚙️ Voice Settings</h3>
+    <div class="settings-grid">
+        <div class="setting-item">
+            <label for="languageSelect">Language:</label>
+            <select id="languageSelect">
+                <option value="en-US">English (US)</option>
+                <option value="es-ES">Spanish</option>
+                <option value="fr-FR">French</option>
+                <option value="de-DE">German</option>
+                </select>
+        </div>
+        <div class="setting-item">
+            <label for="sensitivitySlider">Microphone Sensitivity:</label>
+            <input type="range" id="sensitivitySlider" min="0.1" max="1.0" step="0.1" value="0.7">
+            <span id="sensitivityValue">70%</span>
+        </div>
+        <div class="setting-item">
+            <label for="modelSelect">AI Model:</label>
+            <select id="modelSelect">
+                <option value="gemma-3n-2b">Gemma 3n (Fast - 2B)</option>
+                <option value="gemma-3n-4b" selected>Gemma 3n (Balanced - 4B)</option>
+                <option value="gemma-3n-4b-hq">Gemma 3n (High Quality - 4B)</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <label for="autoSubmitToggle">Auto-submit after analysis:</label>
+            <input type="checkbox" id="autoSubmitToggle">
+        </div>
+    </div>
+</div>
+
+<div class="processing-indicator" id="processingIndicator">
+    <div class="spinner"></div>
+    <span>Processing with Gemma 3n AI...</span>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/voice-emergency-reporter.js"></script>
 <script>
-// Enhanced filtering and search functionality
-function applyFilters() {
-  const toneFilter = document.getElementById('tone-filter').value.toLowerCase();
-  const escalationFilter = document.getElementById('escalation-filter').value.toLowerCase();
-  const locationFilter = document.getElementById('location-filter').value;
-  const sortOrder = document.getElementById('sort-order').value;
-  const searchTerm = document.getElementById('keyword-search').value.toLowerCase();
-  
-  const reportCards = Array.from(document.querySelectorAll('.report-card'));
-  let visibleCount = 0;
-  
-  // Filter reports
-  reportCards.forEach(card => {
-    const tone = card.dataset.tone || '';
-    const escalation = card.dataset.escalation || '';
-    const message = card.dataset.message || '';
-    const location = card.dataset.location || '';
-    const hasCoords = card.dataset.hasCoords === 'true';
-    
-    let showCard = true;
-    
-    // Apply filters
-    if (toneFilter && tone !== toneFilter) showCard = false;
-    if (escalationFilter && escalation !== escalationFilter) showCard = false;
-    if (searchTerm && !message.includes(searchTerm) && !location.includes(searchTerm)) showCard = false;
-    
-    // Location filter
-    if (locationFilter === 'has-coords' && !hasCoords) showCard = false;
-    if (locationFilter === 'no-coords' && hasCoords) showCard = false;
-    
-    if (showCard) {
-      card.style.display = 'block';
-      visibleCount++;
-      
-      // Highlight search terms
-      if (searchTerm) {
-        highlightSearchTerms(card, searchTerm);
-      } else {
-        removeHighlight(card);
-      }
-    } else {
-      card.style.display = 'none';
-    }
-  });
-  
-  // Sort visible reports
-  if (sortOrder !== 'desc') {
-    sortReports(reportCards.filter(card => card.style.display !== 'none'), sortOrder);
-  }
-  
-  // Update count
-  const reportCountElement = document.getElementById('report-count');
-  if (reportCountElement) {
-    reportCountElement.textContent = visibleCount;
-  }
-  
-  console.log(`📊 Filtered reports: ${visibleCount} visible`);
-}
-
-function sortReports(cards, order) {
-  const container = document.getElementById('reports-list');
-  if (!container) return;
-  
-  cards.sort((a, b) => {
-    switch (order) {
-      case 'asc':
-        return new Date(a.dataset.timestamp || 0) - new Date(b.dataset.timestamp || 0);
-      case 'priority':
-        const priorities = { critical: 4, high: 3, moderate: 2, low: 1 };
-        return (priorities[b.dataset.escalation] || 0) - (priorities[a.dataset.escalation] || 0);
-      case 'location':
-        return (a.dataset.location || '').localeCompare(b.dataset.location || '');
-      default:
-        return new Date(b.dataset.timestamp || 0) - new Date(a.dataset.timestamp || 0);
-    }
-  });
-  
-  cards.forEach(card => container.appendChild(card));
-}
-
-function highlightSearchTerms(card, searchTerm) {
-  const messageElement = card.querySelector('.message-text');
-  if (messageElement) {
-    const originalText = messageElement.textContent;
-    const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
-    messageElement.innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
-  }
-}
-
-function removeHighlight(card) {
-  const messageElement = card.querySelector('.message-text');
-  if (messageElement) {
-    messageElement.innerHTML = messageElement.textContent;
-  }
-}
-
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function shareReport(event, reportId) {
-  if (event) {
-    event.stopPropagation();
-  }
-  const mapUrl = `${window.location.origin}/map-snapshot/${reportId}`;
-  
-  if (navigator.share) {
-    navigator.share({
-      title: `Emergency Report #${reportId}`,
-      text: 'View this emergency report and its location on the map',
-      url: mapUrl
-    }).catch(console.error);
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(mapUrl).then(() => {
-      showToast('📋 Map link copied to clipboard!', 'success');
-    }).catch(() => {
-      prompt('Copy this link:', mapUrl);
-    });
-  } else {
-    prompt('Copy this link:', mapUrl);
-  }
-}
-
-function showToast(message, type = 'info') {
-  const toast = document.createElement('div');
-  const backgroundColor = type === 'success' ? '#16a34a' : '#3b82f6';
-  
-  toast.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${backgroundColor};
-    color: white;
-    padding: 1rem;
-    border-radius: 8px;
-    z-index: 10000;
-    font-weight: 500;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  `;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.remove();
-  }, 3000);
-}
-
-function refreshReports() {
-  console.log('🔄 Refreshing reports...');
-  window.location.reload();
-}
-
-// Event listeners
 document.addEventListener('DOMContentLoaded', function() {
-  // Add event listeners to filters
-  ['tone-filter', 'escalation-filter', 'location-filter', 'sort-order'].forEach(id => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.addEventListener('change', applyFilters);
+    const voiceReporter = new VoiceEmergencyReporter();
+    
+    // Update AI status bar
+    const aiStatusDot = document.getElementById('aiStatusDot');
+    const aiStatusText = document.getElementById('aiStatusText');
+    
+    if (window.EdgeAI && window.EdgeAI.isReady) {
+        aiStatusDot.className = 'ai-status-dot';
+        aiStatusText.textContent = '🧠 Gemma 3n Ready for Voice Analysis';
+    } else {
+        aiStatusDot.className = 'ai-status-dot loading';
+        aiStatusText.textContent = '🧠 Edge AI Loading...';
+        // Simulate AI readiness after a delay
+        setTimeout(() => {
+            aiStatusDot.className = 'ai-status-dot';
+            aiStatusText.textContent = '🧠 Gemma 3n Ready for Voice Analysis';
+        }, 2000);
     }
-  });
-  
-  // Add search input listener with debounce
-  let searchTimeout;
-  const searchInput = document.getElementById('keyword-search');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        applyFilters();
-      }, 300);
-    });
-  }
-  
-  console.log('📄 Enhanced Reports Viewer loaded');
-  console.log('🗺️ Map integration: Click map buttons to view locations');
-  console.log('🔍 Use filters to find specific reports');
-});
-
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    switch(e.key) {
-      case 'f':
-        e.preventDefault();
-        const searchInput = document.getElementById('keyword-search');
-        if (searchInput) {
-          searchInput.focus();
-        }
-        break;
-      case 'm':
-        e.preventDefault();
-        window.open('/map-snapshot', '_blank');
-        break;
-      case 'r':
-        e.preventDefault();
-        refreshReports();
-        break;
+    
+    // Sensitivity slider update
+    const sensitivitySlider = document.getElementById('sensitivitySlider');
+    const sensitivityValue = document.getElementById('sensitivityValue');
+    
+    if(sensitivitySlider && sensitivityValue) {
+        sensitivitySlider.addEventListener('input', function() {
+            sensitivityValue.textContent = Math.round(this.value * 100) + '%';
+        });
     }
-  }
 });
-
-// Set initial values from URL parameters if needed
-const urlParams = new URLSearchParams(window.location.search);
-const toneParam = urlParams.get('tone');
-const escalationParam = urlParams.get('escalation');
-const keywordParam = urlParams.get('keyword');
-
-if (toneParam) {
-  const toneFilter = document.getElementById('tone-filter');
-  if (toneFilter) {
-    toneFilter.value = toneParam;
-  }
-}
-
-if (escalationParam) {
-  const escalationFilter = document.getElementById('escalation-filter');
-  if (escalationFilter) {
-    escalationFilter.value = escalationParam;
-  }
-}
-
-if (keywordParam) {
-  const keywordSearch = document.getElementById('keyword-search');
-  if (keywordSearch) {
-    keywordSearch.value = keywordParam;
-    setTimeout(applyFilters, 100);
-  }
-}
 </script>
 {% endblock %}
-
-<!-- No AI status needed for reports viewer -->
-{% block ai_status %}{% endblock %}

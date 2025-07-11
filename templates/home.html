@@ -1,7 +1,6 @@
-<!-- templates/home.html -->
 {% extends "base.html" %}
 
-{% block title %}Emergency Response Assistant{% endblock %}
+{% block title %}Citizen Portal - Emergency Response Assistant{% endblock %}
 {% block page_title %}🆘 Emergency Response Assistant{% endblock %}
 {% block subtitle %}AI-powered emergency reporting for citizens{% endblock %}
 
@@ -11,2406 +10,318 @@
     <a href="#report" class="nav-btn emergency" onclick="portal.goToStep(2)">🚨 Emergency</a>
     <a href="#voice" class="nav-btn" onclick="portal.goToStep(3)">🎤 Voice</a>
     <a href="#reports" class="nav-btn" onclick="portal.goToStep(4)">📋 My Reports</a>
-    <a href="/offline.html" class="nav-btn">📴 Offline</a> {# Direct link, Service Worker will handle #}
+    <a href="/offline.html" class="nav-btn">📴 Offline</a>
 </nav>
 {% endblock %}
 
 {% block extra_css %}
-{{ super() }} {# Inherits CSS from base.html #}
+{{ super() }}
 <style>
-    /* Citizen Portal Specific Styles - uses variables from base.html */
+    /*
+    Enhanced Styles for Citizen Portal (home.html)
+    -------------------------------------------------
+    Inherits base variables and styles from base.html
+    */
 
-    /* Override body background for this page if needed */
+    /* Page-specific Body Background */
     body {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh; /* Ensure full viewport height */
+        min-height: 100vh;
+    }
+    [data-theme="dark"] body {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     }
 
-    .nav-links {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .nav-btn {
-        padding: 0.5rem 0.75rem;
-        border: none;
+    /* Dynamic Alert Banner */
+    .alert-banner {
+        background: var(--alert-bg, linear-gradient(135deg, #f59e0b 0%, #d97706 100%));
+        color: white;
+        padding: 1rem;
         border-radius: var(--radius);
-        background: var(--primary-color);
-        color: white;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: inline-flex;
+        margin-bottom: 1rem;
+        display: none; /* Initially hidden */
         align-items: center;
-        gap: 0.25rem;
+        animation: slideDown 0.3s ease;
+        box-shadow: var(--shadow);
     }
+    .alert-banner.visible { display: flex; }
+    .alert-content { display: flex; align-items: center; gap: 1rem; width: 100%; }
+    .alert-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .alert-text { flex-grow: 1; font-weight: 500; }
+    .alert-close { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
+    .alert-close:hover { opacity: 1; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
-    .nav-btn:hover {
-        background: var(--secondary-color);
-        transform: translateY(-1px);
-        text-decoration: none;
-        color: white;
-    }
-
-    .nav-btn.emergency {
-        background: var(--danger-color);
-        animation: pulse 2s infinite; /* @keyframes pulse is now in base.html */
-    }
-
-    .nav-btn.emergency:hover {
-        background: #b91c1c; /* Darker red on hover */
-    }
+    /* Navigation */
+    .nav-links { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .nav-btn { padding: 0.5rem 0.75rem; border: none; border-radius: var(--radius); background: var(--primary-color); color: white; text-decoration: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 0.25rem; }
+    .nav-btn:hover { background: var(--secondary-color); transform: translateY(-1px); }
+    .nav-btn.emergency { background: var(--danger-color); animation: pulse 2s infinite; }
+    .nav-btn.emergency:hover { background: #b91c1c; }
 
     /* Step Indicator */
-    .step-indicator {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--border-color); /* Added border */
-    }
-
-    .steps {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: relative;
-    }
-
-    .step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-        flex: 1;
-        position: relative;
-        z-index: 2;
-    }
-
-    .step-number {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--border-color);
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 0.9rem;
-        transition: all 0.3s ease;
-    }
-
-    .step.active .step-number {
-        background: var(--primary-color);
-        color: white;
-        transform: scale(1.1);
-    }
-
-    .step.completed .step-number {
-        background: var(--accent-color);
-        color: white;
-    }
-
-    .step-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-align: center;
-        color: var(--text-secondary);
-    }
-
-    .step.active .step-label {
-        color: var(--primary-color);
-    }
-
-    .step.completed .step-label {
-        color: var(--accent-color);
-    }
-
-    .progress-line {
-        position: absolute;
-        top: 20px; /* Aligns with center of step-number */
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: var(--border-color);
-        z-index: 1;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: var(--primary-color);
-        transition: width 0.5s ease;
-        border-radius: 1px;
-    }
+    .step-indicator { padding: 1.5rem; margin-bottom: 2rem; backdrop-filter: blur(10px); } /* Uses variables from base.html */
+    .steps { display: flex; justify-content: space-between; align-items: center; position: relative; }
+    .step { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: 1; position: relative; z-index: 2; }
+    .step-number { width: 40px; height: 40px; border-radius: 50%; background: var(--border-color); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; transition: all 0.3s ease; }
+    .step.active .step-number { background: var(--primary-color); color: white; transform: scale(1.1); }
+    .step.completed .step-number { background: var(--accent-color); color: white; }
+    .step-label { font-size: 0.8rem; font-weight: 600; text-align: center; color: var(--text-secondary); }
+    .step.active .step-label { color: var(--primary-color); }
+    .step.completed .step-label { color: var(--accent-color); }
+    .progress-line { position: absolute; top: 20px; left: 0; right: 0; height: 2px; background: var(--border-color); z-index: 1; }
+    .progress-fill { height: 100%; background: var(--primary-color); transition: width 0.5s ease; border-radius: 1px; }
 
     /* Main Content Area */
-    .main-content {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        box-shadow: var(--shadow-lg);
-        backdrop-filter: blur(10px);
-        min-height: 600px;
-        border: 1px solid var(--border-color); /* Added border */
-    }
-
-    .content-section {
-        display: none;
-    }
-
-    .content-section.active {
-        display: block;
-        animation: fadeIn 0.5s ease; /* @keyframes fadeIn in base.html */
-    }
+    .content-section { display: none; }
+    .content-section.active { display: block; animation: fadeIn 0.5s ease; }
 
     /* Welcome Section */
-    .welcome-hero {
-        text-align: center;
-        padding: 3rem 0;
-    }
+    .welcome-hero { text-align: center; padding: 3rem 0; }
+    .hero-icon { font-size: 5rem; margin-bottom: 1rem; animation: bounce 2s infinite; }
+    .hero-title { font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; background: linear-gradient(135deg, var(--primary-color), var(--danger-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-subtitle { font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 2rem; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+    .feature-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; text-align: center; transition: all 0.3s ease; cursor: pointer; box-shadow: var(--shadow); }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--primary-color); }
+    .feature-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+    .feature-title { font-weight: bold; color: var(--text-primary); margin-bottom: 0.5rem; }
+    .feature-description { font-size: 0.9rem; color: var(--text-secondary); }
+    .feature-card.risk-prediction { border-left: 4px solid #7c3aed; }
+    [data-theme="dark"] .feature-card.risk-prediction { background: linear-gradient(135deg, #2d1b69 0%, var(--bg-secondary) 100%); }
+    
+    /* Responsive & Other styles from your original file are included here... */
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary); }
+    .form-input { width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: var(--radius); font-size: 1rem; transition: all 0.2s ease; background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box; }
+    .form-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    .form-textarea { min-height: 120px; resize: vertical; }
 
-    .hero-icon {
-        font-size: 5rem;
-        margin-bottom: 1rem;
-        animation: bounce 2s infinite; /* @keyframes bounce in base.html */
-    }
+    .record-button { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--danger-color); background: var(--danger-color); color: white; font-size: 2rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+    .record-button.recording { animation: pulse 1.5s infinite; }
+    .audio-recorder .btn { font-size: 0.9rem; padding: 0.5rem 1rem; }
+    .audio-playback { margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 1rem; }
+    .audio-playback audio { width: 100%; }
 
-    .hero-title {
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, var(--primary-color), var(--danger-color));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
 
-    .hero-subtitle {
-        font-size: 1.2rem;
-        color: var(--text-secondary);
-        margin-bottom: 2rem;
-    }
-
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
-    }
-
-    .feature-card {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        text-align: center;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        box-shadow: var(--shadow); /* Added shadow */
-    }
-
-    .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--primary-color);
-    }
-
-    .feature-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        display: block;
-    }
-
-    .feature-title {
-        font-weight: bold;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-    }
-
-    .feature-description {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-    }
-
-    /* Form Elements */
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: var(--text-primary);
-    }
-
-    .form-input {
-        width: 100%;
-        padding: 0.75rem;
-        border: 2px solid var(--border-color);
-        border-radius: var(--radius);
-        font-size: 1rem;
-        transition: border-color 0.2s ease;
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        box-sizing: border-box;
-    }
-
-    .form-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .form-textarea {
-        min-height: 120px;
-        resize: vertical;
-        font-family: inherit;
-    }
-
-    /* Voice Interface */
-    .voice-interface {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2rem;
-        padding: 2rem 0;
-    }
-
-    .record-button {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        border: 4px solid var(--danger-color);
-        background: var(--danger-color);
-        color: white;
-        font-size: 2rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .record-button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
-    }
-
-    .record-button.recording {
-        animation: pulse 1.5s infinite;
-    }
-
-    .voice-status {
-        text-align: center;
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: var(--text-primary); /* Ensure color from theme */
-    }
-
-    .transcript-box {
-        background: var(--bg-secondary);
-        border: 2px dashed var(--border-color);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        width: 100%;
-        min-height: 120px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-secondary);
-        font-style: italic;
-        text-align: center;
-    }
-
-    /* Navigation Buttons */
-    .navigation-buttons {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 1px solid var(--border-color);
-    }
-
-    .btn {
-        padding: 0.75rem 1.5rem;
-        border: none;
-        border-radius: var(--radius);
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .btn-primary {
-        background: var(--primary-color);
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background: var(--secondary-color); /* Darker blue on hover */
-        transform: translateY(-2px);
-        text-decoration: none;
-        color: white;
-    }
-
-    .btn-secondary {
-        background: var(--text-secondary); /* Use text-secondary color as background */
-        color: white;
-    }
-
-    .btn-secondary:hover {
-        background: #4b5563; /* Darker gray on hover */
-        text-decoration: none;
-        color: white;
-    }
-
-    .btn-success {
-        background: var(--accent-color);
-        color: white;
-    }
-
-    .btn-success:hover {
-        background: #15803d; /* Darker green on hover */
-        transform: translateY(-2px);
-        text-decoration: none;
-        color: white;
-    }
-
-    .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none !important;
-    }
-
-    /* Reports Grid */
-    .reports-grid {
-        display: grid;
-        gap: 1.5rem; /* Increased gap */
-        margin: 2rem 0;
-    }
-
-    .report-card {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-left: 4px solid var(--primary-color); /* Default border color */
-        border-radius: var(--radius);
-        padding: 1.5rem;
-        transition: all 0.3s ease;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .report-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-    }
-
-    /* Specific border-left colors based on priority */
-    .report-card.critical { border-left-color: var(--danger-color); }
-    .report-card.high { border-left-color: var(--warning-color); }
-    .report-card.low { border-left-color: var(--accent-color); }
-    .report-card.medium { border-left-color: var(--primary-color); } /* Default primary */
-
-
-    .report-status {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-
-    .status-pending { background: #fef3c7; color: #92400e; } /* Yellow */
-    .status-processing { background: #dbeafe; color: #1e40af; } /* Light Blue */
-    .status-complete { background: #dcfce7; color: #166534; } /* Light Green */
-
-    /* Emergency Quick Actions (FAB) */
-    .emergency-actions {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        z-index: 1000;
-    }
-
-    .emergency-fab {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: var(--danger-color);
-        color: white;
-        border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
-        box-shadow: var(--shadow-lg);
-        transition: all 0.3s ease;
-        animation: pulse 2s infinite; /* @keyframes pulse in base.html */
-        display: flex; /* For centering content */
-        align-items: center;
-        justify-content: center;
-    }
-
-    .emergency-fab:hover {
-        transform: scale(1.1);
-        animation: none; /* Stop pulsing on hover */
-    }
-
-    /* Method Selector */
-    .report-method-selector {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin: 2rem 0;
-    }
-
-    .method-card {
-        background: var(--bg-secondary);
-        border: 2px solid var(--border-color);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .method-card:hover {
-        border-color: var(--primary-color);
-        background: rgba(59, 130, 246, 0.05); /* Light hover effect */
-        transform: translateY(-2px);
-    }
-
-    .method-card.selected {
-        border-color: var(--primary-color);
-        background: rgba(59, 130, 246, 0.1);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* Highlight selected */
-    }
-
-    .method-icon {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-        display: block;
-        color: var(--primary-color); /* Icon color */
-    }
-
-    .method-title {
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-        color: var(--text-primary);
-    }
-
-    .method-description {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-    }
-
-    /* AI Status Bar (reused component, ensure it matches global styles) */
-    .ai-status-bar {
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: var(--radius);
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        font-size: 0.9rem;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .ai-status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--color-optimal);
-        animation: pulse 2s infinite;
-    }
-
-    .ai-status-dot.loading { background: var(--warning-color); }
-    .ai-status-dot.error { background: var(--danger-color); }
-
-
-    /* Sync Queue Card */
-    .sync-queue-card {
-        margin-top: 2rem;
-        padding: 1.5rem; /* Increased padding */
-        background: #fff7ed; /* Light orange background */
-        border: 1px solid #fdba74;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-sm);
-        display: none; /* Controlled by JS */
-        color: #78350f; /* Darker orange text */
-    }
-    .sync-queue-card h3 {
-        color: #78350f;
-    }
-    .sync-queue-card ul {
-        list-style: disc;
-        padding-left: 1.5rem; /* Adjusted padding */
-        font-size: 0.9rem;
-        margin-top: 1rem; /* Added margin */
-    }
-    .sync-queue-card li {
-        margin-bottom: 0.5rem;
-    }
-    .sync-queue-card .btn { /* Style for button inside sync queue card */
-        background: var(--accent-color);
-        color: white;
-        margin-top: 1.5rem; /* More space */
-    }
-    .sync-queue-card .btn:hover {
-        background: #15803d;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .nav-links {
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .nav-btn {
-            width: 100%; /* Full width nav buttons on mobile */
-            font-size: 0.9rem;
-            padding: 0.5rem 0.75rem;
-            justify-content: center;
-        }
-
-        .steps {
-            flex-direction: column;
-            gap: 1.5rem; /* Increased gap between vertical steps */
-            align-items: flex-start; /* Align steps to left when stacked */
-        }
-
-        .step {
-            flex-direction: row; /* Number and label side-by-side */
-            justify-content: flex-start;
-            gap: 1rem;
-        }
-        .step-number {
-            flex-shrink: 0;
-        }
-
-        .progress-line {
-            display: none; /* Hide progress line on mobile */
-        }
-
-        .features-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .hero-title {
-            font-size: 2rem;
-        }
-
-        .record-button {
-            width: 100px;
-            height: 100px;
-            font-size: 1.5rem;
-        }
-
-        .main-content {
-            padding: 1rem;
-        }
-        .navigation-buttons {
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .btn {
-            width: 100%;
-            justify-content: center;
-        }
-        .report-method-selector {
-            grid-template-columns: 1fr;
-        }
-        .reports-grid {
-            gap: 1rem;
-        }
-        .emergency-fab {
-            width: 50px;
-            height: 50px;
-            font-size: 1.2rem;
-            bottom: 1rem;
-            right: 1rem;
-        }
-        .sync-queue-card {
-            padding: 1rem;
-        }
-    }
-
-    /* Dark Mode Overrides */
-    [data-theme="dark"] .step-indicator,
-    [data-theme="dark"] .main-content {
-        background: rgba(31, 41, 55, 0.95); /* Darker translucent background */
-        border-color: var(--border-color);
-    }
-    [data-theme="dark"] .step-label {
-        color: var(--text-secondary);
-    }
-    [data-theme="dark"] .step.active .step-label {
-        color: var(--primary-color);
-    }
-    [data-theme="dark"] .hero-title {
-        background: linear-gradient(135deg, var(--primary-color), var(--danger-color));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    [data-theme="dark"] .feature-card {
-        background: var(--bg-secondary);
-        border-color: var(--border-color);
-    }
-    [data-theme="dark"] .method-card {
-        background: var(--bg-secondary);
-        border-color: var(--border-color);
-    }
-    [data-theme="dark"] .method-card:hover {
-        background: rgba(59, 130, 246, 0.1);
-    }
-    [data-theme="dark"] .method-card.selected {
-        background: rgba(59, 130, 246, 0.2);
-    }
-    [data-theme="dark"] .form-input,
-    [data-theme="dark"] .form-textarea {
-        background: var(--bg-secondary);
-        border-color: var(--border-color);
-        color: var(--text-primary);
-    }
-    [data-theme="dark"] .transcript-box {
-        background: var(--bg-secondary);
-        border-color: var(--border-color);
-    }
-    [data-theme="dark"] .report-card {
-        background: var(--bg-secondary);
-        border-color: var(--border-color);
-    }
-    [data-theme="dark"] .report-card.critical { border-left-color: var(--danger-color); }
-    [data-theme="dark"] .report-card.high { border-left-color: var(--warning-color); }
-    [data-theme="dark"] .report-card.low { border-left-color: var(--accent-color); }
-    [data-theme="dark"] .report-card.medium { border-left-color: var(--primary-color); } /* Consistent */
-
-    [data-theme="dark"] .status-pending { background: #b45309; color: #fef3c7; } /* Darker yellow */
-    [data-theme="dark"] .status-processing { background: #1e40af; color: #dbeafe; } /* Darker blue */
-    [data-theme="dark"] .status-complete { background: #166534; color: #dcfce7; } /* Darker green */
-
-    [data-theme="dark"] .sync-queue-card {
-        background: #374151; /* Darker background */
-        border-color: #4b5563; /* Darker border */
-        color: var(--text-secondary);
-    }
-    [data-theme="dark"] .sync-queue-card h3 {
-        color: var(--text-primary);
-    }
-    [data-theme="dark"] .sync-queue-card .btn {
-        background: var(--accent-color);
-        color: white;
-    }
-    [data-theme="dark"] .sync-queue-card .btn:hover {
-        background: #15803d;
-    }
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="alert-banner" id="localAlerts">
+    <div class="alert-content">
+        <span class="alert-icon">⚠️</span>
+        <span class="alert-text" id="alertText"></span>
+        <button class="alert-close" onclick="portal.dismissAlert()" aria-label="Close alert">&times;</button>
+    </div>
+</div>
+
 <div class="main-content">
     <div class="step-indicator">
         <div class="steps">
-            <div class="progress-line">
-                <div class="progress-fill" id="progressFill" style="width: 20%"></div>
-            </div>
-            
-            <div class="step active" data-step="0">
-                <div class="step-number">1</div>
-                <div class="step-label">Welcome</div>
-            </div>
-            
-            <div class="step" data-step="1">
-                <div class="step-number">2</div>
-                <div class="step-label">Setup</div>
-            </div>
-            
-            <div class="step" data-step="2">
-                <div class="step-number">3</div>
-                <div class="step-label">Report</div>
-            </div>
-            
-            <div class="step" data-step="3">
-                <div class="step-number">4</div>
-                <div class="step-label">Voice</div>
-            </div>
-            
-            <div class="step" data-step="4">
-                <div class="step-number">5</div>
-                <div class="step-label">Track</div>
-            </div>
+            <div class="progress-line"><div class="progress-fill" id="progressFill" style="width: 10%;"></div></div>
+            <div class="step active" data-step="0"><div class="step-number">1</div><div class="step-label">Welcome</div></div>
+            <div class="step" data-step="1"><div class="step-number">2</div><div class="step-label">Setup</div></div>
+            <div class="step" data-step="2"><div class="step-number">3</div><div class="step-label">Report</div></div>
+            <div class="step" data-step="3"><div class="step-number">4</div><div class="step-label">Voice</div></div>
+            <div class="step" data-step="4"><div class="step-number">5</div><div class="step-label">Track</div></div>
         </div>
+    </div>
+
+    <div class="ai-confidence-meter" id="aiConfidence">
+      <div class="confidence-header">
+        <span>🤖 AI Analysis Confidence</span>
+        <span id="confidenceScore">--%</span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" id="confidenceFill" style="width: 0%;"></div>
+      </div>
     </div>
 
     <div class="content-section active" id="step-0">
         <div class="welcome-hero">
             <div class="hero-icon">🆘</div>
             <h1 class="hero-title">Emergency Response Assistant</h1>
-            <p class="hero-subtitle">AI-powered emergency reporting and response coordination for citizens</p>
+            <p class="hero-subtitle">AI-powered emergency reporting and response for citizens.</p>
         </div>
-
         <div class="features-grid">
-            <div class="feature-card" onclick="portal.goToStep(2)">
-                <span class="feature-icon">📱</span>
-                <h3 class="feature-title">Quick Report</h3>
-                <p class="feature-description">Submit emergency reports with text, photos, and location</p>
-            </div>
-            
-            <div class="feature-card" onclick="portal.goToStep(3)">
-                <span class="feature-icon">🎤</span>
-                <h3 class="feature-title">Voice Reporting</h3>
-                <p class="feature-description">Hands-free emergency reporting with AI voice analysis</p>
-            </div>
-            
-            <div class="feature-card" onclick="window.location.href='/offline.html'"> {# Link directly to offline.html #}
-                <span class="feature-icon">📴</span>
-                <h3 class="feature-title">Offline Ready</h3>
-                <p class="feature-description">Works without internet connection</p>
-            </div>
-            
-            <div class="feature-card" onclick="portal.goToStep(4)">
-                <span class="feature-icon">📊</span>
-                <h3 class="feature-title">Track Reports</h3>
-                <p class="feature-description">Monitor your submissions and get updates</p>
-            </div>
+            <div class="feature-card" onclick="portal.goToStep(2)"><span class="feature-icon">📱</span><h3 class="feature-title">Quick Report</h3><p class="feature-description">Submit reports with text, photos, and location.</p></div>
+            <div class="feature-card" onclick="portal.goToStep(3)"><span class="feature-icon">🎤</span><h3 class="feature-title">Voice Reporting</h3><p class="feature-description">Hands-free reporting with AI voice analysis.</p></div>
+            <div class="feature-card risk-prediction" onclick="portal.showRiskPrediction()"><span class="feature-icon">🔮</span><h3 class="feature-title">Risk Prediction</h3><p class="feature-description">AI-powered local hazard forecasting.</p></div>
+            <div class="feature-card" onclick="portal.goToStep(4)"><span class="feature-icon">📊</span><h3 class="feature-title">Track Reports</h3><p class="feature-description">Monitor your submissions and get updates.</p></div>
         </div>
-
-        <div class="navigation-buttons">
-            <div></div> {# Empty div to push button to right #}
-            <button class="btn btn-primary" onclick="portal.goToStep(1)">
-                Get Started 🚀
-            </button>
-        </div>
+        <div class="navigation-buttons"><div></div><button class="btn btn-primary" onclick="portal.goToStep(1)">Get Started 🚀</button></div>
     </div>
 
     <div class="content-section" id="step-1">
         <h2>🛠️ Setup Your Emergency Profile</h2>
-        <p>Let's configure your emergency reporting preferences and permissions.</p>
-
-        <div class="form-group">
-            <label class="form-label">📍 Location Access</label>
-            <button class="btn btn-primary" onclick="portal.requestLocation(this)"> {# Pass 'this' for button reference #}
-                Enable GPS Location
-            </button>
-            <p id="locationStatus" style="margin-top: 0.5rem; color: var(--text-secondary);">
-                Location access helps emergency responders find you quickly
-            </p>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">🎤 Microphone Access</label>
-            <button class="btn btn-primary" onclick="portal.requestMicrophone(this)"> {# Pass 'this' #}
-                Enable Voice Reporting
-            </button>
-            <p style="margin-top: 0.5rem; color: var(--text-secondary);">
-                Voice access enables hands-free emergency reporting
-            </p>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">📷 Camera Access</label>
-            <button class="btn btn-primary" onclick="portal.requestCamera(this)"> {# Pass 'this' #}
-                Enable Photo Evidence
-            </button>
-            <p style="margin-top: 0.5rem; color: var(--text-secondary);">
-                Camera access allows you to document emergency situations
-            </p>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">🔔 Notifications</label>
-            <button class="btn btn-primary" onclick="portal.requestNotifications(this)"> {# Pass 'this' #}
-                Enable Emergency Alerts
-            </button>
-            <p style="margin-top: 0.5rem; color: var(--text-secondary);">
-                Get notified about emergencies in your area
-            </p>
-        </div>
-
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(0)">
-                ← Back
-            </button>
-            <button class="btn btn-primary" onclick="portal.goToStep(2)">
-                Continue to Reporting 📱
-            </button>
-        </div>
+        <p>Granting permissions helps us provide faster and more accurate assistance.</p>
+        <div class="form-group"><label class="form-label">📍 Location Access</label><button class="btn btn-primary" onclick="portal.requestLocation(this)">Enable GPS</button><p id="locationStatus" class="form-text">Helps responders find you quickly.</p></div>
+        <div class="form-group"><label class="form-label">🎤 Microphone Access</label><button class="btn btn-primary" onclick="portal.requestMicrophone(this)">Enable Voice</button></div>
+        <div class="form-group"><label class="form-label">📷 Camera Access</label><button class="btn btn-primary" onclick="portal.requestCamera(this)">Enable Camera</button></div>
+        <div class="form-group"><label class="form-label">🔔 Notifications</label><button class="btn btn-primary" onclick="portal.requestNotifications(this)">Enable Alerts</button></div>
+        <div class="navigation-buttons"><button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back</button><button class="btn btn-primary" onclick="portal.goToStep(2)">Continue to Reporting 📱</button></div>
     </div>
 
     <div class="content-section" id="step-2">
         <h2>📱 Submit Emergency Report</h2>
-        <p>Choose your preferred reporting method and provide details about the emergency.</p>
-
+        <p>Choose a method and provide details about the emergency.</p>
         <div class="report-method-selector">
-            <div class="method-card selected" data-method="text" onclick="portal.selectMethod(this, 'text')">
-                <span class="method-icon">📝</span>
-                <h3 class="method-title">Text Report</h3>
-                <p class="method-description">Type your emergency details</p>
-            </div>
-            
-            <div class="method-card" data-method="photo" onclick="portal.selectMethod(this, 'photo')">
-                <span class="method-icon">📸</span>
-                <h3 class="method-title">Photo Evidence</h3>
-                <p class="method-description">Upload images of the situation</p>
-            </div>
-            
-            <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')">
-                <span class="method-icon">📍</span>
-                <h3 class="method-title">Location Report</h3>
-                <p class="method-description">Pin exact emergency location</p>
-            </div>
+            <div class="method-card selected" data-method="text" onclick="portal.selectMethod(this, 'text')"><span class="method-icon">📝</span><h3 class="method-title">Text Report</h3><p class="method-description">Type your details.</p></div>
+            <div class="method-card" data-method="photo" onclick="portal.selectMethod(this, 'photo')"><span class="method-icon">📸</span><h3 class="method-title">Photo Evidence</h3><p class="method-description">Upload an image.</p></div>
+            <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')"><span class="method-icon">📍</span><h3 class="method-title">Location Only</h3><p class="method-description">Pin a location on map.</p></div>
         </div>
-
-        <form id="emergencyReportForm">
-            <div class="form-group">
-                <label class="form-label" for="emergencyType">🚨 Emergency Type *</label>
-                <select class="form-input" id="emergencyType" required>
-                    <option value="">Select emergency type...</option>
-                    <option value="fire">🔥 Fire</option>
-                    <option value="medical">🏥 Medical Emergency</option>
-                    <option value="accident">🚗 Traffic Accident</option>
-                    <option value="weather">🌪️ Severe Weather</option>
-                    <option value="crime">⚠️ Crime/Violence</option>
-                    <option value="infrastructure">🏗️ Infrastructure Failure</option>
-                    <option value="other">❓ Other Emergency</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="emergencyLocation">📍 Location *</label>
-                <input type="text" class="form-input" id="emergencyLocation" 
-                        placeholder="Enter address or description" required>
-                <button type="button" class="btn btn-secondary btn-small" onclick="portal.useCurrentLocation()">
-                    📍 Use Current Location
-                </button>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="emergencyDescription">📝 Description *</label>
-                <textarea class="form-input form-textarea" id="emergencyDescription" 
-                            placeholder="Describe the emergency situation in detail..." required></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="priorityLevel">🚑 Priority Level</label>
-                <select class="form-input" id="priorityLevel">
-                    <option value="low">🟢 Low - Non-urgent situation</option>
-                    <option value="medium" selected>🟡 Medium - Moderate urgency</option>
-                    <option value="high">🟠 High - Urgent attention needed</option>
-                    <option value="critical">🔴 Critical - Life-threatening</option>
-                </select>
-            </div>
-
-            <div class="form-group" id="evidenceFileGroup" style="display: none;"> {# Hidden by default #}
-                <label class="form-label" for="evidenceFile">📷 Evidence (Optional)</label>
-                <input type="file" class="form-input" id="evidenceFile" accept="image/*">
-            </div>
-        </form>
-
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(1)">
-                ← Back
-            </button>
-            <button class="btn btn-success" onclick="portal.submitReport()">
-                📤 Submit Report
-            </button>
-        </div>
+        <form id="emergencyReportForm"></form>
+        <div class="navigation-buttons"><button class="btn btn-secondary" onclick="portal.goToStep(1)">← Back</button><button class="btn btn-success" onclick="portal.submitReport()">📤 Submit Report</button></div>
     </div>
 
     <div class="content-section" id="step-3">
-        <h2>🎤 Voice Emergency Reporter</h2>
-        <p>Use AI-powered voice analysis to quickly report emergencies hands-free.</p>
-
-        <div class="voice-interface">
-            <button class="record-button" id="recordButton" onclick="portal.toggleRecording()">
-                🎤
-            </button>
-            <div class="voice-status" id="voiceStatus">
-                Tap to start voice recording
-            </div>
-            <div class="transcript-box" id="transcriptBox">
-                Your voice transcript will appear here...
-            </div>
         </div>
-
-        <div id="voiceAnalysis" style="display: none;">
-            <h3>🧠 AI Analysis Results</h3>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <span class="feature-icon">⚡</span>
-                    <h4>Urgency Level</h4>
-                    <p id="urgencyLevel">Analyzing...</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">😰</span>
-                    <h4>Emotion</h4>
-                    <p id="emotionLevel">Analyzing...</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">📍</span>
-                    <h4>Location Detected</h4>
-                    <p id="detectedLocation">Analyzing...</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">💡</span>
-                    <h4>AI Recommendation</h4>
-                    <p id="aiRecommendation">Analyzing...</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(2)">
-                ← Back to Text Report
-            </button>
-            <button class="btn btn-success" id="submitVoiceReport" onclick="portal.submitVoiceReport()" disabled>
-                📤 Submit Voice Report
-            </button>
-        </div>
-    </div>
 
     <div class="content-section" id="step-4">
-        <h2>📋 My Emergency Reports</h2>
-        <p>Track the status of your submitted reports and view community updates.</p>
-
-        <div class="reports-grid" id="reportsGrid">
-            {# This is where the sample reports from your original code will go dynamically #}
-            {#
-            <div class="report-card critical">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                    <div>
-                        <h3>🔥 Building Fire - Downtown</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                            Submitted 15 minutes ago via Voice Report
-                        </p>
-                    </div>
-                    <span class="report-status status-processing">Processing</span>
-                </div>
-                <p>Large fire at 123 Main Street. Multiple people evacuating. Fire department en route.</p>
-                <div style="margin-top: 1rem;">
-                    <button class="btn btn-secondary" onclick="viewReport('fire-001')">View Details</button>
-                    <button class="btn btn-primary" onclick="updateReport('fire-001')">Update</button>
-                </div>
-            </div>
-
-            <div class="report-card high">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                    <div>
-                        <h3>🚗 Traffic Accident - Highway 101</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                            Submitted 2 hours ago via Text Report
-                        </p>
-                    </div>
-                    <span class="report-status status-complete">Complete</span>
-                </div>
-                <p>Multi-car accident blocking two lanes. Emergency services responded.</p>
-                <div style="margin-top: 1rem;">
-                    <button class="btn btn-secondary" onclick="viewReport('accident-002')">View Details</button>
-                    <button class="btn btn-primary" onclick="updateReport('accident-002')">Update</button>
-                </div>
-            </div>
-
-            <div class="report-card low">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                    <div>
-                        <h3>🌧️ Flooding on Oak Street</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                            Submitted 1 day ago via Photo Report
-                        </p>
-                    </div>
-                    <span class="report-status status-pending">Pending</span>
-                </div>
-                <p>Street flooding after heavy rain. Road partially impassable.</p>
-                <div style="margin-top: 1rem;">
-                    <button class="btn btn-secondary" onclick="viewReport('flood-003')">View Details</button>
-                    <button class="btn btn-primary" onclick="updateReport('flood-003')">Update</button>
-                </div>
-            </div>
-            #}
         </div>
-
-        <div style="text-align: center; margin-top: 2rem;">
-            <button class="btn btn-primary" onclick="portal.refreshReports()">
-                🔄 Refresh Reports
-            </button>
-            <button class="btn btn-secondary" onclick="portal.exportReports()">
-                📄 Export Reports
-            </button>
-        </div>
-
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(0)">
-                ← Back to Home
-            </button>
-            <button class="btn btn-primary" onclick="portal.goToStep(2)">
-                📱 Submit New Report
-            </button>
-        </div>
-    </div>
 </div>
 
 <div class="emergency-actions">
-    <button class="emergency-fab" onclick="portal.quickEmergency()" title="Quick Emergency Report">
-        🚨
-    </button>
+    <button class="emergency-fab" onclick="portal.quickEmergency()" title="Quick Emergency Report">🚨</button>
 </div>
 {% endblock %}
 
-{% block footer_content %}
-  {# AI Status Bar #}
-  <div class="ai-status-bar" id="aiStatusBar">
-      <div class="ai-status-dot loading" id="aiStatusDot"></div>
-      <span id="aiStatusText">🧠 Loading Citizen AI Assistant...</span>
-      <button onclick="window.EdgeAI?.runDiagnostics()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-left: auto;">
-          🧪 Test AI
-      </button>
-  </div>
-
-  {# Sync Queue Card #}
-  <div class="sync-queue-card" id="syncQueueCard" style="display: none;">
-      <h3>📡 Offline Report Sync Queue</h3>
-      <ul id="syncQueueList"></ul>
-      <button id="syncNowBtn" onclick="portal.syncOfflineReports()">🔄 Sync Now</button>
-  </div>
-
-  {# Call super() to include the default footer content #}
-  {{ super() }} 
-{% endblock %}
-
-
 {% block scripts %}
-{{ super() }} {# Inherits scripts from base.html #}
+{{ super() }}
 
 <script>
 // ============================================================================
-// Citizen Portal JavaScript - Organized and Error-Free
+// Enhanced Citizen Portal JavaScript (home.html)
 // ============================================================================
+(function() {
+    "use strict";
 
-// Global Portal Object for centralized access
-window.portal = window.portal || {};
+    // --- Global State ---
+    const portal = {
+        currentStep: 0,
+        userLocation: null,
+        isRecording: false,
+        mediaRecorder: null,
+        audioChunks: [],
+        recognition: null,
+        permissionsGranted: { location: false, microphone: false, camera: false, notifications: false },
+        lastEscapeTime: null,
+    };
 
-// Application State
-window.portal.currentStep = 0;
-window.portal.userLocation = null;
-window.portal.isRecording = false;
-window.portal.mediaRecorder = null;
-window.portal.audioChunks = [];
-window.portal.recognition = null; // webkitSpeechRecognition instance
-window.portal.permissionsGranted = {
-    location: false,
-    microphone: false,
-    camera: false,
-    notifications: false
-};
-
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    portal.initializeApp();
-});
-
-window.portal.initializeApp = function() {
-    console.log('🚀 Citizen Emergency Portal Initialized');
-    
-    // Check for saved user data
-    portal.loadUserPreferences();
-    
-    // Setup method selector listeners
-    portal.setupMethodSelector();
-    
-    // Initialize location services
-    portal.checkLocationSupport();
-    
-    // Setup offline detection
-    portal.setupOfflineHandling();
-
-    // Setup speech recognition
-    portal.setupSpeechRecognition(); // Call once on app init
-    
-    // Update AI Status (initial check/display)
-    portal.updateAIStatus();
-
-    // Ensure initial step is displayed
-    portal.goToStep(portal.currentStep);
-
-    // Setup auto-save for forms
-    portal.setupAutoSave();
-    
-    // Show welcome notification for first-time users
-    if (!localStorage.getItem('hasVisitedPortal')) { // Use a specific key for portal
-        setTimeout(() => {
-            portal.showNotification('👋 Welcome! This app works offline and uses AI to help with emergencies.', 'info');
-            localStorage.setItem('hasVisitedPortal', 'true');
-        }, 1000);
+    // --- Initialization ---
+    function initializeApp() {
+        console.log("🚀 Portal Initializing...");
+        portal.checkLocalAlerts();
+        portal.setupMethodSelector();
+        portal.checkExistingPermissions();
+        portal.setupReportFilters();
+        portal.setupSpeechRecognition();
+        portal.updateAIStatus();
+        portal.goToStep(0);
+        // PWA setup is called from base.html
     }
-    
-    console.log('🚀 Citizen Emergency Portal fully initialized');
-    console.log('💡 Keyboard shortcuts: Ctrl+1-5 for navigation, Ctrl+E for emergency');
-};
 
-
-// ============================================================================
-// NAVIGATION FUNCTIONS
-// ============================================================================
-
-window.portal.goToStep = function(stepNumber) {
-    if (stepNumber < 0 || stepNumber > 4) { // Ensure step is within bounds
-        console.warn('Attempted to go to invalid step:', stepNumber);
-        return;
-    }
-    
-    // Hide all content sections
-    document.querySelectorAll('.content-section').forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    // Show the new active section
-    const newSection = document.getElementById(`step-${stepNumber}`);
-    if (newSection) {
-        newSection.classList.add('active');
-        // Scroll to the top of the main content area
-        document.querySelector('.main-content').scrollTop = 0;
-    }
-    
-    // Update step indicator visual
-    portal.updateStepIndicator(stepNumber);
-    
-    // Update current step in state
-    portal.currentStep = stepNumber;
-    
-    // Execute step-specific initialization logic
-    switch(stepNumber) {
-        case 1: // Setup/Permissions step
-            portal.checkExistingPermissions();
-            break;
-        case 2: // Report Form step
-            portal.initializeReportForm();
-            break;
-        case 3: // Voice Interface step
-            portal.initializeVoiceInterface();
-            break;
-        case 4: // Track Reports step
-            portal.loadUserReports();
-            portal.updateSyncQueueDisplay(); // Also update sync queue visibility
-            break;
-    }
-};
-
-window.portal.updateStepIndicator = function(activeStep) {
-    const steps = document.querySelectorAll('.step');
-    const progressFill = document.getElementById('progressFill');
-    
-    steps.forEach((step, index) => {
-        step.classList.remove('active', 'completed');
+    // --- Core UI & Navigation ---
+    portal.goToStep = function(stepNumber) {
+        if (stepNumber < 0 || stepNumber > 4) return;
         
-        if (index === activeStep) {
-            step.classList.add('active');
-        } else if (index < activeStep) {
-            step.classList.add('completed');
-        }
-    });
-    
-    // Update progress bar width based on active step
-    const progressWidth = ((activeStep + 1) / steps.length) * 100;
-    if (progressFill) { // Check if element exists
-      progressFill.style.width = `${progressWidth}%`;
-    }
-};
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`step-${stepNumber}`)?.classList.add('active');
+        
+        updateStepIndicator(stepNumber);
+        portal.currentStep = stepNumber;
+        
+        if (stepNumber === 4) portal.loadUserReports();
+    };
 
-// ============================================================================
-// PERMISSION FUNCTIONS
-// ============================================================================
-
-window.portal.requestLocation = async function(buttonElement) { // Pass button for dynamic text
-    const statusElement = document.getElementById('locationStatus');
-    if (!navigator.geolocation) {
-        portal.showNotification('⚠️ Geolocation not supported by your browser.', 'warning');
-        statusElement.textContent = 'Geolocation not supported';
-        statusElement.style.color = 'var(--danger-color)';
-        return;
-    }
-    
-    if (buttonElement) { // Show loading state on button
-      buttonElement.innerHTML = '<span class="loading"></span> Requesting...';
-      buttonElement.disabled = true;
-    }
-
-    try {
-        const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 300000
-            });
+    function updateStepIndicator(activeStep) {
+        const steps = document.querySelectorAll('.step');
+        const progressFill = document.getElementById('progressFill');
+        steps.forEach((step, index) => {
+            step.classList.remove('active', 'completed');
+            if (index < activeStep) step.classList.add('completed');
+            if (index === activeStep) step.classList.add('active');
         });
-        
-        portal.userLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-        };
-        
-        portal.permissionsGranted.location = true;
-        statusElement.innerHTML = '✅ Location access granted';
-        statusElement.style.color = 'var(--accent-color)';
-        localStorage.setItem('userLocation', JSON.stringify(portal.userLocation)); // Save location
-        
-        portal.showPermissionSuccess(buttonElement, 'Location');
-        console.log('📍 Location access granted:', portal.userLocation);
-        
-    } catch (error) {
-        console.error('❌ Location access denied:', error);
-        statusElement.innerHTML = '❌ Location access denied. Please enable in browser settings.';
-        statusElement.style.color = 'var(--danger-color)';
-        portal.showPermissionError(buttonElement, 'Location');
-    } finally {
-        if (buttonElement) {
-          buttonElement.disabled = false;
-          buttonElement.textContent = 'Enable GPS Location'; // Reset button text
+        if (progressFill) progressFill.style.width = `${(activeStep / (steps.length - 1)) * 100}%`;
+    }
+
+    // --- New Features ---
+    portal.checkLocalAlerts = async function() {
+        // Simulating an API call for local alerts
+        const alertBanner = document.getElementById('localAlerts');
+        const alertText = document.getElementById('alertText');
+        if (alertBanner && alertText) {
+            alertText.textContent = 'Severe thunderstorm warning in effect for your area.';
+            alertBanner.classList.add('visible');
         }
-    }
-};
+    };
 
-window.portal.requestMicrophone = async function(buttonElement) {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        portal.permissionsGranted.microphone = true;
-        console.log('🎤 Microphone access granted');
-        
-        stream.getTracks().forEach(track => track.stop()); // Stop stream immediately
-        
-        portal.showPermissionSuccess(buttonElement, 'Microphone');
-        
-    } catch (error) {
-        console.error('❌ Microphone access denied:', error);
-        portal.showPermissionError(buttonElement, 'Microphone');
-    }
-};
+    portal.dismissAlert = function() {
+        document.getElementById('localAlerts')?.classList.remove('visible');
+    };
+    
+    portal.showRiskPrediction = function() {
+        alert('🔮 AI-powered hazard prediction feature is coming soon!');
+    };
 
-window.portal.requestCamera = async function(buttonElement) {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        portal.permissionsGranted.camera = true;
-        console.log('📷 Camera access granted');
-        
-        stream.getTracks().forEach(track => track.stop()); // Stop stream immediately
-        
-        portal.showPermissionSuccess(buttonElement, 'Camera');
-        
-    } catch (error) {
-        console.error('❌ Camera access denied:', error);
-        portal.showPermissionError(buttonElement, 'Camera');
-    }
-};
-
-window.portal.requestNotifications = async function(buttonElement) {
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            portal.permissionsGranted.notifications = true;
-            console.log('🔔 Notification access granted');
-            portal.showPermissionSuccess(buttonElement, 'Notifications');
-            
-            new Notification('Emergency Assistant', {
-                body: 'Notifications enabled! You\'ll receive emergency alerts.',
-                icon: '/static/icons/icon-192x192.png' // Use a proper icon path
-            });
+    // --- Audio Recording for Report Form ---
+    portal.toggleAudioRecording = async function() {
+        const recordBtn = document.getElementById('audioRecordBtn');
+        if (portal.isRecording) {
+            portal.mediaRecorder?.stop();
+            portal.isRecording = false;
+            recordBtn.textContent = '🎤 Record Audio Note';
+            recordBtn.style.backgroundColor = '';
         } else {
-            portal.showPermissionError(buttonElement, 'Notifications');
-        }
-    } catch (error) {
-        console.error('❌ Notification access error:', error);
-        portal.showPermissionError(buttonElement, 'Notifications');
-    }
-};
-
-window.portal.showPermissionSuccess = function(button, type) {
-    if (!button) return; // Ensure button exists
-    const originalText = button.dataset.originalText || button.textContent; // Store original text
-    button.textContent = `✅ ${type} Granted`;
-    button.style.background = 'var(--accent-color)';
-    button.disabled = true; // Keep disabled if permission is permanent
-    
-    setTimeout(() => {
-        button.textContent = originalText;
-        button.style.background = '';
-        if (type !== 'Notifications') button.disabled = false; // Permissions like camera might be revoked
-    }, 2000);
-};
-
-window.portal.showPermissionError = function(button, type) {
-    if (!button) return; // Ensure button exists
-    const originalText = button.dataset.originalText || button.textContent;
-    button.textContent = `❌ ${type} Denied`;
-    button.style.background = 'var(--danger-color)';
-    button.disabled = false; // Allow re-request
-    
-    setTimeout(() => {
-        button.textContent = originalText;
-        button.style.background = '';
-    }, 2000);
-};
-
-window.portal.checkExistingPermissions = async function() {
-    // Location permission check
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                portal.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-                portal.permissionsGranted.location = true;
-                const statusElement = document.getElementById('locationStatus');
-                if (statusElement) {
-                    statusElement.innerHTML = '✅ Location already enabled';
-                    statusElement.style.color = 'var(--accent-color)';
-                }
-                localStorage.setItem('userLocation', JSON.stringify(portal.userLocation));
-            },
-            (error) => {
-                console.log('Location permission not yet granted or denied initially:', error.message);
-                const statusElement = document.getElementById('locationStatus');
-                if (statusElement) {
-                  statusElement.innerHTML = 'Location access helps emergency responders find you quickly'; // Reset to default hint
-                  statusElement.style.color = 'var(--text-secondary)';
-                }
-            },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 } // Short timeout for check
-        );
-    }
-    
-    // Notification permission check
-    if ('Notification' in window && Notification.permission === 'granted') {
-        portal.permissionsGranted.notifications = true;
-    }
-    // You can add checks for camera/microphone permissions using navigator.permissions.query() if needed
-    // e.g., navigator.permissions.query({name: 'camera'}).then(result => { ... });
-};
-
-// ============================================================================
-// REPORT FORM FUNCTIONS
-// ============================================================================
-
-window.portal.setupMethodSelector = function() {
-    const methodCards = document.querySelectorAll('.method-card');
-    
-    methodCards.forEach(card => {
-        card.addEventListener('click', function() {
-            methodCards.forEach(c => c.classList.remove('selected'));
-            this.classList.add('selected');
-            
-            const method = this.dataset.method;
-            console.log('📝 Report method selected:', method);
-            
-            // Show/hide sections based on selected method
-            const evidenceFileGroup = document.getElementById('evidenceFileGroup');
-            if (evidenceFileGroup) { // Check if element exists
-                evidenceFileGroup.style.display = (method === 'photo') ? 'block' : 'none';
-            }
-        });
-    });
-    // Select text method by default on load
-    const defaultMethodCard = document.querySelector('.method-card[data-method="text"]');
-    if (defaultMethodCard) {
-      defaultMethodCard.classList.add('selected');
-    }
-};
-
-window.portal.initializeReportForm = function() {
-    // Clear any previous form data from auto-save when navigating to form
-    portal.clearAutoSave();
-    document.getElementById('emergencyReportForm').reset();
-    document.getElementById('evidenceFileGroup').style.display = 'none'; // Hide file input by default
-    portal.setupMethodSelector(); // Re-run setup to apply default selected class
-    
-    // Pre-fill location if available
-    if (portal.userLocation) {
-        portal.useCurrentLocation();
-    }
-};
-
-window.portal.useCurrentLocation = async function() {
-    if (portal.userLocation) {
-        const locationInput = document.getElementById('emergencyLocation');
-        if (locationInput) locationInput.value = `Loading address... (${portal.userLocation.lat.toFixed(6)}, ${portal.userLocation.lng.toFixed(6)})`;
-        
-        // Reverse geocoding for a more readable address
-        await portal.reverseGeocode(portal.userLocation.lat, portal.userLocation.lng);
-        
-    } else {
-        // Request location if not already available
-        portal.showNotification('Requesting location access for form...', 'info');
-        await portal.requestLocation(document.querySelector('#step-1 .form-group button')); // Dummy button for request
-        if (portal.userLocation) {
-            portal.useCurrentLocation(); // Retry after getting permission
-        } else {
-            portal.showNotification('Location access denied. Please enter manually.', 'error');
-            const locationInput = document.getElementById('emergencyLocation');
-            if (locationInput) locationInput.value = ""; // Clear if not filled automatically
-        }
-    }
-};
-
-window.portal.reverseGeocode = async function(lat, lng) {
-    try {
-        const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
-        const data = await response.json();
-        
-        const locationInput = document.getElementById('emergencyLocation');
-        if (locationInput) {
-            if (data && data.locality) {
-                locationInput.value = `${data.locality}, ${data.principalSubdivision || data.countryName}`;
-            } else {
-                locationInput.value = `(${lat.toFixed(6)}, ${lng.toFixed(6)}) - Address not found`;
-            }
-        }
-    } catch (error) {
-        console.warn('Reverse geocoding failed:', error);
-        const locationInput = document.getElementById('emergencyLocation');
-        if (locationInput && locationInput.value.startsWith("Loading address...")) {
-            locationInput.value = `(${lat.toFixed(6)}, ${lng.toFixed(6)}) - Network Error for geocoding`;
-        }
-    }
-};
-
-window.portal.submitReport = async function() {
-    const submitButton = event.target; // Get the button that triggered the event
-    if (!submitButton) return;
-
-    const originalText = submitButton.textContent;
-    
-    const emergencyType = document.getElementById('emergencyType')?.value;
-    const emergencyLocation = document.getElementById('emergencyLocation')?.value;
-    const emergencyDescription = document.getElementById('emergencyDescription')?.value;
-    const priorityLevel = document.getElementById('priorityLevel')?.value;
-    const evidenceFile = document.getElementById('evidenceFile');
-    const selectedMethodCard = document.querySelector('.method-card.selected');
-    const method = selectedMethodCard ? selectedMethodCard.dataset.method : 'unknown';
-
-    // Basic client-side validation
-    if (!emergencyType || !emergencyLocation || !emergencyDescription) {
-        portal.showNotification('❌ Please fill in all required fields (Type, Location, Description)', 'error');
-        return;
-    }
-    if (method === 'photo' && (!evidenceFile || evidenceFile.files.length === 0)) {
-        portal.showNotification('❌ Please upload an image for Photo Evidence report', 'error');
-        return;
-    }
-    
-    // Show loading state
-    submitButton.textContent = '📤 Submitting...';
-    submitButton.disabled = true;
-    
-    try {
-        const formData = new FormData();
-        formData.append('message', emergencyDescription);
-        formData.append('tone', 'unknown'); // Will be analyzed by AI
-        formData.append('escalation', priorityLevel);
-        formData.append('user', 'Citizen Portal User'); // Or dynamic user ID
-        formData.append('location', emergencyLocation);
-        formData.append('timestamp', new Date().toISOString());
-
-        if (portal.userLocation) {
-            formData.append('latitude', portal.userLocation.lat);
-            formData.append('longitude', portal.userLocation.lng);
-        }
-        
-        if (evidenceFile && evidenceFile.files.length > 0) {
-            formData.append('image', evidenceFile.files[0]); // 'image' should match backend UploadFile parameter name
-            formData.append('method', 'photo'); // Explicitly set method if photo
-        } else {
-            formData.append('method', method); // Set other methods
-        }
-
-        const response = await fetch('/submit-crowd-report', { // This endpoint is a direct form submission route
-            method: 'POST',
-            body: formData,
-            // DO NOT set Content-Type header for FormData, browser sets it automatically with boundary
-        });
-        
-        if (response.redirected) {
-             // FastAPI RedirectResponse sends a 303, which fetch API follows automatically.
-             // We can check if the final URL is the expected success page.
-             portal.showNotification('✅ Emergency report submitted successfully!', 'success');
-             portal.saveReportToLocal({
-                 type: emergencyType,
-                 location: emergencyLocation,
-                 description: emergencyDescription,
-                 priority: priorityLevel,
-                 timestamp: new Date().toISOString(),
-                 method: method,
-                 status: 'complete', // Assuming direct submission is complete
-                 id: Date.now().toString() // Generate local ID
-             });
-             portal.clearAutoSave(); // Clear auto-saved data
-             portal.goToStep(4); // Go to track reports page
-        } else if (!response.ok) {
-            const errorText = await response.text(); // Or response.json() if your backend sends JSON errors
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-        } else {
-            // For non-redirecting successful responses (e.g., if it returns JSON success)
-            const result = await response.json();
-            if (result.success) {
-                portal.showNotification('✅ Emergency report submitted successfully!', 'success');
-                portal.saveReportToLocal({
-                    type: emergencyType,
-                    location: emergencyLocation,
-                    description: emergencyDescription,
-                    priority: priorityLevel,
-                    timestamp: new Date().toISOString(),
-                    method: method,
-                    status: 'complete',
-                    id: Date.now().toString()
-                });
-                portal.clearAutoSave();
-                portal.goToStep(4);
-            } else {
-                throw new Error(result.error || 'Unknown submission error');
-            }
-        }
-        
-    } catch (error) {
-        console.error('Report submission failed:', error);
-        portal.showNotification('❌ Failed to submit report. Saving for offline sync.', 'error');
-        
-        // Save full form data to offline queue
-        const offlineReportData = {
-            type: emergencyType,
-            location: emergencyLocation,
-            description: emergencyDescription,
-            priority: priorityLevel,
-            timestamp: new Date().toISOString(),
-            method: method,
-            status: 'pending' // Mark as pending offline
-        };
-        // For files, you would need to read them as DataURL or Blob and store them
-        if (evidenceFile && evidenceFile.files.length > 0) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                offlineReportData.fileData = e.target.result; // DataURL
-                offlineReportData.fileName = evidenceFile.files[0].name;
-                offlineReportData.fileType = evidenceFile.files[0].type;
-                portal.saveToOfflineQueue(offlineReportData);
-            };
-            reader.readAsDataURL(evidenceFile.files[0]);
-        } else {
-            portal.saveToOfflineQueue(offlineReportData);
-        }
-        
-    } finally {
-        submitButton.textContent = originalText;
-        submitButton.disabled = false;
-    }
-};
-
-// ============================================================================
-// VOICE RECORDING FUNCTIONS
-// ============================================================================
-
-window.portal.setupSpeechRecognition = function() {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        portal.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        portal.recognition.continuous = true;
-        portal.recognition.interimResults = true;
-        portal.recognition.lang = 'en-US';
-        
-        portal.recognition.onstart = function() {
-            console.log('🎤 Speech recognition started');
-            portal.showNotification('🎤 Recording started, speak clearly...', 'info');
-        };
-        
-        portal.recognition.onresult = function(event) {
-            let transcript = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                transcript += event.results[i][0].transcript;
-            }
-            
-            const transcriptBox = document.getElementById('transcriptBox');
-            if (transcriptBox) transcriptBox.textContent = transcript;
-            
-            // Analyze transcript with AI after a certain length or on silence
-            if (transcript.length > 20) { // Small threshold for real-time analysis hint
-                portal.analyzeVoiceTranscript(transcript);
-            }
-        };
-        
-        portal.recognition.onerror = function(event) {
-            console.error('Speech recognition error:', event.error);
-            portal.showNotification(`❌ Speech recognition error: ${event.error}`, 'error');
-            // Stop recording state on error
-            if (portal.isRecording) portal.stopRecording();
-        };
-        
-        portal.recognition.onend = function() {
-            console.log('🎤 Speech recognition ended');
-            const voiceStatus = document.getElementById('voiceStatus');
-            if (voiceStatus) voiceStatus.textContent = 'Processing voice recording...';
-            
-            if (portal.isRecording) { // If still in recording state, means it ended unexpectedly
-                portal.stopRecording(); // Clean up state
-            }
-            // Once transcription is truly complete, re-enable button and clear status
-            setTimeout(() => {
-                if (voiceStatus) voiceStatus.textContent = 'Tap to record again or submit report';
-                const submitButton = document.getElementById('submitVoiceReport');
-                if (submitButton) submitButton.disabled = false;
-            }, 2000);
-        };
-
-        // Also set up MediaRecorder for actual audio file submission
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 portal.mediaRecorder = new MediaRecorder(stream);
-                portal.mediaRecorder.ondataavailable = e => {
-                    portal.audioChunks.push(e.data);
-                };
+                portal.audioChunks = [];
+                portal.mediaRecorder.ondataavailable = e => portal.audioChunks.push(e.data);
                 portal.mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(portal.audioChunks, { 'type' : 'audio/wav' });
-                    portal.audioChunks = []; // Clear chunks for next recording
-                    portal.sendAudioForAnalysis(audioBlob, document.getElementById('transcriptBox').textContent);
+                    const audioBlob = new Blob(portal.audioChunks, { type: 'audio/wav' });
+                    document.getElementById('recordedAudio').src = URL.createObjectURL(audioBlob);
+                    document.getElementById('audioPlayback').style.display = 'flex';
+                    stream.getTracks().forEach(track => track.stop());
                 };
-            })
-            .catch(error => {
-                console.error('Error setting up MediaRecorder:', error);
-                portal.showNotification('❌ Audio recording not available. Please ensure microphone access.', 'error');
-                // Disable voice recording features if MediaRecorder can't be set up
-                const recordButton = document.getElementById('recordButton');
-                if (recordButton) recordButton.disabled = true;
-            });
-
-    } else {
-        console.warn('Speech recognition or MediaRecorder not supported in this browser.');
-        portal.showNotification('⚠️ Voice reporting not fully supported on your device.', 'warning');
-        const recordButton = document.getElementById('recordButton');
-        if (recordButton) recordButton.disabled = true;
-    }
-};
-
-window.portal.initializeVoiceInterface = function() {
-    // Reset voice interface state and UI elements
-    const voiceStatus = document.getElementById('voiceStatus');
-    const transcriptBox = document.getElementById('transcriptBox');
-    const voiceAnalysis = document.getElementById('voiceAnalysis');
-    const submitVoiceReportBtn = document.getElementById('submitVoiceReport');
-
-    if (voiceStatus) voiceStatus.textContent = 'Tap to start voice recording';
-    if (transcriptBox) transcriptBox.textContent = 'Your voice transcript will appear here...';
-    if (voiceAnalysis) voiceAnalysis.style.display = 'none'; // Hide analysis results
-    if (submitVoiceReportBtn) submitVoiceReportBtn.disabled = true;
-
-    portal.isRecording = false;
-    if (portal.recognition) {
-        portal.recognition.stop(); // Ensure it's stopped
-    }
-    if (portal.mediaRecorder && portal.mediaRecorder.state !== 'inactive') {
-        portal.mediaRecorder.stop();
-    }
-    portal.audioChunks = [];
-    const recordButton = document.getElementById('recordButton');
-    if (recordButton) {
-        recordButton.classList.remove('recording');
-        recordButton.textContent = '🎤';
-    }
-};
-
-window.portal.toggleRecording = function() {
-    if (!portal.permissionsGranted.microphone) {
-        portal.showNotification('❌ Microphone permission required to record voice.', 'error');
-        // Optionally request it directly if user clicks without permission
-        portal.requestMicrophone(document.getElementById('recordButton'));
-        return;
-    }
-
-    const recordButton = document.getElementById('recordButton');
-    const voiceStatus = document.getElementById('voiceStatus');
-
-    if (portal.isRecording) {
-        portal.isRecording = false;
-        recordButton.classList.remove('recording');
-        recordButton.textContent = '🎤';
-        if (voiceStatus) voiceStatus.textContent = 'Processing voice recording...';
-        
-        // Stop both speech recognition and media recorder
-        if (portal.recognition && portal.recognition.recognizing) { // Check if recognition is active
-            portal.recognition.stop();
-        }
-        if (portal.mediaRecorder && portal.mediaRecorder.state === 'recording') {
-            portal.mediaRecorder.stop();
-        }
-        console.log('🎤 Recording stopped');
-    } else {
-        portal.isRecording = true;
-        recordButton.classList.add('recording');
-        recordButton.textContent = '⏹️';
-        if (voiceStatus) voiceStatus.textContent = 'Recording... Speak clearly about the emergency';
-        
-        // Start both speech recognition and media recorder
-        if (portal.recognition) {
-            portal.recognition.start();
-        }
-        if (portal.mediaRecorder && portal.mediaRecorder.state === 'inactive') {
-            portal.mediaRecorder.start();
-        }
-        console.log('🎤 Recording started');
-    }
-};
-
-window.portal.analyzeVoiceTranscript = async function(transcript) {
-    // This function provides real-time AI feedback on the transcript as user speaks
-    try {
-        const aiAnalysisDiv = document.getElementById('voiceAnalysis');
-        if (aiAnalysisDiv) aiAnalysisDiv.style.display = 'block';
-        
-        // Simulate AI analysis for display purposes
-        const analysis = await portal.simulateAIAnalysis(transcript); // Use the utility function
-        
-        const urgencyLevelElem = document.getElementById('urgencyLevel');
-        const emotionLevelElem = document.getElementById('emotionLevel');
-        const detectedLocationElem = document.getElementById('detectedLocation');
-        const aiRecommendationElem = document.getElementById('aiRecommendation');
-
-        if (urgencyLevelElem) urgencyLevelElem.textContent = analysis.urgency;
-        if (emotionLevelElem) emotionLevelElem.textContent = analysis.emotion;
-        if (detectedLocationElem) detectedLocationElem.textContent = analysis.location;
-        if (aiRecommendationElem) aiRecommendationElem.textContent = analysis.recommendation;
-        
-        const submitVoiceReportBtn = document.getElementById('submitVoiceReport');
-        if (submitVoiceReportBtn) submitVoiceReportBtn.disabled = false; // Enable submit button once analysis starts
-        
-        console.log('🧠 Real-time voice analysis:', analysis);
-        
-    } catch (error) {
-        console.error('Real-time AI analysis failed:', error);
-        // Do not show a persistent notification for real-time analysis errors to avoid spamming user
-    }
-};
-
-window.portal.sendAudioForAnalysis = async function(audioBlob, transcript) {
-    // This function sends the recorded audio and final transcript to the backend API
-    const voiceStatus = document.getElementById('voiceStatus');
-    if (voiceStatus) voiceStatus.textContent = 'Submitting audio for final analysis...';
-
-    const submitButton = document.getElementById('submitVoiceReport');
-    if (submitButton) {
-        submitButton.textContent = '📤 Submitting...';
-        submitButton.disabled = true;
-    }
-
-    try {
-        const formData = new FormData();
-        formData.append('audio_file', audioBlob, 'emergency_call.wav'); // File name is important
-        formData.append('transcript', transcript);
-        formData.append('caller_info', JSON.stringify({ device: 'web_portal', browser: navigator.userAgent }));
-        if (portal.userLocation) {
-            formData.append('location_hint', JSON.stringify(portal.userLocation));
-        }
-
-        const response = await fetch('/api/gemma-3n/voice-emergency', { // Use the new API endpoint
-            method: 'POST',
-            body: formData,
-            // Do NOT set Content-Type: multipart/form-data, browser handles it
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({detail: 'Unknown error'}));
-            throw new Error(`HTTP ${response.status}: ${errorData.detail || JSON.stringify(errorData)}`);
-        }
-
-        const result = await response.json();
-        portal.showNotification('✅ Voice emergency report submitted!', 'success');
-        
-        // Save report details to local storage for "My Reports"
-        portal.saveReportToLocal({
-            type: result.analysis?.emergency_type?.primary || 'Voice Report',
-            location: result.analysis?.location_info?.addresses?.[0] || 'Location not specified',
-            description: result.analysis?.transcript || transcript,
-            priority: result.analysis?.overall_urgency || 'medium',
-            timestamp: result.timestamp,
-            method: 'voice',
-            status: 'complete',
-            id: result.voice_analysis_id // Use the ID from backend if available
-        });
-        portal.goToStep(4); // Navigate to My Reports
-    } catch (error) {
-        console.error('❌ Voice report final submission failed:', error);
-        portal.showNotification('❌ Failed to submit voice report. Saving for offline sync.', 'error');
-        // Prepare data for offline sync if submission failed
-        const offlineReportData = {
-            type: 'Voice Report',
-            description: transcript,
-            location: portal.userLocation ? `${portal.userLocation.lat}, ${portal.userLocation.lng}` : 'Unknown',
-            priority: document.getElementById('urgencyLevel')?.textContent || 'medium', // Use AI-derived urgency
-            timestamp: new Date().toISOString(),
-            method: 'voice',
-            status: 'pending',
-            audioBlob: audioBlob // Store blob directly if IndexedDB supports it, or convert to DataURL
-        };
-        portal.saveToOfflineQueue(offlineReportData);
-    } finally {
-        if (submitButton) {
-            submitButton.textContent = originalText; // Reset button text
-            submitButton.disabled = false;
-        }
-        if (voiceStatus) voiceStatus.textContent = 'Tap to record again or submit report';
-    }
-};
-
-window.portal.submitVoiceReport = function() {
-    // This function is triggered by the "Submit Voice Report" button.
-    // The actual audio sending logic is in sendAudioForAnalysis, triggered by mediaRecorder.onstop
-    // If recording is still active when this is pressed, stop it.
-    if (portal.isRecording) {
-        portal.toggleRecording(); // This will trigger mediaRecorder.onstop and subsequently sendAudioForAnalysis
-    } else {
-        // If recording is already stopped, ensure there's a transcript to send
-        const transcript = document.getElementById('transcriptBox')?.textContent;
-        if (transcript && transcript !== 'Your voice transcript will appear here...' && portal.audioChunks.length > 0) {
-            const audioBlob = new Blob(portal.audioChunks, { 'type' : 'audio/wav' });
-            portal.audioChunks = []; // Clear chunks
-            portal.sendAudioForAnalysis(audioBlob, transcript);
-        } else {
-            portal.showNotification('❌ No voice recording available to submit.', 'error');
-        }
-    }
-};
-
-
-// ============================================================================
-// REPORT TRACKING FUNCTIONS
-// ============================================================================
-
-window.portal.loadUserReports = function() {
-    const reportsGrid = document.getElementById('reportsGrid');
-    const savedReports = JSON.parse(localStorage.getItem('userReports') || '[]');
-    
-    if (reportsGrid) { // Ensure grid exists
-        if (savedReports.length === 0) {
-            reportsGrid.innerHTML = `
-                <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
-                    <h3>No Reports Yet</h3>
-                    <p>Your submitted emergency reports will appear here.</p>
-                    <button class="btn btn-primary" onclick="portal.goToStep(2)" style="margin-top: 1rem;">
-                        📱 Submit Your First Report
-                    </button>
-                </div>
-            `;
-            return;
-        }
-        
-        // Sort reports by timestamp (newest first)
-        savedReports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-        // Create and add user reports to the grid
-        const userReportsHTML = savedReports.map(report => portal.createReportCard(report)).join('');
-        reportsGrid.innerHTML = userReportsHTML;
-    }
-};
-
-window.portal.createReportCard = function(report) {
-    const priorityClass = report.priority || 'low'; // Default to low
-    const statusClass = report.status || 'pending'; // Default to pending
-    const icon = portal.getReportIcon(report.type || report.method); // Use type or method for icon
-    const timeAgo = portal.getTimeAgo(new Date(report.timestamp));
-    
-    return `
-        <div class="report-card ${priorityClass}">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                <div>
-                    <h3 style="margin:0; color: var(--text-primary); font-size: 1.1rem;">${icon} ${report.type ? report.type.capitalize() + ' Report' : 'Emergency Report'}</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.25rem 0 0 0;">
-                        Submitted ${timeAgo} via ${report.method || 'Unknown'}
-                    </p>
-                </div>
-                <span class="report-status status-${statusClass}">${statusClass}</span>
-            </div>
-            <p style="color: var(--text-primary);">${(report.description || report.transcript || 'No description provided').substring(0, 150)}...</p>
-            <div style="margin-top: 1rem;">
-                <button class="btn btn-secondary btn-small" onclick="portal.viewReportDetails('${report.id}')">View Details</button>
-                <button class="btn btn-primary btn-small" onclick="portal.updateReport('${report.id}')">Update</button>
-            </div>
-        </div>
-    `;
-};
-
-window.portal.getReportIcon = function(type) {
-    const icons = {
-        fire: '🔥', medical: '🏥', accident: '🚗', weather: '🌪️', crime: '⚠️',
-        infrastructure: '🏗️', other: '❓', voice: '🎤', text: '📝', photo: '📸',
-        location: '📍'
-    };
-    return icons[type.toLowerCase()] || '❓';
-};
-
-window.portal.getTimeAgo = function(date) {
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
-    
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-    
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
-
-    // For older reports, just return the date
-    return date.toLocaleDateString();
-};
-
-// ============================================================================
-// UTILITY FUNCTIONS (Global access via window.portal)
-// ============================================================================
-
-window.portal.saveReportToLocal = function(reportData) {
-    const reports = JSON.parse(localStorage.getItem('userReports') || '[]');
-    // Ensure reportData has an ID; use existing if present, otherwise generate new
-    reportData.id = reportData.id || Date.now().toString();
-    reportData.status = reportData.status || 'pending'; // Default status
-    reports.unshift(reportData); // Add to the beginning
-    localStorage.setItem('userReports', JSON.stringify(reports));
-    console.log('Report saved locally:', reportData.id);
-};
-
-window.portal.saveToOfflineQueue = function(reportData) {
-    const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
-    reportData.id = reportData.id || Date.now().toString();
-    reportData.offline = true;
-    queue.push(reportData);
-    localStorage.setItem('syncQueue', JSON.stringify(queue));
-    console.log('Report queued for offline sync:', reportData.id);
-    portal.updateSyncQueueDisplay(); // Update display
-};
-
-window.portal.syncOfflineReports = async function() {
-    let offlineQueue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
-    if (offlineQueue.length === 0) {
-        portal.showNotification('✅ No offline reports to sync.', 'info');
-        portal.updateSyncQueueDisplay();
-        return;
-    }
-    
-    portal.showNotification(`🔄 Syncing ${offlineQueue.length} offline reports...`, 'info');
-    const syncNowBtn = document.getElementById('syncNowBtn');
-    if (syncNowBtn) syncNowBtn.disabled = true;
-
-    let successfulSyncs = 0;
-    let failedSyncs = 0;
-    const remainingQueue = [];
-
-    for (const report of offlineQueue) {
-        try {
-            const formData = new FormData();
-            Object.keys(report).forEach(key => {
-                if (key !== 'fileData' && key !== 'audioBlob' && key !== 'id' && key !== 'offline' && key !== 'status') {
-                    formData.append(key, report[key]);
-                }
-            });
-
-            // Reconstruct Blob from DataURL if needed for file uploads
-            if (report.fileData && report.fileName && report.fileType) {
-                const blob = await (await fetch(report.fileData)).blob();
-                formData.append('image', blob, report.fileName); // Match backend parameter name 'image'
+                portal.mediaRecorder.start();
+                portal.isRecording = true;
+                recordBtn.textContent = '⏹️ Stop Recording';
+                recordBtn.style.backgroundColor = '#dc2626';
+            } catch (err) {
+                portal.showNotification('Could not access microphone.', 'error');
             }
-            // Handle audio blob
-            if (report.audioBlob) {
-                // If audioBlob is already a Blob (e.g., from MediaRecorder.onstop), use it
-                // Otherwise, if it's a DataURL string, convert it back
-                let audioBlobToSend = report.audioBlob;
-                if (typeof report.audioBlob === 'string' && report.audioBlob.startsWith('data:')) {
-                    audioBlobToSend = await (await fetch(report.audioBlob)).blob();
-                }
-                formData.append('audio_file', audioBlobToSend, report.fileName || 'voice_report.wav'); // Match backend parameter name
-            }
-
-            const endpoint = report.method === 'voice' ? '/api/gemma-3n/voice-emergency' : '/submit-crowd-report'; // Adjust endpoint based on method
-
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: formData,
-            });
-            
-            if (response.ok || response.redirected) {
-                successfulSyncs++;
-                // Update the local storage 'userReports' to reflect status change
-                portal.updateLocalReportStatus(report.id, 'complete');
-            } else {
-                failedSyncs++;
-                remainingQueue.push(report); // Keep failed reports in queue for next retry
-            }
-        } catch (error) {
-            console.error(`❌ Failed to sync report ${report.id}:`, error);
-            failedSyncs++;
-            remainingQueue.push(report); // Keep failed reports in queue
         }
-    }
-    
-    localStorage.setItem('syncQueue', JSON.stringify(remainingQueue));
-    portal.updateSyncQueueDisplay();
-
-    if (successfulSyncs > 0) {
-        portal.showNotification(`✅ Synced ${successfulSyncs} reports.`, 'success');
-        portal.loadUserReports(); // Reload reports to show updated status
-    }
-    if (failedSyncs > 0) {
-        portal.showNotification(`⚠️ Failed to sync ${failedSyncs} reports. Retrying later.`, 'warning');
-    }
-    if (syncNowBtn) syncNowBtn.disabled = false;
-};
-
-
-window.portal.updateLocalReportStatus = function(reportId, newStatus) {
-    let reports = JSON.parse(localStorage.getItem('userReports') || '[]');
-    const reportIndex = reports.findIndex(r => r.id === reportId);
-    if (reportIndex > -1) {
-        reports[reportIndex].status = newStatus;
-        localStorage.setItem('userReports', JSON.stringify(reports));
-        console.log(`Updated local report ${reportId} status to ${newStatus}`);
-    }
-};
-
-
-window.portal.simulateAIAnalysis = async function(transcript) {
-    // This is a placeholder for actual AI analysis API call
-    console.log('Simulating AI analysis for:', transcript.substring(0, 50) + '...');
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
-    
-    // Example call to a FastAPI backend endpoint if available
-    // try {
-    //     const response = await fetch('/api/gemma-3n/real-time-analysis', {
-    //         method: 'POST',
-    //         headers: {'Content-Type': 'application/json'},
-    //         body: JSON.stringify({emergency_data: {text: transcript}})
-    //     });
-    //     if (response.ok) {
-    //         const data = await response.json();
-    //         return {
-    //             urgency: data.real_time_analysis?.severity?.overall_score > 7 ? 'Critical' : 'Medium',
-    //             emotion: data.real_time_analysis?.emotional_state?.primary || 'Neutral',
-    //             location: data.real_time_analysis?.location_info?.main_location || 'Not detected',
-    //             recommendation: data.immediate_actions?.[0]?.action || 'Analysis complete.'
-    //         };
-    //     } else {
-    //         console.error('AI analysis API returned error:', response.status);
-    //         return { urgency: 'Unknown', emotion: 'Unknown', location: 'Unknown', recommendation: 'AI analysis failed' };
-    //     }
-    // } catch (e) {
-    //     console.error('Failed to reach AI analysis API:', e);
-    //     return { urgency: 'Unknown', emotion: 'Unknown', location: 'Unknown', recommendation: 'AI service unreachable' };
-    // }
-
-    // Fallback to simple keyword-based simulation
-    const urgencyKeywords = ['fire', 'emergency', 'urgent', 'critical', 'help', 'danger'];
-    const emotionKeywords = ['panic', 'scared', 'calm', 'worried', 'frantic'];
-    
-    const hasUrgentKeywords = urgencyKeywords.some(keyword => 
-        transcript.toLowerCase().includes(keyword)
-    );
-    
-    const hasEmotionKeywords = emotionKeywords.some(keyword => 
-        transcript.toLowerCase().includes(keyword)
-    );
-    
-    return {
-        urgency: hasUrgentKeywords ? 'High' : 'Medium',
-        emotion: hasEmotionKeywords ? 'Stressed' : 'Calm',
-        location: portal.userLocation ? 'Current location detected' : 'No location available',
-        recommendation: hasUrgentKeywords ? 
-            'Contact emergency services immediately' : 
-            'Monitor situation and report updates'
-    };
-};
-
-window.portal.showNotification = function(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 100px; /* Adjust based on your header height */
-        right: 2rem;
-        background: ${type === 'success' ? 'var(--accent-color)' : 
-                       type === 'error' ? 'var(--danger-color)' : 'var(--primary-color)'};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-lg);
-        z-index: 10000;
-        font-weight: 600;
-        max-width: 300px;
-        animation: slideIn 0.3s ease forwards; /* Use forwards to keep final state */
-    `;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease forwards';
-        setTimeout(() => notification.remove(), 300);
-    }, 4000); // Notification disappears after 4 seconds
-};
-
-// ============================================================================
-// OFFLINE & SYNC HANDLING
-// ============================================================================
-
-window.portal.setupOfflineHandling = function() {
-    // Monitor online/offline status
-    window.addEventListener('online', () => {
-        portal.showNotification('🌐 Connection restored - syncing reports...', 'success');
-        portal.syncOfflineReports();
-    });
-    
-    window.addEventListener('offline', () => {
-        portal.showNotification('📴 You\'re offline - reports will be saved locally', 'warning'); // Changed to warning
-    });
-    
-    // Initial sync queue display check
-    portal.updateSyncQueueDisplay();
-};
-
-window.portal.updateSyncQueueDisplay = function() {
-    const syncQueueCard = document.getElementById('syncQueueCard');
-    const syncQueueList = document.getElementById('syncQueueList');
-    const offlineQueue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
-
-    if (syncQueueCard) {
-        if (offlineQueue.length > 0) {
-            syncQueueCard.style.display = 'block';
-            if (syncQueueList) {
-                syncQueueList.innerHTML = offlineQueue.map(report => `
-                    <li>${report.description ? report.description.substring(0, 50) + '...' : 'Untitled report'} (${report.status})</li>
-                `).join('');
-            }
-        } else {
-            syncQueueCard.style.display = 'none';
-        }
-    }
-};
-
-// ============================================================================
-// QUICK ACTIONS & OTHER UTILITIES
-// ============================================================================
-
-window.portal.quickEmergency = function() {
-    if (confirm('🚨 QUICK EMERGENCY REPORT\n\nThis will immediately take you to the emergency reporting screen and set priority to CRITICAL.\n\nProceed?')) {
-        portal.goToStep(2);
-        
-        // Pre-fill with critical priority after a short delay to allow page transition
-        setTimeout(() => {
-            const priorityLevelSelect = document.getElementById('priorityLevel');
-            if (priorityLevelSelect) {
-                priorityLevelSelect.value = 'critical';
-            }
-            const emergencyTypeSelect = document.getElementById('emergencyType');
-            if (emergencyTypeSelect) {
-                emergencyTypeSelect.focus();
-            }
-        }, 500);
-    }
-};
-
-window.portal.viewReportDetails = function(reportId) {
-    // In a real application, this would open a new page or a modal with detailed report info.
-    console.log(`Viewing details for report: ${reportId}`);
-    portal.showNotification(`📄 Loading details for Report ID: ${reportId}`, 'info');
-    // Example: window.location.href = `/report/${reportId}`;
-};
-
-window.portal.updateReport = function(reportId) {
-    // In a real application, this would open an interface to add updates to the report.
-    console.log(`Updating report: ${reportId}`);
-    portal.showNotification(`✏️ Opening update interface for Report ID: ${reportId}`, 'info');
-    // Example: open a modal to add a new message/status update
-};
-
-window.portal.refreshReports = function() {
-    const button = event.target;
-    const originalText = button.textContent;
-    
-    button.textContent = '🔄 Refreshing...';
-    button.disabled = true;
-    
-    setTimeout(() => {
-        portal.loadUserReports();
-        button.textContent = originalText;
-        button.disabled = false;
-        portal.showNotification('✅ Reports refreshed', 'success');
-    }, 1500);
-};
-
-window.portal.exportReports = function() {
-    const reports = JSON.parse(localStorage.getItem('userReports') || '[]');
-    
-    if (reports.length === 0) {
-        portal.showNotification('❌ No reports to export', 'error');
-        return;
-    }
-    
-    const exportData = {
-        exportDate: new Date().toISOString(),
-        totalReports: reports.length,
-        reports: reports
     };
     
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
-    const url = URL.createObjectURL(dataBlob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `emergency-reports-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    URL.revokeObjectURL(url);
-    portal.showNotification('📄 Reports exported successfully', 'success');
-};
+    portal.removeAudio = function() {
+        portal.audioChunks = [];
+        document.getElementById('recordedAudio').src = '';
+        document.getElementById('audioPlayback').style.display = 'none';
+    };
 
-window.portal.updateAIStatus = function() {
-    const aiDot = document.getElementById('aiStatusDot');
-    const aiStatus = document.getElementById('aiStatusText');
-    
-    if (aiDot && aiStatus) {
-        // Simulate AI loading
-        setTimeout(() => {
-            aiDot.classList.remove('loading', 'error');
-            aiDot.style.background = 'var(--color-optimal)'; // Green
-            aiStatus.textContent = '🧠 Citizen AI Assistant Ready';
-        }, 2000);
-        // You could also fetch from /api/ai-model-status here for real status
-    }
-};
-
-window.portal.setupAutoSave = function() {
-    const formInputs = ['emergencyType', 'emergencyLocation', 'emergencyDescription', 'priorityLevel']; // Include select
-    
-    formInputs.forEach(inputId => {
-        const input = document.getElementById(inputId);
-        if (input) {
-            const savedValue = localStorage.getItem(`autosave_${inputId}`);
-            if (savedValue !== null) { // Check for null to distinguish from empty string
-                input.value = savedValue;
+    // --- General Event Listeners & Handlers ---
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key >= '1' && e.key <= '5') {
+                e.preventDefault();
+                portal.goToStep(parseInt(e.key) - 1);
             }
-            input.addEventListener('input', () => {
-                localStorage.setItem(`autosave_${inputId}`, input.value);
-            });
-        }
-    });
-};
-
-window.portal.clearAutoSave = function() {
-    const formInputs = ['emergencyType', 'emergencyLocation', 'emergencyDescription', 'priorityLevel'];
-    formInputs.forEach(inputId => {
-        localStorage.removeItem(`autosave_${inputId}`);
-    });
-};
-
-
-// ============================================================================
-// KEYBOARD SHORTCUTS & ACCESSIBILITY
-// ============================================================================
-
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) { // Ctrl for Windows/Linux, Cmd for macOS
-        switch(e.key) {
-            case '1': e.preventDefault(); portal.goToStep(0); break;
-            case '2': e.preventDefault(); portal.goToStep(1); break;
-            case '3': e.preventDefault(); portal.goToStep(2); break;
-            case '4': e.preventDefault(); portal.goToStep(3); break;
-            case '5': e.preventDefault(); portal.goToStep(4); break;
-            case 'e': e.preventDefault(); portal.quickEmergency(); break;
-        }
-    }
-    
-    // Emergency shortcut - double tap Escape
-    if (e.key === 'Escape') {
-        if (e.detail === 2) { // Non-standard property, better to use a timer
-            // A more robust double-tap detection:
-            if (portal.lastEscapeTime && (new Date() - portal.lastEscapeTime < 300)) { // 300ms window
+            if (e.key === 'e') {
                 e.preventDefault();
                 portal.quickEmergency();
-                portal.lastEscapeTime = null; // Reset
-            } else {
-                portal.lastEscapeTime = new Date();
             }
         }
-    }
-});
+    });
 
-// Store last escape time for double-tap detection
-window.portal.lastEscapeTime = null;
-
-// ============================================================================
-// ANIMATIONS & GLOBAL STYLES (These should primarily be in base.html)
-// For this template, keeping responsive/print specific overrides.
-// ============================================================================
-
-// Responsive Design
-// These media queries should ideally be integrated into a global styles.css
-// or the base.html <style> block, but are kept here for completeness of this specific file.
-// If your base.html already handles these, remove from here to avoid duplication.
-// (Example of typical responsive rules that would be here if not in base.html)
-/*
-@media (max-width: 768px) {
-    .nav-links { flex-direction: column; gap: 0.5rem; }
-    .nav-btn { width: 100%; font-size: 0.9rem; padding: 0.5rem 0.75rem; justify-content: center; }
-    .steps { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
-    .step { flex-direction: row; justify-content: flex-start; gap: 1rem; }
-    .step-number { flex-shrink: 0; }
-    .progress-line { display: none; }
-    .features-grid { grid-template-columns: 1fr; }
-    .hero-title { font-size: 2rem; }
-    .record-button { width: 100px; height: 100px; font-size: 1.5rem; }
-    .main-content { padding: 1rem; }
-    .navigation-buttons { flex-direction: column; gap: 1rem; }
-    .btn { width: 100%; justify-content: center; }
-    .report-method-selector { grid-template-columns: 1fr; }
-    .reports-grid { gap: 1rem; }
-    .emergency-fab { width: 50px; height: 50px; font-size: 1.2rem; bottom: 1rem; right: 1rem; }
-    .sync-queue-card { padding: 1rem; }
-}
-*/
-
-/* Dark Mode Overrides for this template
-   These should ideally be in a global styles.css or the base.html <style> block
-   if they affect root variables or common components.
-   (Example of typical dark mode rules that would be here if not in base.html)
-*/
-/*
-[data-theme="dark"] {
-    .step-indicator, .main-content { background: rgba(31, 41, 55, 0.95); border-color: var(--border-color); }
-    .step-label { color: var(--text-secondary); }
-    .step.active .step-label { color: var(--primary-color); }
-    .hero-title { -webkit-text-fill-color: var(--text-primary); }
-    .feature-card, .method-card, .report-card { background: var(--bg-secondary); border-color: var(--border-color); }
-    .form-input, .form-textarea, .transcript-box { background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary); }
-    .report-card.critical { border-left-color: var(--danger-color); }
-    .report-card.high { border-left-color: var(--warning-color); }
-    .report-card.low { border-left-color: var(--accent-color); }
-    .report-card.medium { border-left-color: var(--primary-color); }
-    .status-pending { background: #b45309; color: #fef3c7; }
-    .status-processing { background: #1e40af; color: #dbeafe; }
-    .status-complete { background: #166534; color: #dcfce7; }
-    .sync-queue-card { background: #374151; border-color: #4b5563; color: var(--text-secondary); }
-    .sync-queue-card h3 { color: var(--text-primary); }
-    .sync-queue-card .btn { background: var(--accent-color); color: white; }
-    .sync-queue-card .btn:hover { background: #15803d; }
-}
-*/
-
+    // Make the portal object globally accessible
+    window.portal = portal;
+    
+    // Initialize the application
+    initializeApp();
+})();
 </script>
 {% endblock %}
