@@ -1120,10 +1120,15 @@ async def offline_page(request: Request):
         </body></html>
         """)
     
-@app.get("/offline.html")
-async def offline_page_alt(request: Request):
-    """Offline page for PWA support"""
+app.get("/offline.html", response_class=HTMLResponse)
+async def serve_offline_page(request: Request):
+    """Serves the dedicated offline page with P2P features."""
     return templates.TemplateResponse("offline.html", {"request": request})
+
+@app.get("/onboarding.html", response_class=HTMLResponse)
+async def serve_onboarding_page(request: Request):
+    """Serves the user onboarding and tutorial page."""
+    return templates.TemplateResponse("onboarding.html", {"request": request})
 
 @app.get("/hazards")
 async def hazards_page(request: Request):

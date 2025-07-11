@@ -1,3 +1,4 @@
+<!-- templates/home.html -->
 {% extends "base.html" %}
 
 {% block title %}Citizen Portal - Emergency Response Assistant{% endblock %}
@@ -6,122 +7,39 @@
 
 {% block header_actions %}
 <nav class="nav-links">
-    <a href="#home" class="nav-btn" onclick="portal.goToStep(0)">🏠 Home</a>
-    <a href="#report" class="nav-btn emergency" onclick="portal.goToStep(2)">🚨 Emergency</a>
+    <a href="#home" class="nav-btn active" onclick="portal.goToStep(0)">🏠 Home</a>
+    <a href="#report" class="nav-btn emergency" onclick="portal.goToStep(2)">🚨 Report</a>
     <a href="#voice" class="nav-btn" onclick="portal.goToStep(3)">🎤 Voice</a>
-    <a href="#reports" class="nav-btn" onclick="portal.goToStep(4)">📋 My Reports</a>
-    <a href="/offline.html" class="nav-btn">📴 Offline</a>
+    <a href="#reports" class="nav-btn" onclick="portal.goToStep(4)">📋 Track</a>
+    
+    <!-- New Buttons for Onboarding and Offline Access -->
+    <a href="/onboarding.html" class="nav-btn">🎓 How It Works</a>
+    <a href="/offline.html" class="nav-btn">📴 Offline Mode</a>
 </nav>
 {% endblock %}
 
 {% block extra_css %}
-{{ super() }}
-<style>
-    /*
-    Enhanced Styles for Citizen Portal (home.html)
-    -------------------------------------------------
-    Inherits base variables and styles from base.html
-    */
-
-    /* Page-specific Body Background */
-    body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-    }
-    [data-theme="dark"] body {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    }
-
-    /* Dynamic Alert Banner */
-    .alert-banner {
-        background: var(--alert-bg, linear-gradient(135deg, #f59e0b 0%, #d97706 100%));
-        color: white;
-        padding: 1rem;
-        border-radius: var(--radius);
-        margin-bottom: 1rem;
-        display: none; /* Initially hidden */
-        align-items: center;
-        animation: slideDown 0.3s ease;
-        box-shadow: var(--shadow);
-    }
-    .alert-banner.visible { display: flex; }
-    .alert-content { display: flex; align-items: center; gap: 1rem; width: 100%; }
-    .alert-icon { font-size: 1.5rem; flex-shrink: 0; }
-    .alert-text { flex-grow: 1; font-weight: 500; }
-    .alert-close { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
-    .alert-close:hover { opacity: 1; }
-    @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Navigation */
-    .nav-links { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    .nav-btn { padding: 0.5rem 0.75rem; border: none; border-radius: var(--radius); background: var(--primary-color); color: white; text-decoration: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 0.25rem; }
-    .nav-btn:hover { background: var(--secondary-color); transform: translateY(-1px); }
-    .nav-btn.emergency { background: var(--danger-color); animation: pulse 2s infinite; }
-    .nav-btn.emergency:hover { background: #b91c1c; }
-
-    /* Step Indicator */
-    .step-indicator { padding: 1.5rem; margin-bottom: 2rem; backdrop-filter: blur(10px); } /* Uses variables from base.html */
-    .steps { display: flex; justify-content: space-between; align-items: center; position: relative; }
-    .step { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: 1; position: relative; z-index: 2; }
-    .step-number { width: 40px; height: 40px; border-radius: 50%; background: var(--border-color); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; transition: all 0.3s ease; }
-    .step.active .step-number { background: var(--primary-color); color: white; transform: scale(1.1); }
-    .step.completed .step-number { background: var(--accent-color); color: white; }
-    .step-label { font-size: 0.8rem; font-weight: 600; text-align: center; color: var(--text-secondary); }
-    .step.active .step-label { color: var(--primary-color); }
-    .step.completed .step-label { color: var(--accent-color); }
-    .progress-line { position: absolute; top: 20px; left: 0; right: 0; height: 2px; background: var(--border-color); z-index: 1; }
-    .progress-fill { height: 100%; background: var(--primary-color); transition: width 0.5s ease; border-radius: 1px; }
-
-    /* Main Content Area */
-    .content-section { display: none; }
-    .content-section.active { display: block; animation: fadeIn 0.5s ease; }
-
-    /* Welcome Section */
-    .welcome-hero { text-align: center; padding: 3rem 0; }
-    .hero-icon { font-size: 5rem; margin-bottom: 1rem; animation: bounce 2s infinite; }
-    .hero-title { font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; background: linear-gradient(135deg, var(--primary-color), var(--danger-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .hero-subtitle { font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 2rem; }
-    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
-    .feature-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; text-align: center; transition: all 0.3s ease; cursor: pointer; box-shadow: var(--shadow); }
-    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--primary-color); }
-    .feature-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
-    .feature-title { font-weight: bold; color: var(--text-primary); margin-bottom: 0.5rem; }
-    .feature-description { font-size: 0.9rem; color: var(--text-secondary); }
-    .feature-card.risk-prediction { border-left: 4px solid #7c3aed; }
-    [data-theme="dark"] .feature-card.risk-prediction { background: linear-gradient(135deg, #2d1b69 0%, var(--bg-secondary) 100%); }
-    
-    /* Responsive & Other styles from your original file are included here... */
-    .form-group { margin-bottom: 1.5rem; }
-    .form-label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary); }
-    .form-input { width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: var(--radius); font-size: 1rem; transition: all 0.2s ease; background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box; }
-    .form-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-    .form-textarea { min-height: 120px; resize: vertical; }
-
-    .record-button { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--danger-color); background: var(--danger-color); color: white; font-size: 2rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
-    .record-button.recording { animation: pulse 1.5s infinite; }
-    .audio-recorder .btn { font-size: 0.9rem; padding: 0.5rem 1rem; }
-    .audio-playback { margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 1rem; }
-    .audio-playback audio { width: 100%; }
-
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
-
-</style>
+    {{ super() }}
+    <!-- Link to the dedicated CSS file for this portal -->
+    <link rel="stylesheet" href="/static/css/portal.css" />
 {% endblock %}
 
+
 {% block content %}
+<!-- Dynamic Alert Banner (managed by JS) -->
 <div class="alert-banner" id="localAlerts">
     <div class="alert-content">
         <span class="alert-icon">⚠️</span>
         <span class="alert-text" id="alertText"></span>
-        <button class="alert-close" onclick="portal.dismissAlert()" aria-label="Close alert">&times;</button>
+        <button class="alert-close" onclick="this.parentElement.parentElement.style.display='none'" aria-label="Close alert">&times;</button>
     </div>
 </div>
 
 <div class="main-content">
+    <!-- Step Indicator -->
     <div class="step-indicator">
         <div class="steps">
-            <div class="progress-line"><div class="progress-fill" id="progressFill" style="width: 10%;"></div></div>
+            <div class="progress-line"><div class="progress-fill" id="progressFill"></div></div>
             <div class="step active" data-step="0"><div class="step-number">1</div><div class="step-label">Welcome</div></div>
             <div class="step" data-step="1"><div class="step-number">2</div><div class="step-label">Setup</div></div>
             <div class="step" data-step="2"><div class="step-number">3</div><div class="step-label">Report</div></div>
@@ -130,198 +48,105 @@
         </div>
     </div>
 
+    <!-- AI Confidence Meter (Available for all steps) -->
     <div class="ai-confidence-meter" id="aiConfidence">
-      <div class="confidence-header">
-        <span>🤖 AI Analysis Confidence</span>
-        <span id="confidenceScore">--%</span>
-      </div>
-      <div class="confidence-bar">
-        <div class="confidence-fill" id="confidenceFill" style="width: 0%;"></div>
-      </div>
+        <div class="confidence-header">
+            <span>🤖 AI Analysis Confidence</span>
+            <span id="confidenceScore">--%</span>
+        </div>
+        <div class="confidence-bar">
+            <div class="confidence-fill" id="confidenceFill"></div>
+        </div>
     </div>
 
+    <!-- === STEP 0: WELCOME === -->
     <div class="content-section active" id="step-0">
         <div class="welcome-hero">
             <div class="hero-icon">🆘</div>
             <h1 class="hero-title">Emergency Response Assistant</h1>
-            <p class="hero-subtitle">AI-powered emergency reporting and response for citizens.</p>
+            <p class="hero-subtitle">Your direct line to AI-powered emergency support.</p>
         </div>
         <div class="features-grid">
-            <div class="feature-card" onclick="portal.goToStep(2)"><span class="feature-icon">📱</span><h3 class="feature-title">Quick Report</h3><p class="feature-description">Submit reports with text, photos, and location.</p></div>
-            <div class="feature-card" onclick="portal.goToStep(3)"><span class="feature-icon">🎤</span><h3 class="feature-title">Voice Reporting</h3><p class="feature-description">Hands-free reporting with AI voice analysis.</p></div>
+            <div class="feature-card" onclick="portal.goToStep(2)"><span class="feature-icon">📱</span><h3 class="feature-title">Submit Report</h3><p class="feature-description">Send details with text, photos, and location.</p></div>
+            <div class="feature-card" onclick="portal.goToStep(3)"><span class="feature-icon">🎤</span><h3 class="feature-title">Voice Reporting</h3><p class="feature-description">Hands-free reporting using AI voice analysis.</p></div>
             <div class="feature-card risk-prediction" onclick="portal.showRiskPrediction()"><span class="feature-icon">🔮</span><h3 class="feature-title">Risk Prediction</h3><p class="feature-description">AI-powered local hazard forecasting.</p></div>
-            <div class="feature-card" onclick="portal.goToStep(4)"><span class="feature-icon">📊</span><h3 class="feature-title">Track Reports</h3><p class="feature-description">Monitor your submissions and get updates.</p></div>
+            <div class="feature-card" onclick="portal.goToStep(4)"><span class="feature-icon">📊</span><h3 class="feature-title">Track My Reports</h3><p class="feature-description">Monitor your submissions and get updates.</p></div>
         </div>
         <div class="navigation-buttons"><div></div><button class="btn btn-primary" onclick="portal.goToStep(1)">Get Started 🚀</button></div>
     </div>
 
+    <!-- === STEP 1: SETUP === -->
     <div class="content-section" id="step-1">
         <h2>🛠️ Setup Your Emergency Profile</h2>
         <p>Granting permissions helps us provide faster and more accurate assistance.</p>
         <div class="form-group"><label class="form-label">📍 Location Access</label><button class="btn btn-primary" onclick="portal.requestLocation(this)">Enable GPS</button><p id="locationStatus" class="form-text">Helps responders find you quickly.</p></div>
-        <div class="form-group"><label class="form-label">🎤 Microphone Access</label><button class="btn btn-primary" onclick="portal.requestMicrophone(this)">Enable Voice</button></div>
-        <div class="form-group"><label class="form-label">📷 Camera Access</label><button class="btn btn-primary" onclick="portal.requestCamera(this)">Enable Camera</button></div>
-        <div class="form-group"><label class="form-label">🔔 Notifications</label><button class="btn btn-primary" onclick="portal.requestNotifications(this)">Enable Alerts</button></div>
+        <div class="form-group"><label class="form-label">🎤 Microphone Access</label><button class="btn btn-primary" onclick="portal.requestMicrophone(this)">Enable Voice</button><p class="form-text">Enables hands-free voice reporting.</p></div>
+        <div class="form-group"><label class="form-label">📷 Camera Access</label><button class="btn btn-primary" onclick="portal.requestCamera(this)">Enable Camera</button><p class="form-text">Allows you to attach photo evidence.</p></div>
+        <div class="form-group"><label class="form-label">🔔 Notifications</label><button class="btn btn-primary" onclick="portal.requestNotifications(this)">Enable Alerts</button><p class="form-text">Receive updates on your reports and local emergencies.</p></div>
         <div class="navigation-buttons"><button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back</button><button class="btn btn-primary" onclick="portal.goToStep(2)">Continue to Reporting 📱</button></div>
     </div>
 
+    <!-- === STEP 2: REPORT FORM === -->
     <div class="content-section" id="step-2">
         <h2>📱 Submit Emergency Report</h2>
-        <p>Choose a method and provide details about the emergency.</p>
+        <p>Choose a method and provide details. AI will analyze your input in real-time.</p>
         <div class="report-method-selector">
             <div class="method-card selected" data-method="text" onclick="portal.selectMethod(this, 'text')"><span class="method-icon">📝</span><h3 class="method-title">Text Report</h3><p class="method-description">Type your details.</p></div>
             <div class="method-card" data-method="photo" onclick="portal.selectMethod(this, 'photo')"><span class="method-icon">📸</span><h3 class="method-title">Photo Evidence</h3><p class="method-description">Upload an image.</p></div>
-            <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')"><span class="method-icon">📍</span><h3 class="method-title">Location Only</h3><p class="method-description">Pin a location on map.</p></div>
+            <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')"><span class="method-icon">📍</span><h3 class="method-title">Location Only</h3><p class="method-description">Pin a location on a map.</p></div>
         </div>
-        <form id="emergencyReportForm"></form>
+        <form id="emergencyReportForm" autocomplete="off"><!-- Form fields are added dynamically by JS --></form>
         <div class="navigation-buttons"><button class="btn btn-secondary" onclick="portal.goToStep(1)">← Back</button><button class="btn btn-success" onclick="portal.submitReport()">📤 Submit Report</button></div>
     </div>
 
+    <!-- === STEP 3: VOICE REPORTING === -->
     <div class="content-section" id="step-3">
+        <h2>🎤 Voice Emergency Reporter</h2>
+        <p>Tap the button and speak clearly. AI will transcribe and analyze your report.</p>
+        <div class="voice-interface">
+            <button class="record-button" id="recordButton" onclick="portal.toggleRecording()">🎤</button>
+            <div class="voice-status" id="voiceStatus">Tap to start voice recording</div>
+            <div class="transcript-box" id="transcriptBox">Your voice transcript will appear here...</div>
         </div>
+        <div id="voiceAnalysis" style="display: none;">
+            <h3>🧠 AI Analysis Results</h3>
+            <div class="features-grid">
+                <div class="feature-card"><span class="feature-icon">⚡</span><h4>Urgency Level</h4><p id="urgencyLevel">Analyzing...</p></div>
+                <div class="feature-card"><span class="feature-icon">😰</span><h4>Emotion</h4><p id="emotionLevel">Analyzing...</p></div>
+                <div class="feature-card"><span class="feature-icon">📍</span><h4>Location Detected</h4><p id="detectedLocation">Analyzing...</p></div>
+                <div class="feature-card"><span class="feature-icon">💡</span><h4>AI Recommendation</h4><p id="aiRecommendation">Analyzing...</p></div>
+            </div>
+        </div>
+        <div class="navigation-buttons">
+            <button class="btn btn-secondary" onclick="portal.goToStep(2)">← Back to Text Report</button>
+            <button class="btn btn-success" id="submitVoiceReport" onclick="portal.submitVoiceReport()" disabled>📤 Submit Voice Report</button>
+        </div>
+    </div>
 
+    <!-- === STEP 4: TRACK REPORTS === -->
     <div class="content-section" id="step-4">
+        <h2>📋 My Emergency Reports</h2>
+        <p>Track the status of your submitted reports and view community updates.</p>
+        <div class="reports-filters">
+            <!-- Filter controls will be added here by JS -->
         </div>
+        <div class="reports-grid" id="reportsGrid"><!-- Reports will be populated dynamically --></div>
+        <div class="navigation-buttons">
+            <button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back to Home</button>
+            <button class="btn btn-primary" onclick="portal.goToStep(2)">📱 Submit New Report</button>
+        </div>
+    </div>
 </div>
 
+<!-- Emergency Floating Action Button -->
 <div class="emergency-actions">
     <button class="emergency-fab" onclick="portal.quickEmergency()" title="Quick Emergency Report">🚨</button>
 </div>
 {% endblock %}
 
+
 {% block scripts %}
-{{ super() }}
-
-<script>
-// ============================================================================
-// Enhanced Citizen Portal JavaScript (home.html)
-// ============================================================================
-(function() {
-    "use strict";
-
-    // --- Global State ---
-    const portal = {
-        currentStep: 0,
-        userLocation: null,
-        isRecording: false,
-        mediaRecorder: null,
-        audioChunks: [],
-        recognition: null,
-        permissionsGranted: { location: false, microphone: false, camera: false, notifications: false },
-        lastEscapeTime: null,
-    };
-
-    // --- Initialization ---
-    function initializeApp() {
-        console.log("🚀 Portal Initializing...");
-        portal.checkLocalAlerts();
-        portal.setupMethodSelector();
-        portal.checkExistingPermissions();
-        portal.setupReportFilters();
-        portal.setupSpeechRecognition();
-        portal.updateAIStatus();
-        portal.goToStep(0);
-        // PWA setup is called from base.html
-    }
-
-    // --- Core UI & Navigation ---
-    portal.goToStep = function(stepNumber) {
-        if (stepNumber < 0 || stepNumber > 4) return;
-        
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-        document.getElementById(`step-${stepNumber}`)?.classList.add('active');
-        
-        updateStepIndicator(stepNumber);
-        portal.currentStep = stepNumber;
-        
-        if (stepNumber === 4) portal.loadUserReports();
-    };
-
-    function updateStepIndicator(activeStep) {
-        const steps = document.querySelectorAll('.step');
-        const progressFill = document.getElementById('progressFill');
-        steps.forEach((step, index) => {
-            step.classList.remove('active', 'completed');
-            if (index < activeStep) step.classList.add('completed');
-            if (index === activeStep) step.classList.add('active');
-        });
-        if (progressFill) progressFill.style.width = `${(activeStep / (steps.length - 1)) * 100}%`;
-    }
-
-    // --- New Features ---
-    portal.checkLocalAlerts = async function() {
-        // Simulating an API call for local alerts
-        const alertBanner = document.getElementById('localAlerts');
-        const alertText = document.getElementById('alertText');
-        if (alertBanner && alertText) {
-            alertText.textContent = 'Severe thunderstorm warning in effect for your area.';
-            alertBanner.classList.add('visible');
-        }
-    };
-
-    portal.dismissAlert = function() {
-        document.getElementById('localAlerts')?.classList.remove('visible');
-    };
-    
-    portal.showRiskPrediction = function() {
-        alert('🔮 AI-powered hazard prediction feature is coming soon!');
-    };
-
-    // --- Audio Recording for Report Form ---
-    portal.toggleAudioRecording = async function() {
-        const recordBtn = document.getElementById('audioRecordBtn');
-        if (portal.isRecording) {
-            portal.mediaRecorder?.stop();
-            portal.isRecording = false;
-            recordBtn.textContent = '🎤 Record Audio Note';
-            recordBtn.style.backgroundColor = '';
-        } else {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                portal.mediaRecorder = new MediaRecorder(stream);
-                portal.audioChunks = [];
-                portal.mediaRecorder.ondataavailable = e => portal.audioChunks.push(e.data);
-                portal.mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(portal.audioChunks, { type: 'audio/wav' });
-                    document.getElementById('recordedAudio').src = URL.createObjectURL(audioBlob);
-                    document.getElementById('audioPlayback').style.display = 'flex';
-                    stream.getTracks().forEach(track => track.stop());
-                };
-                portal.mediaRecorder.start();
-                portal.isRecording = true;
-                recordBtn.textContent = '⏹️ Stop Recording';
-                recordBtn.style.backgroundColor = '#dc2626';
-            } catch (err) {
-                portal.showNotification('Could not access microphone.', 'error');
-            }
-        }
-    };
-    
-    portal.removeAudio = function() {
-        portal.audioChunks = [];
-        document.getElementById('recordedAudio').src = '';
-        document.getElementById('audioPlayback').style.display = 'none';
-    };
-
-    // --- General Event Listeners & Handlers ---
-    document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey || e.metaKey) {
-            if (e.key >= '1' && e.key <= '5') {
-                e.preventDefault();
-                portal.goToStep(parseInt(e.key) - 1);
-            }
-            if (e.key === 'e') {
-                e.preventDefault();
-                portal.quickEmergency();
-            }
-        }
-    });
-
-    // Make the portal object globally accessible
-    window.portal = portal;
-    
-    // Initialize the application
-    initializeApp();
-})();
-</script>
+    {{ super() }}
+    <!-- All of the JavaScript for the portal's functionality -->
+    <script src="/static/js/portal.js"></script>
 {% endblock %}

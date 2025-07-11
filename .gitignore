@@ -115,10 +115,6 @@ dmypy.json
 *.backup
 *.bak
 
-# Temporary fix scripts (optional - you can include these if you want)
-complete_fix.py
-quick_migration.py
-
 # ====================
 # ✅ ALWAYS INCLUDE
 # ====================

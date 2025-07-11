@@ -6,63 +6,42 @@
 {% block subtitle %}Emergency Operations Continue - No Internet Required{% endblock %}
 
 {% block header_actions %}
-<button onclick="checkConnection()" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #16a34a; color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+<a href="/" class="action-button primary" style="margin-top: 0;">🏠 Return Home</a>
+<button class="action-button success" onclick="checkConnection()" style="margin-top: 0;">
   🔄 Check Connection
 </button>
 {% endblock %}
 
-{% block extra_styles %}
+{% block extra_css %}
+{{ super() }}
 <style>
+  /* Page-specific styles for offline.html */
   .offline-hero {
     text-align: center;
     padding: 3rem 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #4b5563 0%, #1f2937 100%);
     color: white;
     border-radius: 12px;
     margin-bottom: 2rem;
     position: relative;
     overflow: hidden;
   }
-  
   .offline-hero::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)"/></svg>') repeat;
     animation: float 20s infinite linear;
   }
-  
   @keyframes float {
-    0% { transform: translateY(0px) translateX(0px); }
-    50% { transform: translateY(-10px) translateX(5px); }
-    100% { transform: translateY(0px) translateX(0px); }
+    0% { transform: translate(0px, 0px); }
+    50% { transform: translate(-10px, 5px); }
+    100% { transform: translate(0px, 0px); }
   }
-  
-  .offline-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    display: block;
-    animation: pulse 2s infinite;
-  }
-  
-  .offline-title {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .offline-description {
-    font-size: 1.2rem;
-    opacity: 0.9;
-    position: relative;
-    z-index: 1;
-  }
-  
+  .offline-icon { font-size: 4rem; margin-bottom: 1rem; display: block; animation: pulse 2s infinite; }
+  .offline-title { font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; position: relative; z-index: 1; }
+  .offline-description { font-size: 1.2rem; opacity: 0.9; position: relative; z-index: 1; }
+
   .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -71,598 +50,262 @@
   }
   
   .feature-card {
-    background: white;
+    background: var(--card-bg);
     padding: 1.5rem;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
     border-left: 4px solid #3b82f6;
     transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
   }
+  .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .feature-card.emergency { border-left-color: #dc2626; }
+  .feature-card.communication { border-left-color: #059669; }
+  .feature-card.ai { border-left-color: #7c3aed; }
   
-  .feature-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  }
-  
-  .feature-card.emergency {
-    border-left-color: #dc2626;
-  }
-  
-  .feature-card.communication {
-    border-left-color: #059669;
-  }
-  
-  .feature-card.ai {
-    border-left-color: #7c3aed;
-  }
-  
-  .feature-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    display: block;
-  }
-  
-  .feature-title {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: #1e40af;
-    margin-bottom: 0.75rem;
-  }
-  
-  .feature-description {
-    color: #6b7280;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-  }
-  
-  .feature-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .feature-list li {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-    color: #374151;
-  }
-  
-  .feature-list li::before {
-    content: '✓';
-    color: #16a34a;
-    font-weight: bold;
-    flex-shrink: 0;
-  }
+  .feature-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
+  .feature-title { font-size: 1.25rem; font-weight: bold; color: var(--text-primary); margin-bottom: 0.75rem; }
+  .feature-description { color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem; }
+  .feature-list { list-style: none; padding: 0; margin: 0; }
+  .feature-list li { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-primary); }
+  .feature-list li::before { content: '✓'; color: #16a34a; font-weight: bold; flex-shrink: 0; }
   
   .status-panel {
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin: 2rem 0;
-    position: relative;
-  }
-  
-  .status-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  .status-indicator {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #ef4444;
-    animation: pulse 2s infinite;
-    flex-shrink: 0;
-  }
-  
-  .status-indicator.checking {
-    background: #f59e0b;
-  }
-  
-  .status-indicator.online {
-    background: #16a34a;
-    animation: none;
-  }
-  
-  .status-text {
-    font-weight: bold;
-    color: #374151;
-  }
-  
-  .connection-details {
-    font-size: 0.9rem;
-    color: #6b7280;
-    margin-bottom: 1rem;
-  }
-  
-  .quick-actions {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-top: 2rem;
-  }
-  
-  .action-button {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .action-button.primary {
-    background: #1e40af;
-    color: white;
-  }
-  
-  .action-button.primary:hover {
-    background: #1e3a8a;
-    transform: translateY(-1px);
-  }
-  
-  .action-button.secondary {
-    background: #6b7280;
-    color: white;
-  }
-  
-  .action-button.secondary:hover {
-    background: #4b5563;
-    transform: translateY(-1px);
-  }
-  
-  .action-button.success {
-    background: #16a34a;
-    color: white;
-  }
-  
-  .action-button.success:hover {
-    background: #15803d;
-    transform: translateY(-1px);
-  }
-  
-  .cached-content {
-    background: rgba(16, 163, 127, 0.1);
-    border: 2px solid #16a34a;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
     margin: 2rem 0;
   }
+  .status-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+  .status-indicator { width: 16px; height: 16px; border-radius: 50%; background: #ef4444; animation: pulse 2s infinite; flex-shrink: 0; }
+  .status-indicator.checking { background: #f59e0b; }
+  .status-indicator.online { background: #16a34a; animation: none; }
+  .status-text { font-weight: bold; color: var(--text-primary); }
+  .connection-details { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; }
   
-  .cached-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    font-weight: bold;
-    color: #059669;
-  }
-  
-  .cached-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.5rem;
-  }
-  
-  .cached-item {
-    background: white;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    color: #374151;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .tips-section {
-    background: rgba(59, 130, 246, 0.1);
-    border: 2px solid #3b82f6;
+  .quick-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  .action-button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+  .action-button.primary { background: #1e40af; color: white; }
+  .action-button.primary:hover { background: #1e3a8a; transform: translateY(-1px); }
+  .action-button.secondary { background: #6b7280; color: white; }
+  .action-button.secondary:hover { background: #4b5563; transform: translateY(-1px); }
+  .action-button.success { background: #16a34a; color: white; }
+  .action-button.success:hover { background: #15803d; transform: translateY(-1px); }
+
+  /* Manual Mesh Pairing Card */
+  .mesh-pairing-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
     margin: 2rem 0;
   }
-  
-  .tips-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    font-weight: bold;
-    color: #1e40af;
-  }
-  
-  .tips-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-  }
-  
-  .tip-item {
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    border-left: 4px solid #3b82f6;
-  }
-  
-  .tip-title {
-    font-weight: bold;
-    color: #1e40af;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .tip-description {
-    font-size: 0.8rem;
-    color: #6b7280;
-    line-height: 1.4;
-  }
-  
+  .mesh-pairing-card h3 { margin: 0 0 1rem 0; color: var(--text-primary); }
+  #qr-code { display:block; margin: 1rem auto; background: white; padding: 10px; border-radius: 8px; }
+  #signal-raw { background:#fff; padding:8px; font-size:0.8em; overflow-wrap:anywhere; border:1px dashed #ccc; margin-top:0.5rem; border-radius: 4px; }
+  #signal-input { width:100%; margin-top:0.5rem; padding:0.5rem; font-size:0.9em; border:1px solid #ccc; border-radius:4px; }
+
   @media (max-width: 768px) {
-    .offline-hero {
-      padding: 2rem 1rem;
-    }
-    
-    .offline-title {
-      font-size: 2rem;
-    }
-    
-    .features-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .quick-actions {
-      flex-direction: column;
-    }
-    
-    .action-button {
-      justify-content: center;
-    }
+    .offline-hero { padding: 2rem 1rem; }
+    .offline-title { font-size: 2rem; }
+    .features-grid { grid-template-columns: 1fr; }
+    .quick-actions { flex-direction: column; }
+    .action-button { justify-content: center; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Offline Hero Section -->
-<div class="offline-hero">
-  <span class="offline-icon">📡</span>
-  <h1 class="offline-title">You're Currently Offline</h1>
-  <p class="offline-description">
-    Don't worry! This emergency response system is designed to work without an internet connection.
-  </p>
-</div>
-
-<!-- Connection Status Panel -->
-<div class="status-panel">
-  <div class="status-header">
-    <div class="status-indicator" id="statusIndicator"></div>
-    <div class="status-text" id="statusText">Checking connection...</div>
-  </div>
-  <div class="connection-details" id="connectionDetails">
-    Attempting to reconnect automatically...
-  </div>
-  <div class="quick-actions">
-    <button class="action-button success" onclick="checkConnection()">
-      🔄 Retry Connection
-    </button>
-    <a href="/" class="action-button primary">
-      🏠 Return Home
-    </a>
-    <button class="action-button secondary" onclick="showDiagnostics()">
-      🔧 Network Diagnostics
-    </button>
-  </div>
-</div>
-
-<!-- Available Offline Features -->
-<div class="features-grid">
-  <div class="feature-card emergency">
-    <span class="feature-icon">🚨</span>
-    <h3 class="feature-title">Emergency Reporting</h3>
-    <p class="feature-description">
-      Submit critical reports that will sync automatically when connection is restored.
-    </p>
-    <ul class="feature-list">
-      <li>Create incident reports</li>
-      <li>Record audio messages</li>
-      <li>Take photos for evidence</li>
-      <li>Set priority levels</li>
-    </ul>
-  </div>
-  
-  <div class="feature-card communication">
-    <span class="feature-icon">📱</span>
-    <h3 class="feature-title">Mesh Communication</h3>
-    <p class="feature-description">
-      Connect directly with other devices nearby using peer-to-peer networking.
-    </p>
-    <ul class="feature-list">
-      <li>Device-to-device messaging</li>
-      <li>Share emergency updates</li>
-      <li>Coordinate response efforts</li>
-      <li>No internet required</li>
-    </ul>
-  </div>
-  
-  <div class="feature-card ai">
-    <span class="feature-icon">🧠</span>
-    <h3 class="feature-title">Edge AI Analysis</h3>
-    <p class="feature-description">
-      AI-powered emergency analysis runs directly on your device.
-    </p>
-    <ul class="feature-list">
-      <li>Image hazard detection</li>
-      <li>Audio sentiment analysis</li>
-      <li>Risk assessment</li>
-      <li>Response recommendations</li>
-    </ul>
-  </div>
-</div>
-
-<!-- Cached Content -->
-<div class="cached-content">
-  <div class="cached-title">
-    <span>💾</span>
-    <span>Available Offline Content</span>
-  </div>
-  <div class="cached-list" id="cachedContent">
-    <div class="cached-item">📝 Emergency Forms</div>
-    <div class="cached-item">🗺️ Offline Maps</div>
-    <div class="cached-item">📋 Response Protocols</div>
-    <div class="cached-item">🧠 AI Models</div>
-    <div class="cached-item">📞 Contact Directory</div>
-    <div class="cached-item">📊 Data Templates</div>
-  </div>
-</div>
-
-<!-- Offline Tips -->
-<div class="tips-section">
-  <div class="tips-title">
-    <span>💡</span>
-    <span>Offline Operation Tips</span>
-  </div>
-  <div class="tips-grid">
-    <div class="tip-item">
-      <div class="tip-title">Battery Conservation</div>
-      <div class="tip-description">
-        Lower screen brightness and close unnecessary apps to extend battery life during emergencies.
-      </div>
+<div class="main-content">
+    <div class="offline-hero">
+        <span class="offline-icon">📡</span>
+        <h1 class="offline-title">You Are Currently Offline</h1>
+        <p class="offline-description">
+            Key features of the Disaster Response Assistant are designed to work without an internet connection.
+        </p>
     </div>
-    <div class="tip-item">
-      <div class="tip-title">Data Priority</div>
-      <div class="tip-description">
-        Focus on critical reports first. Less urgent data can be submitted when connectivity returns.
-      </div>
+
+    <div class="status-panel">
+        <div class="status-header">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <div class="status-text" id="statusText">Checking connection...</div>
+        </div>
+        <div class="connection-details" id="connectionDetails">
+            Attempting to reconnect automatically...
+        </div>
+        <div class="quick-actions">
+            <a href="/" class="action-button primary">🏠 Go to Home</a>
+            <button class="action-button secondary" onclick="showDiagnostics()">🔧 Network Diagnostics</button>
+        </div>
     </div>
-    <div class="tip-item">
-      <div class="tip-title">Peer Networks</div>
-      <div class="tip-description">
-        Look for other devices running this app to form local communication networks.
-      </div>
+
+    <div class="features-grid">
+        <div class="feature-card emergency">
+            <span class="feature-icon">🚨</span>
+            <h3 class="feature-title">Emergency Reporting</h3>
+            <p class="feature-description">Submit critical reports that will sync automatically when connection is restored.</p>
+            <ul class="feature-list">
+                <li>Create incident reports</li>
+                <li>Record audio messages</li>
+                <li>Attach photos for evidence</li>
+                <li>Set priority levels</li>
+            </ul>
+        </div>
+      
+        <div class="feature-card ai">
+            <span class="feature-icon">🧠</span>
+            <h3 class="feature-title">Edge AI Analysis</h3>
+            <p class="feature-description">AI-powered analysis runs directly on your device, even when offline.</p>
+            <ul class="feature-list">
+                <li>Image hazard detection</li>
+                <li>Audio sentiment analysis</li>
+                <li>On-device risk assessment</li>
+                <li>Immediate recommendations</li>
+            </ul>
+        </div>
     </div>
-    <div class="tip-item">
-      <div class="tip-title">Auto-Sync</div>
-      <div class="tip-description">
-        All your offline reports will automatically sync when internet connection is restored.
-      </div>
+
+    <!-- Manual Mesh Pairing UI -->
+    <div class="mesh-pairing-card">
+        <h3>📱 Manual Mesh Pairing (Offline P2P)</h3>
+        <p class="feature-description">Scan another user's QR code or paste their signal to connect directly and share information without internet.</p>
+        <canvas id="qr-code"></canvas>
+        <pre id="signal-raw" style="cursor: copy;" title="Click to copy your signal"></pre>
+        <input id="signal-input" placeholder="Paste peer signal here" />
+        <button class="action-button primary" onclick="handleManualSignal()" style="margin-top: 1rem;">🔗 Connect Peer</button>
     </div>
-  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
+<!-- QR Code Library -->
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+
 <script>
-let isChecking = false;
-let retryCount = 0;
-const maxRetries = 5;
+    // --- OFFLINE PAGE LOGIC ---
+    (function() {
+        "use strict";
 
-// Update connection status UI
-function updateConnectionStatus() {
-  const indicator = document.getElementById('statusIndicator');
-  const text = document.getElementById('statusText');
-  const details = document.getElementById('connectionDetails');
-  
-  if (isChecking) {
-    indicator.className = 'status-indicator checking';
-    text.textContent = 'Checking connection...';
-    details.textContent = 'Testing network connectivity...';
-    return;
-  }
-  
-  if (navigator.onLine) {
-    indicator.className = 'status-indicator online';
-    text.textContent = 'Connection restored!';
-    details.innerHTML = `
-      <strong>✅ You're back online!</strong> 
-      <a href="/" style="color: #16a34a; text-decoration: underline;">Return to full functionality</a>
-    `;
-    
-    // Auto-redirect after 3 seconds
-    setTimeout(() => {
-      if (navigator.onLine) {
-        window.location.href = '/';
-      }
-    }, 3000);
-  } else {
-    indicator.className = 'status-indicator';
-    text.textContent = 'No internet connection';
-    details.textContent = `Offline mode active. Retry ${retryCount}/${maxRetries} attempts made.`;
-  }
-}
+        let isChecking = false;
+        let retryCount = 0;
+        const maxRetries = 5;
 
-// Check connection with enhanced diagnostics
-async function checkConnection() {
-  if (isChecking) return;
-  
-  isChecking = true;
-  retryCount++;
-  updateConnectionStatus();
-  
-  try {
-    // Test multiple endpoints for better reliability
-    const tests = [
-      fetch('/', { method: 'HEAD', cache: 'no-cache' }),
-      fetch('/api/health', { method: 'GET', cache: 'no-cache' }),
-      fetch('https://www.google.com/generate_204', { 
-        method: 'HEAD', 
-        mode: 'no-cors',
-        cache: 'no-cache'
-      })
-    ];
-    
-    const results = await Promise.allSettled(tests);
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
-    
-    if (successCount > 0) {
-      // At least one test succeeded
-      navigator.onLine = true;
-    }
-    
-  } catch (error) {
-    console.log('Connection test failed:', error);
-  }
-  
-  isChecking = false;
-  updateConnectionStatus();
-  
-  // Auto-retry with exponential backoff
-  if (!navigator.onLine && retryCount < maxRetries) {
-    const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
-    setTimeout(checkConnection, delay);
-  }
-}
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const connectionDetails = document.getElementById('connectionDetails');
 
-// Show network diagnostics
-function showDiagnostics() {
-  const diagnosticsInfo = `
-🔍 Network Diagnostics:
+        function updateConnectionStatus() {
+            if (isChecking) {
+                statusIndicator.className = 'status-indicator checking';
+                statusText.textContent = 'Checking connection...';
+                connectionDetails.textContent = 'Testing network connectivity...';
+                return;
+            }
 
-📡 Connection Status: ${navigator.onLine ? 'Online' : 'Offline'}
-🌐 User Agent: ${navigator.userAgent.substring(0, 50)}...
-⚡ Connection Type: ${navigator.connection ? navigator.connection.effectiveType : 'Unknown'}
-🔋 Battery: ${navigator.getBattery ? 'Supported' : 'Not Available'}
-📱 Device Memory: ${navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'Unknown'}
-🕐 Timestamp: ${new Date().toISOString()}
-🔄 Retry Attempts: ${retryCount}/${maxRetries}
+            if (navigator.onLine) {
+                statusIndicator.className = 'status-indicator online';
+                statusText.textContent = 'Connection Restored!';
+                connectionDetails.innerHTML = `<strong>✅ You're back online!</strong> <a href="/" style="color: #16a34a; text-decoration: underline;">Returning to the portal...</a>`;
+                setTimeout(() => window.location.href = '/', 2000);
+            } else {
+                statusIndicator.className = 'status-indicator';
+                statusText.textContent = 'No Internet Connection';
+                connectionDetails.textContent = `Offline mode is active. Retries: ${retryCount}/${maxRetries}.`;
+            }
+        }
 
-💾 Service Worker: ${navigator.serviceWorker ? 'Supported' : 'Not Available'}
-🗃️ Cache Storage: ${window.caches ? 'Available' : 'Not Available'}
-📱 PWA Mode: ${window.matchMedia('(display-mode: standalone)').matches ? 'Yes' : 'No'}
+        async function checkConnection() {
+            if (isChecking) return;
+            isChecking = true;
+            retryCount++;
+            updateConnectionStatus();
 
-📍 Geolocation: ${navigator.geolocation ? 'Available' : 'Not Available'}
-🎤 Media Devices: ${navigator.mediaDevices ? 'Available' : 'Not Available'}
-`;
+            try {
+                // A reliable way to check for a real internet connection
+                await fetch('/api/health', { method: 'HEAD', cache: 'no-cache', mode: 'no-cors' });
+                window.dispatchEvent(new Event('online'));
+            } catch (error) {
+                // The fetch failed, we are likely offline
+            } finally {
+                isChecking = false;
+                updateConnectionStatus();
+                if (!navigator.onLine && retryCount < maxRetries) {
+                    const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+                    setTimeout(checkConnection, delay);
+                }
+            }
+        }
 
-  alert(diagnosticsInfo);
-}
-
-// Load cached content information
-function loadCachedContent() {
-  if ('caches' in window) {
-    caches.keys().then(cacheNames => {
-      const cachedDiv = document.getElementById('cachedContent');
-      if (cacheNames.length > 0) {
-        const additionalItems = cacheNames.map(name => 
-          `<div class="cached-item">💾 ${name}</div>`
-        ).join('');
-        cachedDiv.innerHTML += additionalItems;
-      }
-    });
-  }
-}
-
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-  updateConnectionStatus();
-  loadCachedContent();
-  
-  // Start checking connection immediately
-  setTimeout(checkConnection, 1000);
-  
-  // Listen for online/offline events
-  window.addEventListener('online', () => {
-    retryCount = 0;
-    updateConnectionStatus();
-  });
-  
-  window.addEventListener('offline', updateConnectionStatus);
-  
-  // Periodically check connection every 10 seconds
-  setInterval(() => {
-    if (!navigator.onLine && retryCount < maxRetries) {
-      checkConnection();
-    }
-  }, 10000);
-});
-
-// Battery status monitoring (if available)
-if (navigator.getBattery) {
-  navigator.getBattery().then(battery => {
-    function updateBatteryInfo() {
-      if (battery.level < 0.2) {
-        const warning = document.createElement('div');
-        warning.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: #dc2626;
-          color: white;
-          padding: 1rem;
-          border-radius: 8px;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-          z-index: 9999;
-          font-size: 0.9rem;
-        `;
-        warning.innerHTML = `
-          ⚠️ <strong>Low Battery:</strong> ${Math.round(battery.level * 100)}%<br>
-          Consider power-saving measures
-        `;
-        document.body.appendChild(warning);
+        function showDiagnostics() {
+            const diagnosticsInfo = `
+                🔍 Network Diagnostics:
+                -------------------------
+                Status: ${navigator.onLine ? 'Online' : 'Offline'}
+                Connection Type: ${navigator.connection ? navigator.connection.effectiveType : 'Unknown'}
+                Service Worker: ${'serviceWorker' in navigator ? 'Supported' : 'Not Supported'}
+                Cache Storage: ${'caches' in window ? 'Available' : 'Not Available'}
+                Retries: ${retryCount}/${maxRetries}
+            `;
+            alert(diagnosticsInfo);
+        }
         
-        setTimeout(() => warning.remove(), 5000);
-      }
-    }
-    
-    battery.addEventListener('levelchange', updateBatteryInfo);
-    updateBatteryInfo();
-  });
-}
+        // --- P2P MESH NETWORKING ---
+        let p2pModule;
+        async function loadP2P() {
+            if (!p2pModule) {
+                p2pModule = await import('/static/js/p2p/fallback-webrtc.js');
+            }
+            return p2pModule;
+        }
 
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-  if (e.ctrlKey || e.metaKey) {
-    switch(e.key) {
-      case 'r':
-        e.preventDefault();
-        checkConnection();
-        break;
-      case 'h':
-        e.preventDefault();
-        window.location.href = '/';
-        break;
-      case 'd':
-        e.preventDefault();
-        showDiagnostics();
-        break;
-    }
-  }
-});
+        async function generateQRCode() {
+            const p2p = await loadP2P();
+            const offer = await p2p.manualSignalOffer();
+            const signalRaw = document.getElementById('signal-raw');
+            const qrCanvas = document.getElementById('qr-code');
+
+            if (signalRaw) {
+                signalRaw.textContent = offer;
+                signalRaw.onclick = () => {
+                    navigator.clipboard.writeText(offer).then(() => alert('Signal copied to clipboard!'));
+                };
+            }
+            if (qrCanvas && QRious) {
+                new QRious({
+                    element: qrCanvas,
+                    value: offer,
+                    size: 200,
+                    padding: 10,
+                    background: 'white',
+                    foreground: '#111827'
+                });
+            }
+        }
+
+        window.handleManualSignal = async function() {
+            const p2p = await loadP2P();
+            const answer = document.getElementById('signal-input').value;
+            if (answer) {
+                p2p.manualSignalInput(answer);
+                alert('✅ Signal sent. Connection attempt initiated.');
+            } else {
+                alert('Please paste a signal from your peer.');
+            }
+        };
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateConnectionStatus();
+            generateQRCode(); // Generate QR for pairing on page load
+            
+            // Make functions globally accessible for buttons
+            window.checkConnection = checkConnection;
+            window.showDiagnostics = showDiagnostics;
+            
+            window.addEventListener('online', updateConnectionStatus);
+            window.addEventListener('offline', updateConnectionStatus);
+        });
+    })();
 </script>
 {% endblock %}
-
-<!-- No AI status needed for offline page -->
-{% block ai_status %}{% endblock %}
