@@ -131,4 +131,4 @@ quick_migration.py
 # - .env.example
 # - app/ directory (source code)
 # - templates/ directory
-# - static/ directory (excluding large files)
+# - static/ directory (excluding large files)node_modules/
