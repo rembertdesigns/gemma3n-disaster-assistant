@@ -3,14 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{% block title %}Disaster Response & Recovery Assistant{% endblock %}</title>
+  <title>{% block title %}Emergency Response Assistant{% endblock %}</title>
   
+  <!-- PWA Configuration -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Emergency Response">
+  <meta name="theme-color" content="#3b82f6">
   <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- SEO and Accessibility -->
+  <meta name="description" content="Professional AI-powered emergency response system for citizens and first responders">
+  <meta name="keywords" content="emergency, response, AI, disaster, safety, reporting">
   <meta name="color-scheme" content="light dark">
-
+  <link rel="canonical" href="{{ request.url }}">
+  
+  <!-- Preload Critical Resources -->
+  <link rel="preload" href="/static/css/styles.css" as="style">
+  <link rel="preload" href="/static/css/portal.css" as="style">
+  <link rel="preload" href="/static/js/portal.js" as="script">
+  
+  <!-- Stylesheets -->
   <link rel="stylesheet" href="/static/css/styles.css" />
   
   {% block extra_css %}
@@ -18,152 +32,112 @@
   {% endblock %}
   
   <style>
-    /* Light/Dark Mode Color & Style Variables */
+    /* Critical CSS for immediate rendering */
     :root[data-theme="light"] {
       --surface-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
       --border-subtle: #e2e8f0;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --primary-color: #3b82f6;
+      --border-color: #e5e7eb;
+      --radius: 0.375rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
     }
+    
     :root[data-theme="dark"] {
       --surface-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
       --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       --border-subtle: #475569;
+      --text-primary: #f9fafb;
+      --text-secondary: #d1d5db;
+      --bg-primary: #1f2937;
+      --bg-secondary: #111827;
+      --border-color: #374151;
     }
     
-    /* Apply new theme variables */
-    .main-content, .step-indicator {
-      background: var(--surface-gradient);
-      box-shadow: var(--card-shadow);
-      border: 1px solid var(--border-subtle);
-    }
-    
-    /* Edge AI Status Indicators */
-    .ai-status-bar {
+    /* Loading state styles */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 1rem;
-      font-size: 0.9rem;
+      justify-content: center;
+      z-index: 9999;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
     }
     
-    .ai-status-dot {
-      width: 8px;
-      height: 8px;
+    .loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #ffffff;
       border-radius: 50%;
-      background: #00ff00;
-      animation: pulse 2s infinite;
+      animation: spin 1s linear infinite;
+      margin-bottom: 2rem;
     }
     
-    .ai-status-dot.loading { background: #ffaa00; }
-    .ai-status-dot.error { background: #ff0000; }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(0.9); }
+    .loading-text {
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 0.5rem;
     }
     
-    /* Real-time Analysis Panel */
-    .realtime-analysis {
-      background: rgba(37, 99, 235, 0.05);
-      border: 2px solid #2563eb;
-      border-radius: 12px;
-      padding: 1rem;
-      margin-top: 1rem;
-      display: none;
-      transition: all 0.3s ease;
+    .loading-subtext {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      text-align: center;
     }
     
-    .realtime-analysis.visible { display: block; animation: slideIn 0.3s ease; }
-    
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
     
-    .analysis-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      font-weight: bold;
-      color: #1e40af;
-    }
-    
-    .severity-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      color: white;
-    }
-    
-    .severity-low { background: #16a34a; }
-    .severity-medium { background: #d97706; }
-    .severity-high { background: #dc2626; }
-    .severity-critical { background: #991b1b; animation: blink 1s infinite; }
-    
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    
-    .panic-indicator {
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      margin-left: 0.5rem;
-    }
-    
-    .panic-calm { background: #dcfce7; color: #166534; }
-    .panic-concerned { background: #fef3c7; color: #92400e; }
-    .panic-elevated { background: #fecaca; color: #991b1b; }
-    .panic-critical { background: #dc2626; color: white; animation: blink 1s infinite; }
-    
-    .ai-recommendations {
-      background: #f8fafc;
-      border-left: 4px solid #3b82f6;
-      padding: 0.75rem;
-      margin-top: 1rem;
-      border-radius: 0 8px 8px 0;
-    }
-    
-    .ai-recommendations h4 { margin: 0 0 0.5rem 0; color: #1e40af; font-size: 0.9rem; }
-    .ai-recommendations ul { margin: 0; padding-left: 1.2rem; }
-    .ai-recommendations li { margin-bottom: 0.25rem; font-size: 0.85rem; color: #374151; }
-    
-    .processing-indicator { display: none; align-items: center; gap: 0.5rem; color: #6b7280; font-size: 0.8rem; margin-top: 0.5rem; }
-    .processing-indicator.active { display: flex; }
-    
-    .spinner { width: 16px; height: 16px; border: 2px solid #e5e7eb; border-top: 2px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
-    
-    @keyframes spin { to { transform: rotate(360deg); } }
-    
-    /* Image Analysis Preview */
-    .image-analysis-preview { margin-top: 1rem; padding: 1rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; display: none; }
-    .image-analysis-preview.visible { display: block; animation: fadeIn 0.5s ease; }
-    
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    
-    .hazard-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
-    .hazard-tag { background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
-    
-    /* Fix header layout for portal nav buttons */
+    /* Enhanced header styles */
     .header {
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(20px);
       border-radius: 16px;
       padding: 24px;
       margin-bottom: 20px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #f59e0b, #ef4444);
+      background-size: 400% 100%;
+      animation: headerGradient 10s ease infinite;
+    }
+    
+    @keyframes headerGradient {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
     
     .header-content {
@@ -172,6 +146,37 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+    }
+    
+    .logo {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #3b82f6, #ef4444);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+    
+    .title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin: 0;
     }
     
     .header-actions {
@@ -180,44 +185,428 @@
       flex-wrap: wrap;
       align-items: center;
     }
-
-    /* Drone-specific styling */
-    .drone-section { background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
-    .drone-section label { color: white; font-weight: bold; }
-    #droneImageAnalysisPreview { background: rgba(14, 165, 233, 0.1); border: 2px solid #0ea5e9; }
-    #droneImageAnalysisPreview h4 { color: #0369a1; }
-
-    /* Context selector styling */
-    .context-select { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; background: white; }
-    .context-select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    
+    .controls > div {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .controls button {
+      padding: 0.5rem 0.75rem;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--primary-color);
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .controls button:hover {
+      background: #1e40af;
+      transform: translateY(-1px);
+    }
+    
+    .status-bar {
+      font-size: 0.75rem;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      background: rgba(22, 163, 74, 0.1);
+      color: #15803d;
+      font-weight: 600;
+    }
+    
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #16a34a;
+      animation: pulse 2s infinite;
+    }
+    
+    .status-online .status-dot {
+      background: #16a34a;
+    }
+    
+    .status-offline .status-dot {
+      background: #f59e0b;
+    }
+    
+    /* Main content container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .main-content {
+      background: var(--surface-gradient);
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      min-height: 600px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .main-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    .main-content > * {
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Enhanced AI status bar */
+    .ai-status-bar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      box-shadow: var(--card-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .ai-status-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes shimmer {
+      0%, 100% { left: -100%; }
+      50% { left: 100%; }
+    }
+    
+    .ai-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #00ff00;
+      animation: statusPulse 2s infinite;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    }
+    
+    .ai-status-dot.loading { 
+      background: #ffaa00; 
+      box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+    }
+    
+    .ai-status-dot.error { 
+      background: #ff0000; 
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+      animation: errorBlink 1s infinite;
+    }
+    
+    .ai-status-dot.ready { 
+      background: #00ff00; 
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    }
+    
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.8); }
+    }
+    
+    @keyframes errorBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    
+    .ai-status-bar button {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      margin-left: auto;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    
+    .ai-status-bar button:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-1px);
+    }
+    
+    /* Enhanced confidence meter */
+    .ai-confidence-meter {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+    
+    .ai-confidence-meter.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    .confidence-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .confidence-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e);
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 4px;
+      position: relative;
+    }
+    
+    .confidence-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: confidenceShimmer 2s ease-in-out infinite;
+    }
+    
+    @keyframes confidenceShimmer {
+      0%, 100% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); }
+    }
+    
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius-lg);
+      margin-top: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Dark theme overrides */
+    [data-theme="dark"] .header {
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(71, 85, 105, 0.5);
+    }
+    
+    [data-theme="dark"] .footer {
+      background: rgba(30, 41, 59, 0.3);
+      border: 1px solid rgba(71, 85, 105, 0.3);
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .header {
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      
+      .header-info {
+        width: 100%;
+      }
+      
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      
+      .controls {
+        width: 100%;
+        align-items: flex-start;
+      }
+      
+      .controls > div {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+      
+      .main-content {
+        padding: 1.5rem;
+        margin: 0 10px;
+      }
+      
+      .container {
+        padding: 0 10px;
+      }
+      
+      .logo {
+        font-size: 2rem;
+      }
+      
+      .title {
+        font-size: 1.25rem;
+      }
+      
+      .ai-status-bar {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+      }
+      
+      .ai-status-bar button {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .header {
+        padding: 12px;
+        border-radius: 12px;
+      }
+      
+      .main-content {
+        padding: 1rem;
+        border-radius: 12px;
+      }
+      
+      .title {
+        font-size: 1.1rem;
+      }
+      
+      .subtitle {
+        font-size: 0.8rem;
+      }
+    }
+    
+    /* High contrast mode */
+    @media (prefers-contrast: high) {
+      .header {
+        border: 2px solid var(--border-color);
+      }
+      
+      .main-content {
+        border: 2px solid var(--border-color);
+      }
+      
+      .ai-status-bar {
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+      
+      .ai-confidence-meter {
+        border: 2px solid var(--border-color);
+      }
+    }
+    
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      
+      .ai-status-bar::before,
+      .confidence-fill::after {
+        animation: none;
+      }
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
 </head>
 <body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Emergency Response Assistant</div>
+    <div class="loading-subtext">Initializing AI systems and security protocols...</div>
+  </div>
+
   <header class="header">
     <div class="header-content">
       <div class="header-info">
         <div class="logo">🆘</div>
-        <h1 class="title">{% block page_title %}Disaster Response & Recovery Assistant{% endblock %}</h1>
-        <p class="subtitle">{% block subtitle %}AI-Powered Emergency Analysis & Support{% endblock %}</p>
+        <div>
+          <h1 class="title">{% block page_title %}Emergency Response Assistant{% endblock %}</h1>
+          <p class="subtitle">{% block subtitle %}AI-powered emergency analysis & support{% endblock %}</p>
+        </div>
       </div>
       
       <div class="header-actions">
         {% block header_actions %}
-        <a href="/live-generate" style="display: inline-block; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+        <a href="/live-generate" style="display: inline-block; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem;">
           🧩 Live JSON → PDF Editor
         </a>
         {% endblock %}
       </div>
       
       <div class="controls">
-        <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
-        <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
+        <div>
+          <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Theme</button>
+          <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ Contrast</button>
+        </div>
         <div class="status-bar">
           <div class="status-indicator status-offline">
             <div class="status-dot"></div>
-            Offline Ready
+            <span>Offline Ready</span>
           </div>
         </div>
       </div>
@@ -228,8 +617,8 @@
     {% block ai_status %}
     <div class="ai-status-bar" id="aiStatusBar">
       <div class="ai-status-dot ready" id="aiStatusDot"></div>
-      <span id="aiStatusText">🧠 AI models ready for analysis</span>
-      <button onclick="window.EdgeAI?.runDiagnostics()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-left: auto;">
+      <span id="aiStatusText">🧠 AI models ready for emergency analysis</span>
+      <button onclick="window.EdgeAI?.runDiagnostics()" aria-label="Test AI systems">
         🧪 Test AI
       </button>
     </div>
@@ -267,33 +656,71 @@
   </main>
 
   <footer class="footer">
-    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered</p>
+    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered | 🌍 Emergency Ready</p>
   </footer>
 
   {% block base_scripts %}
   <script src="/static/js/edge-ai.js"></script>
-  
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   {% endblock %}
 
   <script>
-    // Initialize a global namespace if it doesn't exist
+    // Enhanced initialization with professional loading
     window.portal = window.portal || {};
+    
+    // Professional loading sequence
+    function initializePortal() {
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const loadingText = document.querySelector('.loading-text');
+      const loadingSubtext = document.querySelector('.loading-subtext');
+      
+      const loadingSteps = [
+        'Initializing security protocols...',
+        'Loading AI emergency models...',
+        'Setting up offline capabilities...',
+        'Configuring real-time systems...',
+        'Ready for emergency operations!'
+      ];
+      
+      let currentStep = 0;
+      const stepInterval = setInterval(() => {
+        if (currentStep < loadingSteps.length) {
+          loadingSubtext.textContent = loadingSteps[currentStep];
+          currentStep++;
+        } else {
+          clearInterval(stepInterval);
+          setTimeout(() => {
+            loadingOverlay.classList.add('hidden');
+            setTimeout(() => {
+              loadingOverlay.remove();
+            }, 500);
+          }, 500);
+        }
+      }, 600);
+    }
 
-    // Theme toggle
+    // Enhanced theme toggle with professional transitions
     const themeBtn = document.getElementById('toggleThemeBtn');
     themeBtn.addEventListener('click', () => {
       const html = document.documentElement;
       const current = html.getAttribute('data-theme');
       const next = current === 'dark' ? 'light' : 'dark';
+      
+      // Add transition class
+      html.style.transition = 'all 0.3s ease';
       html.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
+      
+      // Update button text
+      themeBtn.textContent = next === 'dark' ? '☀️ Light' : '🌓 Dark';
+      
+      // Remove transition after animation
+      setTimeout(() => {
+        html.style.transition = '';
+      }, 300);
     });
 
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
-
-    // High contrast toggle
+    // Enhanced contrast toggle
     const contrastBtn = document.getElementById("contrastToggleBtn");
     contrastBtn.addEventListener("click", () => {
       const html = document.documentElement;
@@ -301,81 +728,119 @@
       const next = current === 'high' ? 'normal' : 'high';
       html.setAttribute('data-contrast', next);
       localStorage.setItem('contrast', next);
+      contrastBtn.textContent = next === 'high' ? '👁️ Normal' : '♿ High';
     });
 
-    const savedContrast = localStorage.getItem('contrast');
-    if (savedContrast) document.documentElement.setAttribute('data-contrast', savedContrast);
-
-    // Connection status
+    // Enhanced connection status with professional feedback
     function updateConnectionStatus() {
       const indicator = document.querySelector('.status-indicator');
+      const dot = document.querySelector('.status-dot');
+      
       if (navigator.onLine) {
-        indicator.innerHTML = '<div class="status-dot"></div>Online + Offline Ready';
+        indicator.innerHTML = '<div class="status-dot"></div><span>Online + Offline Ready</span>';
         indicator.className = 'status-indicator status-online';
+        // Show brief notification for connection restoration
+        if (window.portal && window.portal.showNotification) {
+          window.portal.showNotification('🌐 Connection restored', 'success');
+        }
       } else {
-        indicator.innerHTML = '<div class="status-dot"></div>Offline Mode Active';
+        indicator.innerHTML = '<div class="status-dot"></div><span>Offline Mode Active</span>';
         indicator.className = 'status-indicator status-offline';
+        // Show offline notification
+        if (window.portal && window.portal.showNotification) {
+          window.portal.showNotification('📴 Working offline', 'info');
+        }
       }
     }
 
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
-    updateConnectionStatus();
-
-    // Service Worker registration
+    // Professional service worker registration with error handling
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/static/js/sw.js")
-        .then((reg) => console.log("✅ Service worker registered:", reg.scope))
+        .then((reg) => {
+          console.log("✅ Service worker registered:", reg.scope);
+          // Show PWA install prompt if available
+          window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPrompt = e;
+            // Show install button in header if not already shown
+            if (!document.querySelector('.install-btn')) {
+              showInstallButton();
+            }
+          });
+        })
         .catch((err) => console.error("❌ Service worker registration failed:", err));
     }
 
-    // PWA Install Prompt Logic
-    window.portal.setupPWA = function() {
-      let deferredPrompt;
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        const headerActions = document.querySelector('.header-actions');
-        if (headerActions && !document.querySelector('.install-app-btn')) {
-            const installBtn = document.createElement('button');
-            installBtn.className = 'btn btn-primary install-app-btn';
-            installBtn.innerHTML = '📱 Install App';
-            installBtn.style.marginLeft = '1rem';
-            installBtn.onclick = async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    deferredPrompt = null;
-                    installBtn.remove();
-                }
-            };
-            headerActions.appendChild(installBtn);
-        }
-      });
-    };
-
-    // Manual Signal Handler for P2P
-    function handleManualSignal() {
-      const val = document.getElementById('signal-input').value;
-      if (val) {
-        import('/static/js/p2p/fallback-webrtc.js').then(module => {
-          module.manualSignalInput(val);
-        }).catch(err => console.log('P2P module not available'));
+    function showInstallButton() {
+      const headerActions = document.querySelector('.header-actions');
+      if (headerActions && window.deferredPrompt) {
+        const installBtn = document.createElement('button');
+        installBtn.className = 'install-btn';
+        installBtn.innerHTML = '📱 Install App';
+        installBtn.style.cssText = `
+          padding: 0.5rem 1rem;
+          background: linear-gradient(135deg, #7c3aed, #a855f7);
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        `;
+        
+        installBtn.onclick = async () => {
+          if (window.deferredPrompt) {
+            window.deferredPrompt.prompt();
+            const { outcome } = await window.deferredPrompt.userChoice;
+            window.deferredPrompt = null;
+            installBtn.remove();
+            
+            if (outcome === 'accepted' && window.portal && window.portal.showNotification) {
+              window.portal.showNotification('📱 App installed successfully!', 'success');
+            }
+          }
+        };
+        
+        installBtn.onmouseenter = () => {
+          installBtn.style.transform = 'translateY(-2px)';
+          installBtn.style.boxShadow = '0 4px 12px rgba(124, 58, 237, 0.4)';
+        };
+        
+        installBtn.onmouseleave = () => {
+          installBtn.style.transform = '';
+          installBtn.style.boxShadow = '';
+        };
+        
+        headerActions.appendChild(installBtn);
       }
     }
 
-    // Sync Queue logic
+    // Enhanced manual signal handler with error handling
+    function handleManualSignal() {
+      const val = document.getElementById('signal-input')?.value;
+      if (val) {
+        import('/static/js/p2p/fallback-webrtc.js')
+          .then(module => module.manualSignalInput(val))
+          .catch(err => console.log('P2P module not available:', err));
+      }
+    }
+
+    // Enhanced sync queue with professional feedback
     function showSyncQueue() {
       const queueCard = document.getElementById('syncQueueCard');
-      if (!queueCard) return; // Only run on pages that have sync queue
+      if (!queueCard) return;
       
       const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
       const list = document.getElementById('syncQueueList');
 
       if (queue.length > 0) {
         list.innerHTML = queue.map((r, i) => `
-          <li>📥 Report #${i + 1} — "${r.message?.slice(0, 40) || 'No text'}..." (${r.priority || 'N/A'})</li>
+          <li style="padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+            📥 <strong>Report #${i + 1}</strong> — "${r.message?.slice(0, 40) || 'No text'}..." 
+            <span style="color: #6b7280; font-size: 0.8rem;">(${r.priority || 'medium'} priority)</span>
+          </li>
         `).join('');
         queueCard.style.display = 'block';
       } else {
@@ -383,11 +848,16 @@
       }
     }
 
-    // Sync Now button handler
+    // Enhanced sync functionality
     const syncBtn = document.getElementById('syncNowBtn');
     if (syncBtn) {
       syncBtn.addEventListener('click', async () => {
+        syncBtn.textContent = '🔄 Syncing...';
+        syncBtn.disabled = true;
+        
         const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+        let synced = 0;
+        
         for (const report of queue) {
           try {
             const res = await fetch('/api/submit-crowd-report', {
@@ -397,6 +867,7 @@
             });
 
             if (res.ok) {
+              synced++;
               console.log('✅ Synced:', report);
             } else {
               throw new Error('Failed to sync');
@@ -407,17 +878,67 @@
           }
         }
 
-        localStorage.removeItem('syncQueue');
+        if (synced === queue.length) {
+          localStorage.removeItem('syncQueue');
+          if (window.portal && window.portal.showNotification) {
+            window.portal.showNotification(`✅ Synced ${synced} reports successfully`, 'success');
+          }
+        } else {
+          if (window.portal && window.portal.showNotification) {
+            window.portal.showNotification(`⚠️ Synced ${synced}/${queue.length} reports`, 'warning');
+          }
+        }
+        
+        syncBtn.textContent = '🔄 Sync Now';
+        syncBtn.disabled = false;
         showSyncQueue();
       });
     }
     
-    // Initial calls on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      window.portal.setupPWA();
-      showSyncQueue();
-    });
+    // Load saved preferences
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      themeBtn.textContent = savedTheme === 'dark' ? '☀️ Light' : '🌓 Dark';
+    }
+
+    const savedContrast = localStorage.getItem('contrast');
+    if (savedContrast) {
+      document.documentElement.setAttribute('data-contrast', savedContrast);
+      contrastBtn.textContent = savedContrast === 'high' ? '👁️ Normal' : '♿ High';
+    }
+    
+    // Event listeners
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
     window.addEventListener('online', showSyncQueue);
+    
+    // Initialize everything when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initializePortal();
+        updateConnectionStatus();
+        showSyncQueue();
+      });
+    } else {
+      initializePortal();
+      updateConnectionStatus();
+      showSyncQueue();
+    }
+
+    // Global error handler for better UX
+    window.addEventListener('error', (e) => {
+      console.error('Global error:', e.error);
+      if (window.portal && window.portal.showNotification) {
+        window.portal.showNotification('⚠️ Something went wrong, but the app is still functional', 'warning');
+      }
+    });
+
+    // Unhandled promise rejection handler
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('Unhandled promise rejection:', e.reason);
+      e.preventDefault(); // Prevent console error
+    });
 
   </script>
 
@@ -427,7 +948,7 @@
   <script type="module">
     try {
       const { manualSignalOffer } = await import('/static/js/p2p/fallback-webrtc.js');
-      manualSignalOffer(); // Run on page load to generate QR
+      manualSignalOffer();
     } catch (err) {
       console.log('P2P module not available, skipping...');
     }

@@ -3,254 +3,534 @@
 
 {% block title %}Citizen Portal - Emergency Response Assistant{% endblock %}
 {% block page_title %}🆘 Emergency Response Assistant{% endblock %}
-{% block subtitle %}AI-powered emergency reporting for citizens{% endblock %}
+{% block subtitle %}Professional AI-powered emergency reporting for citizens{% endblock %}
 
 {% block header_actions %}
 <nav class="nav-links">
-    <a href="#home" class="nav-btn active" onclick="portal.goToStep(0)">🏠 Home</a>
-    <a href="#report" class="nav-btn emergency" onclick="portal.goToStep(2)">🚨 Report</a>
-    <a href="#voice" class="nav-btn" onclick="portal.goToStep(3)">🎤 Voice</a>
-    <a href="#reports" class="nav-btn" onclick="portal.goToStep(4)">📋 Track</a>
+    <button class="nav-btn active" onclick="portal.goToStep(0)" data-step="0">🏠 Home</button>
+    <button class="nav-btn emergency" onclick="portal.goToStep(2)" data-step="2">🚨 Report</button>
+    <button class="nav-btn" onclick="portal.goToStep(3)" data-step="3">🎤 Voice</button>
+    <button class="nav-btn" onclick="portal.goToStep(4)" data-step="4">📋 Track</button>
     
     <!-- Additional Navigation -->
-    <a href="/onboarding.html" class="nav-btn">🎓 How It Works</a>
-    <a href="/offline.html" class="nav-btn">📴 Offline Mode</a>
+    <a href="/onboarding" class="nav-btn secondary">🎓 How It Works</a>
+    <a href="/offline" class="nav-btn secondary">📴 Offline Mode</a>
 </nav>
 {% endblock %}
 
 {% block extra_css %}
-    {{ super() }}
-    <!-- Portal-specific CSS -->
-    <link rel="stylesheet" href="/static/css/portal.css" />
+{{ super() }}
+<!-- Portal-specific CSS -->
+<link rel="stylesheet" href="/static/css/portal.css" />
 {% endblock %}
 
 {% block content %}
 <!-- Dynamic Alert Banner (managed by JS) -->
-<div class="alert-banner" id="localAlerts">
+<div class="alert-banner" id="localAlerts" style="display: none;">
     <div class="alert-content">
         <span class="alert-icon">⚠️</span>
         <span class="alert-text" id="alertText"></span>
-        <button class="alert-close" onclick="this.parentElement.parentElement.style.display='none'" aria-label="Close alert">&times;</button>
+        <button class="alert-close" onclick="portal.dismissAlert()" aria-label="Close alert">&times;</button>
     </div>
 </div>
 
-<div class="main-content">
-    <!-- Step Indicator -->
-    <div class="step-indicator">
-        <div class="steps">
-            <div class="progress-line">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <div class="step active" data-step="0">
-                <div class="step-number">1</div>
-                <div class="step-label">Welcome</div>
-            </div>
-            <div class="step" data-step="1">
-                <div class="step-number">2</div>
-                <div class="step-label">Setup</div>
-            </div>
-            <div class="step" data-step="2">
-                <div class="step-number">3</div>
-                <div class="step-label">Report</div>
-            </div>
-            <div class="step" data-step="3">
-                <div class="step-number">4</div>
-                <div class="step-label">Voice</div>
-            </div>
-            <div class="step" data-step="4">
-                <div class="step-number">5</div>
-                <div class="step-label">Track</div>
-            </div>
+<!-- Step Indicator -->
+<div class="step-indicator">
+    <div class="steps">
+        <div class="progress-line">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="step active" data-step="0">
+            <div class="step-number">1</div>
+            <div class="step-label">Welcome</div>
+        </div>
+        <div class="step" data-step="1">
+            <div class="step-number">2</div>
+            <div class="step-label">Setup</div>
+        </div>
+        <div class="step" data-step="2">
+            <div class="step-number">3</div>
+            <div class="step-label">Report</div>
+        </div>
+        <div class="step" data-step="3">
+            <div class="step-number">4</div>
+            <div class="step-label">Voice</div>
+        </div>
+        <div class="step" data-step="4">
+            <div class="step-number">5</div>
+            <div class="step-label">Track</div>
         </div>
     </div>
+</div>
 
-    <!-- AI Confidence Meter (Available for all steps) -->
-    <div class="ai-confidence-meter" id="aiConfidence">
-        <div class="confidence-header">
-            <span>🤖 AI Analysis Confidence</span>
-            <span id="confidenceScore">--%</span>
-        </div>
-        <div class="confidence-bar">
-            <div class="confidence-fill" id="confidenceFill"></div>
+<!-- === STEP 0: WELCOME === -->
+<div class="content-section active" id="step-0">
+    <div class="welcome-hero">
+        <div class="hero-icon">🆘</div>
+        <h1 class="hero-title">Emergency Response Assistant</h1>
+        <p class="hero-subtitle">Your direct line to professional AI-powered emergency support.</p>
+        <div class="hero-badges">
+            <span class="badge">🔒 Privacy-First</span>
+            <span class="badge">⚡ AI-Powered</span>
+            <span class="badge">📱 Offline Ready</span>
         </div>
     </div>
-
-    <!-- === STEP 0: WELCOME === -->
-    <div class="content-section active" id="step-0">
-        <div class="welcome-hero">
-            <div class="hero-icon">🆘</div>
-            <h1 class="hero-title">Emergency Response Assistant</h1>
-            <p class="hero-subtitle">Your direct line to AI-powered emergency support.</p>
+    
+    <div class="features-grid">
+        <div class="feature-card emergency-priority" onclick="portal.goToStep(2)" tabindex="0" role="button" aria-label="Submit emergency report">
+            <span class="feature-icon">📱</span>
+            <h3 class="feature-title">Submit Report</h3>
+            <p class="feature-description">Send details with text, photos, and location.</p>
+            <div class="feature-hint">Press Ctrl+E for quick access</div>
         </div>
         
-        <div class="features-grid">
-            <div class="feature-card" onclick="portal.goToStep(2)">
-                <span class="feature-icon">📱</span>
-                <h3 class="feature-title">Submit Report</h3>
-                <p class="feature-description">Send details with text, photos, and location.</p>
-            </div>
-            <div class="feature-card" onclick="portal.goToStep(3)">
-                <span class="feature-icon">🎤</span>
-                <h3 class="feature-title">Voice Reporting</h3>
-                <p class="feature-description">Hands-free reporting using AI voice analysis.</p>
-            </div>
-            <div class="feature-card risk-prediction" onclick="portal.showRiskPrediction()">
-                <span class="feature-icon">🔮</span>
-                <h3 class="feature-title">Risk Prediction</h3>
-                <p class="feature-description">AI-powered local hazard forecasting.</p>
-            </div>
-            <div class="feature-card" onclick="portal.goToStep(4)">
-                <span class="feature-icon">📊</span>
-                <h3 class="feature-title">Track My Reports</h3>
-                <p class="feature-description">Monitor your submissions and get updates.</p>
-            </div>
+        <div class="feature-card voice-enabled" onclick="portal.goToStep(3)" tabindex="0" role="button" aria-label="Voice emergency reporting">
+            <span class="feature-icon">🎤</span>
+            <h3 class="feature-title">Voice Reporting</h3>
+            <p class="feature-description">Hands-free reporting using AI voice analysis.</p>
+            <div class="feature-hint">Press Ctrl+V for quick access</div>
         </div>
         
-        <div class="navigation-buttons">
-            <div></div>
-            <button class="btn btn-primary" onclick="portal.goToStep(1)">Get Started 🚀</button>
+        <div class="feature-card risk-prediction" onclick="portal.showRiskPrediction()" tabindex="0" role="button" aria-label="AI risk prediction">
+            <span class="feature-icon">🔮</span>
+            <h3 class="feature-title">Risk Prediction</h3>
+            <p class="feature-description">AI-powered local hazard forecasting.</p>
+            <div class="feature-hint">Coming soon - Enhanced AI</div>
+        </div>
+        
+        <div class="feature-card tracking" onclick="portal.goToStep(4)" tabindex="0" role="button" aria-label="Track my reports">
+            <span class="feature-icon">📊</span>
+            <h3 class="feature-title">Track My Reports</h3>
+            <p class="feature-description">Monitor your submissions and get updates.</p>
+            <div class="feature-hint">Real-time status updates</div>
         </div>
     </div>
+    
+    <!-- Quick Stats Display -->
+    <div class="quick-stats" id="quickStats">
+        <div class="stat-item">
+            <span class="stat-number" id="totalReports">0</span>
+            <span class="stat-label">Reports Submitted</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number" id="responseTime">< 2 min</span>
+            <span class="stat-label">Avg Response Time</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">99.9%</span>
+            <span class="stat-label">System Uptime</span>
+        </div>
+    </div>
+    
+    <div class="navigation-buttons">
+        <div></div>
+        <button class="btn btn-primary large" onclick="portal.goToStep(1)">
+            <span>Get Started</span>
+            <span class="btn-icon">🚀</span>
+        </button>
+    </div>
+</div>
 
-    <!-- === STEP 1: SETUP === -->
-    <div class="content-section" id="step-1">
+<!-- === STEP 1: SETUP === -->
+<div class="content-section" id="step-1">
+    <div class="step-header">
         <h2>🛠️ Setup Your Emergency Profile</h2>
-        <p>Granting permissions helps us provide faster and more accurate assistance.</p>
-        
-        <div class="form-group">
-            <label class="form-label">📍 Location Access</label>
-            <button class="btn btn-primary" onclick="portal.requestLocation(this)">Enable GPS</button>
-            <p id="locationStatus" class="form-text">Helps responders find you quickly.</p>
+        <p class="step-description">Granting permissions helps us provide faster and more accurate assistance during emergencies.</p>
+    </div>
+    
+    <div class="permissions-grid">
+        <div class="form-group permission-item priority-high">
+            <div class="permission-header">
+                <label class="form-label">📍 Location Access</label>
+                <span class="priority-badge high">Recommended</span>
+            </div>
+            <p class="form-text">Helps responders find you quickly in emergency situations.</p>
+            <button class="btn btn-primary" onclick="portal.requestLocation(this)">Enable GPS Location</button>
+            <p id="locationStatus" class="permission-status">Click to enable location services</p>
         </div>
         
-        <div class="form-group">
-            <label class="form-label">🎤 Microphone Access</label>
-            <button class="btn btn-primary" onclick="portal.requestMicrophone(this)">Enable Voice</button>
-            <p class="form-text">Enables hands-free voice reporting.</p>
+        <div class="form-group permission-item priority-medium">
+            <div class="permission-header">
+                <label class="form-label">🎤 Microphone Access</label>
+                <span class="priority-badge medium">For Voice</span>
+            </div>
+            <p class="form-text">Enables hands-free voice reporting and emergency calls.</p>
+            <button class="btn btn-primary" onclick="portal.requestMicrophone(this)">Enable Microphone</button>
+            <p class="permission-status">Required for voice emergency reporting</p>
         </div>
         
-        <div class="form-group">
-            <label class="form-label">📷 Camera Access</label>
+        <div class="form-group permission-item priority-medium">
+            <div class="permission-header">
+                <label class="form-label">📷 Camera Access</label>
+                <span class="priority-badge medium">For Photos</span>
+            </div>
+            <p class="form-text">Allows you to attach photo evidence to emergency reports.</p>
             <button class="btn btn-primary" onclick="portal.requestCamera(this)">Enable Camera</button>
-            <p class="form-text">Allows you to attach photo evidence.</p>
+            <p class="permission-status">Required for photo evidence uploads</p>
         </div>
         
-        <div class="form-group">
-            <label class="form-label">🔔 Notifications</label>
-            <button class="btn btn-primary" onclick="portal.requestNotifications(this)">Enable Alerts</button>
-            <p class="form-text">Receive updates on your reports and local emergencies.</p>
-        </div>
-        
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back</button>
-            <button class="btn btn-primary" onclick="portal.goToStep(2)">Continue to Reporting 📱</button>
+        <div class="form-group permission-item priority-low">
+            <div class="permission-header">
+                <label class="form-label">🔔 Notifications</label>
+                <span class="priority-badge low">Optional</span>
+            </div>
+            <p class="form-text">Receive updates on your reports and local emergency alerts.</p>
+            <button class="btn btn-primary" onclick="portal.requestNotifications(this)">Enable Notifications</button>
+            <p class="permission-status">Get updates on emergency responses</p>
         </div>
     </div>
+    
+    <div class="setup-tips">
+        <h4>💡 Setup Tips</h4>
+        <ul>
+            <li><strong>Location:</strong> Essential for emergency responders to find you</li>
+            <li><strong>Microphone:</strong> Enables hands-free reporting in crisis situations</li>
+            <li><strong>Camera:</strong> Document evidence and damage for faster response</li>
+            <li><strong>Notifications:</strong> Stay informed about emergency updates</li>
+        </ul>
+    </div>
+    
+    <div class="navigation-buttons">
+        <button class="btn btn-secondary" onclick="portal.goToStep(0)">
+            <span class="btn-icon">←</span>
+            <span>Back</span>
+        </button>
+        <button class="btn btn-primary" onclick="portal.goToStep(2)">
+            <span>Continue to Reporting</span>
+            <span class="btn-icon">📱</span>
+        </button>
+    </div>
+</div>
 
-    <!-- === STEP 2: REPORT FORM === -->
-    <div class="content-section" id="step-2">
+<!-- === STEP 2: REPORT FORM === -->
+<div class="content-section" id="step-2">
+    <div class="step-header">
         <h2>📱 Submit Emergency Report</h2>
-        <p>Choose a method and provide details. AI will analyze your input in real-time.</p>
-        
-        <div class="report-method-selector">
-            <div class="method-card selected" data-method="text" onclick="portal.selectMethod(this, 'text')">
-                <span class="method-icon">📝</span>
-                <h3 class="method-title">Text Report</h3>
-                <p class="method-description">Type your details.</p>
-            </div>
-            <div class="method-card" data-method="photo" onclick="portal.selectMethod(this, 'photo')">
-                <span class="method-icon">📸</span>
-                <h3 class="method-title">Photo Evidence</h3>
-                <p class="method-description">Upload an image.</p>
-            </div>
-            <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')">
-                <span class="method-icon">📍</span>
-                <h3 class="method-title">Location Only</h3>
-                <p class="method-description">Pin a location on a map.</p>
+        <p class="step-description">Choose a method and provide details. Our AI will analyze your input in real-time for optimal response.</p>
+    </div>
+    
+    <div class="report-method-selector">
+        <div class="method-card selected" data-method="text" onclick="portal.selectMethod(this, 'text')" tabindex="0" role="button">
+            <span class="method-icon">📝</span>
+            <h3 class="method-title">Text Report</h3>
+            <p class="method-description">Type emergency details and description.</p>
+            <div class="method-features">
+                <span class="feature-tag">✓ Quick entry</span>
+                <span class="feature-tag">✓ Auto-save</span>
             </div>
         </div>
         
+        <div class="method-card" data-method="photo" onclick="portal.selectMethod(this, 'photo')" tabindex="0" role="button">
+            <span class="method-icon">📸</span>
+            <h3 class="method-title">Photo Evidence</h3>
+            <p class="method-description">Upload images of the emergency situation.</p>
+            <div class="method-features">
+                <span class="feature-tag">✓ Visual proof</span>
+                <span class="feature-tag">✓ AI analysis</span>
+            </div>
+        </div>
+        
+        <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')" tabindex="0" role="button">
+            <span class="method-icon">📍</span>
+            <h3 class="method-title">Location Only</h3>
+            <p class="method-description">Pin exact location for immediate response.</p>
+            <div class="method-features">
+                <span class="feature-tag">✓ GPS precise</span>
+                <span class="feature-tag">✓ Instant alert</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Dynamic form container -->
+    <div class="form-container">
         <form id="emergencyReportForm" autocomplete="off">
-            <!-- Form fields are added dynamically by JS -->
+            <!-- Form fields are added dynamically by enhanced JS -->
         </form>
-        
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(1)">← Back</button>
-            <button class="btn btn-success" onclick="portal.submitReport()">📤 Submit Report</button>
+    </div>
+    
+    <!-- Real-time AI analysis preview -->
+    <div class="realtime-analysis" id="realtimeAnalysis">
+        <div class="analysis-header">
+            <span class="analysis-icon">🧠</span>
+            <span>Real-time AI Analysis</span>
+        </div>
+        <div class="analysis-content">
+            <div class="analysis-item">
+                <span class="analysis-label">Urgency Level:</span>
+                <span class="analysis-value" id="liveUrgency">Analyzing...</span>
+            </div>
+            <div class="analysis-item">
+                <span class="analysis-label">Response ETA:</span>
+                <span class="analysis-value" id="liveETA">Calculating...</span>
+            </div>
         </div>
     </div>
+    
+    <div class="navigation-buttons">
+        <button class="btn btn-secondary" onclick="portal.goToStep(1)">
+            <span class="btn-icon">←</span>
+            <span>Back</span>
+        </button>
+        <button class="btn btn-success" onclick="portal.submitReport()" id="submitReportBtn">
+            <span>Submit Report</span>
+            <span class="btn-icon">📤</span>
+        </button>
+    </div>
+</div>
 
-    <!-- === STEP 3: VOICE REPORTING === -->
-    <div class="content-section" id="step-3">
+<!-- === STEP 3: VOICE REPORTING === -->
+<div class="content-section" id="step-3">
+    <div class="step-header">
         <h2>🎤 Voice Emergency Reporter</h2>
-        <p>Tap the button and speak clearly. AI will transcribe and analyze your report.</p>
-        
-        <div class="voice-interface">
-            <button class="record-button" id="recordButton" onclick="portal.toggleRecording()">🎤</button>
-            <div class="voice-status" id="voiceStatus">Tap to start voice recording</div>
-            <div class="transcript-box" id="transcriptBox">Your voice transcript will appear here...</div>
-        </div>
-        
-        <div id="voiceAnalysis" style="display: none;">
-            <h3>🧠 AI Analysis Results</h3>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <span class="feature-icon">⚡</span>
-                    <h4>Urgency Level</h4>
-                    <p id="urgencyLevel">Analyzing...</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">😰</span>
-                    <h4>Emotion</h4>
-                    <p id="emotionLevel">Analyzing...</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">📍</span>
-                    <h4>Location Detected</h4>
-                    <p id="detectedLocation">Analyzing...</p>
-                </div>
-                <div class="feature-card">
-                    <span class="feature-icon">💡</span>
-                    <h4>AI Recommendation</h4>
-                    <p id="aiRecommendation">Analyzing...</p>
-                </div>
+        <p class="step-description">Tap the button and speak clearly. Our advanced AI will transcribe and analyze your emergency report.</p>
+    </div>
+    
+    <div class="voice-interface">
+        <div class="voice-controls">
+            <button class="record-button" id="recordButton" onclick="portal.toggleRecording()" aria-label="Start/stop voice recording">
+                🎤
+            </button>
+            <div class="recording-indicator" id="recordingIndicator">
+                <div class="pulse-ring"></div>
+                <div class="pulse-ring delay-1"></div>
+                <div class="pulse-ring delay-2"></div>
             </div>
         </div>
         
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(2)">← Back to Text Report</button>
-            <button class="btn btn-success" id="submitVoiceReport" onclick="portal.submitVoiceReport()" disabled>📤 Submit Voice Report</button>
+        <div class="voice-status" id="voiceStatus">Tap the microphone to start recording</div>
+        
+        <div class="transcript-container">
+            <div class="transcript-box" id="transcriptBox">
+                <div class="transcript-placeholder">Your voice transcript will appear here...</div>
+            </div>
+            <div class="transcript-tools">
+                <button class="btn btn-sm" onclick="portal.clearTranscript()" id="clearTranscriptBtn" style="display: none;">
+                    Clear Transcript
+                </button>
+            </div>
         </div>
     </div>
+    
+    <!-- Enhanced AI Analysis Results -->
+    <div id="voiceAnalysis" class="voice-analysis" style="display: none;">
+        <h3 class="analysis-title">🧠 AI Analysis Results</h3>
+        <div class="analysis-grid">
+            <div class="analysis-card urgency">
+                <span class="analysis-icon">⚡</span>
+                <h4>Urgency Level</h4>
+                <p id="urgencyLevel" class="analysis-result">Analyzing...</p>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="urgencyConfidence"></div>
+                </div>
+            </div>
+            
+            <div class="analysis-card emotion">
+                <span class="analysis-icon">😰</span>
+                <h4>Emotional State</h4>
+                <p id="emotionLevel" class="analysis-result">Analyzing...</p>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="emotionConfidence"></div>
+                </div>
+            </div>
+            
+            <div class="analysis-card location">
+                <span class="analysis-icon">📍</span>
+                <h4>Location Detected</h4>
+                <p id="detectedLocation" class="analysis-result">Analyzing...</p>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="locationConfidence"></div>
+                </div>
+            </div>
+            
+            <div class="analysis-card recommendation">
+                <span class="analysis-icon">💡</span>
+                <h4>AI Recommendation</h4>
+                <p id="aiRecommendation" class="analysis-result">Analyzing...</p>
+                <div class="priority-indicator" id="priorityIndicator"></div>
+            </div>
+        </div>
+        
+        <div class="analysis-summary">
+            <h4>📋 Summary</h4>
+            <p id="analysisSummary">Complete analysis will appear here...</p>
+        </div>
+    </div>
+    
+    <div class="navigation-buttons">
+        <button class="btn btn-secondary" onclick="portal.goToStep(2)">
+            <span class="btn-icon">←</span>
+            <span>Back to Text Report</span>
+        </button>
+        <button class="btn btn-success" id="submitVoiceReport" onclick="portal.submitVoiceReport()" disabled>
+            <span>Submit Voice Report</span>
+            <span class="btn-icon">📤</span>
+        </button>
+    </div>
+</div>
 
-    <!-- === STEP 4: TRACK REPORTS === -->
-    <div class="content-section" id="step-4">
+<!-- === STEP 4: TRACK REPORTS === -->
+<div class="content-section" id="step-4">
+    <div class="step-header">
         <h2>📋 My Emergency Reports</h2>
-        <p>Track the status of your submitted reports and view community updates.</p>
+        <p class="step-description">Track the status of your submitted reports and view community emergency updates.</p>
+    </div>
+    
+    <div class="reports-dashboard">
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <span class="stat-icon">📊</span>
+                <div class="stat-content">
+                    <span class="stat-number" id="myReportsCount">0</span>
+                    <span class="stat-label">My Reports</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">⏱️</span>
+                <div class="stat-content">
+                    <span class="stat-number" id="avgResponseTime">-</span>
+                    <span class="stat-label">Avg Response</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">✅</span>
+                <div class="stat-content">
+                    <span class="stat-number" id="resolvedCount">0</span>
+                    <span class="stat-label">Resolved</span>
+                </div>
+            </div>
+        </div>
         
         <div class="reports-filters">
-            <!-- Filter controls will be added here by JS -->
+            <div class="filter-group">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter" class="filter-select">
+                    <option value="all">All Reports</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="resolved">Resolved</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="typeFilter">Type:</label>
+                <select id="typeFilter" class="filter-select">
+                    <option value="all">All Types</option>
+                    <option value="text">Text Reports</option>
+                    <option value="voice">Voice Reports</option>
+                    <option value="photo">Photo Reports</option>
+                </select>
+            </div>
+            <button class="btn btn-sm" onclick="portal.refreshReports()">
+                🔄 Refresh
+            </button>
         </div>
-        
+    </div>
+    
+    <div class="reports-container">
         <div class="reports-grid" id="reportsGrid">
-            <!-- Reports will be populated dynamically -->
+            <!-- Reports will be populated dynamically by enhanced JS -->
         </div>
-        
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back to Home</button>
-            <button class="btn btn-primary" onclick="portal.goToStep(2)">📱 Submit New Report</button>
-        </div>
+    </div>
+    
+    <div class="navigation-buttons">
+        <button class="btn btn-secondary" onclick="portal.goToStep(0)">
+            <span class="btn-icon">←</span>
+            <span>Back to Home</span>
+        </button>
+        <button class="btn btn-primary" onclick="portal.goToStep(2)">
+            <span>Submit New Report</span>
+            <span class="btn-icon">📱</span>
+        </button>
     </div>
 </div>
 
-<!-- Emergency Floating Action Button -->
+<!-- Enhanced Emergency Floating Action Button -->
 <div class="emergency-actions">
-    <button class="emergency-fab" onclick="portal.quickEmergency()" title="Quick Emergency Report">🚨</button>
+    <button class="emergency-fab" onclick="portal.quickEmergency()" title="Quick Emergency Report - Ctrl+E" aria-label="Quick emergency report">
+        🚨
+    </button>
+    <div class="fab-tooltip">Quick Emergency<br><small>Ctrl+E</small></div>
+</div>
+
+<!-- Keyboard Shortcuts Help -->
+<div class="shortcuts-help" id="shortcutsHelp" style="display: none;">
+    <div class="shortcuts-content">
+        <h4>⌨️ Keyboard Shortcuts</h4>
+        <div class="shortcut-list">
+            <div class="shortcut-item">
+                <kbd>Ctrl</kbd> + <kbd>E</kbd>
+                <span>Quick Emergency Report</span>
+            </div>
+            <div class="shortcut-item">
+                <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                <span>Voice Reporter</span>
+            </div>
+            <div class="shortcut-item">
+                <kbd>←</kbd> <kbd>→</kbd>
+                <span>Navigate Steps</span>
+            </div>
+            <div class="shortcut-item">
+                <kbd>Esc</kbd>
+                <span>Cancel/Back</span>
+            </div>
+        </div>
+        <button class="btn btn-sm" onclick="portal.hideShortcuts()">Got it</button>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-    {{ super() }}
-    <!-- Portal JavaScript functionality -->
-    <script src="/static/js/portal.js"></script>
+{{ super() }}
+<!-- Enhanced Portal JavaScript functionality -->
+<script src="/static/js/portal.js"></script>
+
+<script>
+// Additional home.html specific enhancements
+document.addEventListener('DOMContentLoaded', function() {
+    // Show keyboard shortcuts help on first visit
+    if (!localStorage.getItem('shortcutsShown')) {
+        setTimeout(() => {
+            document.getElementById('shortcutsHelp').style.display = 'block';
+            localStorage.setItem('shortcutsShown', 'true');
+        }, 3000);
+    }
+    
+    // Update quick stats
+    portal.updateQuickStats = function() {
+        const reports = JSON.parse(localStorage.getItem('userReports') || '[]');
+        document.getElementById('totalReports').textContent = reports.length;
+        document.getElementById('myReportsCount').textContent = reports.length;
+        
+        if (reports.length > 0) {
+            const resolved = reports.filter(r => r.status === 'resolved').length;
+            document.getElementById('resolvedCount').textContent = resolved;
+        }
+    };
+    
+    // Hide shortcuts helper
+    portal.hideShortcuts = function() {
+        document.getElementById('shortcutsHelp').style.display = 'none';
+    };
+    
+    // Enhanced clear transcript
+    portal.clearTranscript = function() {
+        const transcriptBox = document.getElementById('transcriptBox');
+        const clearBtn = document.getElementById('clearTranscriptBtn');
+        if (transcriptBox) {
+            transcriptBox.innerHTML = '<div class="transcript-placeholder">Your voice transcript will appear here...</div>';
+            portal.voiceTranscript = '';
+            if (clearBtn) clearBtn.style.display = 'none';
+        }
+    };
+    
+    // Enhanced refresh reports
+    portal.refreshReports = function() {
+        portal.loadUserReports();
+        portal.updateQuickStats();
+        portal.showNotification('📊 Reports refreshed', 'info');
+    };
+    
+    // Initialize stats
+    portal.updateQuickStats();
+});
+</script>
 {% endblock %}
