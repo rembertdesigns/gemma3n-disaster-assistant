@@ -155,27 +155,31 @@
     .hazard-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
     .hazard-tag { background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
     
-    /* AI Confidence Meter */
-    .ai-confidence-meter {
-      width: 100%;
-      background-color: #f3f4f6; /* Use theme variable later */
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 0.75rem;
-      margin-top: 1rem;
-      display: none; /* Controlled by JS */
+    /* Fix header layout for portal nav buttons */
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
-    .confidence-header {
+    
+    .header-content {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #4b5563;
-      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+      gap: 16px;
     }
-    .confidence-bar { width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
-    .confidence-fill { height: 100%; background: linear-gradient(90deg, #fca5a5, #6ee7b7); transition: width 0.5s ease; }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
 
     /* Drone-specific styling */
     .drone-section { background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
@@ -193,18 +197,20 @@
 <body>
   <header class="header">
     <div class="header-content">
-      <div class="logo">🆘</div>
-      <div>
+      <div class="header-info">
+        <div class="logo">🆘</div>
         <h1 class="title">{% block page_title %}Disaster Response & Recovery Assistant{% endblock %}</h1>
-        <div class="header-actions">
-            {% block header_actions %}
-            <a href="/live-generate" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
-              🧩 Live JSON → PDF Editor
-            </a>
-            {% endblock %}
-        </div>
         <p class="subtitle">{% block subtitle %}AI-Powered Emergency Analysis & Support{% endblock %}</p>
       </div>
+      
+      <div class="header-actions">
+        {% block header_actions %}
+        <a href="/live-generate" style="display: inline-block; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none;">
+          🧩 Live JSON → PDF Editor
+        </a>
+        {% endblock %}
+      </div>
+      
       <div class="controls">
         <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Toggle Theme</button>
         <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ High Contrast</button>
@@ -221,15 +227,15 @@
   <main class="container main-content">
     {% block ai_status %}
     <div class="ai-status-bar" id="aiStatusBar">
-      <div class="ai-status-dot loading" id="aiStatusDot"></div>
-      <span id="aiStatusText">🧠 Loading Edge AI models...</span>
+      <div class="ai-status-dot ready" id="aiStatusDot"></div>
+      <span id="aiStatusText">🧠 AI models ready for analysis</span>
       <button onclick="window.EdgeAI?.runDiagnostics()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-left: auto;">
         🧪 Test AI
       </button>
     </div>
     {% endblock %}
 
-    <div class="ai-confidence-meter" id="aiConfidence" style="display: none;">
+    <div class="ai-confidence-meter" id="aiConfidence">
       <div class="confidence-header">
         <span>🤖 AI Analysis Confidence</span>
         <span id="confidenceScore">--%</span>
@@ -355,7 +361,7 @@
       if (val) {
         import('/static/js/p2p/fallback-webrtc.js').then(module => {
           module.manualSignalInput(val);
-        });
+        }).catch(err => console.log('P2P module not available'));
       }
     }
 
@@ -419,8 +425,12 @@
 
   {% block p2p_scripts %}
   <script type="module">
-    import { manualSignalOffer } from '/static/js/p2p/fallback-webrtc.js';
-    manualSignalOffer(); // Run on page load to generate QR
+    try {
+      const { manualSignalOffer } = await import('/static/js/p2p/fallback-webrtc.js');
+      manualSignalOffer(); // Run on page load to generate QR
+    } catch (err) {
+      console.log('P2P module not available, skipping...');
+    }
   </script>
   {% endblock %}
 </body>

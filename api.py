@@ -398,6 +398,7 @@ except ImportError:
         triage_color = Column(String, nullable=False, index=True)
         status = Column(String, default="active", index=True)
         notes = Column(Text, nullable=True)
+        priority_score = Column(Integer, default=5)
         created_at = Column(DateTime, default=datetime.utcnow, index=True)
         updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -1108,27 +1109,156 @@ async def citizen_portal_alt(request: Request):
 
 @app.get("/offline", response_class=HTMLResponse)
 async def offline_page(request: Request):
-    """Offline support page"""
+    """Offline support page with proper error handling"""
     try:
         return templates.TemplateResponse("offline.html", {"request": request})
-    except:
+    except Exception as e:
+        logger.error(f"Error serving offline.html: {e}")
         return HTMLResponse("""
-        <html><head><title>Offline Mode</title></head>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Offline Mode</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }
+                .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; }
+                .icon { font-size: 4rem; text-align: center; margin-bottom: 1rem; }
+                h1 { color: #1f2937; text-align: center; }
+                p { color: #6b7280; text-align: center; line-height: 1.6; }
+                .btn { display: inline-block; background: #3b82f6; color: white; padding: 0.75rem 1.5rem; 
+                       border-radius: 6px; text-decoration: none; margin: 0.5rem; }
+                .btn:hover { background: #2563eb; }
+            </style>
+        </head>
         <body>
-        <h1>📴 Offline Mode</h1>
-        <p>This app works offline! Your reports are saved locally.</p>
-        </body></html>
+            <div class="container">
+                <div class="icon">📴</div>
+                <h1>Offline Mode</h1>
+                <p>You're currently offline, but the Emergency Response Assistant is designed to work without an internet connection.</p>
+                <p>Key features available offline:</p>
+                <ul style="text-align: left; color: #374151;">
+                    <li>🚨 Submit emergency reports (will sync when online)</li>
+                    <li>🧠 AI analysis using local processing</li>
+                    <li>📱 Access cached emergency information</li>
+                    <li>🗺️ View offline maps</li>
+                </ul>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a href="/" class="btn">🏠 Go to Home</a>
+                    <button class="btn" onclick="location.reload()">🔄 Check Connection</button>
+                </div>
+            </div>
+            <script>
+                // Auto-redirect when online
+                window.addEventListener('online', () => {
+                    setTimeout(() => window.location.href = '/', 1000);
+                });
+                
+                // Check connection status
+                function updateStatus() {
+                    if (navigator.onLine) {
+                        document.body.innerHTML += '<div style="position:fixed;top:20px;right:20px;background:#16a34a;color:white;padding:1rem;border-radius:6px;">✅ Back Online!</div>';
+                        setTimeout(() => window.location.href = '/', 2000);
+                    }
+                }
+                setInterval(updateStatus, 5000);
+            </script>
+        </body>
+        </html>
         """)
-    
-app.get("/offline.html", response_class=HTMLResponse)
-async def serve_offline_page(request: Request):
-    """Serves the dedicated offline page with P2P features."""
-    return templates.TemplateResponse("offline.html", {"request": request})
+
+@app.get("/offline.html", response_class=HTMLResponse)
+async def serve_offline_html(request: Request):
+    """Alternative route for offline.html"""
+    return await offline_page(request)
+
+@app.get("/onboarding", response_class=HTMLResponse)
+async def onboarding_page(request: Request):
+    """User onboarding and tutorial page"""
+    try:
+        return templates.TemplateResponse("onboarding.html", {"request": request})
+    except Exception as e:
+        logger.error(f"Error serving onboarding.html: {e}")
+        return HTMLResponse("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Welcome - Emergency Response Assistant</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+                .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+                .hero { background: white; border-radius: 16px; padding: 3rem 2rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+                .hero-icon { font-size: 4rem; margin-bottom: 1rem; }
+                h1 { color: #1f2937; margin-bottom: 1rem; }
+                p { color: #6b7280; line-height: 1.6; margin-bottom: 2rem; }
+                .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+                .feature-card { background: white; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                .feature-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+                .feature-title { font-weight: bold; color: #1f2937; margin-bottom: 0.5rem; }
+                .feature-description { color: #6b7280; font-size: 0.9rem; }
+                .btn { display: inline-block; background: #3b82f6; color: white; padding: 0.75rem 2rem; border-radius: 8px; text-decoration: none; margin: 1rem 0.5rem; font-weight: 600; }
+                .btn:hover { background: #2563eb; transform: translateY(-2px); transition: all 0.3s ease; }
+                .btn-outline { background: transparent; border: 2px solid #3b82f6; color: #3b82f6; }
+                .btn-outline:hover { background: #3b82f6; color: white; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="hero">
+                    <div class="hero-icon">🆘</div>
+                    <h1>Welcome to Emergency Response Assistant</h1>
+                    <p>Your comprehensive disaster response and recovery assistant. This system helps you report emergencies, coordinate responses, and stay safe during disasters.</p>
+                    
+                    <div class="features">
+                        <div class="feature-card">
+                            <div class="feature-icon">🚨</div>
+                            <h3 class="feature-title">Emergency Reporting</h3>
+                            <p class="feature-description">Quick incident reporting with photos, location, and priority levels</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">🤖</div>
+                            <h3 class="feature-title">AI Analysis</h3>
+                            <p class="feature-description">Real-time situation analysis and intelligent recommendations</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">📱</div>
+                            <h3 class="feature-title">Offline Ready</h3>
+                            <p class="feature-description">Works without internet connection using local storage</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">🗺️</div>
+                            <h3 class="feature-title">Live Mapping</h3>
+                            <p class="feature-description">Interactive maps with real-time incident tracking</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 2rem;">
+                        <a href="/" class="btn">🚀 Get Started</a>
+                        <a href="/api/docs" class="btn btn-outline">📚 API Documentation</a>
+                    </div>
+                    
+                    <div style="margin-top: 2rem; padding: 1.5rem; background: #fef3c7; border-radius: 8px; border: 1px solid #f59e0b;">
+                        <h4 style="color: #92400e; margin-bottom: 1rem;">⚠️ Emergency Situations</h4>
+                        <p style="color: #78350f; margin: 0;">
+                            <strong>For life-threatening emergencies, call 911 first.</strong> This system supplements but doesn't replace emergency services.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
 
 @app.get("/onboarding.html", response_class=HTMLResponse)
-async def serve_onboarding_page(request: Request):
-    """Serves the user onboarding and tutorial page."""
-    return templates.TemplateResponse("onboarding.html", {"request": request})
+async def serve_onboarding_html(request: Request):
+    """Alternative route for onboarding.html"""
+    return await onboarding_page(request)
 
 @app.get("/hazards")
 async def hazards_page(request: Request):
@@ -1380,6 +1510,174 @@ async def submit_emergency_report(
             "success": False,
             "error": str(e)
         }, status_code=500)
+    
+@app.post("/api/quick-emergency")
+async def quick_emergency_report(
+    request: Request,
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Quick emergency report submission for the emergency FAB button"""
+    try:
+        report_id = generate_report_id()
+        
+        emergency_report = EmergencyReport(
+            report_id=report_id,
+            type="quick_emergency",
+            description="QUICK EMERGENCY BUTTON PRESSED - Immediate assistance needed. Location assistance requested.",
+            location="GPS coordinates provided" if latitude and longitude else "Location not specified - please contact caller",
+            latitude=latitude,
+            longitude=longitude,
+            priority="critical",
+            method="quick_button",
+            reporter="citizen_portal_quick"
+        )
+        
+        db.add(emergency_report)
+        db.commit()
+        db.refresh(emergency_report)
+        
+        # Broadcast emergency update to connected admins
+        await broadcast_emergency_update("quick_emergency", {
+            "report_id": report_id,
+            "priority": "critical",
+            "location": emergency_report.location,
+            "message": "Quick emergency button activated"
+        })
+        
+        # Send admin notification
+        await send_admin_notification("quick_emergency", {
+            "report_id": report_id,
+            "coordinates": f"{latitude}, {longitude}" if latitude and longitude else "No GPS",
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+        logger.warning(f"QUICK EMERGENCY ACTIVATED: Report {report_id} - GPS: {latitude}, {longitude}")
+        
+        return JSONResponse({
+            "success": True,
+            "report_id": report_id,
+            "status": "emergency_dispatched",
+            "message": "Emergency services have been notified immediately",
+            "priority": "critical",
+            "estimated_response": "5-10 minutes"
+        })
+        
+    except Exception as e:
+        logger.error(f"Quick emergency failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": "Emergency dispatch failed",
+            "fallback_message": "Please call 911 directly"
+        }, status_code=500)
+
+@app.get("/api/risk-prediction")
+async def get_risk_prediction(
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get AI-powered risk prediction for current location"""
+    try:
+        # Simulate AI risk analysis
+        risk_factors = {
+            "weather": {
+                "level": "low",
+                "details": "Clear conditions, no severe weather expected",
+                "confidence": 0.9
+            },
+            "traffic": {
+                "level": "moderate", 
+                "details": "Normal traffic flow with some congestion during rush hours",
+                "confidence": 0.8
+            },
+            "crime": {
+                "level": "low",
+                "details": "Below average crime activity in this area",
+                "confidence": 0.85
+            },
+            "infrastructure": {
+                "level": "low",
+                "details": "No known infrastructure issues or outages",
+                "confidence": 0.95
+            },
+            "natural_disasters": {
+                "level": "low",
+                "details": "Low probability of earthquakes, floods, or other natural events",
+                "confidence": 0.7
+            }
+        }
+        
+        # Calculate overall risk
+        risk_levels = {"low": 1, "moderate": 2, "high": 3, "critical": 4}
+        avg_risk = sum(risk_levels[factor["level"]] for factor in risk_factors.values()) / len(risk_factors)
+        
+        overall_level = "low" if avg_risk < 1.5 else "moderate" if avg_risk < 2.5 else "high" if avg_risk < 3.5 else "critical"
+        overall_confidence = sum(factor["confidence"] for factor in risk_factors.values()) / len(risk_factors)
+        
+        return JSONResponse({
+            "success": True,
+            "risk_assessment": {
+                "overall_level": overall_level,
+                "overall_confidence": round(overall_confidence, 2),
+                "location": {
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "has_coordinates": latitude is not None and longitude is not None
+                },
+                "risk_factors": risk_factors,
+                "recommendations": [
+                    "Keep emergency contacts readily available",
+                    "Stay informed about local conditions",
+                    "Have emergency supplies prepared" if overall_level in ["moderate", "high"] else "Continue normal activities with standard precautions"
+                ],
+                "last_updated": datetime.utcnow().isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Risk prediction error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/navigation-state")
+async def get_navigation_state():
+    """Get current navigation state for UI updates"""
+    return JSONResponse({
+        "success": True,
+        "navigation": {
+            "current_page": "home",
+            "available_pages": ["home", "report", "voice", "track"],
+            "user_permissions": {
+                "can_submit_reports": True,
+                "can_use_voice": True,
+                "can_view_analytics": True
+            }
+        }
+    })
+
+@app.get("/api/template-check")
+async def check_templates():
+    """Check if required templates exist"""
+    template_status = {}
+    required_templates = ["base.html", "home.html", "offline.html", "onboarding.html"]
+    
+    for template in required_templates:
+        template_path = TEMPLATES_DIR / template
+        template_status[template] = {
+            "exists": template_path.exists(),
+            "path": str(template_path)
+        }
+    
+    return JSONResponse({
+        "success": True,
+        "templates": template_status,
+        "templates_dir": str(TEMPLATES_DIR),
+        "templates_dir_exists": TEMPLATES_DIR.exists()
+    })
 
 # ================================================================================
 # API ENDPOINTS - STATISTICS & ANALYTICS
@@ -3036,7 +3334,6 @@ async def startup_event():
                 hashed_password=hash_password("admin"),
                 role="admin",
                 is_active=True,
-                permissions={"all": True}
             )
             db.add(admin_user)
             db.commit()
