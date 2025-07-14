@@ -1,514 +1,639 @@
-{% extends "templates/base.html" %}
-
-{% block title %}Welcome - Disaster Response Assistant{% endblock %}
-{% block page_title %}👋 Welcome to Emergency Response{% endblock %}
-{% block subtitle %}Learn how to use the system effectively in emergency situations{% endblock %}
-
-{% block extra_css %}
-{{ super() }}
-<style>
-  .onboarding-container {
-    max-width: 800px;
-    margin: 0 auto;
-    position: relative;
-  }
-
-  .progress-bar {
-    background: #f3f4f6;
-    height: 8px;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 2rem;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .progress-fill {
-    background: linear-gradient(90deg, #3b82f6, #10b981);
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.5s ease;
-    position: relative;
-  }
-
-  .progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 20px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
-    animation: shimmer 2s infinite;
-  }
-
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-
-  .step {
-    background: white;
-    border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-    border: 1px solid #e5e7eb;
-    display: none;
-    animation: slideIn 0.5s ease;
-  }
-
-  .step.active {
-    display: block;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome - Emergency Response Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+
+    :root {
+      --color-primary-500: #3b82f6;
+      --color-primary-600: #2563eb;
+      --color-primary-700: #1d4ed8;
+      --color-success-500: #22c55e;
+      --color-success-600: #16a34a;
+      --color-warning-500: #f59e0b;
+      --color-warning-600: #d97706;
+      --color-error-500: #ef4444;
+      --color-error-600: #dc2626;
+      --color-grey-50: #f9fafb;
+      --color-grey-100: #f3f4f6;
+      --color-grey-200: #e5e7eb;
+      --color-grey-300: #d1d5db;
+      --color-grey-400: #9ca3af;
+      --color-grey-500: #6b7280;
+      --color-grey-600: #4b5563;
+      --color-grey-700: #374151;
+      --color-grey-800: #1f2937;
+      --color-grey-900: #111827;
+      --radius: 0.375rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
     }
-  }
 
-  .step-header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
 
-  .step-number {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin: 0 auto 1rem;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-  }
-
-  .step-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-  }
-
-  .step-subtitle {
-    color: #6b7280;
-    font-size: 1rem;
-  }
-
-  .step-content {
-    line-height: 1.6;
-    color: #374151;
-  }
-
-  .feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin: 2rem 0;
-  }
-
-  .feature-card {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-  }
-
-  .feature-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    border-color: #3b82f6;
-  }
-
-  .feature-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    display: block;
-  }
-
-  .feature-title {
-    font-weight: bold;
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-  }
-
-  .feature-description {
-    font-size: 0.9rem;
-    color: #6b7280;
-  }
-
-  .demo-container {
-    background: #f8fafc;
-    border: 2px dashed #cbd5e1;
-    border-radius: 12px;
-    padding: 2rem;
-    margin: 1.5rem 0;
-    text-align: center;
-    position: relative;
-  }
-
-  .demo-placeholder {
-    color: #64748b;
-    font-style: italic;
-    margin-bottom: 1rem;
-  }
-
-  .demo-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .demo-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-  }
-
-  .demo-button:active {
-    transform: translateY(0);
-  }
-
-  .checklist {
-    list-style: none;
-    padding: 0;
-    margin: 1.5rem 0;
-  }
-
-  .checklist li {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-    background: #f9fafb;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-  }
-
-  .checklist li:hover {
-    background: #f3f4f6;
-  }
-
-  .checklist li.completed {
-    background: #ecfdf5;
-    border: 1px solid #d1fae5;
-  }
-
-  .checkbox {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #d1d5db;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-    transition: all 0.3s ease;
-  }
-
-  .checkbox.checked {
-    background: #10b981;
-    border-color: #10b981;
-    color: white;
-  }
-
-  .permissions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
-  }
-
-  .permission-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-    position: relative;
-  }
-
-  .permission-card.granted {
-    border-color: #10b981;
-    background: #ecfdf5;
-  }
-
-  .permission-card.denied {
-    border-color: #ef4444;
-    background: #fef2f2;
-  }
-
-  .permission-status {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-    font-weight: bold;
-  }
-
-  .permission-status.granted {
-    background: #10b981;
-    color: white;
-  }
-
-  .permission-status.denied {
-    background: #ef4444;
-    color: white;
-  }
-
-  .permission-status.pending {
-    background: #f59e0b;
-    color: white;
-  }
-
-  .navigation-buttons {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid #e5e7eb;
-  }
-
-  .btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-  }
-
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
-  }
-
-  .btn-primary:hover {
-    background: #2563eb;
-    transform: translateY(-2px);
-  }
-
-  .btn-secondary {
-    background: #6b7280;
-    color: white;
-  }
-
-  .btn-secondary:hover {
-    background: #4b5563;
-  }
-
-  .btn-outline {
-    background: transparent;
-    border: 2px solid #3b82f6;
-    color: #3b82f6;
-  }
-
-  .btn-outline:hover {
-    background: #3b82f6;
-    color: white;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-  }
-
-  .skip-link {
-    color: #6b7280;
-    text-decoration: none;
-    font-size: 0.875rem;
-    margin-left: auto;
-  }
-
-  .skip-link:hover {
-    color: #374151;
-    text-decoration: underline;
-  }
-
-  .completion-celebration {
-    text-align: center;
-    padding: 3rem 2rem;
-  }
-
-  .celebration-icon {
-    font-size: 5rem;
-    margin-bottom: 1rem;
-    animation: bounce 2s infinite;
-  }
-
-  @keyframes bounce {
-    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-    40% { transform: translateY(-10px); }
-    60% { transform: translateY(-5px); }
-  }
-
-  .quick-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .quick-action {
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-    text-decoration: none;
-    color: #374151;
-    transition: all 0.3s ease;
-  }
-
-  .quick-action:hover {
-    border-color: #3b82f6;
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    color: #1f2937;
-  }
-
-  .tips-section {
-    background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin: 2rem 0;
-    border: 1px solid #f59e0b;
-  }
-
-  .tips-title {
-    font-weight: bold;
-    color: #92400e;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .tips-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .tips-list li {
-    color: #78350f;
-    margin-bottom: 0.5rem;
-    padding-left: 1.5rem;
-    position: relative;
-  }
-
-  .tips-list li::before {
-    content: '💡';
-    position: absolute;
-    left: 0;
-  }
-
-  @media (max-width: 768px) {
     .onboarding-container {
-      padding: 0 1rem;
-    }
-    
-    .step {
-      padding: 1.5rem;
-    }
-    
-    .feature-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .navigation-buttons {
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .navigation-buttons > div {
+      max-width: 900px;
       width: 100%;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-header {
+      background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+      color: white;
+      padding: 1.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { left: -100%; }
+      50% { left: 100%; }
+    }
+
+    .progress-bar {
+      background: rgba(255, 255, 255, 0.2);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 1rem;
+      position: relative;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, #10b981, #34d399);
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 20px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+      animation: progressShimmer 2s infinite;
+    }
+
+    @keyframes progressShimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .step {
+      padding: 2.5rem;
+      min-height: 600px;
+      display: none;
+      animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .step.active {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .step-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .step-number {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .step-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-grey-900);
+      margin-bottom: 0.75rem;
+    }
+
+    .step-subtitle {
+      color: var(--color-grey-600);
+      font-size: 1.125rem;
+      font-weight: 500;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .feature-card {
+      background: linear-gradient(135deg, var(--color-grey-50) 0%, white 100%);
+      border: 2px solid var(--color-grey-200);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: 0;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
+      border-color: var(--color-primary-500);
+    }
+
+    .feature-card:hover::before {
+      opacity: 0.05;
+    }
+
+    .feature-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .feature-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1.5rem;
+      display: block;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+    }
+
+    .feature-title {
+      font-weight: 700;
+      color: var(--color-grey-900);
+      margin-bottom: 0.75rem;
+      font-size: 1.25rem;
+    }
+
+    .feature-description {
+      color: var(--color-grey-600);
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .permissions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .permission-card {
+      background: white;
+      border: 2px solid var(--color-grey-200);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      text-align: center;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .permission-card.granted {
+      border-color: var(--color-success-500);
+      background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    }
+
+    .permission-card.denied {
+      border-color: var(--color-error-500);
+      background: linear-gradient(135deg, #fef2f2 0%, #fef2f2 100%);
+    }
+
+    .permission-status {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .permission-status.granted {
+      background: var(--color-success-500);
+      color: white;
+    }
+
+    .permission-status.denied {
+      background: var(--color-error-500);
+      color: white;
+    }
+
+    .permission-status.pending {
+      background: var(--color-warning-500);
+      color: white;
+      animation: statusPulse 2s infinite;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .test-module {
+      background: linear-gradient(135deg, var(--color-grey-50) 0%, white 100%);
+      border: 2px dashed var(--color-grey-300);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      margin: 1.5rem 0;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .test-module.success {
+      border-color: var(--color-success-500);
+      background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    }
+
+    .test-results {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: white;
+      border-radius: var(--radius);
+      border: 1px solid var(--color-grey-200);
+      text-align: left;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.875rem;
+      color: var(--color-grey-700);
+      display: none;
+    }
+
+    .test-results.show {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .workflow-steps {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      border: 2px solid var(--color-primary-200);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+
+    .workflow-steps h4 {
+      color: var(--color-primary-700);
+      margin-bottom: 1.5rem;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .workflow-steps ol {
+      list-style: none;
+      counter-reset: step-counter;
+      padding: 0;
+    }
+
+    .workflow-steps li {
+      counter-increment: step-counter;
+      margin-bottom: 1rem;
+      padding-left: 3rem;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    .workflow-steps li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      background: var(--color-primary-500);
+      color: white;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+
+    .btn {
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    .btn-secondary {
+      background: var(--color-grey-500);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-grey-600);
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--color-primary-500);
+      color: var(--color-primary-500);
+    }
+
+    .btn-outline:hover {
+      background: var(--color-primary-500);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .navigation-buttons {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 2px solid var(--color-grey-200);
     }
-  }
 
-  [data-theme="dark"] .step {
-    background: #374151;
-    border-color: #4b5563;
-  }
+    .tips-section {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid var(--color-warning-300);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
 
-  [data-theme="dark"] .feature-card {
-    background: #4b5563;
-    border-color: #6b7280;
-  }
+    .tips-title {
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.125rem;
+    }
 
-  [data-theme="dark"] .demo-container {
-    background: #4b5563;
-    border-color: #6b7280;
-  }
+    .tips-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
 
-  [data-theme="dark"] .permission-card {
-    background: #4b5563;
-    border-color: #6b7280;
-  }
+    .tips-list li {
+      color: #78350f;
+      margin-bottom: 0.75rem;
+      padding-left: 2rem;
+      position: relative;
+      line-height: 1.6;
+    }
 
-  [data-theme="dark"] .quick-action {
-    background: #4b5563;
-    border-color: #6b7280;
-    color: #e5e7eb;
-  }
-</style>
-{% endblock %}
+    .tips-list li::before {
+      content: '💡';
+      position: absolute;
+      left: 0;
+      font-size: 1.25rem;
+    }
 
-{% block content %}
-<div class="onboarding-container">
-  <!-- Progress Bar -->
-  <div class="progress-bar">
-    <div class="progress-fill" id="progressFill" style="width: 14%"></div>
-  </div>
+    .completion-celebration {
+      text-align: center;
+      padding: 3rem 2rem;
+    }
 
-  <!-- Step 1: Welcome -->
-  <div class="step active" id="step1">
-    <div class="step-header">
-      <div class="step-number">1</div>
-      <h2 class="step-title">Welcome to Emergency Response</h2>
-      <p class="step-subtitle">Your comprehensive disaster response and recovery assistant</p>
+    .celebration-icon {
+      font-size: 6rem;
+      margin-bottom: 1.5rem;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-15px); }
+      60% { transform: translateY(-8px); }
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .quick-action {
+      background: white;
+      border: 2px solid var(--color-grey-200);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      text-align: center;
+      text-decoration: none;
+      color: var(--color-grey-700);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quick-action::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: 0;
+    }
+
+    .quick-action:hover {
+      border-color: var(--color-primary-500);
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
+      color: var(--color-grey-900);
+    }
+
+    .quick-action:hover::before {
+      opacity: 0.05;
+    }
+
+    .quick-action > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .skip-link {
+      color: var(--color-grey-500);
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-left: auto;
+      transition: all 0.3s ease;
+    }
+
+    .skip-link:hover {
+      color: var(--color-grey-700);
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .onboarding-container {
+        margin: 0.5rem;
+        border-radius: 16px;
+      }
+      
+      .step {
+        padding: 2rem 1.5rem;
+        min-height: auto;
+      }
+      
+      .feature-grid, .permissions-grid, .quick-actions {
+        grid-template-columns: 1fr;
+      }
+      
+      .navigation-buttons {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .navigation-buttons > div {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .step-title {
+        font-size: 1.5rem;
+      }
+
+      .step-number {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="onboarding-container">
+    <!-- Progress Header -->
+    <div class="progress-header">
+      <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">🆘 Emergency Response Setup</h1>
+      <p style="opacity: 0.9; font-size: 1rem;">Step <span id="currentStep">1</span> of <span id="totalSteps">7</span></p>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 14%"></div>
+      </div>
     </div>
 
-    <div class="step-content">
-      <p>This system helps you report emergencies, coordinate responses, and stay safe during disasters. It works offline and uses AI to analyze situations in real-time.</p>
+    <!-- Step 1: Welcome -->
+    <div class="step active" id="step1">
+      <div class="step-header">
+        <div class="step-number">1</div>
+        <h2 class="step-title">Welcome to Emergency Response</h2>
+        <p class="step-subtitle">Your comprehensive disaster response and recovery assistant</p>
+      </div>
+
+      <p style="text-align: center; font-size: 1.125rem; color: var(--color-grey-600); margin-bottom: 2rem; line-height: 1.6;">
+        This system helps you report emergencies, coordinate responses, and stay safe during disasters. It works offline and uses AI to analyze situations in real-time.
+      </p>
 
       <div class="feature-grid">
         <div class="feature-card">
@@ -526,7 +651,7 @@
         <div class="feature-card">
           <span class="feature-icon">📱</span>
           <h4 class="feature-title">Offline Ready</h4>
-          <p class="feature-description">Works without internet connection using mesh networking</p>
+          <p class="feature-description">Works without internet connection using local storage</p>
         </div>
         
         <div class="feature-card">
@@ -545,49 +670,41 @@
         </ul>
       </div>
     </div>
-  </div>
 
-  <!-- Step 2: Permissions -->
-  <div class="step" id="step2">
-    <div class="step-header">
-      <div class="step-number">2</div>
-      <h2 class="step-title">Grant Permissions</h2>
-      <p class="step-subtitle">Allow access to device features for optimal functionality</p>
-    </div>
+    <!-- Step 2: Permissions -->
+    <div class="step" id="step2">
+      <div class="step-header">
+        <div class="step-number">2</div>
+        <h2 class="step-title">Grant Permissions</h2>
+        <p class="step-subtitle">Allow access to device features for optimal functionality</p>
+      </div>
 
-    <div class="step-content">
-      <p>For the best experience and accurate emergency reporting, please grant the following permissions:</p>
+      <p style="text-align: center; font-size: 1.125rem; color: var(--color-grey-600); margin-bottom: 2rem; line-height: 1.6;">
+        For the best experience and accurate emergency reporting, please grant the following permissions:
+      </p>
 
       <div class="permissions-grid">
         <div class="permission-card" id="locationCard">
           <div class="permission-status pending" id="locationStatus">⏳</div>
-          <span style="font-size: 2rem;">📍</span>
-          <h4>Location Services</h4>
-          <p>Accurate GPS coordinates for emergency reports</p>
+          <span style="font-size: 2.5rem; margin-bottom: 1rem; display: block;">📍</span>
+          <h4 style="margin-bottom: 0.5rem; font-size: 1.125rem;">Location Services</h4>
+          <p style="color: var(--color-grey-600); margin-bottom: 1rem; font-size: 0.9rem;">Accurate GPS coordinates for emergency reports</p>
           <button class="btn btn-primary" onclick="requestLocation()">Grant Access</button>
         </div>
 
         <div class="permission-card" id="cameraCard">
           <div class="permission-status pending" id="cameraStatus">⏳</div>
-          <span style="font-size: 2rem;">📷</span>
-          <h4>Camera</h4>
-          <p>Take photos for evidence and situation analysis</p>
+          <span style="font-size: 2.5rem; margin-bottom: 1rem; display: block;">📷</span>
+          <h4 style="margin-bottom: 0.5rem; font-size: 1.125rem;">Camera</h4>
+          <p style="color: var(--color-grey-600); margin-bottom: 1rem; font-size: 0.9rem;">Take photos for evidence and situation analysis</p>
           <button class="btn btn-primary" onclick="requestCamera()">Grant Access</button>
-        </div>
-
-        <div class="permission-card" id="microphoneCard">
-          <div class="permission-status pending" id="microphoneStatus">⏳</div>
-          <span style="font-size: 2rem;">🎤</span>
-          <h4>Microphone</h4>
-          <p>Record audio notes and voice commands</p>
-          <button class="btn btn-primary" onclick="requestMicrophone()">Grant Access</button>
         </div>
 
         <div class="permission-card" id="notificationsCard">
           <div class="permission-status pending" id="notificationsStatus">⏳</div>
-          <span style="font-size: 2rem;">🔔</span>
-          <h4>Notifications</h4>
-          <p>Receive alerts and system updates</p>
+          <span style="font-size: 2.5rem; margin-bottom: 1rem; display: block;">🔔</span>
+          <h4 style="margin-bottom: 0.5rem; font-size: 1.125rem;">Notifications</h4>
+          <p style="color: var(--color-grey-600); margin-bottom: 1rem; font-size: 0.9rem;">Receive alerts and system updates</p>
           <button class="btn btn-primary" onclick="requestNotifications()">Grant Access</button>
         </div>
       </div>
@@ -597,73 +714,61 @@
         <ul class="tips-list">
           <li>All data is processed locally on your device first</li>
           <li>Location data is only used for emergency reporting</li>
-          <li>Photos and audio are stored securely and can be deleted anytime</li>
+          <li>Photos are stored securely and can be deleted anytime</li>
           <li>You can revoke permissions in your browser settings</li>
         </ul>
       </div>
     </div>
-  </div>
 
-  <!-- Step 3: Test Features -->
-  <div class="step" id="step3">
-    <div class="step-header">
-      <div class="step-number">3</div>
-      <h2 class="step-title">Test Core Features</h2>
-      <p class="step-subtitle">Try out the main functionality in a safe environment</p>
-    </div>
+    <!-- Step 3: Test Features -->
+    <div class="step" id="step3">
+      <div class="step-header">
+        <div class="step-number">3</div>
+        <h2 class="step-title">Test Drive Features</h2>
+        <p class="step-subtitle">Try out the main functionality in a safe environment</p>
+      </div>
 
-    <div class="step-content">
-      <p>Let's test the key features you'll use during emergencies. Don't worry - these are practice runs that won't send real alerts.</p>
+      <p style="text-align: center; font-size: 1.125rem; color: var(--color-grey-600); margin-bottom: 2rem; line-height: 1.6;">
+        Let's test the key features you'll use during emergencies. Don't worry - these are practice runs that won't send real alerts.
+      </p>
 
-      <ul class="checklist">
-        <li onclick="toggleChecklist(this)" data-task="location">
-          <div class="checkbox">✓</div>
-          <span>Test GPS location detection</span>
-          <button class="btn btn-outline btn-small" onclick="testLocation()" style="margin-left: auto;">Test Now</button>
-        </li>
-        
-        <li onclick="toggleChecklist(this)" data-task="camera">
-          <div class="checkbox">✓</div>
-          <span>Take a practice photo</span>
-          <button class="btn btn-outline btn-small" onclick="testCamera()" style="margin-left: auto;">Test Now</button>
-        </li>
-        
-        <li onclick="toggleChecklist(this)" data-task="report">
-          <div class="checkbox">✓</div>
-          <span>Submit a test emergency report</span>
-          <button class="btn btn-outline btn-small" onclick="testReport()" style="margin-left: auto;">Test Now</button>
-        </li>
-        
-        <li onclick="toggleChecklist(this)" data-task="offline">
-          <div class="checkbox">✓</div>
-          <span>Test offline functionality</span>
-          <button class="btn btn-outline btn-small" onclick="testOffline()" style="margin-left: auto;">Test Now</button>
-        </li>
-      </ul>
+      <div class="test-module" id="locationTest">
+        <h4 style="margin-bottom: 1rem; color: var(--color-grey-800);">📍 Test Location Detection</h4>
+        <p style="color: var(--color-grey-600); margin-bottom: 1.5rem;">Verify that your device can detect your current location</p>
+        <button class="btn btn-primary" onclick="testLocation()">🎯 Test My Location</button>
+        <div class="test-results" id="locationResults"></div>
+      </div>
 
-      <div class="demo-container" id="testResults" style="display: none;">
-        <h4>🧪 Test Results</h4>
-        <div id="testOutput">
-          <!-- Test results will appear here -->
-        </div>
+      <div class="test-module" id="cameraTest">
+        <h4 style="margin-bottom: 1rem; color: var(--color-grey-800);">📷 Test Camera Access</h4>
+        <p style="color: var(--color-grey-600); margin-bottom: 1.5rem;">Take a practice photo for incident reporting</p>
+        <button class="btn btn-primary" onclick="testCamera()">📸 Test Camera</button>
+        <div class="test-results" id="cameraResults"></div>
+      </div>
+
+      <div class="test-module" id="reportTest">
+        <h4 style="margin-bottom: 1rem; color: var(--color-grey-800);">📝 Test Emergency Report</h4>
+        <p style="color: var(--color-grey-600); margin-bottom: 1.5rem;">Submit a practice emergency report</p>
+        <button class="btn btn-primary" onclick="testReport()">🚨 Submit Test Report</button>
+        <div class="test-results" id="reportResults"></div>
       </div>
     </div>
-  </div>
 
-  <!-- Step 4: Emergency Workflow -->
-  <div class="step" id="step4">
-    <div class="step-header">
-      <div class="step-number">4</div>
-      <h2 class="step-title">Emergency Workflow</h2>
-      <p class="step-subtitle">Learn the step-by-step process for reporting emergencies</p>
-    </div>
+    <!-- Step 4: Emergency Workflow -->
+    <div class="step" id="step4">
+      <div class="step-header">
+        <div class="step-number">4</div>
+        <h2 class="step-title">Emergency Workflow</h2>
+        <p class="step-subtitle">Learn the step-by-step process for reporting emergencies</p>
+      </div>
 
-    <div class="step-content">
-      <p>Follow this workflow during actual emergency situations:</p>
+      <p style="text-align: center; font-size: 1.125rem; color: var(--color-grey-600); margin-bottom: 2rem; line-height: 1.6;">
+        Follow this workflow during actual emergency situations:
+      </p>
 
-      <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0;">
-        <h4 style="color: #1e40af; margin-bottom: 1rem;">📋 Emergency Response Steps</h4>
-        <ol style="margin: 0; padding-left: 1.5rem; line-height: 2;">
+      <div class="workflow-steps">
+        <h4>📋 Emergency Response Steps</h4>
+        <ol>
           <li><strong>Ensure Safety:</strong> Move to a safe location if possible</li>
           <li><strong>Call 911:</strong> For life-threatening emergencies, call emergency services first</li>
           <li><strong>Open App:</strong> Launch the Emergency Response system</li>
@@ -675,12 +780,11 @@
         </ol>
       </div>
 
-      <div class="demo-container">
-        <div class="demo-placeholder">🎯 Interactive Emergency Scenario</div>
-        <p>Practice with a simulated emergency scenario</p>
-        <button class="demo-button" onclick="startScenario()">
-          🚨 Start Practice Scenario
-        </button>
+      <div class="test-module">
+        <h4 style="margin-bottom: 1rem; color: var(--color-grey-800);">🎯 Interactive Practice Scenario</h4>
+        <p style="color: var(--color-grey-600); margin-bottom: 1.5rem;">Practice with a simulated emergency scenario</p>
+        <button class="btn btn-primary" onclick="startScenario()">🚨 Start Practice Scenario</button>
+        <div class="test-results" id="scenarioResults"></div>
       </div>
 
       <div class="tips-section">
@@ -693,18 +797,18 @@
         </ul>
       </div>
     </div>
-  </div>
 
-  <!-- Step 5: Offline Features -->
-  <div class="step" id="step5">
-    <div class="step-header">
-      <div class="step-number">5</div>
-      <h2 class="step-title">Offline Capabilities</h2>
-      <p class="step-subtitle">Understanding how the system works without internet</p>
-    </div>
+    <!-- Step 5: Offline Capabilities -->
+    <div class="step" id="step5">
+      <div class="step-header">
+        <div class="step-number">5</div>
+        <h2 class="step-title">Offline Capabilities</h2>
+        <p class="step-subtitle">Understanding how the system works without internet</p>
+      </div>
 
-    <div class="step-content">
-      <p>During disasters, internet connectivity may be unreliable. This system is designed to work offline and sync when connectivity returns.</p>
+      <p style="text-align: center; font-size: 1.125rem; color: var(--color-grey-600); margin-bottom: 2rem; line-height: 1.6;">
+        During disasters, internet connectivity may be unreliable. This system is designed to work offline and sync when connectivity returns.
+      </p>
 
       <div class="feature-grid">
         <div class="feature-card">
@@ -727,116 +831,416 @@
         
         <div class="feature-card">
           <span class="feature-icon">📦</span>
-          <h4 class="feature-title">Cached Maps</h4>
-          <p class="feature-description">Essential map data stored locally for navigation</p>
+          <h4 class="feature-title">Cached Data</h4>
+          <p class="feature-description">Essential app data stored locally for navigation</p>
         </div>
       </div>
 
-      <div style="background: #ecfeff; border: 1px solid #67e8f9; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0;">
-        <h4 style="color: #0e7490; margin-bottom: 1rem;">📶 Connectivity Status</h4>
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <div class="status-indicator status-online" id="connectivityStatus">
-            <div class="status-dot"></div>
-            <span id="statusText">Online</span>
+      <div class="test-module" id="offlineTest">
+        <h4 style="margin-bottom: 1rem; color: var(--color-grey-800);">📶 Test Offline Mode</h4>
+        <p style="color: var(--color-grey-600); margin-bottom: 1.5rem;">Simulate offline functionality and see how reports are queued</p>
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; justify-content: center;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #ecfdf5; border: 1px solid #22c55e; border-radius: 8px; color: #15803d; font-weight: 600;">
+            <div style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: statusPulse 2s infinite;"></div>
+            <span id="connectivityStatus">Online</span>
           </div>
-          <button class="btn btn-outline" onclick="simulateOffline()">🔌 Test Offline Mode</button>
         </div>
-        <p style="margin-top: 1rem; font-size: 0.9rem; color: #0e7490;">
-          <span id="offlineStatus">All features available. Reports will be sent immediately.</span>
-        </p>
+        <button class="btn btn-outline" onclick="simulateOffline()">🔌 Test Offline Mode</button>
+        <div class="test-results" id="offlineResults"></div>
       </div>
     </div>
-  </div>
 
-  <!-- Step 6: Advanced Features -->
-  <div class="step" id="step6">
-    <div class="step-header">
-      <div class="step-number">6</div>
-      <h2 class="step-title">Advanced Features</h2>
-      <p class="step-subtitle">Explore powerful tools for emergency management</p>
-    </div>
+    <!-- Step 6: Advanced Features -->
+    <div class="step" id="step6">
+      <div class="step-header">
+        <div class="step-number">6</div>
+        <h2 class="step-title">Advanced Features</h2>
+        <p class="step-subtitle">Explore powerful tools for emergency management</p>
+      </div>
 
-    <div class="step-content">
-      <p>Beyond basic reporting, the system offers advanced features for comprehensive emergency management:</p>
+      <p style="text-align: center; font-size: 1.125rem; color: var(--color-grey-600); margin-bottom: 2rem; line-height: 1.6;">
+        Beyond basic reporting, the system offers advanced features for comprehensive emergency management:
+      </p>
 
       <div class="feature-grid">
         <div class="feature-card">
           <span class="feature-icon">🧠</span>
           <h4 class="feature-title">AI Analysis</h4>
           <p class="feature-description">Automatic photo analysis, severity assessment, and smart recommendations</p>
-          <button class="btn btn-outline btn-small" onclick="demoAI()">Try Demo</button>
+          <button class="btn btn-outline" onclick="demoAI()" style="margin-top: 1rem;">Try Demo</button>
         </div>
         
         <div class="feature-card">
           <span class="feature-icon">📊</span>
           <h4 class="feature-title">Live Dashboard</h4>
           <p class="feature-description">Real-time incident tracking and response coordination</p>
-          <a href="/live-generate" class="btn btn-outline btn-small">View Dashboard</a>
+          <button class="btn btn-outline" onclick="window.open('/live-generate', '_blank')" style="margin-top: 1rem;">View Dashboard</button>
         </div>
         
         <div class="feature-card">
           <span class="feature-icon">🗺️</span>
           <h4 class="feature-title">Interactive Maps</h4>
           <p class="feature-description">GPS tracking, route planning, and incident mapping</p>
-          <button class="btn btn-outline btn-small" onclick="demoMaps()">Explore Maps</button>
-        </div>
-        
-        <div class="feature-card">
-          <span class="feature-icon">🚁</span>
-          <h4 class="feature-title">Drone Integration</h4>
-          <p class="feature-description">Aerial imagery analysis and autonomous surveying</p>
-          <button class="btn btn-outline btn-small" onclick="demoDrone()">See Example</button>
+          <button class="btn btn-outline" onclick="demoMaps()" style="margin-top: 1rem;">Explore Maps</button>
         </div>
         
         <div class="feature-card">
           <span class="feature-icon">📱</span>
           <h4 class="feature-title">Device Status</h4>
           <p class="feature-description">Monitor sensors, connectivity, and system health</p>
-          <a href="/device-status" class="btn btn-outline btn-small">Check Status</a>
-        </div>
-        
-        <div class="feature-card">
-          <span class="feature-icon">📚</span>
-          <h4 class="feature-title">Report Archive</h4>
-          <p class="feature-description">Historical data analysis and report management</p>
-          <a href="/report-archive" class="btn btn-outline btn-small">View Archive</a>
+          <button class="btn btn-outline" onclick="window.open('/device-status', '_blank')" style="margin-top: 1rem;">Check Status</button>
         </div>
       </div>
     </div>
+
+    <!-- Step 7: Completion -->
+    <div class="step" id="step7">
+      <div class="step-header">
+        <div class="step-number">✓</div>
+        <h2 class="step-title">You're All Set!</h2>
+        <p class="step-subtitle">Ready to use the Emergency Response system</p>
+      </div>
+
+      <div class="completion-celebration">
+        <div class="celebration-icon">🎉</div>
+        <h3 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: var(--color-grey-900);">Congratulations!</h3>
+        <p style="font-size: 1.125rem; color: var(--color-grey-600); line-height: 1.6; max-width: 600px; margin: 0 auto;">
+          You've successfully completed the onboarding process. The system is now configured and ready for emergency situations.
+        </p>
+      </div>
+
+      <div class="quick-actions">
+        <a href="/" class="quick-action">
+          <span style="font-size: 2.5rem; margin-bottom: 1rem; display: block;">🚨</span>
+          <h4 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Submit Report</h4>
+          <p style="color: var(--color-grey-600); font-size: 0.95rem;">Report an emergency incident</p>
+        </a>
+        
+        <a href="/live-generate" class="quick-action">
+          <span style="font-size: 2.5rem; margin-bottom: 1rem; display: block;">📊</span>
+          <h4 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Live Dashboard</h4>
+          <p style="color: var(--color-grey-600); font-size: 0.95rem;">Monitor active incidents</p>
+        </a>
+        
+        <a href="/device-status" class="quick-action">
+          <span style="font-size: 2.5rem; margin-bottom: 1rem; display: block;">📱</span>
+          <h4 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Device Status</h4>
+          <p style="color: var(--color-grey-600); font-size: 0.95rem;">Check system health</p>
+        </a>
+      </div>
+
+      <div class="tips-section">
+        <h4 class="tips-title">🎯 Quick Tips for Success</h4>
+        <ul class="tips-list">
+          <li>Bookmark this app on your phone's home screen for quick access</li>
+          <li>Practice using the system during calm moments</li>
+          <li>Keep your device charged and updated</li>
+          <li>Share this system with family and community members</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="navigation-buttons">
+      <div>
+        <button class="btn btn-secondary" id="prevBtn" onclick="previousStep()" style="display: none;">
+          ← Previous
+        </button>
+        <a href="#" class="skip-link" onclick="skipOnboarding()">Skip Tutorial</a>
+      </div>
+      <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">
+        Next →
+      </button>
+    </div>
   </div>
 
-  <!-- Step 7: Completion -->
-  <div class="step" id="step7">
-    <div class="step-header">
-      <div class="step-number">✓</div>
-      <h2 class="step-title">You're All Set!</h2>
-      <p class="step-subtitle">Ready to use the Emergency Response system</p>
-    </div>
+  <script>
+    let currentStepNum = 1;
+    const totalSteps = 7;
+    let permissions = {
+      location: 'pending',
+      camera: 'pending',
+      notifications: 'pending'
+    };
 
-    <div class="completion-celebration">
-      <div class="celebration-icon">🎉</div>
-      <h3>Congratulations!</h3>
-      <p>You've successfully completed the onboarding process. The system is now configured and ready for emergency situations.</p>
-    </div>
+    // Update progress
+    function updateProgress() {
+      const progress = (currentStepNum / totalSteps) * 100;
+      document.getElementById('progressFill').style.width = progress + '%';
+      document.getElementById('currentStep').textContent = currentStepNum;
+      
+      // Update navigation buttons
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      
+      prevBtn.style.display = currentStepNum > 1 ? 'block' : 'none';
+      
+      if (currentStepNum === totalSteps) {
+        nextBtn.textContent = 'Get Started 🚀';
+        nextBtn.onclick = finishOnboarding;
+      } else {
+        nextBtn.textContent = 'Next →';
+        nextBtn.onclick = nextStep;
+      }
+    }
 
-    <div class="quick-actions">
-      <a href="/" class="quick-action">
-        <span style="font-size: 2rem;">🚨</span>
-        <h4>Submit Report</h4>
-        <p>Report an emergency incident</p>
-      </a>
+    // Navigation functions
+    function nextStep() {
+      if (currentStepNum < totalSteps) {
+        document.getElementById(`step${currentStepNum}`).classList.remove('active');
+        currentStepNum++;
+        document.getElementById(`step${currentStepNum}`).classList.add('active');
+        updateProgress();
+      }
+    }
+
+    function previousStep() {
+      if (currentStepNum > 1) {
+        document.getElementById(`step${currentStepNum}`).classList.remove('active');
+        currentStepNum--;
+        document.getElementById(`step${currentStepNum}`).classList.add('active');
+        updateProgress();
+      }
+    }
+
+    function finishOnboarding() {
+      localStorage.setItem('onboardingCompleted', 'true');
+      showNotification('🎉 Setup complete! Redirecting to main app...', 'success');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    }
+
+    function skipOnboarding() {
+      if (confirm('Are you sure you want to skip the tutorial? This will help you use the emergency system effectively.')) {
+        finishOnboarding();
+      }
+    }
+
+    // Permission functions
+    async function requestLocation() {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        updatePermissionStatus('location', 'granted');
+        showNotification('✅ Location access granted!', 'success');
+      } catch (error) {
+        updatePermissionStatus('location', 'denied');
+        showNotification('❌ Location access denied', 'error');
+      }
+    }
+
+    async function requestCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop()); // Stop the stream
+        updatePermissionStatus('camera', 'granted');
+        showNotification('✅ Camera access granted!', 'success');
+      } catch (error) {
+        updatePermissionStatus('camera', 'denied');
+        showNotification('❌ Camera access denied', 'error');
+      }
+    }
+
+    async function requestNotifications() {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          updatePermissionStatus('notifications', 'granted');
+          showNotification('✅ Notification access granted!', 'success');
+        } else {
+          updatePermissionStatus('notifications', 'denied');
+          showNotification('❌ Notification access denied', 'error');
+        }
+      } catch (error) {
+        updatePermissionStatus('notifications', 'denied');
+        showNotification('❌ Notification access denied', 'error');
+      }
+    }
+
+    function updatePermissionStatus(permission, status) {
+      permissions[permission] = status;
+      const card = document.getElementById(`${permission}Card`);
+      const statusEl = document.getElementById(`${permission}Status`);
       
-      <a href="/live-generate" class="quick-action">
-        <span style="font-size: 2rem;">📊</span>
-        <h4>Live Dashboard</h4>
-        <p>Monitor active incidents</p>
-      </a>
+      card.className = `permission-card ${status}`;
+      statusEl.className = `permission-status ${status}`;
+      statusEl.textContent = status === 'granted' ? '✓' : status === 'denied' ? '✗' : '⏳';
+    }
+
+    // Test functions
+    async function testLocation() {
+      const results = document.getElementById('locationResults');
+      const module = document.getElementById('locationTest');
       
-      <a href="/device-status" class="quick-action">
-        <span style="font-size: 2rem;">📱</span>
-        <h4>Device Status</h4>
-        <p>Check system health</p>
-      </a>
+      try {
+        results.innerHTML = '🔍 Getting your location...';
+        results.classList.add('show');
+        
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        
+        results.innerHTML = `✅ Location detected successfully!<br>
+          📍 Latitude: ${position.coords.latitude.toFixed(6)}<br>
+          📍 Longitude: ${position.coords.longitude.toFixed(6)}<br>
+          🎯 Accuracy: ±${position.coords.accuracy.toFixed(0)} meters`;
+        
+        module.classList.add('success');
+        showNotification('📍 Location test successful!', 'success');
+      } catch (error) {
+        results.innerHTML = `❌ Location test failed: ${error.message}`;
+        showNotification('❌ Location test failed', 'error');
+      }
+    }
+
+    async function testCamera() {
+      const results = document.getElementById('cameraResults');
+      const module = document.getElementById('cameraTest');
       
-      <a href="/sync-status" class="quick-action">
-        <span style="font-size: 2rem;">
+      try {
+        results.innerHTML = '📷 Accessing camera...';
+        results.classList.add('show');
+        
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
+        
+        results.innerHTML = '✅ Camera test successful!<br>📸 Camera access verified - ready for emergency photos';
+        module.classList.add('success');
+        showNotification('📷 Camera test successful!', 'success');
+      } catch (error) {
+        results.innerHTML = `❌ Camera test failed: ${error.message}`;
+        showNotification('❌ Camera test failed', 'error');
+      }
+    }
+
+    function testReport() {
+      const results = document.getElementById('reportResults');
+      const module = document.getElementById('reportTest');
+      
+      results.innerHTML = '📝 Submitting test report...';
+      results.classList.add('show');
+      
+      setTimeout(() => {
+        results.innerHTML = `✅ Test report submitted successfully!<br>
+          📊 Report ID: TEST-${Date.now()}<br>
+          🎯 Priority: Medium<br>
+          📍 Location: Test coordinates<br>
+          ⏰ Status: Queued for sync`;
+        
+        module.classList.add('success');
+        showNotification('📝 Test report successful!', 'success');
+      }, 1500);
+    }
+
+    function startScenario() {
+      const results = document.getElementById('scenarioResults');
+      
+      results.innerHTML = `
+        <h4 style="color: var(--color-primary-600); margin-bottom: 1rem;">🚨 Practice Scenario: Building Fire</h4>
+        <p style="margin-bottom: 1rem; line-height: 1.6;">
+          <strong>Situation:</strong> You notice smoke coming from a nearby office building. 
+          Multiple people are evacuating, but you're not sure if everyone is out safely.
+        </p>
+        <p style="margin-bottom: 1rem; line-height: 1.6; color: var(--color-grey-600);">
+          <strong>Your actions:</strong><br>
+          1. ✅ Moved to safe distance<br>
+          2. ✅ Called 911 (simulated)<br>
+          3. 🎯 Now using app to coordinate response
+        </p>
+        <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; border: 1px solid #0ea5e9;">
+          <strong>🤖 AI Recommendation:</strong> Continue monitoring evacuation routes. 
+          Take photos of smoke/fire from safe distance. Share location with responding units.
+        </div>
+      `;
+      results.classList.add('show');
+      showNotification('🎯 Practice scenario started!', 'success');
+    }
+
+    function simulateOffline() {
+      const results = document.getElementById('offlineResults');
+      const status = document.getElementById('connectivityStatus');
+      const module = document.getElementById('offlineTest');
+      
+      // Simulate going offline
+      status.textContent = 'Offline Mode';
+      status.parentElement.style.background = '#fef3c7';
+      status.parentElement.style.borderColor = '#f59e0b';
+      status.parentElement.style.color = '#92400e';
+      
+      results.innerHTML = '📴 Simulating offline mode...';
+      results.classList.add('show');
+      
+      setTimeout(() => {
+        results.innerHTML = `✅ Offline mode test successful!<br>
+          💾 Reports will be stored locally<br>
+          🔄 Auto-sync when connection returns<br>
+          📊 Queue status: 0 pending reports`;
+        
+        module.classList.add('success');
+        showNotification('📴 Offline mode ready!', 'success');
+        
+        // Restore online status after demo
+        setTimeout(() => {
+          status.textContent = 'Online';
+          status.parentElement.style.background = '#ecfdf5';
+          status.parentElement.style.borderColor = '#22c55e';
+          status.parentElement.style.color = '#15803d';
+        }, 3000);
+      }, 2000);
+    }
+
+    function demoAI() {
+      showNotification('🧠 AI analysis demo - analyzing sample emergency photo...', 'info');
+      setTimeout(() => {
+        showNotification('🤖 AI detected: Structure fire, high severity, evacuation needed', 'warning');
+      }, 2000);
+    }
+
+    function demoMaps() {
+      showNotification('🗺️ Interactive maps demo - showing emergency response routes...', 'info');
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 350px;
+        line-height: 1.4;
+      `;
+      
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => notification.style.transform = 'translateX(0)', 10);
+      
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+      }, 4000);
+    }
+
+    // Initialize
+    updateProgress();
+
+    // Auto-advance for demo purposes (remove in production)
+    // setInterval(() => {
+    //   if (currentStepNum < totalSteps) nextStep();
+    // }, 10000);
+  </script>
+</body>
+</html>
