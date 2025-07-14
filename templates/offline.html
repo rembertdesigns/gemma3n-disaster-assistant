@@ -1,4 +1,3 @@
-<!-- templates/offline.html -->
 {% extends "base.html" %}
 
 {% block title %}Offline Mode - Disaster Response Assistant{% endblock %}
@@ -6,306 +5,1758 @@
 {% block subtitle %}Emergency Operations Continue - No Internet Required{% endblock %}
 
 {% block header_actions %}
-<a href="/" class="action-button primary" style="margin-top: 0;">🏠 Return Home</a>
-<button class="action-button success" onclick="checkConnection()" style="margin-top: 0;">
-  🔄 Check Connection
+<a href="/" class="btn-primary" style="text-decoration: none;">🏠 Return Home</a>
+<button class="btn-success" onclick="checkConnection()">
+🔄 Check Connection
 </button>
 {% endblock %}
 
 {% block extra_css %}
 {{ super() }}
 <style>
-  /* Page-specific styles for offline.html */
-  .offline-hero {
-    text-align: center;
-    padding: 3rem 1rem;
-    background: linear-gradient(135deg, #4b5563 0%, #1f2937 100%);
-    color: white;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    position: relative;
-    overflow: hidden;
-  }
-  .offline-hero::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)"/></svg>') repeat;
-    animation: float 20s infinite linear;
-  }
-  @keyframes float {
-    0% { transform: translate(0px, 0px); }
-    50% { transform: translate(-10px, 5px); }
-    100% { transform: translate(0px, 0px); }
-  }
-  .offline-icon { font-size: 4rem; margin-bottom: 1rem; display: block; animation: pulse 2s infinite; }
-  .offline-title { font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; position: relative; z-index: 1; }
-  .offline-description { font-size: 1.2rem; opacity: 0.9; position: relative; z-index: 1; }
+/* Two-column operations grid */
+.operations-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+}
 
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+.operations-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Enhanced scenario trainer */
+.scenario-selector-dropdown {
+  margin-bottom: 1.5rem;
+}
+
+.scenario-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--color-success-300);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s ease;
+}
+
+.scenario-select:focus {
+  outline: none;
+  border-color: var(--color-success-500);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.scenario-guidance {
+  background: var(--bg-primary);
+  border: 2px solid var(--color-success-200);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-top: 1rem;
+  display: none;
+}
+
+.scenario-guidance.visible {
+  display: block;
+  animation: slideIn 0.3s ease-out;
+}
+
+.guidance-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--color-success-200);
+}
+
+.guidance-icon {
+  font-size: 2rem;
+  padding: 0.5rem;
+  background: var(--color-success-500);
+  color: white;
+  border-radius: var(--radius-lg);
+}
+
+.guidance-title {
+  color: var(--color-success-800);
+  font-weight: 700;
+  margin: 0;
+}
+
+.guidance-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.guidance-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  background: var(--color-success-50);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-success-500);
+  transition: all 0.2s ease;
+}
+
+.guidance-item:hover {
+  background: var(--color-success-100);
+  transform: translateX(4px);
+}
+
+.guidance-step {
+  background: var(--color-success-500);
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.guidance-text {
+  color: var(--text-primary);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.guidance-priority {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.priority-immediate {
+  background: var(--color-secondary-100);
+  color: var(--color-secondary-700);
+}
+
+.priority-important {
+  background: var(--color-secondary-50);
+  color: var(--color-secondary-600);
+}
+
+.priority-when-safe {
+  background: var(--color-success-100);
+  color: var(--color-success-700);
+}
+
+/* Enhanced report assistant */
+.draft-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.analysis-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Enhanced sync queue */
+.sync-queue-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.sync-queue-item {
+  background: var(--color-grey-50);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--color-primary-500);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.sync-queue-item:hover {
+  background: var(--color-grey-100);
+  transform: translateX(4px);
+}
+
+.sync-queue-item.priority-critical {
+  border-left-color: var(--color-secondary-600);
+  background: var(--color-secondary-50);
+}
+
+.sync-queue-item.priority-high {
+  border-left-color: var(--color-secondary-500);
+}
+
+.sync-queue-item.priority-medium {
+  border-left-color: var(--color-secondary-400);
+}
+
+.sync-queue-item.priority-low {
+  border-left-color: var(--color-grey-500);
+}
+
+.queue-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.queue-item-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.queue-item-timestamp {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.queue-item-summary {
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.queue-item-meta {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ai-analysis-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.data-size-badge {
+  padding: 0.25rem 0.5rem;
+  background: var(--color-grey-200);
+  color: var(--color-grey-700);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+}
+
+/* P2P Communication enhancements */
+.p2p-connection-area {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.qr-section {
+  padding: 1rem;
+  background: var(--color-success-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-success-200);
+}
+
+.signal-section {
+  padding: 1rem;
+  background: var(--color-primary-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-primary-200);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .operations-grid {
+    grid-template-columns: 1fr;
     gap: 1.5rem;
-    margin: 2rem 0;
   }
   
-  .feature-card {
-    background: var(--card-bg);
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    border-left: 4px solid #3b82f6;
-    transition: all 0.3s ease;
+  .sync-queue-controls {
+    flex-direction: column;
   }
-  .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-  .feature-card.emergency { border-left-color: #dc2626; }
-  .feature-card.communication { border-left-color: #059669; }
-  .feature-card.ai { border-left-color: #7c3aed; }
   
-  .feature-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
-  .feature-title { font-size: 1.25rem; font-weight: bold; color: var(--text-primary); margin-bottom: 0.75rem; }
-  .feature-description { color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem; }
-  .feature-list { list-style: none; padding: 0; margin: 0; }
-  .feature-list li { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-primary); }
-  .feature-list li::before { content: '✓'; color: #16a34a; font-weight: bold; flex-shrink: 0; }
-  
-  .status-panel {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin: 2rem 0;
+  .sync-queue-controls button {
+    width: 100%;
   }
-  .status-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-  .status-indicator { width: 16px; height: 16px; border-radius: 50%; background: #ef4444; animation: pulse 2s infinite; flex-shrink: 0; }
-  .status-indicator.checking { background: #f59e0b; }
-  .status-indicator.online { background: #16a34a; animation: none; }
-  .status-text { font-weight: bold; color: var(--text-primary); }
-  .connection-details { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; }
-  
-  .quick-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
-  .action-button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
-  .action-button.primary { background: #1e40af; color: white; }
-  .action-button.primary:hover { background: #1e3a8a; transform: translateY(-1px); }
-  .action-button.secondary { background: #6b7280; color: white; }
-  .action-button.secondary:hover { background: #4b5563; transform: translateY(-1px); }
-  .action-button.success { background: #16a34a; color: white; }
-  .action-button.success:hover { background: #15803d; transform: translateY(-1px); }
+}
 
-  /* Manual Mesh Pairing Card */
-  .mesh-pairing-card {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin: 2rem 0;
-  }
-  .mesh-pairing-card h3 { margin: 0 0 1rem 0; color: var(--text-primary); }
-  #qr-code { display:block; margin: 1rem auto; background: white; padding: 10px; border-radius: 8px; }
-  #signal-raw { background:#fff; padding:8px; font-size:0.8em; overflow-wrap:anywhere; border:1px dashed #ccc; margin-top:0.5rem; border-radius: 4px; }
-  #signal-input { width:100%; margin-top:0.5rem; padding:0.5rem; font-size:0.9em; border:1px solid #ccc; border-radius:4px; }
+/* Page-specific styles for offline.html with brand colors */
+.offline-hero {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, var(--color-grey-600) 0%, var(--color-grey-800) 100%);
+  color: white;
+  border-radius: var(--radius-xl);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
 
-  @media (max-width: 768px) {
-    .offline-hero { padding: 2rem 1rem; }
-    .offline-title { font-size: 2rem; }
-    .features-grid { grid-template-columns: 1fr; }
-    .quick-actions { flex-direction: column; }
-    .action-button { justify-content: center; }
+.offline-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)"/></svg>') repeat;
+  animation: float 20s infinite linear;
+}
+
+@keyframes float {
+  0% { transform: translate(0px, 0px); }
+  50% { transform: translate(-10px, 5px); }
+  100% { transform: translate(0px, 0px); }
+}
+
+.offline-icon { 
+  font-size: 4rem; 
+  margin-bottom: 1rem; 
+  display: block; 
+  animation: pulse 2s infinite; 
+}
+
+.offline-title { 
+  font-size: 2.5rem; 
+  font-weight: 700; 
+  margin-bottom: 1rem; 
+  position: relative; 
+  z-index: 1; 
+}
+
+.offline-description { 
+  font-size: 1.2rem; 
+  opacity: 0.9; 
+  position: relative; 
+  z-index: 1; 
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  background: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--color-primary-500);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card:hover { 
+  transform: translateY(-4px); 
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); 
+}
+
+.feature-card.emergency { border-left-color: var(--color-secondary-500); }
+.feature-card.communication { border-left-color: var(--color-success-500); }
+.feature-card.ai { border-left-color: var(--color-primary-600); }
+.feature-card.analysis { border-left-color: var(--color-primary-700); }
+.feature-card.trainer { border-left-color: var(--color-success-600); }
+
+.feature-icon { 
+  font-size: 2.5rem; 
+  margin-bottom: 1rem; 
+  display: block; 
+}
+
+.feature-title { 
+  font-weight: 700; 
+  color: var(--text-primary); 
+  margin-bottom: 0.75rem; 
+}
+
+.feature-description { 
+  color: var(--text-secondary); 
+  line-height: 1.6; 
+  margin-bottom: 1rem; 
+}
+
+.feature-list { 
+  list-style: none; 
+  padding: 0; 
+  margin: 0; 
+}
+
+.feature-list li { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem; 
+  margin-bottom: 0.5rem; 
+  color: var(--text-primary); 
+}
+
+.feature-list li::before { 
+  content: '✓'; 
+  color: var(--color-success-600); 
+  font-weight: bold; 
+  flex-shrink: 0; 
+}
+
+.status-panel {
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  margin: 2rem 0;
+  box-shadow: var(--card-shadow);
+}
+
+.status-header { 
+  display: flex; 
+  align-items: center; 
+  gap: 1rem; 
+  margin-bottom: 1rem; 
+}
+
+.status-indicator { 
+  width: 16px; 
+  height: 16px; 
+  border-radius: 50%; 
+  background: var(--color-secondary-500); 
+  animation: pulse 2s infinite; 
+  flex-shrink: 0; 
+}
+
+.status-indicator.checking { background: var(--color-secondary-400); }
+.status-indicator.online { background: var(--color-success-500); animation: none; }
+
+.status-text { 
+  font-weight: 600; 
+  color: var(--text-primary); 
+}
+
+.connection-details { 
+  color: var(--text-secondary); 
+  margin-bottom: 1rem; 
+}
+
+.quick-actions { 
+  display: flex; 
+  gap: 1rem; 
+  flex-wrap: wrap; 
+  margin-top: 1.5rem; 
+}
+
+/* AI Co-Pilot Sections */
+.ai-copilot-section {
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
+  border: 2px solid var(--color-primary-200);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  margin: 2rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-copilot-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, var(--color-primary-200) 0%, transparent 50%);
+  opacity: 0.5;
+}
+
+.ai-copilot-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ai-copilot-icon {
+  font-size: 2rem;
+  padding: 0.5rem;
+  background: var(--color-primary-500);
+  color: white;
+  border-radius: var(--radius-lg);
+  animation: pulse 3s infinite;
+}
+
+.ai-copilot-title {
+  color: var(--color-primary-800);
+  font-weight: 700;
+  margin: 0;
+}
+
+.report-input-area {
+  margin-bottom: 1.5rem;
+}
+
+.report-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem;
+  border: 2px solid var(--color-primary-200);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+
+.report-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ai-analysis-result {
+  background: var(--bg-primary);
+  border: 2px solid var(--color-success-200);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-top: 1rem;
+  display: none;
+}
+
+.ai-analysis-result.visible {
+  display: block;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.analysis-section {
+  margin-bottom: 1rem;
+}
+
+.analysis-label {
+  font-weight: 600;
+  color: var(--color-success-700);
+  margin-bottom: 0.5rem;
+}
+
+.analysis-content {
+  color: var(--text-primary);
+  padding: 0.5rem;
+  background: var(--color-success-50);
+  border-radius: var(--radius);
+}
+
+.confidence-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.confidence-high { 
+  background: var(--color-success-100); 
+  color: var(--color-success-700); 
+}
+
+.confidence-medium { 
+  background: var(--color-secondary-100); 
+  color: var(--color-secondary-700); 
+}
+
+.confidence-low { 
+  background: var(--color-grey-100); 
+  color: var(--color-grey-700); 
+}
+
+/* Media Analysis Section */
+.media-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.media-item {
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.media-item:hover {
+  border-color: var(--color-primary-300);
+}
+
+.media-preview {
+  width: 100%;
+  height: 120px;
+  background: var(--color-grey-100);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  color: var(--color-grey-500);
+}
+
+.media-analysis {
+  background: var(--color-primary-50);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  display: none;
+}
+
+.media-analysis.visible {
+  display: block;
+}
+
+/* Scenario Trainer */
+.scenario-trainer {
+  background: linear-gradient(135deg, var(--color-success-50) 0%, var(--color-success-100) 100%);
+  border: 2px solid var(--color-success-200);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.scenario-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.scenario-button {
+  padding: 1rem;
+  background: var(--bg-primary);
+  border: 2px solid var(--color-success-300);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.scenario-button:hover {
+  background: var(--color-success-100);
+  transform: translateY(-2px);
+}
+
+.scenario-button.active {
+  background: var(--color-success-500);
+  color: white;
+}
+
+.scenario-checklist {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-top: 1rem;
+  display: none;
+}
+
+.scenario-checklist.visible {
+  display: block;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+}
+
+.checklist-item:last-child {
+  border-bottom: none;
+}
+
+.checklist-item.completed {
+  background: var(--color-success-50);
+}
+
+.checklist-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-success-500);
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.checklist-checkbox.checked {
+  background: var(--color-success-500);
+  color: white;
+}
+
+.checklist-text {
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+/* Enhanced Sync Queue */
+.enhanced-sync-queue {
+  background: var(--bg-primary);
+  border: 2px solid var(--color-secondary-200);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.priority-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.priority-critical { 
+  background: var(--color-secondary-100); 
+  color: var(--color-secondary-700); 
+}
+
+.priority-high { 
+  background: var(--color-secondary-50); 
+  color: var(--color-secondary-600); 
+}
+
+.priority-medium { 
+  background: var(--color-secondary-50); 
+  color: var(--color-secondary-500); 
+}
+
+.priority-low { 
+  background: var(--color-grey-100); 
+  color: var(--color-grey-600); 
+}
+
+.queue-item-content {
+  flex: 1;
+}
+
+.queue-item-summary {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.queue-item-details {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Loading states */
+.loading-spinner-inline {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-primary-200);
+  border-top: 2px solid var(--color-primary-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .offline-hero { 
+    padding: 2rem 1rem; 
   }
+  
+  .offline-title { 
+    font-size: 2rem; 
+  }
+  
+  .features-grid { 
+    grid-template-columns: 1fr; 
+  }
+  
+  .quick-actions { 
+    flex-direction: column; 
+  }
+  
+  .ai-copilot-section,
+  .scenario-trainer,
+  .enhanced-sync-queue {
+    padding: 1.5rem;
+  }
+  
+  .scenario-selector {
+    grid-template-columns: 1fr;
+  }
+  
+  .media-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .ai-copilot-section,
+  .scenario-trainer,
+  .enhanced-sync-queue {
+    padding: 1rem;
+  }
+  
+  .sync-queue-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .ai-copilot-section {
+  background: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-primary-800) 100%);
+  border-color: var(--color-primary-600);
+}
+
+[data-theme="dark"] .scenario-trainer {
+  background: linear-gradient(135deg, var(--color-success-900) 0%, var(--color-success-800) 100%);
+  border-color: var(--color-success-600);
+}
+
+[data-theme="dark"] .report-textarea {
+  background: var(--color-grey-800);
+  border-color: var(--color-primary-600);
+}
+
+[data-theme="dark"] .ai-analysis-result {
+  background: var(--color-grey-800);
+  border-color: var(--color-success-600);
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="main-content">
-    <div class="offline-hero">
-        <span class="offline-icon">📡</span>
-        <h1 class="offline-title">You Are Currently Offline</h1>
-        <p class="offline-description">
-            Key features of the Disaster Response Assistant are designed to work without an internet connection.
-        </p>
-    </div>
+  <!-- Hero Section -->
+  <div class="offline-hero">
+    <span class="offline-icon">📡</span>
+    <h1 class="offline-title heading-1">You Are Currently Offline</h1>
+    <p class="offline-description body-1">
+      Your AI emergency assistant is fully operational. All core features work without internet.
+    </p>
+  </div>
 
-    <div class="status-panel">
+  <!-- Two-Column Operations Grid -->
+  <div class="operations-grid">
+    <!-- Left Column: Status & Training -->
+    <div class="operations-column">
+      <!-- Connection Status -->
+      <div class="status-panel">
         <div class="status-header">
-            <div class="status-indicator" id="statusIndicator"></div>
-            <div class="status-text" id="statusText">Checking connection...</div>
+          <div class="status-indicator" id="statusIndicator"></div>
+          <div class="status-text heading-4" id="statusText">Checking connection...</div>
         </div>
-        <div class="connection-details" id="connectionDetails">
-            Attempting to reconnect automatically...
+        <div class="connection-details body-2" id="connectionDetails">
+          Attempting to reconnect automatically...
         </div>
         <div class="quick-actions">
-            <a href="/" class="action-button primary">🏠 Go to Home</a>
-            <button class="action-button secondary" onclick="showDiagnostics()">🔧 Network Diagnostics</button>
+          <a href="/" class="btn-primary">🏠 Go to Home</a>
+          <button class="btn-secondary" onclick="showDiagnostics()">🔧 Network Diagnostics</button>
         </div>
-    </div>
+      </div>
 
-    <div class="features-grid">
-        <div class="feature-card emergency">
-            <span class="feature-icon">🚨</span>
-            <h3 class="feature-title">Emergency Reporting</h3>
-            <p class="feature-description">Submit critical reports that will sync automatically when connection is restored.</p>
-            <ul class="feature-list">
-                <li>Create incident reports</li>
-                <li>Record audio messages</li>
-                <li>Attach photos for evidence</li>
-                <li>Set priority levels</li>
-            </ul>
+      <!-- Emergency Scenario Trainer -->
+      <div class="scenario-trainer">
+        <div class="ai-copilot-header">
+          <div class="ai-copilot-icon" style="background: var(--color-success-500);">🎯</div>
+          <h3 class="ai-copilot-title heading-3" style="color: var(--color-success-800);">Emergency Scenario Trainer</h3>
         </div>
-      
-        <div class="feature-card ai">
-            <span class="feature-icon">🧠</span>
-            <h3 class="feature-title">Edge AI Analysis</h3>
-            <p class="feature-description">AI-powered analysis runs directly on your device, even when offline.</p>
-            <ul class="feature-list">
-                <li>Image hazard detection</li>
-                <li>Audio sentiment analysis</li>
-                <li>On-device risk assessment</li>
-                <li>Immediate recommendations</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Manual Mesh Pairing UI -->
-    <div class="mesh-pairing-card">
-        <h3>📱 Manual Mesh Pairing (Offline P2P)</h3>
-        <p class="feature-description">Scan another user's QR code or paste their signal to connect directly and share information without internet.</p>
-        <canvas id="qr-code"></canvas>
-        <pre id="signal-raw" style="cursor: copy;" title="Click to copy your signal"></pre>
-        <input id="signal-input" placeholder="Paste peer signal here" />
-        <button class="action-button primary" onclick="handleManualSignal()" style="margin-top: 1rem;">🔗 Connect Peer</button>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
-<!-- QR Code Library -->
-<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
-
-<script>
-    // --- OFFLINE PAGE LOGIC ---
-    (function() {
-        "use strict";
-
-        let isChecking = false;
-        let retryCount = 0;
-        const maxRetries = 5;
-
-        const statusIndicator = document.getElementById('statusIndicator');
-        const statusText = document.getElementById('statusText');
-        const connectionDetails = document.getElementById('connectionDetails');
-
-        function updateConnectionStatus() {
-            if (isChecking) {
-                statusIndicator.className = 'status-indicator checking';
-                statusText.textContent = 'Checking connection...';
-                connectionDetails.textContent = 'Testing network connectivity...';
-                return;
-            }
-
-            if (navigator.onLine) {
-                statusIndicator.className = 'status-indicator online';
-                statusText.textContent = 'Connection Restored!';
-                connectionDetails.innerHTML = `<strong>✅ You're back online!</strong> <a href="/" style="color: #16a34a; text-decoration: underline;">Returning to the portal...</a>`;
-                setTimeout(() => window.location.href = '/', 2000);
-            } else {
-                statusIndicator.className = 'status-indicator';
-                statusText.textContent = 'No Internet Connection';
-                connectionDetails.textContent = `Offline mode is active. Retries: ${retryCount}/${maxRetries}.`;
-            }
-        }
-
-        async function checkConnection() {
-            if (isChecking) return;
-            isChecking = true;
-            retryCount++;
-            updateConnectionStatus();
-
-            try {
-                // A reliable way to check for a real internet connection
-                await fetch('/api/health', { method: 'HEAD', cache: 'no-cache', mode: 'no-cors' });
-                window.dispatchEvent(new Event('online'));
-            } catch (error) {
-                // The fetch failed, we are likely offline
-            } finally {
-                isChecking = false;
-                updateConnectionStatus();
-                if (!navigator.onLine && retryCount < maxRetries) {
-                    const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
-                    setTimeout(checkConnection, delay);
-                }
-            }
-        }
-
-        function showDiagnostics() {
-            const diagnosticsInfo = `
-                🔍 Network Diagnostics:
-                -------------------------
-                Status: ${navigator.onLine ? 'Online' : 'Offline'}
-                Connection Type: ${navigator.connection ? navigator.connection.effectiveType : 'Unknown'}
-                Service Worker: ${'serviceWorker' in navigator ? 'Supported' : 'Not Supported'}
-                Cache Storage: ${'caches' in window ? 'Available' : 'Not Available'}
-                Retries: ${retryCount}/${maxRetries}
-            `;
-            alert(diagnosticsInfo);
-        }
+        <p class="body-2" style="color: var(--color-success-700); margin-bottom: 1.5rem;">
+          Get instant AI-guided step-by-step instructions for emergency situations.
+        </p>
         
-        // --- P2P MESH NETWORKING ---
-        let p2pModule;
-        async function loadP2P() {
-            if (!p2pModule) {
-                p2pModule = await import('/static/js/p2p/fallback-webrtc.js');
-            }
-            return p2pModule;
+        <div class="scenario-selector-dropdown">
+          <label for="scenarioSelect" class="body-3" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--color-success-800);">
+            Select Emergency Type:
+          </label>
+          <select id="scenarioSelect" class="scenario-select body-2" onchange="loadScenarioGuidance(this.value)">
+            <option value="">Choose a scenario...</option>
+            <option value="fire">🔥 Structural Fire</option>
+            <option value="earthquake">🌍 Earthquake</option>
+            <option value="flood">🌊 Flooding</option>
+            <option value="blackout">⚡ Power Outage</option>
+            <option value="medical">🚑 Medical Emergency</option>
+            <option value="accident">🚗 Traffic Accident</option>
+            <option value="gas-leak">⚠️ Gas Leak</option>
+            <option value="severe-weather">🌪️ Severe Weather</option>
+          </select>
+          <button class="btn-success" onclick="getAIGuidance()" id="guidanceBtn" style="margin-top: 1rem; width: 100%;" disabled>
+            🧠 Get AI Guidance
+          </button>
+        </div>
+        
+        <div id="scenarioGuidance" class="scenario-guidance">
+          <!-- AI-generated guidance will appear here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Report Assistant & P2P -->
+    <div class="operations-column">
+      <!-- AI Co-Pilot Report Assistant -->
+      <div class="ai-copilot-section">
+        <div class="ai-copilot-header">
+          <div class="ai-copilot-icon">🧠</div>
+          <h3 class="ai-copilot-title heading-3">Offline Report Assistant</h3>
+        </div>
+        <p class="body-2" style="color: var(--color-primary-700); margin-bottom: 1.5rem;">
+          Draft emergency reports with real-time AI feedback. Improve report quality before syncing.
+        </p>
+        
+        <div class="report-input-area">
+          <label for="reportDraft" class="body-2" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
+            Describe the emergency situation:
+          </label>
+          <textarea 
+            id="reportDraft" 
+            class="report-textarea body-2" 
+            placeholder="Example: There's a small fire on the 3rd floor of the office building at 123 Main Street. Smoke is visible from the east wing. About 20 people are evacuating..."
+            oninput="updateAnalyzeButton()"
+          ></textarea>
+          
+          <div class="draft-stats body-3" style="margin-top: 0.5rem; color: var(--text-secondary);">
+            <span id="wordCount">0 words</span> • 
+            <span id="charCount">0 characters</span>
+          </div>
+        </div>
+        
+        <button class="btn-primary" onclick="analyzeReport()" id="analyzeBtn" disabled style="width: 100%;">
+            🔍 Analyze Draft with AI
+          </button>
+          
+          <div id="aiAnalysisResult" class="ai-analysis-result">
+            <div class="analysis-section">
+              <div class="analysis-label body-3">🎯 Emergency Type Detected:</div>
+              <div class="analysis-content body-2" id="emergencyTypeResult"></div>
+            </div>
+            
+            <div class="analysis-section">
+              <div class="analysis-label body-3">📍 Key Details Found:</div>
+              <div class="analysis-content body-2" id="keywordsResult"></div>
+            </div>
+            
+            <div class="analysis-section">
+              <div class="analysis-label body-3">❓ Recommended Additions:</div>
+              <div class="analysis-content body-2" id="gapsResult"></div>
+            </div>
+            
+            <div class="analysis-section">
+              <div class="analysis-label body-3">📊 Report Quality Score:</div>
+              <div class="analysis-content body-2" id="clarityResult"></div>
+            </div>
+            
+            <div class="analysis-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn-success" onclick="saveImprovedReport()" style="flex: 1;">
+                💾 Save to Queue
+              </button>
+              <button class="btn-secondary" onclick="clearDraft()" style="flex: 1;">
+                🗑️ Clear Draft
+              </button>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Manual Mesh Pairing UI -->
+        <div class="feature-card communication">
+          <div class="ai-copilot-header">
+            <div class="ai-copilot-icon" style="background: var(--color-success-500);">📱</div>
+            <h3 class="feature-title heading-3" style="color: var(--color-success-800);">Peer-to-Peer Communication</h3>
+          </div>
+          <p class="feature-description body-2">Connect directly with other users nearby without internet. Share critical information through mesh networking.</p>
+          
+          <div class="p2p-connection-area">
+            <div class="qr-section" style="text-align: center; margin: 1rem 0;">
+              <div class="body-3" style="margin-bottom: 0.5rem; font-weight: 600;">Your Connection Code:</div>
+              <canvas id="qr-code" style="border: 2px solid var(--border-color); border-radius: var(--radius);"></canvas>
+            </div>
+            
+            <div class="signal-section">
+              <pre id="signal-raw" class="body-3" style="cursor: copy; background: var(--bg-primary); padding: 8px; overflow-wrap: anywhere; border: 1px dashed var(--border-color); margin: 0.5rem 0; border-radius: var(--radius); max-height: 80px; overflow-y: auto;" title="Click to copy your signal"></pre>
+              
+              <label for="signal-input" class="body-3" style="display: block; margin: 0.5rem 0; font-weight: 600;">
+                Paste peer's signal to connect:
+              </label>
+              <input id="signal-input" class="body-3" placeholder="Paste peer signal here" style="width: 100%; margin-bottom: 1rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--bg-primary); color: var(--text-primary);" />
+              
+              <button class="btn-primary" onclick="handleManualSignal()" style="width: 100%;">🔗 Connect to Peer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Full-Width Intelligent Sync Queue -->
+    <div class="enhanced-sync-queue">
+      <div class="ai-copilot-header">
+        <div class="ai-copilot-icon" style="background: var(--color-secondary-500);">📋</div>
+        <h3 class="ai-copilot-title heading-3" style="color: var(--color-secondary-800);">Intelligent Sync Queue</h3>
+      </div>
+      <p class="body-2" style="color: var(--color-secondary-700); margin-bottom: 1.5rem;">
+        Reports waiting to sync, automatically analyzed and prioritized by AI for optimal emergency response.
+      </p>
+      
+      <div class="sync-queue-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <button class="btn-success" onclick="refreshSyncQueue()">
+          🔄 Refresh Analysis
+        </button>
+        <button class="btn-primary" onclick="previewSyncData()">
+          👁️ Preview All Reports
+        </button>
+        <button class="btn-secondary" onclick="exportOfflineData()">
+          📤 Export Data
+        </button>
+      </div>
+      
+      <div id="intelligentSyncQueue">
+        <!-- Queue items will be populated by JavaScript -->
+      </div>
+      
+      <div class="sync-statistics" style="margin-top: 1.5rem; padding: 1rem; background: var(--color-grey-50); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+        <div class="heading-4" style="margin-bottom: 1rem; color: var(--text-primary);">📊 Queue Statistics</div>
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+          <div class="stat-item" style="text-align: center;">
+            <div class="stat-number heading-3" style="color: var(--color-secondary-600);" id="totalReports">0</div>
+            <div class="stat-label body-3" style="color: var(--text-secondary);">Total Reports</div>
+          </div>
+          <div class="stat-item" style="text-align: center;">
+            <div class="stat-number heading-3" style="color: var(--color-secondary-600);" id="criticalReports">0</div>
+            <div class="stat-label body-3" style="color: var(--text-secondary);">Critical Priority</div>
+          </div>
+          <div class="stat-item" style="text-align: center;">
+            <div class="stat-number heading-3" style="color: var(--color-primary-600);" id="dataSize">0 KB</div>
+            <div class="stat-label body-3" style="color: var(--text-secondary);">Total Data Size</div>
+          </div>
+          <div class="stat-item" style="text-align: center;">
+            <div class="stat-number heading-3" style="color: var(--color-success-600);" id="lastSync">Never</div>
+            <div class="stat-label body-3" style="color: var(--text-secondary);">Last Sync</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Original Features Grid -->
+    <div class="features-grid">
+      <div class="feature-card emergency">
+        <span class="feature-icon">🚨</span>
+        <h3 class="feature-title heading-3">Emergency Reporting</h3>
+        <p class="feature-description body-2">Submit critical reports that will sync automatically when connection is restored.</p>
+        <ul class="feature-list">
+          <li class="body-3">Create incident reports</li>
+          <li class="body-3">Record audio messages</li>
+          <li class="body-3">Attach photos for evidence</li>
+          <li class="body-3">Set priority levels</li>
+        </ul>
+      </div>
+      
+      <div class="feature-card ai">
+        <span class="feature-icon">🧠</span>
+        <h3 class="feature-title heading-3">Edge AI Analysis</h3>
+        <p class="feature-description body-2">AI-powered analysis runs directly on your device, even when offline.</p>
+        <ul class="feature-list">
+          <li class="body-3">Image hazard detection</li>
+          <li class="body-3">Audio sentiment analysis</li>
+          <li class="body-3">On-device risk assessment</li>
+          <li class="body-3">Immediate recommendations</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endblock %}
+  
+  {% block scripts %}
+  {{ super() }}
+  <!-- QR Code Library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+  
+  <script>
+  // --- OFFLINE PAGE LOGIC ---
+  (function() {
+  "use strict";
+  
+  let isChecking = false;
+  let retryCount = 0;
+  const maxRetries = 5;
+  
+  const statusIndicator = document.getElementById('statusIndicator');
+  const statusText = document.getElementById('statusText');
+  const connectionDetails = document.getElementById('connectionDetails');
+  
+  function updateConnectionStatus() {
+    if (isChecking) {
+      statusIndicator.className = 'status-indicator checking';
+      statusText.textContent = 'Checking connection...';
+      connectionDetails.textContent = 'Testing network connectivity...';
+      return;
+    }
+  
+    if (navigator.onLine) {
+      statusIndicator.className = 'status-indicator online';
+      statusText.textContent = 'Connection Restored!';
+      connectionDetails.innerHTML = `<strong>✅ You're back online!</strong> <a href="/" style="color: var(--color-success-600); text-decoration: underline;">Returning to the portal...</a>`;
+      setTimeout(() => window.location.href = '/', 2000);
+    } else {
+      statusIndicator.className = 'status-indicator';
+      statusText.textContent = 'No Internet Connection';
+      connectionDetails.textContent = `Offline mode is active. Retries: ${retryCount}/${maxRetries}.`;
+    }
+  }
+  
+  async function checkConnection() {
+    if (isChecking) return;
+    isChecking = true;
+    retryCount++;
+    updateConnectionStatus();
+  
+    try {
+      await fetch('/api/health', { method: 'HEAD', cache: 'no-cache', mode: 'no-cors' });
+      window.dispatchEvent(new Event('online'));
+    } catch (error) {
+      // The fetch failed, we are likely offline
+    } finally {
+      isChecking = false;
+      updateConnectionStatus();
+      if (!navigator.onLine && retryCount < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+        setTimeout(checkConnection, delay);
+      }
+    }
+  }
+  
+  function showDiagnostics() {
+    const diagnosticsInfo = `
+  🔍 Network Diagnostics:
+  -------------------------
+  Status: ${navigator.onLine ? 'Online' : 'Offline'}
+  Connection Type: ${navigator.connection ? navigator.connection.effectiveType : 'Unknown'}
+  Service Worker: ${'serviceWorker' in navigator ? 'Supported' : 'Not Supported'}
+  Cache Storage: ${'caches' in window ? 'Available' : 'Not Available'}
+  Retries: ${retryCount}/${maxRetries}
+  `;
+    alert(diagnosticsInfo);
+  }
+  
+  // Enhanced report analysis with live word/character count
+  function updateAnalyzeButton() {
+    const textarea = document.getElementById('reportDraft');
+    const text = textarea.value.trim();
+    const btn = document.getElementById('analyzeBtn');
+    const wordCount = document.getElementById('wordCount');
+    const charCount = document.getElementById('charCount');
+    
+    const words = text ? text.split(/\s+/).length : 0;
+    const chars = text.length;
+    
+    wordCount.textContent = `${words} words`;
+    charCount.textContent = `${chars} characters`;
+    
+    btn.disabled = text.length < 10;
+    if (text.length < 10) {
+      btn.textContent = '🔍 Enter at least 10 characters';
+    } else {
+      btn.textContent = '🔍 Analyze Draft with AI';
+    }
+  }
+  
+  function analyzeReport() {
+    const textarea = document.getElementById('reportDraft');
+    const text = textarea.value.trim();
+    const result = document.getElementById('aiAnalysisResult');
+    const btn = document.getElementById('analyzeBtn');
+    
+    if (!text || text.length < 10) {
+      alert('Please enter a more detailed description of the emergency situation.');
+      return;
+    }
+    
+    btn.innerHTML = '<div class="loading-spinner-inline"></div>Analyzing with AI...';
+    btn.disabled = true;
+    
+    // Enhanced AI analysis simulation
+    setTimeout(() => {
+      const analysis = performEnhancedAIAnalysis(text);
+      
+      document.getElementById('emergencyTypeResult').innerHTML = `${analysis.emergencyType} <span class="confidence-badge confidence-${analysis.typeConfidence}">${analysis.typeConfidence.toUpperCase()}</span>`;
+      document.getElementById('keywordsResult').textContent = analysis.keywords;
+      document.getElementById('gapsResult').textContent = analysis.gaps;
+      document.getElementById('clarityResult').innerHTML = `${analysis.clarity} <span class="confidence-badge confidence-${analysis.confidence}">${Math.round(analysis.score)}% COMPLETE</span>`;
+      
+      result.classList.add('visible');
+      btn.innerHTML = '🔍 Analyze Draft with AI';
+      btn.disabled = false;
+      
+      // Show notification
+      if (window.portal && window.portal.showNotification) {
+        window.portal.showNotification(`Report analyzed! Quality score: ${Math.round(analysis.score)}%`, 'success');
+      }
+    }, 2000);
+  }
+  
+  function performEnhancedAIAnalysis(text) {
+    const keywords = [];
+    const gaps = [];
+    let emergencyType = 'General Emergency';
+    let typeConfidence = 'medium';
+    let clarity = 'Good';
+    let confidence = 'medium';
+    let score = 60;
+    
+    // Enhanced emergency type detection
+    const emergencyTypes = {
+      'fire|smoke|flames|burning': { type: '🔥 Fire Emergency', confidence: 'high' },
+      'flood|water|inundation|overflow': { type: '🌊 Flood Emergency', confidence: 'high' },
+      'earthquake|tremor|shaking|seismic': { type: '🌍 Earthquake Emergency', confidence: 'high' },
+      'medical|injury|injured|unconscious|bleeding': { type: '🚑 Medical Emergency', confidence: 'high' },
+      'accident|collision|crash|vehicle': { type: '🚗 Traffic Accident', confidence: 'medium' },
+      'gas|leak|chemical|toxic': { type: '⚠️ Hazmat Emergency', confidence: 'high' },
+      'power|outage|blackout|electricity': { type: '⚡ Infrastructure Emergency', confidence: 'medium' },
+      'storm|tornado|hurricane|wind': { type: '🌪️ Weather Emergency', confidence: 'high' }
+    };
+    
+    for (const [pattern, info] of Object.entries(emergencyTypes)) {
+      if (new RegExp(pattern, 'i').test(text)) {
+        emergencyType = info.type;
+        typeConfidence = info.confidence;
+        score += 15;
+        break;
+      }
+    }
+    
+    // Enhanced keyword detection
+    const emergencyKeywords = {
+      'fire|smoke|flames': '🔥', 'water|flood|overflow': '🌊', 'shake|earthquake': '🌍', 
+      'medical|injury|bleeding': '🚑', 'accident|crash|collision': '🚗', 'gas|leak|toxic': '⚠️',
+      'trapped|stuck|blocked': '🆘', 'evacuate|evacuation|leave': '🚶', 'damage|destruction': '🏗️',
+      'urgent|critical|emergency': '⚡', 'help|assistance|rescue': '🆘', 'danger|hazard|risk': '⚠️'
+    };
+    
+    for (const [pattern, emoji] of Object.entries(emergencyKeywords)) {
+      if (new RegExp(pattern, 'i').test(text)) {
+        const matches = text.match(new RegExp(pattern, 'gi'));
+        if (matches) {
+          keywords.push(`${emoji} ${matches[0].toLowerCase()}`);
+          score += 5;
         }
-
-        async function generateQRCode() {
-            const p2p = await loadP2P();
-            const offer = await p2p.manualSignalOffer();
-            const signalRaw = document.getElementById('signal-raw');
-            const qrCanvas = document.getElementById('qr-code');
-
-            if (signalRaw) {
-                signalRaw.textContent = offer;
-                signalRaw.onclick = () => {
-                    navigator.clipboard.writeText(offer).then(() => alert('Signal copied to clipboard!'));
-                };
-            }
-            if (qrCanvas && QRious) {
-                new QRious({
-                    element: qrCanvas,
-                    value: offer,
-                    size: 200,
-                    padding: 10,
-                    background: 'white',
-                    foreground: '#111827'
-                });
-            }
-        }
-
-        window.handleManualSignal = async function() {
-            const p2p = await loadP2P();
-            const answer = document.getElementById('signal-input').value;
-            if (answer) {
-                p2p.manualSignalInput(answer);
-                alert('✅ Signal sent. Connection attempt initiated.');
+      }
+    }
+    
+    // Enhanced information gaps analysis
+    const checks = [
+      { pattern: /\d+\s*(street|avenue|road|boulevard|st|ave|rd|blvd|address)/i, missing: 'Specific street address' },
+      { pattern: /\d+\s*(people|person|individual|victim|casualt)/i, missing: 'Number of people affected' },
+      { pattern: /(time|am|pm|hour|minute|\d+:\d+|o\'clock)/i, missing: 'Time of incident' },
+      { pattern: /(phone|contact|reach|call)/i, missing: 'Contact information' },
+      { pattern: /(building|floor|room|apartment|unit)/i, missing: 'Specific location details' },
+      { pattern: /(cause|reason|how|why|started)/i, missing: 'Cause or origin information' }
+    ];
+    
+    checks.forEach(check => {
+      if (!check.pattern.test(text)) {
+        gaps.push(check.missing);
+      } else {
+        score += 8;
+      }
+    });
+    
+    // Quality assessment
+    const wordCount = text.split(/\s+/).length;
+    if (wordCount < 15) {
+      clarity = 'Needs more detail - too brief';
+      confidence = 'low';
+    } else if (wordCount > 100 && keywords.length > 3 && gaps.length < 2) {
+      clarity = 'Excellent - comprehensive and detailed';
+      confidence = 'high';
+      score += 20;
+    } else if (keywords.length > 2 && gaps.length < 4) {
+      clarity = 'Good - contains key emergency information';
+      confidence = 'medium';
+      score += 10;
+    } else {
+      clarity = 'Fair - could use more specific details';
+      confidence = 'low';
+    }
+    
+    // Cap score at 100
+    score = Math.min(score, 100);
+    
+    return {
+      emergencyType,
+      typeConfidence,
+      keywords: keywords.length ? keywords.join(', ') : 'No specific emergency indicators detected',
+      gaps: gaps.length ? gaps.join(', ') : 'All essential information appears present',
+      clarity,
+      confidence,
+      score
+    };
+  }
+  
+  function saveImprovedReport() {
+    const text = document.getElementById('reportDraft').value.trim();
+    if (!text) return;
+    
+    // Save to sync queue with timestamp
+    const report = {
+      id: Date.now(),
+      message: text,
+      timestamp: new Date().toLocaleTimeString(),
+      priority: 'medium',
+      type: 'ai-assisted-report',
+      analyzed: true
+    };
+    
+    const queue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+    queue.innerHTML = mockQueue.map(item => `
+      <div class="sync-queue-item priority-${item.priority}">
+        <div class="queue-item-header">
+          <h4 class="queue-item-title heading-4">${item.title}</h4>
+          <div class="queue-item-timestamp">${item.timestamp}</div>
+        </div>
+        
+        <div class="queue-item-summary body-2">
+          ${item.aiSummary}
+        </div>
+        
+        <div class="queue-item-meta">
+          <div class="priority-badge priority-${item.priority}">
+            ${item.priority.toUpperCase()} PRIORITY
+          </div>
+          <div class="ai-analysis-badge">
+            🧠 AI Analyzed
+          </div>
+          <div class="data-size-badge">
+            ${item.dataSize}KB
+          </div>
+          ${item.hasMedia ? '<div class="data-size-badge">📎 Media Attached</div>' : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  function getEnhancedMockQueue() {
+    return [
+      {
+        id: 1,
+        title: 'Structure Fire - Downtown Office Building',
+        priority: 'critical',
+        timestamp: '10:30 AM',
+        aiSummary: 'Multi-story office fire with confirmed evacuations in progress. Smoke visible from east wing, approximately 20-30 people affected. Emergency services notified.',
+        dataSize: 245,
+        hasMedia: true
+      },
+      {
+        id: 2,
+        title: 'Medical Emergency - Cardiac Event',
+        priority: 'critical', 
+        timestamp: '10:45 AM',
+        aiSummary: 'Unconscious individual, CPR in progress. Location: 456 Main Street, lobby area. AED requested, ambulance en route.',
+        dataSize: 156,
+        hasMedia: false
+      },
+      {
+        id: 3,
+        title: 'Traffic Incident - Highway 101',
+        priority: 'medium',
+        timestamp: '11:00 AM',
+        aiSummary: 'Multi-vehicle collision, possible injuries. Traffic blocking two lanes northbound. Tow trucks and emergency services responding.',
+        dataSize: 189,
+        hasMedia: true
+      },
+      {
+        id: 4,
+        title: 'Power Outage - Residential Area',
+        priority: 'low',
+        timestamp: '11:15 AM',
+        aiSummary: 'Localized power outage affecting approximately 200 homes. Utility company notified, estimated repair time 2-4 hours.',
+        dataSize: 98,
+        hasMedia: false
+      }
+    ];
+  }
+  
+  function previewSyncData() {
+    const queue = getEnhancedMockQueue();
+    if (queue.length === 0) {
+      alert('No reports in sync queue to preview.');
+      return;
+    }
+    
+    const preview = queue.map((item, index) => 
+      `${index + 1}. [${item.priority.toUpperCase()}] ${item.title}\n   ${item.aiSummary.substring(0, 80)}...`
+    ).join('\n\n');
+    
+    alert(`Preview of ${queue.length} reports in sync queue:\n\n${preview}`);
+  }
+  
+  function exportOfflineData() {
+    const queue = getEnhancedMockQueue();
+    if (queue.length === 0) {
+      alert('No data to export.');
+      return;
+    }
+    
+    const exportData = {
+      exportTime: new Date().toISOString(),
+      totalReports: queue.length,
+      reports: queue
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `emergency-reports-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    if (window.portal && window.portal.showNotification) {
+      window.portal.showNotification('📤 Emergency data exported successfully!', 'success');
+    }
+  }
+  
+  // --- P2P MESH NETWORKING ---
+  let p2pModule;
+  async function loadP2P() {
+    if (!p2pModule) {
+      p2pModule = await import('/static/js/p2p/fallback-webrtc.js');
+    }
+    return p2pModule;
+  }
+  
+  async function generateQRCode() {
+    try {
+      const p2p = await loadP2P();
+      const offer = await p2p.manualSignalOffer();
+      const signalRaw = document.getElementById('signal-raw');
+      const qrCanvas = document.getElementById('qr-code');
+  
+      if (signalRaw) {
+        signalRaw.textContent = offer;
+        signalRaw.onclick = () => {
+          navigator.clipboard.writeText(offer).then(() => {
+            if (window.portal && window.portal.showNotification) {
+              window.portal.showNotification('Signal copied to clipboard!', 'success');
             } else {
-                alert('Please paste a signal from your peer.');
+              alert('Signal copied to clipboard!');
             }
+          });
         };
-
-        // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            updateConnectionStatus();
-            generateQRCode(); // Generate QR for pairing on page load
-            
-            // Make functions globally accessible for buttons
-            window.checkConnection = checkConnection;
-            window.showDiagnostics = showDiagnostics;
-            
-            window.addEventListener('online', updateConnectionStatus);
-            window.addEventListener('offline', updateConnectionStatus);
+      }
+      
+      if (qrCanvas && typeof QRious !== 'undefined') {
+        new QRious({
+          element: qrCanvas,
+          value: offer,
+          size: 200,
+          padding: 10,
+          background: 'white',
+          foreground: '#111827'
         });
-    })();
-</script>
-{% endblock %}
+      }
+    } catch (err) {
+      console.log('P2P module not available:', err);
+    }
+  }
+  
+  window.handleManualSignal = async function() {
+    try {
+      const p2p = await loadP2P();
+      const answer = document.getElementById('signal-input').value;
+      if (answer) {
+        p2p.manualSignalInput(answer);
+        if (window.portal && window.portal.showNotification) {
+          window.portal.showNotification('✅ Signal sent. Connection attempt initiated.', 'success');
+        } else {
+          alert('✅ Signal sent. Connection attempt initiated.');
+        }
+      } else {
+        alert('Please paste a signal from your peer.');
+      }
+    } catch (err) {
+      console.log('P2P connection failed:', err);
+      alert('P2P connection failed. Please try again.');
+    }
+  };
+  
+  // --- INITIALIZATION ---
+  document.addEventListener('DOMContentLoaded', () => {
+    updateConnectionStatus();
+    generateQRCode();
+    refreshSyncQueue();
+    
+    // Make functions globally accessible
+    window.checkConnection = checkConnection;
+    window.showDiagnostics = showDiagnostics;
+    window.updateAnalyzeButton = updateAnalyzeButton;
+    window.analyzeReport = analyzeReport;
+    window.saveImprovedReport = saveImprovedReport;
+    window.clearDraft = clearDraft;
+    window.loadScenarioGuidance = loadScenarioGuidance;
+    window.getAIGuidance = getAIGuidance;
+    window.refreshSyncQueue = refreshSyncQueue;
+    window.previewSyncData = previewSyncData;
+    window.exportOfflineData = exportOfflineData;
+    
+    // Event listeners
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+  });
+  
+  })();
+  </script>
+  {% endblock %}.push(report);
+    localStorage.setItem('syncQueue', JSON.stringify(queue));
+    
+    if (window.portal && window.portal.showNotification) {
+      window.portal.showNotification('✅ Report saved to sync queue!', 'success');
+    }
+    
+    refreshSyncQueue();
+    clearDraft();
+  }
+  
+  function clearDraft() {
+    document.getElementById('reportDraft').value = '';
+    document.getElementById('aiAnalysisResult').classList.remove('visible');
+    updateAnalyzeButton();
+  }
+  
+  // Enhanced scenario trainer with AI-generated guidance
+  function loadScenarioGuidance(scenarioType) {
+    const btn = document.getElementById('guidanceBtn');
+    btn.disabled = !scenarioType;
+    
+    if (scenarioType) {
+      btn.textContent = '🧠 Get AI Guidance';
+    } else {
+      btn.textContent = '🧠 Get AI Guidance';
+      document.getElementById('scenarioGuidance').classList.remove('visible');
+    }
+  }
+  
+  function getAIGuidance() {
+    const scenarioType = document.getElementById('scenarioSelect').value;
+    if (!scenarioType) return;
+    
+    const btn = document.getElementById('guidanceBtn');
+    const guidance = document.getElementById('scenarioGuidance');
+    
+    btn.innerHTML = '<div class="loading-spinner-inline"></div>Generating guidance...';
+    btn.disabled = true;
+    
+    setTimeout(() => {
+      const aiGuidance = generateAIGuidance(scenarioType);
+      
+      guidance.innerHTML = `
+        <div class="guidance-header">
+          <div class="guidance-icon">${aiGuidance.icon}</div>
+          <div>
+            <h4 class="guidance-title heading-4">${aiGuidance.title}</h4>
+            <p class="body-3" style="color: var(--color-success-700); margin: 0;">
+              AI-generated ${aiGuidance.steps.length}-step response plan
+            </p>
+          </div>
+        </div>
+        
+        <div class="guidance-checklist">
+          ${aiGuidance.steps.map((step, index) => `
+            <div class="guidance-item">
+              <div class="guidance-step">${index + 1}</div>
+              <div class="guidance-content">
+                <div class="guidance-text body-2">${step.action}</div>
+                <span class="guidance-priority priority-${step.priority}">${step.priority.replace('-', ' ').toUpperCase()}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      
+      guidance.classList.add('visible');
+      btn.innerHTML = '🧠 Get AI Guidance';
+      btn.disabled = false;
+      
+      if (window.portal && window.portal.showNotification) {
+        window.portal.showNotification(`AI guidance generated for ${aiGuidance.title}`, 'success');
+      }
+    }, 1500);
+  }
+  
+  function generateAIGuidance(scenarioType) {
+    const scenarios = {
+      fire: {
+        icon: '🔥',
+        title: 'Structural Fire Response',
+        steps: [
+          { action: 'Alert everyone in the immediate area by shouting "FIRE!"', priority: 'immediate' },
+          { action: 'Call emergency services (911) immediately', priority: 'immediate' },
+          { action: 'Evacuate using the nearest safe exit, never elevators', priority: 'immediate' },
+          { action: 'Check doors for heat before opening - use back of hand', priority: 'immediate' },
+          { action: 'Stay low to avoid smoke inhalation (crawl if necessary)', priority: 'immediate' },
+          { action: 'Close doors behind you to slow fire spread', priority: 'important' },
+          { action: 'Proceed to designated assembly point outside', priority: 'important' },
+          { action: 'Account for all personnel and report to fire department', priority: 'when-safe' }
+        ]
+      },
+      earthquake: {
+        icon: '🌍',
+        title: 'Earthquake Emergency Response',
+        steps: [
+          { action: 'DROP to hands and knees immediately', priority: 'immediate' },
+          { action: 'Take COVER under sturdy furniture if available', priority: 'immediate' },
+          { action: 'HOLD ON to your shelter and protect head/neck', priority: 'immediate' },
+          { action: 'Stay away from windows, mirrors, and heavy objects', priority: 'immediate' },
+          { action: 'If outdoors, move away from buildings and power lines', priority: 'immediate' },
+          { action: 'After shaking stops, check yourself and others for injuries', priority: 'important' },
+          { action: 'Inspect building for damage before moving around', priority: 'important' },
+          { action: 'Be prepared for aftershocks - they can be strong', priority: 'when-safe' }
+        ]
+      },
+      flood: {
+        icon: '🌊',
+        title: 'Flood Emergency Response',
+        steps: [
+          { action: 'Move to higher ground immediately', priority: 'immediate' },
+          { action: 'Avoid walking in moving water deeper than 6 inches', priority: 'immediate' },
+          { action: 'Never drive through flooded roads ("Turn Around, Don\'t Drown")', priority: 'immediate' },
+          { action: 'Turn off utilities (gas, electricity) if safe to reach', priority: 'important' },
+          { action: 'Stay informed via weather radio or emergency alerts', priority: 'important' },
+          { action: 'Gather emergency supplies if time permits', priority: 'important' },
+          { action: 'Document damage with photos for insurance', priority: 'when-safe' },
+          { action: 'Wait for official all-clear before returning home', priority: 'when-safe' }
+        ]
+      },
+      blackout: {
+        icon: '⚡',
+        title: 'Power Outage Response',
+        steps: [
+          { action: 'Use flashlights instead of candles for safety', priority: 'immediate' },
+          { action: 'Check circuit breakers and fuses', priority: 'immediate' },
+          { action: 'Turn off electrical appliances to prevent power surge damage', priority: 'important' },
+          { action: 'Check on neighbors, especially elderly or disabled', priority: 'important' },
+          { action: 'Keep refrigerator and freezer doors closed', priority: 'important' },
+          { action: 'Use generators outside only, never indoors', priority: 'important' },
+          { action: 'Conserve cell phone battery power', priority: 'when-safe' },
+          { action: 'Listen to battery-powered radio for updates', priority: 'when-safe' }
+        ]
+      },
+      medical: {
+        icon: '🚑',
+        title: 'Medical Emergency Response',
+        steps: [
+          { action: 'Ensure scene safety for yourself and others first', priority: 'immediate' },
+          { action: 'Check if person is responsive (tap shoulders, shout)', priority: 'immediate' },
+          { action: 'Call 911 immediately or have someone else do it', priority: 'immediate' },
+          { action: 'Provide basic first aid if you are trained', priority: 'immediate' },
+          { action: 'Control severe bleeding with direct pressure', priority: 'immediate' },
+          { action: 'Monitor breathing and pulse continuously', priority: 'important' },
+          { action: 'Keep person comfortable and warm', priority: 'important' },
+          { action: 'Stay with person until professional help arrives', priority: 'when-safe' }
+        ]
+      },
+      accident: {
+        icon: '🚗',
+        title: 'Traffic Accident Response',
+        steps: [
+          { action: 'Ensure your safety first - pull over if possible', priority: 'immediate' },
+          { action: 'Turn on hazard lights and move to safe location', priority: 'immediate' },
+          { action: 'Call 911 if there are injuries or significant damage', priority: 'immediate' },
+          { action: 'Check on all parties involved for injuries', priority: 'important' },
+          { action: 'Set up warning triangles or flares if safe to do so', priority: 'important' },
+          { action: 'Document scene with photos from multiple angles', priority: 'important' },
+          { action: 'Exchange insurance and contact information', priority: 'when-safe' },
+          { action: 'File police report if required by local law', priority: 'when-safe' }
+        ]
+      },
+      'gas-leak': {
+        icon: '⚠️',
+        title: 'Gas Leak Emergency Response',
+        steps: [
+          { action: 'Leave the area immediately - do not use any electrical switches', priority: 'immediate' },
+          { action: 'Do not use phones, lighters, or create any sparks', priority: 'immediate' },
+          { action: 'Call gas company and 911 from a safe distance', priority: 'immediate' },
+          { action: 'Evacuate others from the area', priority: 'immediate' },
+          { action: 'Turn off gas at meter if you can do so safely', priority: 'important' },
+          { action: 'Ventilate area by opening windows if safe', priority: 'important' },
+          { action: 'Do not return until authorities give all-clear', priority: 'when-safe' },
+          { action: 'Have gas system inspected before resuming use', priority: 'when-safe' }
+        ]
+      },
+      'severe-weather': {
+        icon: '🌪️',
+        title: 'Severe Weather Response',
+        steps: [
+          { action: 'Seek shelter immediately in sturdy building', priority: 'immediate' },
+          { action: 'Go to lowest floor, interior room away from windows', priority: 'immediate' },
+          { action: 'Monitor weather radio or emergency alerts', priority: 'immediate' },
+          { action: 'Avoid windows, doors, and outside walls', priority: 'immediate' },
+          { action: 'If in vehicle, do not try to outrun tornado', priority: 'important' },
+          { action: 'Protect head and neck with arms or heavy blanket', priority: 'important' },
+          { action: 'Stay in shelter until storm completely passes', priority: 'important' },
+          { action: 'Watch for downed power lines and debris after storm', priority: 'when-safe' }
+        ]
+      }
+    };
+    
+    return scenarios[scenarioType] || scenarios.fire;
+  }
+  
+  // Enhanced sync queue with detailed analysis
+  function refreshSyncQueue() {
+    const queue = document.getElementById('intelligentSyncQueue');
+    const totalReports = document.getElementById('totalReports');
+    const criticalReports = document.getElementById('criticalReports');
+    const dataSize = document.getElementById('dataSize');
+    const lastSync = document.getElementById('lastSync');
+    
+    // Get enhanced mock data
+    const mockQueue = getEnhancedMockQueue();
+    
+    // Update statistics
+    totalReports.textContent = mockQueue.length;
+    criticalReports.textContent = mockQueue.filter(r => r.priority === 'critical').length;
+    
+    // Calculate total data size
+    const totalSize = mockQueue.reduce((acc, item) => acc + (item.dataSize || 0), 0);
+    dataSize.textContent = totalSize > 1024 ? `${(totalSize/1024).toFixed(1)} MB` : `${totalSize} KB`;
+    
+    // Last sync from localStorage
+    const savedLastSync = localStorage.getItem('lastSyncTime');
+    lastSync.textContent = savedLastSync || 'Never';
+    
+    if (mockQueue.length === 0) {
+      queue.innerHTML = `
+        <div class="body-2" style="text-align: center; color: var(--text-secondary); padding: 3rem; background: var(--color-success-50); border-radius: var(--radius-lg); border: 2px dashed var(--color-success-300);">
+          ✅ No reports in sync queue<br>
+          <small style="color: var(--color-success-600);">All reports have been successfully synchronized</small>
+        </div>
+      `;
+      return;
+    }

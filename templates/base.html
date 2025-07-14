@@ -19,6 +19,11 @@
   <meta name="color-scheme" content="light dark">
   <link rel="canonical" href="{{ request.url }}">
   
+  <!-- Typography - Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <!-- Preload Critical Resources -->
   <link rel="preload" href="/static/css/styles.css" as="style">
   <link rel="preload" href="/static/css/portal.css" as="style">
@@ -32,31 +37,165 @@
   {% endblock %}
   
   <style>
-    /* Critical CSS for immediate rendering */
+    /* Typography System - Inter Font */
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    /* Brand Color System */
     :root[data-theme="light"] {
-      --surface-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      /* Primary Brand Colors - Blue Accent */
+      --color-primary-50: #eff6ff;
+      --color-primary-100: #dbeafe;
+      --color-primary-200: #bfdbfe;
+      --color-primary-300: #93c5fd;
+      --color-primary-400: #60a5fa;
+      --color-primary-500: #3b82f6;  /* Main brand blue */
+      --color-primary-600: #2563eb;
+      --color-primary-700: #1d4ed8;
+      --color-primary-800: #1e40af;
+      --color-primary-900: #1e3a8a;
+      
+      /* Secondary Colors - Red */
+      --color-secondary-50: #fef2f2;
+      --color-secondary-100: #fee2e2;
+      --color-secondary-200: #fecaca;
+      --color-secondary-300: #fca5a5;
+      --color-secondary-400: #f87171;
+      --color-secondary-500: #ef4444;  /* Main red */
+      --color-secondary-600: #dc2626;
+      --color-secondary-700: #b91c1c;
+      --color-secondary-800: #991b1b;
+      --color-secondary-900: #7f1d1d;
+      
+      /* Supporting Colors - Green */
+      --color-success-50: #f0fdf4;
+      --color-success-100: #dcfce7;
+      --color-success-200: #bbf7d0;
+      --color-success-300: #86efac;
+      --color-success-400: #4ade80;
+      --color-success-500: #22c55e;  /* Main green */
+      --color-success-600: #16a34a;
+      --color-success-700: #15803d;
+      --color-success-800: #166534;
+      --color-success-900: #14532d;
+      
+      /* Supporting Colors - Grey */
+      --color-grey-50: #f9fafb;
+      --color-grey-100: #f3f4f6;
+      --color-grey-200: #e5e7eb;
+      --color-grey-300: #d1d5db;
+      --color-grey-400: #9ca3af;
+      --color-grey-500: #6b7280;  /* Main grey */
+      --color-grey-600: #4b5563;
+      --color-grey-700: #374151;
+      --color-grey-800: #1f2937;
+      --color-grey-900: #111827;
+      
+      /* Block Colors - Black */
+      --color-black-50: #f9fafb;
+      --color-black-100: #f3f4f6;
+      --color-black-200: #e5e7eb;
+      --color-black-300: #d1d5db;
+      --color-black-400: #9ca3af;
+      --color-black-500: #6b7280;
+      --color-black-600: #4b5563;
+      --color-black-700: #374151;
+      --color-black-800: #1f2937;
+      --color-black-900: #000000;  /* Pure black */
+      
+      /* Semantic Color Mappings */
+      --surface-gradient: linear-gradient(135deg, var(--color-grey-50) 0%, var(--color-grey-100) 100%);
       --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-      --border-subtle: #e2e8f0;
-      --text-primary: #1f2937;
-      --text-secondary: #6b7280;
+      --border-subtle: var(--color-grey-200);
+      --text-primary: var(--color-grey-900);
+      --text-secondary: var(--color-grey-600);
       --bg-primary: #ffffff;
-      --bg-secondary: #f8fafc;
-      --primary-color: #3b82f6;
-      --border-color: #e5e7eb;
+      --bg-secondary: var(--color-grey-50);
+      --primary-color: var(--color-primary-500);
+      --secondary-color: var(--color-secondary-500);
+      --success-color: var(--color-success-500);
+      --border-color: var(--color-grey-300);
       --radius: 0.375rem;
       --radius-lg: 0.75rem;
       --radius-xl: 1rem;
     }
     
     :root[data-theme="dark"] {
-      --surface-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      /* Dark theme adjustments */
+      --surface-gradient: linear-gradient(135deg, var(--color-grey-800) 0%, var(--color-grey-700) 100%);
       --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-      --border-subtle: #475569;
-      --text-primary: #f9fafb;
-      --text-secondary: #d1d5db;
-      --bg-primary: #1f2937;
-      --bg-secondary: #111827;
-      --border-color: #374151;
+      --border-subtle: var(--color-grey-600);
+      --text-primary: var(--color-grey-50);
+      --text-secondary: var(--color-grey-300);
+      --bg-primary: var(--color-grey-900);
+      --bg-secondary: var(--color-grey-800);
+      --border-color: var(--color-grey-600);
+    }
+    
+    /* Typography Scale - Based on Inter Font Design System */
+    .heading-1 {
+      font-size: 24px;
+      line-height: 1.48;
+      letter-spacing: 0%;
+      font-weight: 600; /* Semi bold */
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .heading-2 {
+      font-size: 20px;
+      line-height: 1.40;
+      letter-spacing: 0%;
+      font-weight: 600; /* Semi bold */
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .heading-3 {
+      font-size: 20px;
+      line-height: 1.40;
+      letter-spacing: 0%;
+      font-weight: 700; /* Bold */
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .heading-4 {
+      font-size: 18px;
+      line-height: 1.35;
+      letter-spacing: 0%;
+      font-weight: 600; /* Semi bold */
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .body-1 {
+      font-size: 18px;
+      line-height: 1.35;
+      letter-spacing: 0%;
+      font-weight: 400; /* Regular */
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .body-2 {
+      font-size: 16px;
+      line-height: 1.30;
+      letter-spacing: 0%;
+      font-weight: 400; /* Regular */
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .body-3 {
+      font-size: 14px;
+      line-height: 1.25;
+      letter-spacing: 0%;
+      font-weight: 400; /* Regular */
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .caption-1 {
+      font-size: 12px;
+      line-height: 1.20;
+      letter-spacing: 0%;
+      font-weight: 400; /* Regular */
+      font-family: 'Inter', sans-serif;
     }
     
     /* Loading state styles */
@@ -66,14 +205,13 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 9999;
       color: white;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       transition: opacity 0.5s ease, visibility 0.5s ease;
     }
     
@@ -110,7 +248,7 @@
       100% { transform: rotate(360deg); }
     }
     
-    /* Enhanced header styles */
+    /* Enhanced header styles with brand colors */
     .header {
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(20px);
@@ -118,7 +256,7 @@
       padding: 24px;
       margin-bottom: 20px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--color-grey-200);
       position: relative;
       overflow: hidden;
     }
@@ -130,7 +268,7 @@
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #f59e0b, #ef4444);
+      background: linear-gradient(90deg, var(--color-primary-500), var(--color-secondary-500), var(--color-success-500), var(--color-primary-600));
       background-size: 400% 100%;
       animation: headerGradient 10s ease infinite;
     }
@@ -159,7 +297,7 @@
     
     .logo {
       font-size: 2.5rem;
-      background: linear-gradient(135deg, #3b82f6, #ef4444);
+      background: linear-gradient(135deg, var(--color-primary-500), var(--color-secondary-500));
       background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -167,14 +305,10 @@
     }
     
     .title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin: 0;
       color: var(--text-primary);
     }
     
     .subtitle {
-      font-size: 0.9rem;
       color: var(--text-secondary);
       margin: 0;
     }
@@ -204,14 +338,13 @@
       border-radius: var(--radius);
       background: var(--primary-color);
       color: white;
-      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
     }
     
     .controls button:hover {
-      background: #1e40af;
+      background: var(--color-primary-700);
       transform: translateY(-1px);
     }
     
@@ -225,8 +358,8 @@
       gap: 6px;
       padding: 4px 8px;
       border-radius: 12px;
-      background: rgba(22, 163, 74, 0.1);
-      color: #15803d;
+      background: var(--color-success-100);
+      color: var(--color-success-700);
       font-weight: 600;
     }
     
@@ -234,16 +367,21 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #16a34a;
+      background: var(--color-success-500);
       animation: pulse 2s infinite;
     }
     
     .status-online .status-dot {
-      background: #16a34a;
+      background: var(--color-success-500);
     }
     
     .status-offline .status-dot {
-      background: #f59e0b;
+      background: var(--color-secondary-500);
+    }
+    
+    .status-offline {
+      background: var(--color-secondary-100);
+      color: var(--color-secondary-700);
     }
     
     /* Main content container */
@@ -283,9 +421,9 @@
       z-index: 1;
     }
     
-    /* Enhanced AI status bar */
+    /* Enhanced AI status bar with brand colors */
     .ai-status-bar {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
       color: white;
       padding: 1rem 1.5rem;
       border-radius: var(--radius-lg);
@@ -293,7 +431,6 @@
       display: flex;
       align-items: center;
       gap: 1rem;
-      font-size: 0.95rem;
       font-weight: 500;
       box-shadow: var(--card-shadow);
       position: relative;
@@ -320,25 +457,25 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #00ff00;
+      background: var(--color-success-400);
       animation: statusPulse 2s infinite;
-      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
     }
     
     .ai-status-dot.loading { 
-      background: #ffaa00; 
-      box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+      background: var(--color-secondary-400); 
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
     }
     
     .ai-status-dot.error { 
-      background: #ff0000; 
-      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+      background: var(--color-secondary-500); 
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
       animation: errorBlink 1s infinite;
     }
     
     .ai-status-dot.ready { 
-      background: #00ff00; 
-      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+      background: var(--color-success-400); 
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
     }
     
     @keyframes statusPulse {
@@ -359,7 +496,6 @@
       border-radius: var(--radius);
       cursor: pointer;
       margin-left: auto;
-      font-size: 0.85rem;
       font-weight: 600;
       transition: all 0.2s ease;
     }
@@ -369,7 +505,7 @@
       transform: translateY(-1px);
     }
     
-    /* Enhanced confidence meter */
+    /* Enhanced confidence meter with brand colors */
     .ai-confidence-meter {
       background: var(--bg-primary);
       border: 1px solid var(--border-color);
@@ -390,7 +526,6 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.75rem;
-      font-size: 0.9rem;
       font-weight: 600;
       color: var(--text-primary);
     }
@@ -406,7 +541,7 @@
     
     .confidence-fill {
       height: 100%;
-      background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e);
+      background: linear-gradient(90deg, var(--color-secondary-500), var(--color-secondary-400), var(--color-success-500));
       transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 4px;
       position: relative;
@@ -428,28 +563,94 @@
       50% { transform: translateX(100%); }
     }
     
-    /* Footer */
+    /* Footer with brand colors */
     .footer {
       text-align: center;
       padding: 2rem 0;
       color: var(--text-secondary);
-      font-size: 0.9rem;
       background: rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(10px);
       border-radius: var(--radius-lg);
       margin-top: 2rem;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--border-subtle);
     }
     
     /* Dark theme overrides */
     [data-theme="dark"] .header {
-      background: rgba(30, 41, 59, 0.95);
-      border: 1px solid rgba(71, 85, 105, 0.5);
+      background: rgba(31, 41, 55, 0.95);
+      border: 1px solid var(--color-grey-600);
     }
     
     [data-theme="dark"] .footer {
-      background: rgba(30, 41, 59, 0.3);
-      border: 1px solid rgba(71, 85, 105, 0.3);
+      background: rgba(31, 41, 55, 0.3);
+      border: 1px solid var(--color-grey-600);
+    }
+    
+    [data-theme="dark"] .status-indicator {
+      background: var(--color-success-800);
+      color: var(--color-success-200);
+    }
+    
+    [data-theme="dark"] .status-offline {
+      background: var(--color-secondary-800);
+      color: var(--color-secondary-200);
+    }
+    
+    /* Typography utility classes */
+    h1, .h1 { @extend .heading-1; }
+    h2, .h2 { @extend .heading-2; }
+    h3, .h3 { @extend .heading-3; }
+    h4, .h4 { @extend .heading-4; }
+    p, .p { @extend .body-2; }
+    small, .small { @extend .caption-1; }
+    
+    /* Buttons with brand colors */
+    .btn-primary {
+      background: var(--color-primary-500);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-primary:hover {
+      background: var(--color-primary-600);
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary {
+      background: var(--color-secondary-500);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-secondary:hover {
+      background: var(--color-secondary-600);
+      transform: translateY(-1px);
+    }
+    
+    .btn-success {
+      background: var(--color-success-500);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-success:hover {
+      background: var(--color-success-600);
+      transform: translateY(-1px);
     }
     
     /* Responsive design */
@@ -498,13 +699,8 @@
         font-size: 2rem;
       }
       
-      .title {
-        font-size: 1.25rem;
-      }
-      
       .ai-status-bar {
         padding: 0.75rem 1rem;
-        font-size: 0.9rem;
         flex-direction: column;
         text-align: center;
         gap: 0.75rem;
@@ -514,6 +710,14 @@
         margin-left: 0;
         width: 100%;
       }
+      
+      /* Responsive typography */
+      .heading-1 { font-size: 20px; }
+      .heading-2 { font-size: 18px; }
+      .heading-3 { font-size: 18px; }
+      .heading-4 { font-size: 16px; }
+      .body-1 { font-size: 16px; }
+      .body-2 { font-size: 14px; }
     }
     
     @media (max-width: 480px) {
@@ -527,13 +731,10 @@
         border-radius: 12px;
       }
       
-      .title {
-        font-size: 1.1rem;
-      }
-      
-      .subtitle {
-        font-size: 0.8rem;
-      }
+      /* Further responsive typography */
+      .heading-1 { font-size: 18px; }
+      .heading-2 { font-size: 16px; }
+      .heading-3 { font-size: 16px; }
     }
     
     /* High contrast mode */
@@ -576,8 +777,8 @@
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
-    <div class="loading-text">Emergency Response Assistant</div>
-    <div class="loading-subtext">Initializing AI systems and security protocols...</div>
+    <div class="loading-text heading-2">Emergency Response Assistant</div>
+    <div class="loading-subtext body-3">Initializing AI systems and security protocols...</div>
   </div>
 
   <header class="header">
@@ -585,14 +786,14 @@
       <div class="header-info">
         <div class="logo">🆘</div>
         <div>
-          <h1 class="title">{% block page_title %}Emergency Response Assistant{% endblock %}</h1>
-          <p class="subtitle">{% block subtitle %}AI-powered emergency analysis & support{% endblock %}</p>
+          <h1 class="title heading-1">{% block page_title %}Emergency Response Assistant{% endblock %}</h1>
+          <p class="subtitle body-3">{% block subtitle %}AI-powered emergency analysis & support{% endblock %}</p>
         </div>
       </div>
       
       <div class="header-actions">
         {% block header_actions %}
-        <a href="/live-generate" style="display: inline-block; padding: 0.5rem 1rem; background-color: #1e40af; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem;">
+        <a href="/live-generate" class="btn-primary" style="text-decoration: none;">
           🧩 Live JSON → PDF Editor
         </a>
         {% endblock %}
@@ -600,13 +801,13 @@
       
       <div class="controls">
         <div>
-          <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Theme</button>
-          <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ Contrast</button>
+          <button id="toggleThemeBtn" class="btn-primary" aria-label="Toggle dark/light theme">🌓 Theme</button>
+          <button id="contrastToggleBtn" class="btn-primary" aria-label="Toggle high contrast mode">♿ Contrast</button>
         </div>
         <div class="status-bar">
           <div class="status-indicator status-offline">
             <div class="status-dot"></div>
-            <span>Offline Ready</span>
+            <span class="caption-1">Offline Ready</span>
           </div>
         </div>
       </div>
@@ -617,8 +818,8 @@
     {% block ai_status %}
     <div class="ai-status-bar" id="aiStatusBar">
       <div class="ai-status-dot ready" id="aiStatusDot"></div>
-      <span id="aiStatusText">🧠 AI models ready for emergency analysis</span>
-      <button onclick="window.EdgeAI?.runDiagnostics()" aria-label="Test AI systems">
+      <span id="aiStatusText" class="body-2">🧠 AI models ready for emergency analysis</span>
+      <button onclick="window.EdgeAI?.runDiagnostics()" aria-label="Test AI systems" class="body-3">
         🧪 Test AI
       </button>
     </div>
@@ -626,8 +827,8 @@
 
     <div class="ai-confidence-meter" id="aiConfidence">
       <div class="confidence-header">
-        <span>🤖 AI Analysis Confidence</span>
-        <span id="confidenceScore">--%</span>
+        <span class="body-2">🤖 AI Analysis Confidence</span>
+        <span id="confidenceScore" class="body-2">--%</span>
       </div>
       <div class="confidence-bar">
         <div class="confidence-fill" id="confidenceFill" style="width: 0%;"></div>
@@ -637,26 +838,26 @@
     {% block content %}{% endblock %}
 
     {% block sync_queue %}
-    <div class="sync-queue-card" id="syncQueueCard" style="display: none; margin-top: 2rem; padding: 1rem; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px;">
-      <h3 style="margin-bottom: 0.5rem;">📡 Offline Report Sync Queue</h3>
-      <ul id="syncQueueList" style="padding-left: 1rem; font-size: 0.9rem;"></ul>
-      <button id="syncNowBtn" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #16a34a; color: white; border: none; border-radius: 4px;">🔄 Sync Now</button>
+    <div class="sync-queue-card" id="syncQueueCard" style="display: none; margin-top: 2rem; padding: 1rem; background: var(--color-secondary-50); border: 1px solid var(--color-secondary-200); border-radius: var(--radius-lg);">
+      <h3 class="heading-4" style="margin-bottom: 0.5rem; color: var(--color-secondary-700);">📡 Offline Report Sync Queue</h3>
+      <ul id="syncQueueList" class="body-3" style="padding-left: 1rem; color: var(--color-secondary-600);"></ul>
+      <button id="syncNowBtn" class="btn-success" style="margin-top: 1rem;">🔄 Sync Now</button>
     </div>
     {% endblock %}
 
     {% block mesh_pairing %}
-    <div id="pairing-ui" style="margin-top: 2rem; padding: 1rem; background: #eef2ff; border: 1px solid #93c5fd; border-radius: 8px;">
-      <h3 style="margin-bottom: 0.5rem;">Manual Mesh Pairing (Offline Mode)</h3>
+    <div id="pairing-ui" style="margin-top: 2rem; padding: 1rem; background: var(--color-primary-50); border: 1px solid var(--color-primary-200); border-radius: var(--radius-lg);">
+      <h3 class="heading-4" style="margin-bottom: 0.5rem; color: var(--color-primary-700);">Manual Mesh Pairing (Offline Mode)</h3>
       <canvas id="qr-code" style="display:block;margin:auto;"></canvas>
-      <pre id="signal-raw" style="background:#fff; padding:8px; font-size:0.8em; overflow-wrap:anywhere; border:1px dashed #ccc; margin-top:0.5rem;"></pre>
-      <input id="signal-input" placeholder="Paste peer signal here" style="width:100%; margin-top:0.5rem; padding:0.5rem; font-size:0.9em; border:1px solid #ccc; border-radius:4px;" />
-      <button onclick="handleManualSignal()" style="margin-top:0.5rem; padding:0.5rem 1rem; background:#3b82f6; color:white; border:none; border-radius:4px;">🔗 Connect Peer</button>
+      <pre id="signal-raw" class="body-3" style="background: var(--bg-primary); padding: 8px; overflow-wrap: anywhere; border: 1px dashed var(--border-color); margin-top: 0.5rem; border-radius: var(--radius);"></pre>
+      <input id="signal-input" class="body-3" placeholder="Paste peer signal here" style="width: 100%; margin-top: 0.5rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--bg-primary); color: var(--text-primary);" />
+      <button onclick="handleManualSignal()" class="btn-primary" style="margin-top: 0.5rem;">🔗 Connect Peer</button>
     </div>
     {% endblock %}
   </main>
 
   <footer class="footer">
-    <p>🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered | 🌍 Emergency Ready</p>
+    <p class="body-3">🔒 Privacy-First | ⚙️ Works Offline | ⚡ AI-Powered | 🌍 Emergency Ready</p>
   </footer>
 
   {% block base_scripts %}
@@ -737,14 +938,14 @@
       const dot = document.querySelector('.status-dot');
       
       if (navigator.onLine) {
-        indicator.innerHTML = '<div class="status-dot"></div><span>Online + Offline Ready</span>';
+        indicator.innerHTML = '<div class="status-dot"></div><span class="caption-1">Online + Offline Ready</span>';
         indicator.className = 'status-indicator status-online';
         // Show brief notification for connection restoration
         if (window.portal && window.portal.showNotification) {
           window.portal.showNotification('🌐 Connection restored', 'success');
         }
       } else {
-        indicator.innerHTML = '<div class="status-dot"></div><span>Offline Mode Active</span>';
+        indicator.innerHTML = '<div class="status-dot"></div><span class="caption-1">Offline Mode Active</span>';
         indicator.className = 'status-indicator status-offline';
         // Show offline notification
         if (window.portal && window.portal.showNotification) {
@@ -776,18 +977,11 @@
       const headerActions = document.querySelector('.header-actions');
       if (headerActions && window.deferredPrompt) {
         const installBtn = document.createElement('button');
-        installBtn.className = 'install-btn';
+        installBtn.className = 'install-btn btn-primary';
         installBtn.innerHTML = '📱 Install App';
         installBtn.style.cssText = `
-          padding: 0.5rem 1rem;
-          background: linear-gradient(135deg, #7c3aed, #a855f7);
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-weight: 600;
-          font-size: 0.9rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
+          background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700));
+          margin-left: 0.5rem;
         `;
         
         installBtn.onclick = async () => {
@@ -801,16 +995,6 @@
               window.portal.showNotification('📱 App installed successfully!', 'success');
             }
           }
-        };
-        
-        installBtn.onmouseenter = () => {
-          installBtn.style.transform = 'translateY(-2px)';
-          installBtn.style.boxShadow = '0 4px 12px rgba(124, 58, 237, 0.4)';
-        };
-        
-        installBtn.onmouseleave = () => {
-          installBtn.style.transform = '';
-          installBtn.style.boxShadow = '';
         };
         
         headerActions.appendChild(installBtn);
@@ -837,9 +1021,9 @@
 
       if (queue.length > 0) {
         list.innerHTML = queue.map((r, i) => `
-          <li style="padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+          <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
             📥 <strong>Report #${i + 1}</strong> — "${r.message?.slice(0, 40) || 'No text'}..." 
-            <span style="color: #6b7280; font-size: 0.8rem;">(${r.priority || 'medium'} priority)</span>
+            <span style="color: var(--text-secondary); font-size: 0.8rem;">(${r.priority || 'medium'} priority)</span>
           </li>
         `).join('');
         queueCard.style.display = 'block';
@@ -907,6 +1091,54 @@
       document.documentElement.setAttribute('data-contrast', savedContrast);
       contrastBtn.textContent = savedContrast === 'high' ? '👁️ Normal' : '♿ High';
     }
+    
+    // Enhanced notification system with brand colors
+    window.portal.showNotification = function(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `notification notification-${type}`;
+      
+      const colors = {
+        'success': 'var(--color-success-500)',
+        'warning': 'var(--color-secondary-500)',
+        'info': 'var(--color-primary-500)',
+        'error': 'var(--color-secondary-600)'
+      };
+      
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${colors[type] || colors.info};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--card-shadow);
+        z-index: 10000;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 300px;
+      `;
+      
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 10);
+      
+      // Auto remove
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 3000);
+    };
     
     // Event listeners
     window.addEventListener('online', updateConnectionStatus);
