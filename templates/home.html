@@ -43,11 +43,11 @@
             </div>
             <div class="step active" data-step="0">
                 <div class="step-number">1</div>
-                <div class="step-label">Welcome</div>
+                <div class="step-label">Setup Profile</div>
             </div>
             <div class="step" data-step="1">
                 <div class="step-number">2</div>
-                <div class="step-label">Setup</div>
+                <div class="step-label">Welcome</div>
             </div>
             <div class="step" data-step="2">
                 <div class="step-number">3</div>
@@ -75,75 +75,216 @@
         </div>
     </div>
 
-    <!-- === STEP 0: WELCOME === -->
+    <!-- === STEP 0: SETUP EMERGENCY PROFILE (FIRST PRIORITY) === -->
     <div class="content-section active" id="step-0">
+        <div class="step-header">
+            <div class="setup-icon">🛠️</div>
+            <h1 class="setup-title">Setup Your Emergency Profile</h1>
+            <p class="setup-subtitle">Granting permissions helps us provide faster and more accurate assistance during emergencies.</p>
+        </div>
+        
+        <!-- Priority Setup Explanation -->
+        <div class="setup-explanation">
+            <div class="explanation-grid">
+                <div class="explanation-card priority-high">
+                    <span class="explanation-icon">⚡</span>
+                    <h3>Why Setup First?</h3>
+                    <p>During emergencies, every second counts. Pre-configuring your permissions ensures instant access to location, camera, and voice features when you need them most.</p>
+                </div>
+                
+                <div class="explanation-card priority-medium">
+                    <span class="explanation-icon">🔒</span>
+                    <h3>Privacy & Security</h3>
+                    <p>All data stays on your device first. We only access permissions when you actively submit a report, and you can revoke access anytime.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permission Setup Grid -->
+        <div class="permissions-setup-grid">
+            <div class="permission-setup-card priority-critical" id="locationSetupCard">
+                <div class="permission-header">
+                    <div class="permission-icon">📍</div>
+                    <div class="permission-info">
+                        <h3 class="permission-title">Location Access</h3>
+                        <div class="priority-badge critical">Critical</div>
+                    </div>
+                </div>
+                <p class="permission-description">Helps responders find you quickly during emergencies. Essential for accurate emergency response.</p>
+                <div class="permission-benefits">
+                    <div class="benefit-item">✓ Automatic GPS coordinates</div>
+                    <div class="benefit-item">✓ Faster emergency response</div>
+                    <div class="benefit-item">✓ Works offline</div>
+                </div>
+                <button class="btn btn-primary btn-permission" onclick="portal.requestLocationSetup(this)" id="locationSetupBtn">
+                    Enable GPS Access
+                </button>
+                <div class="permission-status" id="locationSetupStatus">Not configured</div>
+            </div>
+
+            <div class="permission-setup-card priority-high" id="cameraSetupCard">
+                <div class="permission-header">
+                    <div class="permission-icon">📷</div>
+                    <div class="permission-info">
+                        <h3 class="permission-title">Camera Access</h3>
+                        <div class="priority-badge high">High Priority</div>
+                    </div>
+                </div>
+                <p class="permission-description">Allows you to attach photo evidence to emergency reports for better situation assessment.</p>
+                <div class="permission-benefits">
+                    <div class="benefit-item">✓ Visual evidence capture</div>
+                    <div class="benefit-item">✓ AI photo analysis</div>
+                    <div class="benefit-item">✓ Better emergency assessment</div>
+                </div>
+                <button class="btn btn-primary btn-permission" onclick="portal.requestCameraSetup(this)" id="cameraSetupBtn">
+                    Enable Camera Access
+                </button>
+                <div class="permission-status" id="cameraSetupStatus">Not configured</div>
+            </div>
+
+            <div class="permission-setup-card priority-high" id="voiceSetupCard">
+                <div class="permission-header">
+                    <div class="permission-icon">🎤</div>
+                    <div class="permission-info">
+                        <h3 class="permission-title">Microphone Access</h3>
+                        <div class="priority-badge high">High Priority</div>
+                    </div>
+                </div>
+                <p class="permission-description">Enables hands-free voice reporting when you can't type or see your screen clearly.</p>
+                <div class="permission-benefits">
+                    <div class="benefit-item">✓ Hands-free reporting</div>
+                    <div class="benefit-item">✓ Voice-to-text transcription</div>
+                    <div class="benefit-item">✓ AI emotion analysis</div>
+                </div>
+                <button class="btn btn-primary btn-permission" onclick="portal.requestMicrophoneSetup(this)" id="voiceSetupBtn">
+                    Enable Voice Access
+                </button>
+                <div class="permission-status" id="voiceSetupStatus">Not configured</div>
+            </div>
+
+            <div class="permission-setup-card priority-medium" id="notificationsSetupCard">
+                <div class="permission-header">
+                    <div class="permission-icon">🔔</div>
+                    <div class="permission-info">
+                        <h3 class="permission-title">Notifications</h3>
+                        <div class="priority-badge medium">Recommended</div>
+                    </div>
+                </div>
+                <p class="permission-description">Receive updates on your reports and local emergency alerts from authorities.</p>
+                <div class="permission-benefits">
+                    <div class="benefit-item">✓ Report status updates</div>
+                    <div class="benefit-item">✓ Local emergency alerts</div>
+                    <div class="benefit-item">✓ System notifications</div>
+                </div>
+                <button class="btn btn-primary btn-permission" onclick="portal.requestNotificationsSetup(this)" id="notificationsSetupBtn">
+                    Enable Notifications
+                </button>
+                <div class="permission-status" id="notificationsSetupStatus">Not configured</div>
+            </div>
+        </div>
+
+        <!-- Setup Progress Indicator -->
+        <div class="setup-progress" id="setupProgress">
+            <div class="progress-header">
+                <h3>🎯 Setup Progress</h3>
+                <span class="progress-counter" id="progressCounter">0 of 4 permissions configured</span>
+            </div>
+            <div class="progress-bar-setup">
+                <div class="progress-fill-setup" id="progressFillSetup" style="width: 0%"></div>
+            </div>
+            <div class="setup-status" id="setupStatus">
+                <span class="status-text">Configure permissions to get started</span>
+            </div>
+        </div>
+
+        <!-- Quick Emergency Override -->
+        <div class="emergency-override">
+            <h3>🚨 Emergency? Skip Setup</h3>
+            <p>If you're in an active emergency situation, you can skip setup and report immediately.</p>
+            <div class="override-buttons">
+                <button class="btn btn-secondary emergency" onclick="portal.emergencySkipSetup()">
+                    🚨 Emergency - Skip Setup
+                </button>
+            </div>
+        </div>
+        
+        <div class="navigation-buttons">
+            <div class="skip-section">
+                <button class="btn btn-outline" onclick="portal.skipSetup()">Skip Setup for Now</button>
+            </div>
+            <button class="btn btn-success btn-large" onclick="portal.completeSetup()" id="completeSetupBtn" disabled>
+                Continue to Platform 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- === STEP 1: WELCOME/OVERVIEW === -->
+    <div class="content-section" id="step-1">
         <div class="welcome-hero">
             <div class="hero-icon">🆘</div>
             <h1 class="hero-title">Emergency Response Assistant</h1>
             <p class="hero-subtitle">Your direct line to AI-powered emergency support.</p>
+            
+            <div class="hero-badges">
+                <div class="badge">✅ Setup Complete</div>
+                <div class="badge">🚀 Ready to Use</div>
+                <div class="badge">📱 Offline Capable</div>
+            </div>
         </div>
         
         <div class="features-grid">
-            <div class="feature-card" onclick="portal.goToStep(2)">
+            <div class="feature-card emergency-priority" onclick="portal.goToStep(2)">
                 <span class="feature-icon">📱</span>
                 <h3 class="feature-title">Submit Report</h3>
                 <p class="feature-description">Send details with text, photos, and location.</p>
+                <div class="feature-hint">Click to start reporting →</div>
             </div>
-            <div class="feature-card" onclick="portal.goToStep(3)">
+            
+            <div class="feature-card voice-enabled" onclick="portal.goToStep(3)">
                 <span class="feature-icon">🎤</span>
                 <h3 class="feature-title">Voice Reporting</h3>
                 <p class="feature-description">Hands-free reporting using AI voice analysis.</p>
+                <div class="feature-hint">Perfect for urgent situations →</div>
             </div>
+            
             <div class="feature-card risk-prediction" onclick="portal.showRiskPrediction()">
                 <span class="feature-icon">🔮</span>
                 <h3 class="feature-title">Risk Prediction</h3>
                 <p class="feature-description">AI-powered local hazard forecasting.</p>
+                <div class="feature-hint">View local risk assessment →</div>
             </div>
-            <div class="feature-card" onclick="portal.goToStep(4)">
+            
+            <div class="feature-card tracking" onclick="portal.goToStep(4)">
                 <span class="feature-icon">📊</span>
                 <h3 class="feature-title">Track My Reports</h3>
                 <p class="feature-description">Monitor your submissions and get updates.</p>
+                <div class="feature-hint">View submission history →</div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="stat-item">
+                <span class="stat-number" id="responseTime">< 2 min</span>
+                <span class="stat-label">Avg Response Time</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="reportsProcessed">1,247</span>
+                <span class="stat-label">Reports Processed</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="aiAccuracy">94%</span>
+                <span class="stat-label">AI Accuracy</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="onlineUsers">156</span>
+                <span class="stat-label">Active Users</span>
             </div>
         </div>
         
         <div class="navigation-buttons">
-            <div></div>
-            <button class="btn btn-primary" onclick="portal.goToStep(1)">Get Started 🚀</button>
-        </div>
-    </div>
-
-    <!-- === STEP 1: SETUP === -->
-    <div class="content-section" id="step-1">
-        <h2>🛠️ Setup Your Emergency Profile</h2>
-        <p>Granting permissions helps us provide faster and more accurate assistance.</p>
-        
-        <div class="form-group">
-            <label class="form-label">📍 Location Access</label>
-            <button class="btn btn-primary" onclick="portal.requestLocation(this)">Enable GPS</button>
-            <p id="locationStatus" class="form-text">Helps responders find you quickly.</p>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">🎤 Microphone Access</label>
-            <button class="btn btn-primary" onclick="portal.requestMicrophone(this)">Enable Voice</button>
-            <p class="form-text">Enables hands-free voice reporting.</p>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">📷 Camera Access</label>
-            <button class="btn btn-primary" onclick="portal.requestCamera(this)">Enable Camera</button>
-            <p class="form-text">Allows you to attach photo evidence.</p>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">🔔 Notifications</label>
-            <button class="btn btn-primary" onclick="portal.requestNotifications(this)">Enable Alerts</button>
-            <p class="form-text">Receive updates on your reports and local emergencies.</p>
-        </div>
-        
-        <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back</button>
-            <button class="btn btn-primary" onclick="portal.goToStep(2)">Continue to Reporting 📱</button>
+            <button class="btn btn-secondary" onclick="portal.goToStep(0)">← Modify Setup</button>
+            <button class="btn btn-primary btn-large" onclick="portal.goToStep(2)">Start Reporting 📱</button>
         </div>
     </div>
 
@@ -157,26 +298,60 @@
                 <span class="method-icon">📝</span>
                 <h3 class="method-title">Text Report</h3>
                 <p class="method-description">Type your details.</p>
+                <div class="method-features">
+                    <span class="feature-tag">Fast</span>
+                    <span class="feature-tag">Detailed</span>
+                </div>
             </div>
             <div class="method-card" data-method="photo" onclick="portal.selectMethod(this, 'photo')">
                 <span class="method-icon">📸</span>
                 <h3 class="method-title">Photo Evidence</h3>
                 <p class="method-description">Upload an image.</p>
+                <div class="method-features">
+                    <span class="feature-tag">Visual</span>
+                    <span class="feature-tag">AI Analysis</span>
+                </div>
             </div>
             <div class="method-card" data-method="location" onclick="portal.selectMethod(this, 'location')">
                 <span class="method-icon">📍</span>
                 <h3 class="method-title">Location Only</h3>
                 <p class="method-description">Pin a location on a map.</p>
+                <div class="method-features">
+                    <span class="feature-tag">Quick</span>
+                    <span class="feature-tag">GPS</span>
+                </div>
             </div>
         </div>
         
-        <form id="emergencyReportForm" autocomplete="off">
+        <form id="emergencyReportForm" autocomplete="off" class="form-container">
             <!-- Form fields are added dynamically by JS -->
         </form>
         
+        <!-- Real-time AI Analysis Display -->
+        <div class="realtime-analysis" id="realtimeAnalysis" style="display: none;">
+            <div class="analysis-header">
+                <span>🧠</span>
+                <span>AI Real-time Analysis</span>
+            </div>
+            <div class="analysis-content">
+                <div class="analysis-item">
+                    <span class="analysis-label">Severity Level:</span>
+                    <span class="analysis-value" id="severityLevel">Analyzing...</span>
+                </div>
+                <div class="analysis-item">
+                    <span class="analysis-label">Response Type:</span>
+                    <span class="analysis-value" id="responseType">Analyzing...</span>
+                </div>
+                <div class="analysis-item">
+                    <span class="analysis-label">Estimated ETA:</span>
+                    <span class="analysis-value" id="estimatedETA">Analyzing...</span>
+                </div>
+            </div>
+        </div>
+        
         <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(1)">← Back</button>
-            <button class="btn btn-success" onclick="portal.submitReport()">📤 Submit Report</button>
+            <button class="btn btn-secondary" onclick="portal.goToStep(1)">← Back to Overview</button>
+            <button class="btn btn-success btn-large" onclick="portal.submitReport()">📤 Submit Report</button>
         </div>
     </div>
 
@@ -188,48 +363,110 @@
         <div class="voice-interface">
             <button class="record-button" id="recordButton" onclick="portal.toggleRecording()">🎤</button>
             <div class="voice-status" id="voiceStatus">Tap to start voice recording</div>
-            <div class="transcript-box" id="transcriptBox">Your voice transcript will appear here...</div>
+            <div class="transcript-box" id="transcriptBox">
+                <div class="transcript-placeholder">Your voice transcript will appear here...</div>
+            </div>
         </div>
         
-        <div id="voiceAnalysis" style="display: none;">
-            <h3>🧠 AI Analysis Results</h3>
-            <div class="features-grid">
-                <div class="feature-card">
+        <div class="voice-analysis" id="voiceAnalysis" style="display: none;">
+            <h3 class="analysis-title">🧠 AI Voice Analysis Results</h3>
+            <div class="analysis-grid">
+                <div class="analysis-card">
                     <span class="feature-icon">⚡</span>
                     <h4>Urgency Level</h4>
-                    <p id="urgencyLevel">Analyzing...</p>
+                    <p class="analysis-result" id="urgencyLevel">Analyzing...</p>
                 </div>
-                <div class="feature-card">
+                <div class="analysis-card">
                     <span class="feature-icon">😰</span>
-                    <h4>Emotion</h4>
-                    <p id="emotionLevel">Analyzing...</p>
+                    <h4>Emotion Detected</h4>
+                    <p class="analysis-result" id="emotionLevel">Analyzing...</p>
                 </div>
-                <div class="feature-card">
+                <div class="analysis-card">
                     <span class="feature-icon">📍</span>
-                    <h4>Location Detected</h4>
-                    <p id="detectedLocation">Analyzing...</p>
+                    <h4>Location Mentioned</h4>
+                    <p class="analysis-result" id="detectedLocation">Analyzing...</p>
                 </div>
-                <div class="feature-card">
+                <div class="analysis-card">
                     <span class="feature-icon">💡</span>
                     <h4>AI Recommendation</h4>
-                    <p id="aiRecommendation">Analyzing...</p>
+                    <p class="analysis-result" id="aiRecommendation">Analyzing...</p>
                 </div>
             </div>
         </div>
         
         <div class="navigation-buttons">
             <button class="btn btn-secondary" onclick="portal.goToStep(2)">← Back to Text Report</button>
-            <button class="btn btn-success" id="submitVoiceReport" onclick="portal.submitVoiceReport()" disabled>📤 Submit Voice Report</button>
+            <button class="btn btn-success btn-large" id="submitVoiceReport" onclick="portal.submitVoiceReport()" disabled>📤 Submit Voice Report</button>
         </div>
     </div>
 
     <!-- === STEP 4: TRACK REPORTS === -->
     <div class="content-section" id="step-4">
-        <h2>📋 My Emergency Reports</h2>
-        <p>Track the status of your submitted reports and view community updates.</p>
+        <div class="reports-dashboard">
+            <h2>📋 My Emergency Reports</h2>
+            <p>Track the status of your submitted reports and view community updates.</p>
+            
+            <!-- Dashboard Stats -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalReports">0</div>
+                        <div class="stat-label">Total Reports</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="pendingReports">0</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="resolvedReports">0</div>
+                        <div class="stat-label">Resolved</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="avgResponseTime">--</div>
+                        <div class="stat-label">Avg Response</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div class="reports-filters">
-            <!-- Filter controls will be added here by JS -->
+            <div class="filter-group">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter" class="filter-select">
+                    <option value="all">All Reports</option>
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="typeFilter">Type:</label>
+                <select id="typeFilter" class="filter-select">
+                    <option value="all">All Types</option>
+                    <option value="text">Text Reports</option>
+                    <option value="voice">Voice Reports</option>
+                    <option value="photo">Photo Reports</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="dateFilter">Date:</label>
+                <select id="dateFilter" class="filter-select">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+            </div>
         </div>
         
         <div class="reports-grid" id="reportsGrid">
@@ -237,8 +474,8 @@
         </div>
         
         <div class="navigation-buttons">
-            <button class="btn btn-secondary" onclick="portal.goToStep(0)">← Back to Home</button>
-            <button class="btn btn-primary" onclick="portal.goToStep(2)">📱 Submit New Report</button>
+            <button class="btn btn-secondary" onclick="portal.goToStep(1)">← Back to Overview</button>
+            <button class="btn btn-primary btn-large" onclick="portal.goToStep(2)">📱 Submit New Report</button>
         </div>
     </div>
 </div>
@@ -251,6 +488,5 @@
 
 {% block scripts %}
     {{ super() }}
-    <!-- Portal JavaScript functionality -->
     <script src="/static/js/portal.js"></script>
 {% endblock %}
