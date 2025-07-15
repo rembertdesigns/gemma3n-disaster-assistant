@@ -734,8 +734,9 @@ body {
     font-weight: 600;
 }
 
-/* Professional Setup Progress */
+/* Professional Setup Progress - Hidden by default */
 .setup-progress {
+    display: none; /* Start hidden */
     background: var(--bg-primary);
     border: 2px solid var(--border-light);
     border-radius: var(--radius-xl);
@@ -743,6 +744,12 @@ body {
     margin: var(--space-2xl) 0;
     box-shadow: var(--shadow-md);
     text-align: center;
+}
+
+/* Show progress bar when active */
+.setup-progress.active {
+    display: block;
+    animation: fadeIn 0.5s ease;
 }
 
 .progress-header {
@@ -1153,6 +1160,44 @@ body {
     color: var(--text-secondary);
     margin-top: var(--space-xs);
     line-height: 1.4;
+}
+
+/* STRONGER Fix for form input text visibility */
+textarea,
+input,
+select,
+#emergencyDescription {
+    color: #1f2937 !important;
+    background: #ffffff !important;
+    -webkit-text-fill-color: #1f2937 !important;
+}
+
+/* Force text color for all form elements */
+.form-container *,
+.form-group *,
+textarea,
+input[type="text"],
+input[type="file"],
+select {
+    color: #1f2937 !important;
+    background: white !important;
+    -webkit-text-fill-color: #1f2937 !important;
+}
+
+/* Placeholder styling */
+::placeholder {
+    color: #9ca3af !important;
+    opacity: 0.7 !important;
+}
+
+::-webkit-input-placeholder {
+    color: #9ca3af !important;
+    opacity: 0.7 !important;
+}
+
+::-moz-placeholder {
+    color: #9ca3af !important;
+    opacity: 0.7 !important;
 }
 
 /* Professional Method Selector */

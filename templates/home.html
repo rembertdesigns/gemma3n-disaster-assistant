@@ -15,6 +15,10 @@
     <!-- Additional Navigation -->
     <a href="/onboarding.html" class="nav-btn">🎓 How It Works</a>
     <a href="/offline.html" class="nav-btn">📴 Offline Mode</a>
+    
+    <!-- New Accessibility & Language Options -->
+    <button class="nav-btn" onclick="portal.toggleAccessibilityMode()" title="Accessibility Options">♿</button>
+    <button class="nav-btn" onclick="portal.showLanguageSelector()" title="Language Selection">🌐</button>
 </nav>
 {% endblock %}
 
@@ -25,6 +29,89 @@
 {% endblock %}
 
 {% block content %}
+<!-- Language Selection Modal -->
+<div class="language-modal" id="languageModal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🌐 Select Language / Seleccionar idioma</h3>
+            <button class="modal-close" onclick="portal.hideLanguageSelector()">&times;</button>
+        </div>
+        <div class="language-grid">
+            <button class="language-option" onclick="portal.setLanguage('en')" data-lang="en">
+                <span class="flag">🇺🇸</span>
+                <span class="language-name">English</span>
+            </button>
+            <button class="language-option" onclick="portal.setLanguage('es')" data-lang="es">
+                <span class="flag">🇪🇸</span>
+                <span class="language-name">Español</span>
+            </button>
+            <button class="language-option" onclick="portal.setLanguage('fr')" data-lang="fr">
+                <span class="flag">🇫🇷</span>
+                <span class="language-name">Français</span>
+            </button>
+            <button class="language-option" onclick="portal.setLanguage('zh')" data-lang="zh">
+                <span class="flag">🇨🇳</span>
+                <span class="language-name">中文</span>
+            </button>
+            <button class="language-option" onclick="portal.setLanguage('ar')" data-lang="ar">
+                <span class="flag">🇸🇦</span>
+                <span class="language-name">العربية</span>
+            </button>
+            <button class="language-option" onclick="portal.setLanguage('ru')" data-lang="ru">
+                <span class="flag">🇷🇺</span>
+                <span class="language-name">Русский</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Accessibility Settings Panel -->
+<div class="accessibility-panel" id="accessibilityPanel" style="display: none;">
+    <div class="panel-content">
+        <div class="panel-header">
+            <h3>♿ Accessibility Settings</h3>
+            <button class="panel-close" onclick="portal.hideAccessibilityPanel()">&times;</button>
+        </div>
+        <div class="accessibility-options">
+            <div class="accessibility-option">
+                <label class="switch">
+                    <input type="checkbox" id="highContrastMode" onchange="portal.toggleHighContrast()">
+                    <span class="slider"></span>
+                </label>
+                <span class="option-label">High Contrast Mode</span>
+            </div>
+            <div class="accessibility-option">
+                <label class="switch">
+                    <input type="checkbox" id="largeTextMode" onchange="portal.toggleLargeText()">
+                    <span class="slider"></span>
+                </label>
+                <span class="option-label">Large Text</span>
+            </div>
+            <div class="accessibility-option">
+                <label class="switch">
+                    <input type="checkbox" id="screenReaderMode" onchange="portal.toggleScreenReader()">
+                    <span class="slider"></span>
+                </label>
+                <span class="option-label">Screen Reader Optimized</span>
+            </div>
+            <div class="accessibility-option">
+                <label class="switch">
+                    <input type="checkbox" id="reduceMotion" onchange="portal.toggleReduceMotion()">
+                    <span class="slider"></span>
+                </label>
+                <span class="option-label">Reduce Motion</span>
+            </div>
+            <div class="accessibility-option">
+                <label class="switch">
+                    <input type="checkbox" id="colorBlindMode" onchange="portal.toggleColorBlindMode()">
+                    <span class="slider"></span>
+                </label>
+                <span class="option-label">Color-Blind Friendly</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Dynamic Alert Banner (managed by JS) -->
 <div class="alert-banner" id="localAlerts">
     <div class="alert-content">
@@ -75,12 +162,12 @@
         </div>
     </div>
 
-    <!-- === STEP 0: SETUP EMERGENCY PROFILE (FIRST PRIORITY) === -->
+    <!-- === STEP 0: SETUP EMERGENCY PROFILE (ENHANCED WITH NEW FEATURES) === -->
     <div class="content-section active" id="step-0">
         <div class="step-header">
             <div class="setup-icon">🛠️</div>
             <h1 class="setup-title">Setup Your Emergency Profile</h1>
-            <p class="setup-subtitle">Granting permissions helps us provide faster and more accurate assistance during emergencies.</p>
+            <p class="setup-subtitle">Granting permissions and configuring your profile helps us provide faster and more accurate assistance during emergencies.</p>
         </div>
         
         <!-- Priority Setup Explanation -->
@@ -97,10 +184,24 @@
                     <h3>Privacy & Security</h3>
                     <p>All data stays on your device first. We only access permissions when you actively submit a report, and you can revoke access anytime.</p>
                 </div>
+                
+                <!-- New Accessibility Card -->
+                <div class="explanation-card priority-medium">
+                    <span class="explanation-icon">♿</span>
+                    <h3>Accessibility First</h3>
+                    <p>Full support for screen readers, high contrast modes, large text, and other accessibility features to ensure everyone can access emergency services.</p>
+                </div>
+                
+                <!-- New Safety Card -->
+                <div class="explanation-card priority-high">
+                    <span class="explanation-icon">🔇</span>
+                    <h3>Discreet Mode Available</h3>
+                    <p>Silent reporting options for dangerous situations where making noise or being obvious could increase risk to your safety.</p>
+                </div>
             </div>
         </div>
 
-        <!-- Permission Setup Grid -->
+        <!-- Enhanced Permission Setup Grid -->
         <div class="permissions-setup-grid">
             <div class="permission-setup-card priority-critical" id="locationSetupCard">
                 <div class="permission-header">
@@ -183,6 +284,35 @@
             </div>
         </div>
 
+        <!-- New Emergency Profile Section -->
+        <div class="emergency-profile-section">
+            <h3>📋 Emergency Profile (Optional but Recommended)</h3>
+            <p>Pre-fill medical information and emergency contacts for faster reporting and response.</p>
+            
+            <div class="profile-grid">
+                <div class="profile-card" onclick="portal.setupMedicalInfo()">
+                    <div class="profile-icon">🏥</div>
+                    <h4>Medical Information</h4>
+                    <p>Allergies, medications, medical conditions</p>
+                    <div class="profile-status" id="medicalInfoStatus">Not configured</div>
+                </div>
+                
+                <div class="profile-card" onclick="portal.setupEmergencyContacts()">
+                    <div class="profile-icon">📞</div>
+                    <h4>Emergency Contacts</h4>
+                    <p>Family, friends, doctors to notify</p>
+                    <div class="profile-status" id="emergencyContactsStatus">Not configured</div>
+                </div>
+                
+                <div class="profile-card" onclick="portal.setupLanguagePreference()">
+                    <div class="profile-icon">🌐</div>
+                    <h4>Language Preference</h4>
+                    <p>Primary language for emergency communication</p>
+                    <div class="profile-status" id="languageStatus">English (Default)</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Setup Progress Indicator -->
         <div class="setup-progress" id="setupProgress">
             <div class="progress-header">
@@ -205,6 +335,9 @@
                 <button class="btn btn-secondary emergency" onclick="portal.emergencySkipSetup()">
                     🚨 Emergency - Skip Setup
                 </button>
+                <button class="btn btn-outline discreet" onclick="portal.activateDiscreetMode()">
+                    🔇 Discreet Emergency Mode
+                </button>
             </div>
         </div>
         
@@ -218,7 +351,7 @@
         </div>
     </div>
 
-    <!-- === STEP 1: WELCOME/OVERVIEW === -->
+    <!-- === STEP 1: ENHANCED WELCOME/OVERVIEW === -->
     <div class="content-section" id="step-1">
         <div class="welcome-hero">
             <div class="hero-icon">🆘</div>
@@ -229,9 +362,12 @@
                 <div class="badge">✅ Setup Complete</div>
                 <div class="badge">🚀 Ready to Use</div>
                 <div class="badge">📱 Offline Capable</div>
+                <div class="badge">♿ Accessible</div>
+                <div class="badge">🌐 Multi-Language</div>
             </div>
         </div>
         
+        <!-- Enhanced Features Grid with New Options -->
         <div class="features-grid">
             <div class="feature-card emergency-priority" onclick="portal.goToStep(2)">
                 <span class="feature-icon">📱</span>
@@ -245,6 +381,22 @@
                 <h3 class="feature-title">Voice Reporting</h3>
                 <p class="feature-description">Hands-free reporting using AI voice analysis.</p>
                 <div class="feature-hint">Perfect for urgent situations →</div>
+            </div>
+            
+            <!-- New Discreet Mode Feature -->
+            <div class="feature-card discreet-mode" onclick="portal.activateDiscreetMode()">
+                <span class="feature-icon">🔇</span>
+                <h3 class="feature-title">Discreet Mode</h3>
+                <p class="feature-description">Silent reporting for dangerous situations.</p>
+                <div class="feature-hint">No sound, minimal visual cues →</div>
+            </div>
+            
+            <!-- Enhanced Accessibility Feature -->
+            <div class="feature-card accessibility" onclick="portal.showAccessibilityOptions()">
+                <span class="feature-icon">♿</span>
+                <h3 class="feature-title">Accessibility Tools</h3>
+                <p class="feature-description">Screen reader, high contrast, large text support.</p>
+                <div class="feature-hint">Configure accessibility settings →</div>
             </div>
             
             <div class="feature-card risk-prediction" onclick="portal.showRiskPrediction()">
@@ -288,10 +440,17 @@
         </div>
     </div>
 
-    <!-- === STEP 2: REPORT FORM === -->
+    <!-- === STEP 2: ENHANCED REPORT FORM === -->
     <div class="content-section" id="step-2">
         <h2>📱 Submit Emergency Report</h2>
         <p>Choose a method and provide details. AI will analyze your input in real-time.</p>
+        
+        <!-- Discreet Mode Indicator -->
+        <div class="discreet-indicator" id="discreetIndicator" style="display: none;">
+            <span class="discreet-icon">🔇</span>
+            <span class="discreet-text">Discreet Mode Active - Silent operation</span>
+            <button class="discreet-exit" onclick="portal.exitDiscreetMode()">Exit</button>
+        </div>
         
         <div class="report-method-selector">
             <div class="method-card selected" data-method="text" onclick="portal.selectMethod(this, 'text')">
@@ -319,6 +478,16 @@
                 <div class="method-features">
                     <span class="feature-tag">Quick</span>
                     <span class="feature-tag">GPS</span>
+                </div>
+            </div>
+            <!-- New Discreet Method -->
+            <div class="method-card discreet-card" data-method="discreet" onclick="portal.selectMethod(this, 'discreet')">
+                <span class="method-icon">🔇</span>
+                <h3 class="method-title">Discreet Report</h3>
+                <p class="method-description">Silent, minimal UI.</p>
+                <div class="method-features">
+                    <span class="feature-tag">Silent</span>
+                    <span class="feature-tag">Safe</span>
                 </div>
             </div>
         </div>
@@ -355,10 +524,23 @@
         </div>
     </div>
 
-    <!-- === STEP 3: VOICE REPORTING === -->
+    <!-- === STEP 3: ENHANCED VOICE REPORTING === -->
     <div class="content-section" id="step-3">
         <h2>🎤 Voice Emergency Reporter</h2>
         <p>Tap the button and speak clearly. AI will transcribe and analyze your report.</p>
+        
+        <!-- Language Selection for Voice -->
+        <div class="voice-language-selector">
+            <label for="voiceLanguage">🌐 Voice Language:</label>
+            <select id="voiceLanguage" onchange="portal.setVoiceLanguage(this.value)">
+                <option value="en-US">English (US)</option>
+                <option value="es-ES">Español</option>
+                <option value="fr-FR">Français</option>
+                <option value="zh-CN">中文</option>
+                <option value="ar-SA">العربية</option>
+                <option value="ru-RU">Русский</option>
+            </select>
+        </div>
         
         <div class="voice-interface">
             <button class="record-button" id="recordButton" onclick="portal.toggleRecording()">🎤</button>
@@ -456,6 +638,7 @@
                     <option value="text">Text Reports</option>
                     <option value="voice">Voice Reports</option>
                     <option value="photo">Photo Reports</option>
+                    <option value="discreet">Discreet Reports</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -480,13 +663,685 @@
     </div>
 </div>
 
-<!-- Emergency Floating Action Button -->
+<!-- Enhanced Emergency Floating Action Button with Discreet Option -->
 <div class="emergency-actions">
     <button class="emergency-fab" onclick="portal.quickEmergency()" title="Quick Emergency Report">🚨</button>
+    <button class="discreet-fab" onclick="portal.activateDiscreetMode()" title="Discreet Emergency Mode" style="display: none;">🔇</button>
+</div>
+
+<!-- Discreet Mode Overlay -->
+<div class="discreet-overlay" id="discreetOverlay" style="display: none;">
+    <div class="discreet-content">
+        <div class="discreet-header">
+            <span class="discreet-title">🔇 Discreet Emergency Mode</span>
+            <button class="discreet-close" onclick="portal.exitDiscreetMode()">×</button>
+        </div>
+        <div class="discreet-body">
+            <p>This mode provides silent emergency reporting for dangerous situations.</p>
+            <div class="discreet-options">
+                <button class="discreet-option" onclick="portal.quickTextReport()">
+                    <span class="option-icon">📝</span>
+                    <span class="option-text">Quick Text</span>
+                </button>
+                <button class="discreet-option" onclick="portal.locationOnlyReport()">
+                    <span class="option-icon">📍</span>
+                    <span class="option-text">Location Only</span>
+                </button>
+                <button class="discreet-option" onclick="portal.presetEmergency('help')">
+                    <span class="option-icon">🆘</span>
+                    <span class="option-text">Send Help</span>
+                </button>
+                <button class="discreet-option" onclick="portal.presetEmergency('medical')">
+                    <span class="option-icon">🏥</span>
+                    <span class="option-text">Medical</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
     {{ super() }}
     <script src="/static/js/portal.js"></script>
+    
+    <!-- Enhanced Portal Functions for New Features -->
+    <script>
+    // Language Support
+    portal.currentLanguage = 'en';
+    portal.translations = {
+        en: {
+            emergency: 'Emergency',
+            help: 'Help',
+            medical: 'Medical Emergency',
+            location: 'Location',
+            description: 'Description'
+        },
+        es: {
+            emergency: 'Emergencia',
+            help: 'Ayuda',
+            medical: 'Emergencia Médica',
+            location: 'Ubicación',
+            description: 'Descripción'
+        },
+        fr: {
+            emergency: 'Urgence',
+            help: 'Aide',
+            medical: 'Urgence Médicale',
+            location: 'Emplacement',
+            description: 'Description'
+        }
+        // Add more languages as needed
+    };
+
+    // Accessibility Functions
+    portal.accessibilityMode = {
+        highContrast: false,
+        largeText: false,
+        screenReader: false,
+        reduceMotion: false,
+        colorBlind: false
+    };
+
+    // Language Functions
+    portal.showLanguageSelector = function() {
+        document.getElementById('languageModal').style.display = 'flex';
+    };
+
+    portal.hideLanguageSelector = function() {
+        document.getElementById('languageModal').style.display = 'none';
+    };
+
+    portal.setLanguage = function(langCode) {
+        portal.currentLanguage = langCode;
+        localStorage.setItem('preferredLanguage', langCode);
+        portal.hideLanguageSelector();
+        
+        // Update UI with selected language
+        portal.updateUILanguage();
+        portal.showNotification(`Language changed to ${langCode.toUpperCase()}`, 'success');
+    };
+
+    portal.updateUILanguage = function() {
+        // This would update all text elements based on the selected language
+        // Implementation depends on your i18n strategy
+        document.getElementById('languageStatus').textContent = portal.currentLanguage.toUpperCase() + ' Selected';
+    };
+
+    // Accessibility Functions
+    portal.toggleAccessibilityMode = function() {
+        const panel = document.getElementById('accessibilityPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    };
+
+    portal.hideAccessibilityPanel = function() {
+        document.getElementById('accessibilityPanel').style.display = 'none';
+    };
+
+    portal.toggleHighContrast = function() {
+        portal.accessibilityMode.highContrast = !portal.accessibilityMode.highContrast;
+        document.body.classList.toggle('high-contrast', portal.accessibilityMode.highContrast);
+        localStorage.setItem('accessibilityMode', JSON.stringify(portal.accessibilityMode));
+    };
+
+    portal.toggleLargeText = function() {
+        portal.accessibilityMode.largeText = !portal.accessibilityMode.largeText;
+        document.body.classList.toggle('large-text', portal.accessibilityMode.largeText);
+        localStorage.setItem('accessibilityMode', JSON.stringify(portal.accessibilityMode));
+    };
+
+    portal.toggleScreenReader = function() {
+        portal.accessibilityMode.screenReader = !portal.accessibilityMode.screenReader;
+        document.body.classList.toggle('screen-reader-optimized', portal.accessibilityMode.screenReader);
+        localStorage.setItem('accessibilityMode', JSON.stringify(portal.accessibilityMode));
+    };
+
+    portal.toggleReduceMotion = function() {
+        portal.accessibilityMode.reduceMotion = !portal.accessibilityMode.reduceMotion;
+        document.body.classList.toggle('reduce-motion', portal.accessibilityMode.reduceMotion);
+        localStorage.setItem('accessibilityMode', JSON.stringify(portal.accessibilityMode));
+    };
+
+    portal.toggleColorBlindMode = function() {
+        portal.accessibilityMode.colorBlind = !portal.accessibilityMode.colorBlind;
+        document.body.classList.toggle('color-blind-friendly', portal.accessibilityMode.colorBlind);
+        localStorage.setItem('accessibilityMode', JSON.stringify(portal.accessibilityMode));
+    };
+
+    // Discreet Mode Functions
+    portal.discreetMode = false;
+
+    portal.activateDiscreetMode = function() {
+        portal.discreetMode = true;
+        document.body.classList.add('discreet-mode');
+        document.getElementById('discreetOverlay').style.display = 'flex';
+        document.getElementById('discreetIndicator').style.display = 'flex';
+        
+        // Disable all sounds and vibrations
+        portal.silentMode = true;
+        
+        portal.showNotification('🔇 Discreet mode activated', 'info', 2000);
+    };
+
+    portal.exitDiscreetMode = function() {
+        portal.discreetMode = false;
+        document.body.classList.remove('discreet-mode');
+        document.getElementById('discreetOverlay').style.display = 'none';
+        document.getElementById('discreetIndicator').style.display = 'none';
+        
+        portal.silentMode = false;
+        
+        portal.showNotification('Discreet mode deactivated', 'info', 2000);
+    };
+
+    portal.quickTextReport = function() {
+        portal.exitDiscreetMode();
+        portal.goToStep(2);
+        portal.selectMethod(document.querySelector('[data-method="discreet"]'), 'discreet');
+    };
+
+    portal.locationOnlyReport = function() {
+        if (portal.userLocation) {
+            const reportData = {
+                method: 'discreet',
+                type: 'location-only',
+                location: portal.userLocation,
+                timestamp: new Date().toISOString(),
+                id: Date.now(),
+                status: 'submitted'
+            };
+            
+            const existingReports = JSON.parse(localStorage.getItem('userReports') || '[]');
+            existingReports.push(reportData);
+            localStorage.setItem('userReports', JSON.stringify(existingReports));
+            
+            portal.exitDiscreetMode();
+            portal.showNotification('📍 Location-only emergency report sent', 'success');
+        } else {
+            portal.showNotification('❌ Location not available', 'error');
+        }
+    };
+
+    portal.presetEmergency = function(type) {
+        const presets = {
+            'help': 'Emergency assistance needed immediately',
+            'medical': 'Medical emergency requiring immediate response'
+        };
+        
+        const reportData = {
+            method: 'discreet',
+            type: type,
+            description: presets[type],
+            location: portal.userLocation,
+            timestamp: new Date().toISOString(),
+            id: Date.now(),
+            status: 'submitted'
+        };
+        
+        const existingReports = JSON.parse(localStorage.getItem('userReports') || '[]');
+        existingReports.push(reportData);
+        localStorage.setItem('userReports', JSON.stringify(existingReports));
+        
+        portal.exitDiscreetMode();
+        portal.showNotification(`🚨 ${type} emergency report sent`, 'success');
+    };
+
+    // Emergency Profile Functions
+    portal.setupMedicalInfo = function() {
+        portal.showNotification('🏥 Medical information setup - Feature coming soon!', 'info');
+    };
+
+    portal.setupEmergencyContacts = function() {
+        portal.showNotification('📞 Emergency contacts setup - Feature coming soon!', 'info');
+    };
+
+    portal.setupLanguagePreference = function() {
+        portal.showLanguageSelector();
+    };
+
+    portal.showAccessibilityOptions = function() {
+        portal.toggleAccessibilityMode();
+    };
+
+    portal.setVoiceLanguage = function(language) {
+        portal.voiceLanguage = language;
+        localStorage.setItem('voiceLanguage', language);
+        portal.showNotification(`🌐 Voice language set to ${language}`, 'success', 2000);
+    };
+
+    // Enhanced showNotification for discreet mode
+    const originalShowNotification = portal.showNotification;
+    portal.showNotification = function(message, type = 'info', duration = 4000) {
+        if (portal.discreetMode && portal.silentMode) {
+            // In discreet mode, show minimal visual feedback only
+            const discreetFeedback = document.createElement('div');
+            discreetFeedback.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                width: 10px;
+                height: 10px;
+                background: ${type === 'success' ? '#22c55e' : '#3b82f6'};
+                border-radius: 50%;
+                z-index: 10001;
+                opacity: 0.7;
+            `;
+            document.body.appendChild(discreetFeedback);
+            
+            setTimeout(() => {
+                if (discreetFeedback.parentNode) {
+                    discreetFeedback.parentNode.removeChild(discreetFeedback);
+                }
+            }, 1000);
+        } else {
+            originalShowNotification.call(this, message, type, duration);
+        }
+    };
+
+    // Load saved preferences on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load accessibility preferences
+        const savedAccessibility = localStorage.getItem('accessibilityMode');
+        if (savedAccessibility) {
+            portal.accessibilityMode = JSON.parse(savedAccessibility);
+            
+            // Apply saved accessibility settings
+            if (portal.accessibilityMode.highContrast) {
+                document.body.classList.add('high-contrast');
+                document.getElementById('highContrastMode').checked = true;
+            }
+            if (portal.accessibilityMode.largeText) {
+                document.body.classList.add('large-text');
+                document.getElementById('largeTextMode').checked = true;
+            }
+            if (portal.accessibilityMode.screenReader) {
+                document.body.classList.add('screen-reader-optimized');
+                document.getElementById('screenReaderMode').checked = true;
+            }
+            if (portal.accessibilityMode.reduceMotion) {
+                document.body.classList.add('reduce-motion');
+                document.getElementById('reduceMotion').checked = true;
+            }
+            if (portal.accessibilityMode.colorBlind) {
+                document.body.classList.add('color-blind-friendly');
+                document.getElementById('colorBlindMode').checked = true;
+            }
+        }
+
+        // Load language preference
+        const savedLanguage = localStorage.getItem('preferredLanguage');
+        if (savedLanguage) {
+            portal.currentLanguage = savedLanguage;
+            portal.updateUILanguage();
+        }
+
+        // Load voice language preference
+        const savedVoiceLanguage = localStorage.getItem('voiceLanguage');
+        if (savedVoiceLanguage) {
+            document.getElementById('voiceLanguage').value = savedVoiceLanguage;
+            portal.voiceLanguage = savedVoiceLanguage;
+        }
+    });
+    </script>
+    
+    <!-- Add CSS for new features -->
+    <style>
+    /* Language Modal Styles */
+    .language-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+        padding-bottom: 1rem;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .language-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .language-option {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .language-option:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .flag {
+        font-size: 1.5rem;
+    }
+
+    .language-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    /* Accessibility Panel Styles */
+    .accessibility-panel {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: white;
+        border: 2px solid var(--border-light);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-lg);
+        z-index: 9999;
+        width: 300px;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border-light);
+        padding-bottom: 0.75rem;
+    }
+
+    .accessibility-option {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--grey-300);
+        transition: 0.4s;
+        border-radius: 24px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    /* Emergency Profile Styles */
+    .emergency-profile-section {
+        margin: 2rem 0;
+        padding: 2rem;
+        background: var(--bg-secondary);
+        border-radius: 16px;
+        border: 1px solid var(--border-light);
+    }
+
+    .profile-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .profile-card {
+        background: white;
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .profile-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .profile-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .profile-status {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+        font-style: italic;
+    }
+
+    /* Discreet Mode Styles */
+    .discreet-indicator {
+        background: var(--grey-800);
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .discreet-fab {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--grey-700);
+        color: white;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        box-shadow: var(--shadow-lg);
+        transition: all 0.2s;
+        position: fixed;
+        bottom: 100px;
+        right: 32px;
+        z-index: 999;
+    }
+
+    .discreet-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    }
+
+    .discreet-content {
+        background: var(--grey-900);
+        color: white;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 400px;
+        width: 90%;
+    }
+
+    .discreet-options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .discreet-option {
+        background: var(--grey-800);
+        border: 1px solid var(--grey-600);
+        border-radius: 12px;
+        padding: 1rem;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .discreet-option:hover {
+        background: var(--grey-700);
+        transform: scale(1.05);
+    }
+
+    .option-icon {
+        font-size: 1.5rem;
+    }
+
+    .option-text {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    /* Feature card variants */
+    .feature-card.discreet-mode {
+        border-left: 4px solid var(--grey-600);
+    }
+
+    .feature-card.accessibility {
+        border-left: 4px solid #7c3aed;
+    }
+
+    .method-card.discreet-card {
+        background: linear-gradient(135deg, var(--grey-50) 0%, var(--grey-100) 100%);
+        border-left: 4px solid var(--grey-600);
+    }
+
+    /* Voice language selector */
+    .voice-language-selector {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    /* Accessibility mode styles */
+    body.high-contrast {
+        filter: contrast(150%);
+    }
+
+    body.large-text {
+        font-size: 1.2em;
+    }
+
+    body.reduce-motion * {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+    }
+
+    body.color-blind-friendly {
+        --primary: #0066cc;
+        --secondary: #cc6600;
+        --success: #006600;
+    }
+
+    body.discreet-mode {
+        --primary: var(--grey-700);
+        --secondary: var(--grey-800);
+    }
+
+    body.discreet-mode .emergency-fab {
+        display: none;
+    }
+
+    body.discreet-mode .discreet-fab {
+        display: flex;
+    }
+
+    /* Screen reader optimizations */
+    body.screen-reader-optimized .feature-hint,
+    body.screen-reader-optimized .form-text {
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+    }
+
+    body.screen-reader-optimized *:focus {
+        outline: 3px solid var(--primary);
+        outline-offset: 2px;
+    }
+    </style>
 {% endblock %}

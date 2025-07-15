@@ -241,11 +241,17 @@ portal.updatePermissionCard = function(cardId, status) {
     }
 };
 
-// Professional setup progress tracking
+// Enhanced setup progress tracking - only shows after permissions granted
 portal.updateSetupProgress = function() {
     const permissions = portal.permissionsGranted;
     const granted = Object.values(permissions).filter(p => p).length;
     const total = Object.keys(permissions).length;
+    
+    // Only show progress bar if at least one permission is granted
+    const progressSection = document.getElementById('setupProgress');
+    if (granted > 0 && progressSection) {
+        progressSection.classList.add('active'); // Show the progress bar
+    }
     
     portal.setupProgress = (granted / total) * 100;
     
@@ -434,13 +440,13 @@ portal.initializeReportForm = function() {
                     <label class="form-label">📝 Emergency Description</label>
                     <textarea id="emergencyDescription" 
                               placeholder="Describe the emergency situation in detail..."
-                              style="width: 100%; min-height: 120px; padding: 1rem; border: 2px solid var(--border-normal); border-radius: 8px; font-family: var(--font-family); font-size: var(--text-body2); resize: vertical;"
+                              style="width: 100%; min-height: 120px; padding: 1rem; border: 2px solid var(--border-normal); border-radius: 8px; font-family: var(--font-family); font-size: var(--text-body2); resize: vertical; color: #1f2937 !important; background: white !important;"
                               oninput="portal.analyzeText(this.value)"></textarea>
                     <div class="form-text">Be as specific as possible about location, injuries, and immediate dangers.</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">⚠️ Severity Level</label>
-                    <select id="severityLevel" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-normal); border-radius: 8px; font-family: var(--font-family);">
+                    <select id="severityLevel" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-normal); border-radius: 8px; font-family: var(--font-family); color: #1f2937 !important; background: white !important;">
                         <option value="low">🟢 Low - Non-urgent situation</option>
                         <option value="medium">🟡 Medium - Needs attention</option>
                         <option value="high">🟠 High - Urgent response needed</option>
@@ -455,7 +461,7 @@ portal.initializeReportForm = function() {
                 <div class="form-group">
                     <label class="form-label">📸 Photo Evidence</label>
                     <input type="file" id="photoInput" accept="image/*" capture="environment"
-                           style="width: 100%; padding: 1rem; border: 2px dashed var(--border-normal); border-radius: 8px; background: var(--bg-secondary);"
+                           style="width: 100%; padding: 1rem; border: 2px dashed var(--border-normal); border-radius: 8px; background: var(--bg-secondary); color: #1f2937 !important;"
                            onchange="portal.handlePhotoUpload(this)">
                     <div class="form-text">Take or upload a photo showing the emergency situation.</div>
                 </div>
@@ -470,7 +476,7 @@ portal.initializeReportForm = function() {
                     <label class="form-label">📝 Additional Details (Optional)</label>
                     <textarea id="photoDescription" 
                               placeholder="Add any additional context about the photo..."
-                              style="width: 100%; min-height: 80px; padding: 1rem; border: 2px solid var(--border-normal); border-radius: 8px; font-family: var(--font-family);"></textarea>
+                              style="width: 100%; min-height: 80px; padding: 1rem; border: 2px solid var(--border-normal); border-radius: 8px; font-family: var(--font-family); color: #1f2937 !important; background: white !important;"></textarea>
                 </div>
             `;
             break;
@@ -492,7 +498,7 @@ portal.initializeReportForm = function() {
                     <label class="form-label">📝 What's happening at this location?</label>
                     <textarea id="locationDescription" 
                               placeholder="Describe the emergency at this location..."
-                              style="width: 100%; min-height: 100px; padding: 1rem; border: 2px solid var(--border-normal); border-radius: 8px; font-family: var(--font-family);"></textarea>
+                              style="width: 100%; min-height: 100px; padding: 1rem; border: 2px solid var(--border-normal); border-radius: 8px; font-family: var(--font-family); color: #1f2937 !important; background: white !important;"></textarea>
                 </div>
             `;
             break;
@@ -865,6 +871,11 @@ portal.quickEmergency = function() {
     }
 };
 
+// Enhanced functions for features (placeholders for future development)
+portal.showRiskPrediction = function() {
+    portal.showNotification('🔮 Risk prediction feature coming soon! This will show AI-powered local hazard forecasting.', 'info');
+};
+
 // Legacy compatibility functions
 portal.requestLocation = portal.requestLocationSetup;
 portal.requestMicrophone = portal.requestMicrophoneSetup;
@@ -885,8 +896,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const setupComplete = localStorage.getItem('portalSetupComplete');
     if (setupComplete === 'true') {
         portal.setupComplete = true;
-        // Start on welcome page if setup is complete
-        portal.goToStep(1);
+        // Always start on setup page
+        portal.goToStep(0);
     } else {
         // Start on setup page for new users
         portal.goToStep(0);
