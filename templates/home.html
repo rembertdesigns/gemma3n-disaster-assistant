@@ -524,11 +524,19 @@
         </div>
     </div>
 
-    <!-- === STEP 3: ENHANCED VOICE REPORTING === -->
+    <!-- === STEP 3: ENHANCED ADVANCED VOICE REPORTING === -->
     <div class="content-section" id="step-3">
-        <h2>🎤 Voice Emergency Reporter</h2>
-        <p>Tap the button and speak clearly. AI will transcribe and analyze your report.</p>
-        
+        <!-- Emergency Alert -->
+        <div class="alert alert-warning mb-4">
+            <strong>⚠️ For Life-Threatening Emergencies:</strong> Call 911 immediately. This system supplements but does not replace emergency services.
+        </div>
+
+        <div class="step-header">
+            <div class="voice-header-icon">🎤</div>
+            <h1 class="voice-title">Voice Emergency Reporter</h1>
+            <p class="voice-subtitle">Hands-free emergency reporting powered by AI voice analysis</p>
+        </div>
+
         <!-- Language Selection for Voice -->
         <div class="voice-language-selector">
             <label for="voiceLanguage">🌐 Voice Language:</label>
@@ -536,49 +544,158 @@
                 <option value="en-US">English (US)</option>
                 <option value="es-ES">Español</option>
                 <option value="fr-FR">Français</option>
+                <option value="de-DE">Deutsch</option>
+                <option value="it-IT">Italiano</option>
+                <option value="pt-BR">Português</option>
                 <option value="zh-CN">中文</option>
+                <option value="ja-JP">日本語</option>
+                <option value="ko-KR">한국어</option>
                 <option value="ar-SA">العربية</option>
+                <option value="hi-IN">हिन्दी</option>
                 <option value="ru-RU">Русский</option>
             </select>
         </div>
-        
+
+        <!-- Advanced Voice Interface -->
         <div class="voice-interface">
-            <button class="record-button" id="recordButton" onclick="portal.toggleRecording()">🎤</button>
-            <div class="voice-status" id="voiceStatus">Tap to start voice recording</div>
-            <div class="transcript-box" id="transcriptBox">
-                <div class="transcript-placeholder">Your voice transcript will appear here...</div>
+            <div class="voice-controls">
+                <button class="record-button" id="recordButton">
+                    <span id="recordIcon">🎤</span>
+                </button>
+                <div class="status-text" id="statusText">
+                    Tap the microphone to start voice recording
+                </div>
+                <div class="audio-visualizer" id="audioVisualizer">
+                    <!-- Audio bars will be generated here -->
+                </div>
             </div>
         </div>
-        
-        <div class="voice-analysis" id="voiceAnalysis" style="display: none;">
-            <h3 class="analysis-title">🧠 AI Voice Analysis Results</h3>
+
+        <!-- Live Transcript Section -->
+        <div class="transcript-container">
+            <div class="transcript-header">
+                <h3>📝 Live Transcript</h3>
+                <span id="confidence" class="confidence-badge">Confidence: --</span>
+            </div>
+            <div class="transcript-text" id="transcriptText">
+                Click the microphone and speak to start recording your emergency report...
+            </div>
+        </div>
+
+        <!-- Real-time AI Analysis Panel -->
+        <div class="realtime-analysis" id="realtimeAnalysisVoice" style="display: none;">
+            <div class="analysis-header">
+                <h3 class="analysis-title">
+                    <span class="analysis-icon">🧠</span>
+                    <span>AI Analysis Results</span>
+                </h3>
+            </div>
+            
             <div class="analysis-grid">
-                <div class="analysis-card">
-                    <span class="feature-icon">⚡</span>
-                    <h4>Urgency Level</h4>
-                    <p class="analysis-result" id="urgencyLevel">Analyzing...</p>
+                <div class="analysis-card urgency-card">
+                    <h3>🚨 Urgency Level</h3>
+                    <div class="urgency-meter">
+                        <div class="urgency-fill" id="urgencyFill" style="width: 0%"></div>
+                    </div>
+                    <div class="urgency-text" id="urgencyText">Not analyzed</div>
                 </div>
-                <div class="analysis-card">
-                    <span class="feature-icon">😰</span>
-                    <h4>Emotion Detected</h4>
-                    <p class="analysis-result" id="emotionLevel">Analyzing...</p>
+
+                <div class="analysis-card emotion-card">
+                    <h3>😰 Emotion Analysis</h3>
+                    <div class="emergency-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Stress Level:</span>
+                            <span class="detail-value" id="stressLevel">--</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Clarity:</span>
+                            <span class="detail-value" id="clarityLevel">--</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Speaker Confidence:</span>
+                            <span class="detail-value" id="speakerConfidence">--</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="analysis-card">
-                    <span class="feature-icon">📍</span>
-                    <h4>Location Mentioned</h4>
-                    <p class="analysis-result" id="detectedLocation">Analyzing...</p>
+
+                <div class="analysis-card details-card">
+                    <h3>📊 Emergency Details</h3>
+                    <div class="emergency-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value" id="emergencyType">Unknown</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value" id="emergencyLocation">Not specified</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">People Affected:</span>
+                            <span class="detail-value" id="peopleAffected">Unknown</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Immediate Needs:</span>
+                            <span class="detail-value" id="immediateNeeds">None identified</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="analysis-card">
-                    <span class="feature-icon">💡</span>
-                    <h4>AI Recommendation</h4>
-                    <p class="analysis-result" id="aiRecommendation">Analyzing...</p>
+
+                <div class="analysis-card recommendations-card">
+                    <h3>💡 AI Recommendations</h3>
+                    <div class="ai-recommendations">
+                        <div id="recommendations">
+                            🤖 AI will provide response recommendations after analyzing your voice report...
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="submitReportBtn" disabled>
+                📤 Submit Emergency Report
+            </button>
+            <button class="btn btn-warning" id="retryBtn" disabled>
+                🔄 Re-record
+            </button>
+            <button class="btn btn-success" id="exportBtn" disabled>
+                💾 Export Transcript
+            </button>
+        </div>
+
+        <!-- Advanced Voice Settings -->
+        <div class="settings-panel">
+            <h3>⚙️ Advanced Voice Settings</h3>
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label for="sensitivitySlider">Microphone Sensitivity:</label>
+                    <input type="range" id="sensitivitySlider" min="0.1" max="1.0" step="0.1" value="0.7">
+                    <span id="sensitivityValue">70%</span>
+                </div>
+                <div class="setting-item">
+                    <label for="modelSelect">AI Model:</label>
+                    <select id="modelSelect">
+                        <option value="gemma-3n-2b">Gemma 3n (Fast - 2B)</option>
+                        <option value="gemma-3n-4b" selected>Gemma 3n (Balanced - 4B)</option>
+                        <option value="gemma-3n-4b-hq">Gemma 3n (High Quality - 4B)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="autoSubmitToggle">Auto-submit after analysis:</label>
+                    <input type="checkbox" id="autoSubmitToggle">
+                </div>
+                <div class="setting-item">
+                    <label for="noiseReductionToggle">Noise Reduction:</label>
+                    <input type="checkbox" id="noiseReductionToggle" checked>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
         <div class="navigation-buttons">
             <button class="btn btn-secondary" onclick="portal.goToStep(2)">← Back to Text Report</button>
-            <button class="btn btn-success btn-large" id="submitVoiceReport" onclick="portal.submitVoiceReport()" disabled>📤 Submit Voice Report</button>
+            <button class="btn btn-outline" onclick="portal.goToStep(4)">Skip to Tracking →</button>
         </div>
     </div>
 
@@ -698,6 +815,17 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Processing Indicator -->
+<div class="processing-indicator" id="processingIndicator">
+    <div class="spinner"></div>
+    <span>Processing with AI...</span>
+</div>
+
+<!-- Success Notification -->
+<div class="success-notification" id="successNotification">
+    ✅ Emergency report submitted successfully!
 </div>
 {% endblock %}
 
@@ -938,6 +1066,637 @@
         }
     };
 
+    // Advanced Voice Emergency Reporter Class integrated with Portal
+    class AdvancedVoiceReporter {
+        constructor() {
+            this.isRecording = false;
+            this.recognition = null;
+            this.finalTranscript = '';
+            this.currentAnalysis = null;
+            this.audioContext = null;
+            this.analyser = null;
+            this.microphone = null;
+            this.animationId = null;
+            
+            this.initializeElements();
+            this.initializeSpeechRecognition();
+            this.setupEventListeners();
+            this.createAudioVisualizer();
+            this.loadSettings();
+        }
+        
+        initializeElements() {
+            this.recordButton = document.getElementById('recordButton');
+            this.recordIcon = document.getElementById('recordIcon');
+            this.statusText = document.getElementById('statusText');
+            this.transcriptText = document.getElementById('transcriptText');
+            this.confidence = document.getElementById('confidence');
+            
+            // Analysis elements
+            this.realtimeAnalysis = document.getElementById('realtimeAnalysisVoice');
+            this.urgencyFill = document.getElementById('urgencyFill');
+            this.urgencyText = document.getElementById('urgencyText');
+            this.stressLevel = document.getElementById('stressLevel');
+            this.clarityLevel = document.getElementById('clarityLevel');
+            this.speakerConfidence = document.getElementById('speakerConfidence');
+            this.emergencyType = document.getElementById('emergencyType');
+            this.emergencyLocation = document.getElementById('emergencyLocation');
+            this.peopleAffected = document.getElementById('peopleAffected');
+            this.immediateNeeds = document.getElementById('immediateNeeds');
+            this.recommendations = document.getElementById('recommendations');
+            
+            // Buttons
+            this.submitReportBtn = document.getElementById('submitReportBtn');
+            this.retryBtn = document.getElementById('retryBtn');
+            this.exportBtn = document.getElementById('exportBtn');
+            
+            // Settings
+            this.languageSelect = document.getElementById('voiceLanguage');
+            this.sensitivitySlider = document.getElementById('sensitivitySlider');
+            this.sensitivityValue = document.getElementById('sensitivityValue');
+            this.processingIndicator = document.getElementById('processingIndicator');
+            this.successNotification = document.getElementById('successNotification');
+        }
+        
+        initializeSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                this.statusText.textContent = 'Speech recognition not supported. Please use Chrome, Edge, or Safari.';
+                this.recordButton.disabled = true;
+                return;
+            }
+            
+            this.recognition = new SpeechRecognition();
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+            this.recognition.lang = this.languageSelect?.value || 'en-US';
+            
+            this.recognition.onstart = () => {
+                this.isRecording = true;
+                this.recordButton.classList.add('recording');
+                this.recordIcon.textContent = '⏹️';
+                this.statusText.textContent = 'Listening... Speak clearly about your emergency';
+                this.startAudioVisualization();
+            };
+            
+            this.recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalText = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    const confidence = event.results[i][0].confidence;
+                    
+                    if (event.results[i].isFinal) {
+                        finalText += transcript + ' ';
+                        this.updateConfidence(confidence);
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                if (finalText) {
+                    this.finalTranscript += finalText;
+                }
+                
+                this.updateTranscriptDisplay(this.finalTranscript, interimTranscript);
+                
+                // Trigger real-time analysis if we have substantial content
+                if (this.finalTranscript.trim().length > 20) {
+                    this.performRealtimeAnalysis();
+                }
+            };
+            
+            this.recognition.onend = () => {
+                this.isRecording = false;
+                this.recordButton.classList.remove('recording');
+                this.recordIcon.textContent = '🎤';
+                this.stopAudioVisualization();
+                
+                if (this.finalTranscript.trim()) {
+                    this.statusText.textContent = 'Processing your emergency report...';
+                    this.processTranscript();
+                } else {
+                    this.statusText.textContent = 'No speech detected. Click microphone to try again.';
+                }
+            };
+            
+            this.recognition.onerror = (event) => {
+                this.isRecording = false;
+                this.recordButton.classList.remove('recording');
+                this.recordIcon.textContent = '🎤';
+                this.statusText.textContent = `Error: ${event.error}. Please try again.`;
+                this.stopAudioVisualization();
+            };
+        }
+        
+        setupEventListeners() {
+            this.recordButton?.addEventListener('click', () => {
+                if (this.isRecording) {
+                    this.recognition.stop();
+                } else {
+                    this.startRecording();
+                }
+            });
+            
+            this.languageSelect?.addEventListener('change', (e) => {
+                if (this.recognition) {
+                    this.recognition.lang = e.target.value;
+                }
+                this.saveSettings();
+            });
+            
+            this.sensitivitySlider?.addEventListener('input', (e) => {
+                if (this.sensitivityValue) {
+                    this.sensitivityValue.textContent = Math.round(e.target.value * 100) + '%';
+                }
+                this.saveSettings();
+            });
+            
+            this.submitReportBtn?.addEventListener('click', () => this.submitEmergencyReport());
+            this.retryBtn?.addEventListener('click', () => this.resetSession());
+            this.exportBtn?.addEventListener('click', () => this.exportTranscript());
+        }
+        
+        createAudioVisualizer() {
+            const visualizer = document.getElementById('audioVisualizer');
+            if (!visualizer) return;
+            
+            visualizer.innerHTML = '';
+            this.visualizerBars = [];
+            
+            for (let i = 0; i < 32; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'audio-bar';
+                bar.style.height = '4px';
+                visualizer.appendChild(bar);
+                this.visualizerBars.push(bar);
+            }
+        }
+        
+        async startAudioVisualization() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.analyser = this.audioContext.createAnalyser();
+                this.microphone = this.audioContext.createMediaStreamSource(stream);
+                
+                this.analyser.fftSize = 64;
+                this.microphone.connect(this.analyser);
+                
+                this.animateAudioBars();
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                this.fallbackAnimation();
+            }
+        }
+        
+        animateAudioBars() {
+            if (!this.isRecording || !this.visualizerBars) return;
+            
+            if (this.analyser) {
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                this.analyser.getByteFrequencyData(dataArray);
+                
+                this.visualizerBars.forEach((bar, index) => {
+                    const height = (dataArray[index] / 255) * 60 + 4;
+                    bar.style.height = height + 'px';
+                });
+            } else {
+                this.fallbackAnimation();
+            }
+            
+            this.animationId = requestAnimationFrame(() => this.animateAudioBars());
+        }
+        
+        fallbackAnimation() {
+            if (!this.isRecording || !this.visualizerBars) return;
+            
+            this.visualizerBars.forEach(bar => {
+                const height = Math.random() * 50 + 5;
+                bar.style.height = height + 'px';
+            });
+        }
+        
+        stopAudioVisualization() {
+            if (this.animationId) {
+                cancelAnimationFrame(this.animationId);
+                this.animationId = null;
+            }
+            
+            if (this.audioContext) {
+                this.audioContext.close();
+                this.audioContext = null;
+            }
+            
+            if (this.visualizerBars) {
+                this.visualizerBars.forEach(bar => {
+                    bar.style.height = '4px';
+                });
+            }
+        }
+        
+        startRecording() {
+            this.resetSession();
+            this.finalTranscript = '';
+            this.transcriptText.innerHTML = 'Listening... Speak now.';
+            
+            try {
+                this.recognition.start();
+            } catch (error) {
+                console.error('Failed to start recognition:', error);
+                this.statusText.textContent = 'Failed to start recording. Please try again.';
+            }
+        }
+        
+        updateTranscriptDisplay(finalText, interimText) {
+            if (!this.transcriptText) return;
+            
+            const display = finalText + (interimText ? `<span class="interim-transcript">${interimText}</span>` : '');
+            this.transcriptText.innerHTML = display || 'Listening...';
+        }
+        
+        updateConfidence(confidence) {
+            if (this.confidence) {
+                const percent = Math.round(confidence * 100);
+                this.confidence.textContent = `Confidence: ${percent}%`;
+            }
+        }
+        
+        performRealtimeAnalysis() {
+            // Simulate real-time AI analysis
+            const text = this.finalTranscript.toLowerCase();
+            
+            // Basic keyword analysis for demonstration
+            const urgencyKeywords = ['emergency', 'help', 'urgent', 'critical', 'immediate', 'dangerous'];
+            const medicalKeywords = ['hurt', 'pain', 'bleeding', 'injured', 'unconscious', 'medical'];
+            const locationKeywords = ['at', 'near', 'on', 'street', 'building', 'hospital'];
+            
+            let urgencyScore = 0;
+            urgencyKeywords.forEach(keyword => {
+                if (text.includes(keyword)) urgencyScore += 2;
+            });
+            
+            let emergencyType = 'General';
+            if (medicalKeywords.some(keyword => text.includes(keyword))) {
+                emergencyType = 'Medical Emergency';
+                urgencyScore += 3;
+            }
+            
+            // Limit urgency score to 10
+            urgencyScore = Math.min(urgencyScore, 10);
+            
+            // Update UI with analysis
+            this.displayRealtimeAnalysis({
+                urgency_score: urgencyScore,
+                urgency_level: urgencyScore > 7 ? 'Critical' : urgencyScore > 4 ? 'High' : 'Medium',
+                emergency_type: emergencyType,
+                confidence: 0.85,
+                location_hints: locationKeywords.filter(keyword => text.includes(keyword)),
+                recommended_action: urgencyScore > 7 ? 'Call 911 immediately' : 'Submit detailed report'
+            });
+        }
+        
+        displayRealtimeAnalysis(analysis) {
+            if (!this.realtimeAnalysis) return;
+            
+            this.realtimeAnalysis.style.display = 'block';
+            
+            // Update urgency meter
+            const urgencyPercent = analysis.urgency_score * 10;
+            if (this.urgencyFill) {
+                this.urgencyFill.style.width = `${urgencyPercent}%`;
+            }
+            if (this.urgencyText) {
+                this.urgencyText.textContent = `${analysis.urgency_level} (${Math.round(urgencyPercent)}%)`;
+            }
+            
+            // Update analysis fields
+            if (this.stressLevel) this.stressLevel.textContent = analysis.urgency_level;
+            if (this.clarityLevel) this.clarityLevel.textContent = analysis.confidence > 0.8 ? 'Good' : 'Fair';
+            if (this.speakerConfidence) this.speakerConfidence.textContent = `${Math.round(analysis.confidence * 100)}%`;
+            if (this.emergencyType) this.emergencyType.textContent = analysis.emergency_type;
+            if (this.emergencyLocation) this.emergencyLocation.textContent = analysis.location_hints.length > 0 ? analysis.location_hints[0] : 'Not specified';
+            if (this.peopleAffected) this.peopleAffected.textContent = 'Unknown';
+            if (this.immediateNeeds) this.immediateNeeds.textContent = analysis.recommended_action;
+            
+            // Show recommendations
+            const recommendations = [
+                analysis.recommended_action,
+                analysis.urgency_level === 'Critical' ? 'Call 911 immediately' : 'Submit report for review',
+                'Provide additional details if possible'
+            ];
+            
+            if (this.recommendations) {
+                this.recommendations.innerHTML = recommendations.map(rec => `<div>• ${rec}</div>`).join('');
+            }
+            
+            this.currentAnalysis = analysis;
+            this.enableActionButtons();
+        }
+        
+        async processTranscript() {
+            if (!this.finalTranscript.trim()) return;
+            
+            this.processingIndicator?.classList.add('active');
+            
+            try {
+                // Simulate API call with more sophisticated analysis
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                const analysis = this.generateAdvancedAnalysis(this.finalTranscript);
+                this.displayAnalysisResults(analysis);
+                this.enableActionButtons();
+                this.statusText.textContent = `Analysis complete: ${analysis.urgency_level} priority detected.`;
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                this.statusText.textContent = 'Analysis failed. Please try again.';
+            } finally {
+                this.processingIndicator?.classList.remove('active');
+            }
+        }
+        
+        generateAdvancedAnalysis(transcript) {
+            const text = transcript.toLowerCase();
+            
+            // Enhanced analysis logic
+            const urgencyKeywords = {
+                critical: ['dying', 'unconscious', 'bleeding heavily', 'can\'t breathe', 'heart attack', 'stroke'],
+                high: ['emergency', 'urgent', 'help', 'injured', 'accident', 'fire', 'robbery'],
+                medium: ['concern', 'worried', 'issue', 'problem', 'suspicious']
+            };
+            
+            let urgencyLevel = 'Low';
+            let urgencyScore = 1;
+            
+            for (const [level, keywords] of Object.entries(urgencyKeywords)) {
+                if (keywords.some(keyword => text.includes(keyword))) {
+                    urgencyLevel = level.charAt(0).toUpperCase() + level.slice(1);
+                    urgencyScore = level === 'critical' ? 9 : level === 'high' ? 6 : 3;
+                    break;
+                }
+            }
+            
+            // Detect emergency type
+            let emergencyType = 'General Concern';
+            if (text.includes('medical') || text.includes('hurt') || text.includes('pain')) {
+                emergencyType = 'Medical Emergency';
+            } else if (text.includes('fire') || text.includes('smoke')) {
+                emergencyType = 'Fire Emergency';
+            } else if (text.includes('crime') || text.includes('robbery') || text.includes('assault')) {
+                emergencyType = 'Security Emergency';
+            }
+            
+            return {
+                urgency_score: urgencyScore,
+                urgency_level: urgencyLevel,
+                emergency_type: emergencyType,
+                confidence: 0.9,
+                location_hints: this.extractLocationHints(text),
+                recommended_action: urgencyScore > 7 ? 'Call 911 immediately' : 'Submit detailed emergency report',
+                analysis_timestamp: new Date().toISOString()
+            };
+        }
+        
+        extractLocationHints(text) {
+            const locationPattern = /(at|near|on|in)\s+([a-zA-Z\s]+(?:street|road|avenue|building|hospital|school))/gi;
+            const matches = text.match(locationPattern);
+            return matches ? matches.slice(0, 3) : [];
+        }
+        
+        displayAnalysisResults(analysis) {
+            this.displayRealtimeAnalysis(analysis);
+        }
+        
+        enableActionButtons() {
+            if (this.submitReportBtn) this.submitReportBtn.disabled = false;
+            if (this.retryBtn) this.retryBtn.disabled = false;
+            if (this.exportBtn) this.exportBtn.disabled = false;
+        }
+        
+        async submitEmergencyReport() {
+            if (!this.currentAnalysis || !this.finalTranscript) {
+                alert('No analysis available to submit.');
+                return;
+            }
+            
+            try {
+                this.submitReportBtn.disabled = true;
+                this.submitReportBtn.textContent = 'Submitting...';
+                
+                // Create report data
+                const reportData = {
+                    id: Date.now(),
+                    type: 'voice',
+                    transcript: this.finalTranscript,
+                    analysis: this.currentAnalysis,
+                    timestamp: new Date().toISOString(),
+                    status: 'submitted',
+                    language: this.recognition.lang,
+                    confidence: this.currentAnalysis.confidence
+                };
+                
+                // Save to localStorage (simulate submission)
+                const existingReports = JSON.parse(localStorage.getItem('userReports') || '[]');
+                existingReports.push(reportData);
+                localStorage.setItem('userReports', JSON.stringify(existingReports));
+                
+                // Show success notification
+                this.showSuccessNotification(`Voice report submitted! ID: ${reportData.id}`);
+                
+                // Update portal statistics
+                if (typeof portal !== 'undefined') {
+                    portal.updateReportStats();
+                }
+                
+                // Reset session after successful submission
+                setTimeout(() => {
+                    this.resetSession();
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Submission error:', error);
+                alert('Failed to submit report: ' + error.message);
+            } finally {
+                this.submitReportBtn.disabled = false;
+                this.submitReportBtn.textContent = '📤 Submit Emergency Report';
+            }
+        }
+        
+        showSuccessNotification(message) {
+            if (this.successNotification) {
+                this.successNotification.textContent = message;
+                this.successNotification.classList.add('show');
+                setTimeout(() => {
+                    this.successNotification.classList.remove('show');
+                }, 5000);
+            }
+        }
+        
+        exportTranscript() {
+            if (!this.finalTranscript) {
+                alert('No transcript available to export.');
+                return;
+            }
+            
+            const exportData = {
+                transcript: this.finalTranscript,
+                analysis: this.currentAnalysis,
+                timestamp: new Date().toISOString(),
+                language: this.recognition?.lang || 'en-US'
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `emergency-voice-report-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showSuccessNotification('Transcript exported successfully!');
+        }
+        
+        resetSession() {
+            this.finalTranscript = '';
+            this.currentAnalysis = null;
+            
+            if (this.transcriptText) {
+                this.transcriptText.innerHTML = 'Click the microphone and speak to start recording your emergency report...';
+            }
+            if (this.realtimeAnalysis) {
+                this.realtimeAnalysis.style.display = 'none';
+            }
+            if (this.statusText) {
+                this.statusText.textContent = 'Tap the microphone to start voice recording';
+            }
+            if (this.confidence) {
+                this.confidence.textContent = 'Confidence: --';
+            }
+            
+            // Disable buttons
+            if (this.submitReportBtn) this.submitReportBtn.disabled = true;
+            if (this.retryBtn) this.retryBtn.disabled = true;
+            if (this.exportBtn) this.exportBtn.disabled = true;
+        }
+        
+        saveSettings() {
+            const settings = {
+                language: this.languageSelect?.value || 'en-US',
+                sensitivity: this.sensitivitySlider?.value || 0.7,
+                model: document.getElementById('modelSelect')?.value || 'gemma-3n-4b',
+                autoSubmit: document.getElementById('autoSubmitToggle')?.checked || false,
+                noiseReduction: document.getElementById('noiseReductionToggle')?.checked || true
+            };
+            
+            localStorage.setItem('voiceReporterSettings', JSON.stringify(settings));
+        }
+        
+        loadSettings() {
+            const savedSettings = localStorage.getItem('voiceReporterSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                
+                if (this.languageSelect && settings.language) {
+                    this.languageSelect.value = settings.language;
+                    if (this.recognition) {
+                        this.recognition.lang = settings.language;
+                    }
+                }
+                
+                if (this.sensitivitySlider && settings.sensitivity) {
+                    this.sensitivitySlider.value = settings.sensitivity;
+                    if (this.sensitivityValue) {
+                        this.sensitivityValue.textContent = Math.round(settings.sensitivity * 100) + '%';
+                    }
+                }
+                
+                const modelSelect = document.getElementById('modelSelect');
+                if (modelSelect && settings.model) {
+                    modelSelect.value = settings.model;
+                }
+                
+                const autoSubmitToggle = document.getElementById('autoSubmitToggle');
+                if (autoSubmitToggle && settings.autoSubmit !== undefined) {
+                    autoSubmitToggle.checked = settings.autoSubmit;
+                }
+                
+                const noiseReductionToggle = document.getElementById('noiseReductionToggle');
+                if (noiseReductionToggle && settings.noiseReduction !== undefined) {
+                    noiseReductionToggle.checked = settings.noiseReduction;
+                }
+            }
+        }
+    }
+
+    // Initialize the advanced voice reporter when the portal reaches step 3
+    document.addEventListener('DOMContentLoaded', function() {
+        let advancedVoiceReporter = null;
+        
+        // Override portal step navigation to initialize voice reporter
+        const originalGoToStep = portal.goToStep;
+        portal.goToStep = function(stepNumber) {
+            originalGoToStep.call(this, stepNumber);
+            
+            if (stepNumber === 3) {
+                // Initialize advanced voice reporter when entering voice step
+                setTimeout(() => {
+                    if (!advancedVoiceReporter) {
+                        advancedVoiceReporter = new AdvancedVoiceReporter();
+                    }
+                }, 100);
+            }
+        };
+        
+        // Enhanced portal voice functions
+        portal.toggleRecording = function() {
+            if (advancedVoiceReporter) {
+                if (advancedVoiceReporter.isRecording) {
+                    advancedVoiceReporter.recognition.stop();
+                } else {
+                    advancedVoiceReporter.startRecording();
+                }
+            }
+        };
+        
+        portal.submitVoiceReport = function() {
+            if (advancedVoiceReporter) {
+                advancedVoiceReporter.submitEmergencyReport();
+            }
+        };
+        
+        portal.setVoiceLanguage = function(language) {
+            if (advancedVoiceReporter && advancedVoiceReporter.recognition) {
+                advancedVoiceReporter.recognition.lang = language;
+                advancedVoiceReporter.saveSettings();
+            }
+            localStorage.setItem('voiceLanguage', language);
+            portal.showNotification(`🌐 Voice language set to ${language}`, 'success', 2000);
+        };
+        
+        // Update report statistics
+        portal.updateReportStats = function() {
+            const reports = JSON.parse(localStorage.getItem('userReports') || '[]');
+            const voiceReports = reports.filter(r => r.type === 'voice');
+            
+            // Update any statistics displays
+            const totalReportsEl = document.getElementById('totalReports');
+            if (totalReportsEl) {
+                totalReportsEl.textContent = reports.length;
+            }
+            
+            // Update dashboard if on tracking step
+            if (portal.currentStep === 4) {
+                portal.loadReportsDashboard();
+            }
+        };
+    });
+
     // Load saved preferences on page load
     document.addEventListener('DOMContentLoaded', function() {
         // Load accessibility preferences
@@ -978,7 +1737,10 @@
         // Load voice language preference
         const savedVoiceLanguage = localStorage.getItem('voiceLanguage');
         if (savedVoiceLanguage) {
-            document.getElementById('voiceLanguage').value = savedVoiceLanguage;
+            const voiceLanguageSelect = document.getElementById('voiceLanguage');
+            if (voiceLanguageSelect) {
+                voiceLanguageSelect.value = savedVoiceLanguage;
+            }
             portal.voiceLanguage = savedVoiceLanguage;
         }
     });
@@ -986,6 +1748,501 @@
     
     <!-- Add CSS for new features -->
     <style>
+    /* Enhanced Voice Interface Styles */
+    .voice-interface {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        border-radius: 24px;
+        padding: 2rem;
+        margin: 2rem 0;
+        backdrop-filter: blur(20px);
+        border: 2px solid rgba(59, 130, 246, 0.2);
+        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.1);
+    }
+
+    .voice-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .record-button {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 4px solid #ef4444;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        font-size: 2.5rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    }
+
+    .record-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 12px 35px rgba(239, 68, 68, 0.5);
+    }
+
+    .record-button.recording {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        animation: pulse 1.5s infinite;
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+    }
+
+    .record-button.processing {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        animation: spin 2s infinite linear;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+        }
+        70% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+        }
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .status-text {
+        text-align: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #374151;
+        padding: 0.75rem 1.5rem;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+    }
+
+    .audio-visualizer {
+        width: 100%;
+        max-width: 400px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+    }
+
+    .audio-bar {
+        width: 6px;
+        background: linear-gradient(to top, #3b82f6, #8b5cf6);
+        border-radius: 3px;
+        transition: height 0.1s ease;
+        min-height: 4px;
+    }
+
+    .transcript-container {
+        background: rgba(248, 250, 252, 0.95);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 2rem 0;
+        min-height: 180px;
+        border: 2px solid #e2e8f0;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .transcript-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .confidence-badge {
+        background: #3b82f6;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .transcript-text {
+        font-size: 1.125rem;
+        line-height: 1.7;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        min-height: 100px;
+        border: 2px dashed #cbd5e1;
+        color: #374151;
+        position: relative;
+        overflow-wrap: break-word;
+    }
+
+    .interim-transcript {
+        color: #6b7280;
+        font-style: italic;
+        opacity: 0.8;
+        background: rgba(59, 130, 246, 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .realtime-analysis {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 2rem 0;
+        border: 2px solid #e2e8f0;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .analysis-header {
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .analysis-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .analysis-icon {
+        font-size: 1.75rem;
+    }
+
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .analysis-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 2px solid #f1f5f9;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .analysis-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .analysis-card h3 {
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #1f2937;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    .urgency-card {
+        border-left: 4px solid #ef4444;
+    }
+
+    .emotion-card {
+        border-left: 4px solid #8b5cf6;
+    }
+
+    .details-card {
+        border-left: 4px solid #3b82f6;
+    }
+
+    .recommendations-card {
+        border-left: 4px solid #10b981;
+    }
+
+    .urgency-meter {
+        width: 100%;
+        height: 24px;
+        background: #f1f5f9;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 0.75rem 0;
+        position: relative;
+    }
+
+    .urgency-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
+        border-radius: 12px;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .urgency-text {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+    }
+
+    .emergency-details {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.875rem;
+    }
+
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .detail-label {
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .detail-value {
+        color: #374151;
+        font-weight: 500;
+        text-align: right;
+    }
+
+    .ai-recommendations {
+        background: #f0fdf4;
+        border-radius: 12px;
+        padding: 1rem;
+        border: 1px solid #dcfce7;
+    }
+
+    .ai-recommendations div {
+        color: #166534;
+        line-height: 1.6;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 2rem 0;
+    }
+
+    .btn {
+        padding: 0.875rem 1.5rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 120px;
+        justify-content: center;
+    }
+
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+    }
+
+    .btn-warning:hover:not(:disabled) {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+    }
+
+    .settings-panel {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 2rem 0;
+        border: 2px solid #e2e8f0;
+        backdrop-filter: blur(10px);
+    }
+
+    .settings-panel h3 {
+        margin-bottom: 1.5rem;
+        color: #1f2937;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .setting-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .setting-item label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #374151;
+    }
+
+    .setting-item select,
+    .setting-item input[type="range"] {
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 2px solid #d1d5db;
+        background: white;
+        color: #374151;
+        font-size: 0.875rem;
+        transition: border-color 0.2s;
+    }
+
+    .setting-item select:focus,
+    .setting-item input[type="range"]:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .setting-item input[type="checkbox"] {
+        width: 1.25rem;
+        height: 1.25rem;
+        accent-color: #3b82f6;
+    }
+
+    .voice-language-selector {
+        background: rgba(248, 250, 252, 0.9);
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: 2px solid #e2e8f0;
+    }
+
+    .voice-language-selector label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+    }
+
+    .voice-language-selector select {
+        flex: 1;
+        max-width: 200px;
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        background: white;
+    }
+
+    .processing-indicator {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.98);
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        display: none;
+        align-items: center;
+        gap: 1rem;
+        z-index: 10000;
+        backdrop-filter: blur(20px);
+        border: 2px solid #e2e8f0;
+    }
+
+    .processing-indicator.active {
+        display: flex;
+    }
+
+    .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #f3f4f6;
+        border-top: 3px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .success-notification {
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        transform: translateX(400px);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 10000;
+        font-weight: 600;
+    }
+
+    .success-notification.show {
+        transform: translateX(0);
+    }
+
     /* Language Modal Styles */
     .language-modal {
         position: fixed;
@@ -1285,15 +2542,38 @@
         border-left: 4px solid var(--grey-600);
     }
 
-    /* Voice language selector */
-    .voice-language-selector {
-        margin-bottom: 1rem;
-        padding: 1rem;
-        background: var(--bg-secondary);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .voice-interface {
+            padding: 1.5rem;
+        }
+        
+        .record-button {
+            width: 120px;
+            height: 120px;
+            font-size: 2rem;
+        }
+        
+        .analysis-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .voice-language-selector {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .voice-language-selector select {
+            max-width: none;
+        }
     }
 
     /* Accessibility mode styles */
@@ -1342,6 +2622,73 @@
     body.screen-reader-optimized *:focus {
         outline: 3px solid var(--primary);
         outline-offset: 2px;
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        .voice-interface {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        .transcript-container,
+        .realtime-analysis,
+        .settings-panel {
+            background: rgba(31, 41, 55, 0.95);
+            border-color: rgba(75, 85, 99, 0.3);
+            color: #f9fafb;
+        }
+        
+        .analysis-card {
+            background: rgba(55, 65, 81, 0.8);
+            border-color: rgba(75, 85, 99, 0.3);
+            color: #f9fafb;
+        }
+    }
+
+    /* Voice header styling */
+    .voice-header-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .voice-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #1f2937;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .voice-subtitle {
+        font-size: 1.25rem;
+        color: #6b7280;
+        text-align: center;
+        margin-bottom: 2rem;
+        font-weight: 500;
+    }
+
+    /* Alert styling for emergency notice */
+    .alert {
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        border: 2px solid transparent;
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 146, 60, 0.1) 100%);
+        border-color: #f59e0b;
+        color: #92400e;
+    }
+
+    .mb-4 {
+        margin-bottom: 1.5rem;
     }
     </style>
 {% endblock %}

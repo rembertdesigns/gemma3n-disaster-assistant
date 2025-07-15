@@ -115,6 +115,13 @@
     color: #374151;
 }
 
+/* New: Interim transcript styling */
+.interim-transcript {
+    color: #6b7280;
+    font-style: italic;
+    opacity: 0.8;
+}
+
 .analysis-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -287,6 +294,54 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* Processing indicator styles */
+.processing-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    display: none;
+    align-items: center;
+    gap: 15px;
+    z-index: 1000;
+}
+
+.processing-indicator.active {
+    display: flex;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Success notification */
+.success-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #10b981;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    transform: translateX(300px);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+}
+
+.success-notification.show {
+    transform: translateX(0);
+}
+
 @media (max-width: 768px) {
     .voice-interface {
         padding: 20px;
@@ -314,6 +369,11 @@
 {% endblock %}
 
 {% block content %}
+<!-- Emergency Alert -->
+<div class="alert alert-warning mb-4">
+    <strong>⚠️ For Life-Threatening Emergencies:</strong> Call 911 immediately. This system supplements but does not replace emergency services.
+</div>
+
 <div class="voice-interface">
     <div class="voice-controls">
         <button class="record-button" id="recordButton">
@@ -339,10 +399,12 @@
 </div>
 
 <!-- Real-time Analysis Panel -->
-<div class="realtime-analysis" id="realtimeAnalysis">
-    <div class="analysis-header">
-        <span>🧠</span>
-        <span>AI Analysis Results</span>
+<div class="realtime-analysis" id="realtimeAnalysis" style="display: none;">
+    <div class="analysis-header mb-4">
+        <h3 class="text-xl font-bold text-gray-800">
+            <span>🧠</span>
+            <span>AI Analysis Results</span>
+        </h3>
     </div>
     
     <div class="analysis-grid">
@@ -462,34 +524,348 @@
     <div class="spinner"></div>
     <span>Processing with Gemma 3n AI...</span>
 </div>
+
+<!-- Success Notification -->
+<div class="success-notification" id="successNotification">
+    ✅ Emergency report submitted successfully!
+</div>
+
+<!-- Navigation Links -->
+<div class="mt-6 text-center">
+    <a href="/" class="btn btn-secondary">🏠 Back to Home</a>
+    <a href="/submit-report" class="btn btn-secondary">📝 Text Report</a>
+</div>
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/voice-emergency-reporter.js"></script>
 <script>
 // Initialize Voice Emergency Reporter
 document.addEventListener('DOMContentLoaded', function() {
     const voiceReporter = new VoiceEmergencyReporter();
     
-    // Update AI status
-    const aiStatusDot = document.getElementById('aiStatusDot');
-    const aiStatusText = document.getElementById('aiStatusText');
-    
-    if (window.EdgeAI && window.EdgeAI.isReady) {
-        aiStatusDot.className = 'ai-status-dot';
-        aiStatusText.textContent = '🧠 Gemma 3n Ready for Voice Analysis';
-    } else {
-        aiStatusDot.className = 'ai-status-dot error';
-        aiStatusText.textContent = '🧠 Edge AI Loading...';
-    }
-    
     // Sensitivity slider update
     const sensitivitySlider = document.getElementById('sensitivitySlider');
     const sensitivityValue = document.getElementById('sensitivityValue');
     
-    sensitivitySlider.addEventListener('input', function() {
-        sensitivityValue.textContent = Math.round(this.value * 100) + '%';
-    });
+    if (sensitivitySlider && sensitivityValue) {
+        sensitivitySlider.addEventListener('input', function() {
+            sensitivityValue.textContent = Math.round(this.value * 100) + '%';
+        });
+    }
 });
-</script>
-{% endblock %}
+
+// Enhanced Voice Emergency Reporter Class
+class VoiceEmergencyReporter {
+    constructor() {
+        this.isRecording = false;
+        this.recognition = null;
+        this.finalTranscript = '';
+        this.currentAnalysis = null;
+        
+        this.initializeElements();
+        this.initializeSpeechRecognition();
+        this.setupEventListeners();
+        this.createAudioVisualizer();
+    }
+    
+    initializeElements() {
+        this.recordButton = document.getElementById('recordButton');
+        this.recordIcon = document.getElementById('recordIcon');
+        this.statusText = document.getElementById('statusText');
+        this.transcriptText = document.getElementById('transcriptText');
+        this.confidence = document.getElementById('confidence');
+        
+        // Analysis elements
+        this.realtimeAnalysis = document.getElementById('realtimeAnalysis');
+        this.urgencyFill = document.getElementById('urgencyFill');
+        this.urgencyText = document.getElementById('urgencyText');
+        this.stressLevel = document.getElementById('stressLevel');
+        this.clarityLevel = document.getElementById('clarityLevel');
+        this.speakerConfidence = document.getElementById('speakerConfidence');
+        this.emergencyType = document.getElementById('emergencyType');
+        this.emergencyLocation = document.getElementById('emergencyLocation');
+        this.peopleAffected = document.getElementById('peopleAffected');
+        this.immediateNeeds = document.getElementById('immediateNeeds');
+        this.recommendations = document.getElementById('recommendations');
+        
+        // Buttons
+        this.submitReportBtn = document.getElementById('submitReportBtn');
+        this.retryBtn = document.getElementById('retryBtn');
+        this.exportBtn = document.getElementById('exportBtn');
+        
+        // Settings
+        this.languageSelect = document.getElementById('languageSelect');
+        this.processingIndicator = document.getElementById('processingIndicator');
+        this.successNotification = document.getElementById('successNotification');
+    }
+    
+    initializeSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            this.statusText.textContent = 'Speech recognition not supported. Please use Chrome, Edge, or Safari.';
+            this.recordButton.disabled = true;
+            return;
+        }
+        
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'en-US';
+        
+        this.recognition.onstart = () => {
+            this.isRecording = true;
+            this.recordButton.classList.add('recording');
+            this.recordIcon.textContent = '⏹️';
+            this.statusText.textContent = 'Listening... Speak clearly about your emergency';
+            this.animateAudioBars();
+        };
+        
+        this.recognition.onresult = (event) => {
+            let interimTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    this.finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            this.updateTranscriptDisplay(this.finalTranscript, interimTranscript);
+        };
+        
+        this.recognition.onend = () => {
+            this.isRecording = false;
+            this.recordButton.classList.remove('recording');
+            this.recordIcon.textContent = '🎤';
+            this.stopAudioBars();
+            
+            if (this.finalTranscript.trim()) {
+                this.statusText.textContent = 'Processing your emergency report...';
+                this.processTranscript();
+            } else {
+                this.statusText.textContent = 'No speech detected. Click microphone to try again.';
+            }
+        };
+        
+        this.recognition.onerror = (event) => {
+            this.isRecording = false;
+            this.recordButton.classList.remove('recording');
+            this.recordIcon.textContent = '🎤';
+            this.statusText.textContent = `Error: ${event.error}. Please try again.`;
+            this.stopAudioBars();
+        };
+    }
+    
+    setupEventListeners() {
+        this.recordButton?.addEventListener('click', () => {
+            if (this.isRecording) {
+                this.recognition.stop();
+            } else {
+                this.startRecording();
+            }
+        });
+        
+        this.languageSelect?.addEventListener('change', (e) => {
+            if (this.recognition) {
+                this.recognition.lang = e.target.value;
+            }
+        });
+        
+        this.submitReportBtn?.addEventListener('click', () => this.submitEmergencyReport());
+        this.retryBtn?.addEventListener('click', () => this.resetSession());
+        this.exportBtn?.addEventListener('click', () => this.exportTranscript());
+    }
+    
+    createAudioVisualizer() {
+        const visualizer = document.getElementById('audioVisualizer');
+        if (!visualizer) return;
+        
+        visualizer.innerHTML = '';
+        this.visualizerBars = [];
+        
+        for (let i = 0; i < 20; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'audio-bar';
+            bar.style.height = '4px';
+            visualizer.appendChild(bar);
+            this.visualizerBars.push(bar);
+        }
+    }
+    
+    animateAudioBars() {
+        if (!this.isRecording || !this.visualizerBars) return;
+        
+        this.visualizerBars.forEach(bar => {
+            const height = Math.random() * 50 + 5;
+            bar.style.height = height + 'px';
+        });
+        
+        setTimeout(() => this.animateAudioBars(), 100);
+    }
+    
+    stopAudioBars() {
+        if (this.visualizerBars) {
+            this.visualizerBars.forEach(bar => {
+                bar.style.height = '4px';
+            });
+        }
+    }
+    
+    startRecording() {
+        this.resetSession();
+        this.finalTranscript = '';
+        this.transcriptText.innerHTML = 'Listening... Speak now.';
+        
+        try {
+            this.recognition.start();
+        } catch (error) {
+            console.error('Failed to start recognition:', error);
+            this.statusText.textContent = 'Failed to start recording. Please try again.';
+        }
+    }
+    
+    updateTranscriptDisplay(finalText, interimText) {
+        if (!this.transcriptText) return;
+        
+        const display = finalText + (interimText ? `<span class="interim-transcript">${interimText}</span>` : '');
+        this.transcriptText.innerHTML = display || 'Listening...';
+    }
+    
+    async processTranscript() {
+        if (!this.finalTranscript.trim()) return;
+        
+        this.processingIndicator.classList.add('active');
+        
+        try {
+            // Call the new API endpoint
+            const formData = new FormData();
+            formData.append('transcript', this.finalTranscript);
+            formData.append('confidence', '0.8');
+            formData.append('interim', 'false');
+            
+            const response = await fetch('/api/voice-transcript', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.displayAnalysisResults(result.analysis);
+                this.enableActionButtons();
+                this.statusText.textContent = `Analysis complete: ${result.analysis.urgency_level} priority detected.`;
+            } else {
+                throw new Error(result.error || 'Analysis failed');
+            }
+        } catch (error) {
+            console.error('Analysis error:', error);
+            this.statusText.textContent = 'Analysis failed. Please try again.';
+        } finally {
+            this.processingIndicator.classList.remove('active');
+        }
+    }
+    
+    displayAnalysisResults(analysis) {
+        this.currentAnalysis = analysis;
+        this.realtimeAnalysis.style.display = 'block';
+        
+        // Update urgency meter
+        const urgencyPercent = analysis.urgency_score * 10; // Convert to percentage
+        this.urgencyFill.style.width = `${urgencyPercent}%`;
+        this.urgencyText.textContent = `${analysis.urgency_level} (${Math.round(urgencyPercent)}%)`;
+        
+        // Update other fields
+        this.stressLevel.textContent = analysis.urgency_level;
+        this.clarityLevel.textContent = analysis.confidence > 0.8 ? 'Good' : 'Fair';
+        this.speakerConfidence.textContent = `${Math.round(analysis.confidence * 100)}%`;
+        this.emergencyType.textContent = analysis.emergency_indicators.length > 0 ? 'Emergency' : 'Non-emergency';
+        this.emergencyLocation.textContent = analysis.location_hints.length > 0 ? analysis.location_hints[0] : 'Not specified';
+        this.peopleAffected.textContent = 'Unknown';
+        this.immediateNeeds.textContent = analysis.recommended_action;
+        
+        // Show recommendations
+        const recommendations = [
+            analysis.recommended_action,
+            analysis.urgency_level === 'critical' ? 'Call 911 immediately' : 'Submit report for review',
+            'Provide additional details if possible'
+        ];
+        
+        this.recommendations.innerHTML = recommendations.map(rec => `<div>• ${rec}</div>`).join('');
+    }
+    
+    enableActionButtons() {
+        if (this.submitReportBtn) this.submitReportBtn.disabled = false;
+        if (this.retryBtn) this.retryBtn.disabled = false;
+        if (this.exportBtn) this.exportBtn.disabled = false;
+    }
+    
+    async submitEmergencyReport() {
+        if (!this.currentAnalysis || !this.finalTranscript) {
+            alert('No analysis available to submit.');
+            return;
+        }
+        
+        try {
+            this.submitReportBtn.disabled = true;
+            this.submitReportBtn.textContent = 'Submitting...';
+            
+            const formData = new FormData();
+            formData.append('transcript', this.finalTranscript);
+            formData.append('urgency', this.currentAnalysis.urgency_level.toLowerCase());
+            formData.append('emotion', 'concerned');
+            formData.append('location', this.currentAnalysis.location_hints[0] || '');
+            formData.append('recommendation', this.currentAnalysis.recommended_action);
+            
+            const response = await fetch('/api/submit-voice-report', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showSuccessNotification(`Report submitted! ID: ${result.report_id}`);
+                this.resetSession();
+            } else {
+                throw new Error(result.error || 'Submission failed');
+            }
+        } catch (error) {
+            console.error('Submission error:', error);
+            alert('Failed to submit report: ' + error.message);
+        } finally {
+            this.submitReportBtn.disabled = false;
+            this.submitReportBtn.textContent = '📤 Submit Emergency Report';
+        }
+    }
+    
+    showSuccessNotification(message) {
+        this.successNotification.textContent = message;
+        this.successNotification.classList.add('show');
+        setTimeout(() => {
+            this.successNotification.classList.remove('show');
+        }, 5000);
+    }
+    
+    resetSession() {
+        this.finalTranscript = '';
+        this.currentAnalysis = null;
+        
+        if (this.transcriptText) {
+            this.transcriptText.innerHTML = 'Click the microphone and speak to start recording your emergency report...';
+        }
+        if (this.realtimeAnalysis) {
+            this.realtimeAnalysis.style.display = 'none';
+        }
+        if (this.statusText) {
+            this.statusText.textContent = 'Tap the microphone to start voice recording';
+        }
+        
+        // Disable buttons
+        if (this.submitReportBtn) this.submitReportBtn.disabled = true;
+        if (this.retryBtn) this.retryBtn.disabled = true;
+        if (this.exportBtn) this.exportBtn.disabled = true;
+    }
+}

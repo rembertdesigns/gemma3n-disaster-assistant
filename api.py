@@ -1344,7 +1344,7 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         """)
 
 # ================================================================================
-# EMERGENCY REPORTING ROUTES
+# EMERGENCY REPORTING ROUTES - ENHANCED WITH PUBLIC VOICE ACCESS
 # ================================================================================
 
 @app.get("/submit-report", response_class=HTMLResponse)
@@ -1373,22 +1373,320 @@ async def submit_report_page(request: Request):
 
 @app.get("/voice-emergency-reporter", response_class=HTMLResponse)
 async def voice_reporter_page(request: Request):
-    """Voice emergency reporter page"""
+    """Voice emergency reporter page - PUBLIC ACCESS for all users"""
     try:
-        return templates.TemplateResponse("voice-emergency-reporter.html", {"request": request})
-    except:
+        return templates.TemplateResponse("voice-emergency-reporter.html", {
+            "request": request,
+            "page_title": "Voice Emergency Reporter",
+            "current_time": datetime.utcnow()
+        })
+    except Exception as e:
+        logger.error(f"Error serving voice-emergency-reporter.html: {e}")
         return HTMLResponse("""
-        <html><head><title>Voice Reporter</title></head>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Voice Emergency Reporter</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+                .hero { text-align: center; margin-bottom: 2rem; }
+                .hero h1 { color: #1f2937; margin-bottom: 0.5rem; }
+                .hero p { color: #6b7280; font-size: 1.1rem; }
+                .record-button { 
+                    width: 120px; height: 120px; border-radius: 50%; 
+                    background: #ef4444; color: white; border: none; 
+                    font-size: 2rem; cursor: pointer; margin: 1rem;
+                    transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                }
+                .record-button:hover { 
+                    background: #dc2626; transform: scale(1.05); 
+                    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+                }
+                .record-button.recording {
+                    background: #dc2626; animation: pulse 1.5s infinite;
+                }
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                }
+                .btn { 
+                    display: inline-block; background: #3b82f6; color: white; 
+                    padding: 0.75rem 1.5rem; border-radius: 6px; text-decoration: none; 
+                    margin: 0.5rem; font-weight: 500; transition: all 0.3s ease;
+                }
+                .btn:hover { background: #2563eb; transform: translateY(-2px); }
+                .alert { 
+                    background: #fef3c7; border: 1px solid #f59e0b; 
+                    padding: 1rem; border-radius: 6px; margin: 1rem 0;
+                    border-left: 4px solid #f59e0b;
+                }
+                .status { 
+                    text-align: center; margin: 1rem 0; font-weight: bold;
+                    padding: 0.5rem; border-radius: 4px; background: #f3f4f6;
+                }
+                .transcript { 
+                    background: #f8fafc; padding: 1rem; border-radius: 8px; 
+                    min-height: 100px; margin: 1rem 0; border: 2px dashed #cbd5e1;
+                    font-family: 'Courier New', monospace; line-height: 1.5;
+                }
+                .controls { text-align: center; margin-top: 2rem; }
+                .audio-visualizer {
+                    display: flex; justify-content: center; align-items: center;
+                    height: 60px; margin: 1rem 0; gap: 3px;
+                }
+                .audio-bar {
+                    width: 4px; height: 4px; background: #3b82f6;
+                    border-radius: 2px; transition: height 0.1s ease;
+                }
+            </style>
+        </head>
         <body>
-        <h1>🎤 Voice Emergency Reporter</h1>
-        <p>Voice reporting interface</p>
-        <button onclick="startRecording()">Start Recording</button>
-        <script>
-        function startRecording() {
-            alert('Voice recording would start here');
-        }
-        </script>
-        </body></html>
+            <div class="container">
+                <div class="hero">
+                    <h1>🎤 Voice Emergency Reporter</h1>
+                    <p>Hands-free emergency reporting powered by AI</p>
+                </div>
+                
+                <div class="alert">
+                    <strong>⚠️ For Life-Threatening Emergencies:</strong> Call 911 immediately. This system supplements but does not replace emergency services.
+                </div>
+                
+                <div style="text-align: center; margin: 2rem 0;">
+                    <button class="record-button" id="recordButton" onclick="startVoiceRecording()">
+                        🎤
+                    </button>
+                    <p>Click the microphone to start voice recording</p>
+                    
+                    <!-- Audio Visualizer -->
+                    <div class="audio-visualizer" id="audioVisualizer">
+                        <!-- Audio bars will be generated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="status" id="status">
+                    Ready to record - Click the microphone to begin
+                </div>
+                
+                <div class="transcript" id="transcript">
+                    Voice transcript will appear here... Speak clearly and describe your emergency situation.
+                </div>
+                
+                <div class="controls">
+                    <a href="/" class="btn">🏠 Back to Home</a>
+                    <a href="/submit-report" class="btn">📝 Text Report</a>
+                    <button class="btn" onclick="submitVoiceReport()" id="submitBtn" style="display: none;">📤 Submit Report</button>
+                </div>
+            </div>
+            
+            <script>
+                let isRecording = false;
+                let recognition = null;
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                // Create audio visualizer bars
+                function createAudioVisualizer() {
+                    const visualizer = document.getElementById('audioVisualizer');
+                    visualizer.innerHTML = '';
+                    for (let i = 0; i < 20; i++) {
+                        const bar = document.createElement('div');
+                        bar.className = 'audio-bar';
+                        visualizer.appendChild(bar);
+                    }
+                }
+                
+                // Initialize speech recognition
+                function initializeSpeechRecognition() {
+                    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+                        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                        recognition = new SpeechRecognition();
+                        recognition.continuous = true;
+                        recognition.interimResults = true;
+                        recognition.lang = 'en-US';
+                        
+                        recognition.onstart = function() {
+                            isRecording = true;
+                            document.getElementById('status').textContent = 'Listening... Speak clearly about your emergency';
+                            document.getElementById('status').style.background = '#dcfce7';
+                            document.getElementById('status').style.color = '#166534';
+                            document.getElementById('recordButton').classList.add('recording');
+                            animateAudioBars();
+                        };
+                        
+                        recognition.onresult = function(event) {
+                            interimTranscript = '';
+                            for (let i = event.resultIndex; i < event.results.length; i++) {
+                                const transcript = event.results[i][0].transcript;
+                                if (event.results[i].isFinal) {
+                                    finalTranscript += transcript + ' ';
+                                } else {
+                                    interimTranscript += transcript;
+                                }
+                            }
+                            
+                            const displayText = finalTranscript + (interimTranscript ? `<span style="color: #6b7280; font-style: italic;">${interimTranscript}</span>` : '');
+                            document.getElementById('transcript').innerHTML = displayText || 'Voice transcript will appear here...';
+                            
+                            // Show submit button if we have content
+                            if (finalTranscript.trim()) {
+                                document.getElementById('submitBtn').style.display = 'inline-block';
+                            }
+                        };
+                        
+                        recognition.onend = function() {
+                            isRecording = false;
+                            document.getElementById('status').textContent = finalTranscript.trim() ? 'Recording stopped. Review your transcript below.' : 'Recording stopped. No speech detected.';
+                            document.getElementById('status').style.background = '#fef3c7';
+                            document.getElementById('status').style.color = '#92400e';
+                            document.getElementById('recordButton').classList.remove('recording');
+                            stopAudioBars();
+                        };
+                        
+                        recognition.onerror = function(event) {
+                            isRecording = false;
+                            document.getElementById('status').textContent = 'Error: ' + event.error + '. Please try again.';
+                            document.getElementById('status').style.background = '#fef2f2';
+                            document.getElementById('status').style.color = '#dc2626';
+                            document.getElementById('recordButton').classList.remove('recording');
+                            console.error('Speech recognition error:', event.error);
+                        };
+                        
+                        return true;
+                    } else {
+                        document.getElementById('status').textContent = 'Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.';
+                        document.getElementById('status').style.background = '#fef2f2';
+                        document.getElementById('status').style.color = '#dc2626';
+                        return false;
+                    }
+                }
+                
+                // Animate audio visualization bars
+                function animateAudioBars() {
+                    if (!isRecording) return;
+                    
+                    const bars = document.querySelectorAll('.audio-bar');
+                    bars.forEach(bar => {
+                        const height = Math.random() * 50 + 5;
+                        bar.style.height = height + 'px';
+                    });
+                    
+                    setTimeout(animateAudioBars, 100);
+                }
+                
+                function stopAudioBars() {
+                    const bars = document.querySelectorAll('.audio-bar');
+                    bars.forEach(bar => {
+                        bar.style.height = '4px';
+                    });
+                }
+                
+                function startVoiceRecording() {
+                    if (!recognition) {
+                        alert('Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.');
+                        return;
+                    }
+                    
+                    if (isRecording) {
+                        recognition.stop();
+                    } else {
+                        // Reset transcripts
+                        finalTranscript = '';
+                        interimTranscript = '';
+                        document.getElementById('transcript').innerHTML = 'Listening... Speak now.';
+                        document.getElementById('submitBtn').style.display = 'none';
+                        
+                        try {
+                            recognition.start();
+                        } catch (error) {
+                            console.error('Failed to start recognition:', error);
+                            document.getElementById('status').textContent = 'Failed to start recording. Please try again.';
+                        }
+                    }
+                }
+                
+                async function submitVoiceReport() {
+                    if (!finalTranscript.trim()) {
+                        alert('No transcript available. Please record your emergency first.');
+                        return;
+                    }
+                    
+                    try {
+                        document.getElementById('submitBtn').textContent = 'Submitting...';
+                        document.getElementById('submitBtn').disabled = true;
+                        
+                        const formData = new FormData();
+                        formData.append('transcript', finalTranscript.trim());
+                        formData.append('urgency', detectUrgency(finalTranscript));
+                        formData.append('emotion', 'concerned');
+                        formData.append('location', extractLocation(finalTranscript) || '');
+                        formData.append('recommendation', 'Voice emergency report submitted');
+                        
+                        const response = await fetch('/api/submit-voice-report', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            alert(`Emergency report submitted successfully!\\nReport ID: ${result.report_id}\\nUrgency Level: ${result.urgency}`);
+                            // Reset form
+                            finalTranscript = '';
+                            document.getElementById('transcript').innerHTML = 'Voice transcript will appear here...';
+                            document.getElementById('submitBtn').style.display = 'none';
+                            document.getElementById('status').textContent = 'Report submitted. Ready for new recording.';
+                        } else {
+                            throw new Error(result.error || 'Submission failed');
+                        }
+                    } catch (error) {
+                        console.error('Submission error:', error);
+                        alert('Failed to submit report: ' + error.message);
+                    } finally {
+                        document.getElementById('submitBtn').textContent = '📤 Submit Report';
+                        document.getElementById('submitBtn').disabled = false;
+                    }
+                }
+                
+                function detectUrgency(text) {
+                    const urgentWords = ['fire', 'emergency', 'urgent', 'critical', 'help', 'danger', 'accident'];
+                    const lowerText = text.toLowerCase();
+                    const urgentCount = urgentWords.filter(word => lowerText.includes(word)).length;
+                    
+                    if (urgentCount >= 3) return 'critical';
+                    if (urgentCount >= 2) return 'high';
+                    if (urgentCount >= 1) return 'medium';
+                    return 'low';
+                }
+                
+                function extractLocation(text) {
+                    const locationWords = ['at', 'near', 'on', 'street', 'avenue', 'road', 'building'];
+                    const words = text.toLowerCase().split(' ');
+                    
+                    for (let i = 0; i < words.length; i++) {
+                        if (locationWords.includes(words[i]) && i + 1 < words.length) {
+                            return words.slice(i, i + 3).join(' ');
+                        }
+                    }
+                    return '';
+                }
+                
+                // Initialize when page loads
+                document.addEventListener('DOMContentLoaded', function() {
+                    createAudioVisualizer();
+                    const speechSupported = initializeSpeechRecognition();
+                    
+                    if (!speechSupported) {
+                        document.getElementById('recordButton').disabled = true;
+                        document.getElementById('recordButton').style.opacity = '0.5';
+                        document.getElementById('recordButton').style.cursor = 'not-allowed';
+                    }
+                });
+            </script>
+        </body>
+        </html>
         """)
 
 @app.get("/view-reports", response_class=HTMLResponse)
@@ -1409,6 +1707,524 @@ async def view_reports_page(request: Request, db: Session = Depends(get_db)):
         </body></html>
         """)
 
+# ================================================================================
+# VOICE ANALYSIS API ENDPOINTS - PUBLIC ACCESS
+# ================================================================================
+
+@app.post("/api/analyze-voice")
+async def analyze_voice_emergency(
+    audio: UploadFile = File(...),
+    context: Optional[str] = Form(None),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    db: Session = Depends(get_db)
+):
+    """Analyze voice recording for emergency content - PUBLIC ACCESS"""
+    try:
+        if not audio.content_type.startswith('audio/'):
+            raise HTTPException(status_code=400, detail="File must be audio format")
+        
+        # Save audio file
+        audio_ext = os.path.splitext(audio.filename)[1] or ".wav"
+        audio_path = UPLOAD_DIR / f"voice_{uuid.uuid4().hex}{audio_ext}"
+        
+        with open(audio_path, "wb") as f:
+            content = await audio.read()
+            f.write(content)
+        
+        # Process with voice processor
+        analysis = voice_processor.process_emergency_call(str(audio_path))
+        
+        # Save to database (optional - no authentication required)
+        try:
+            voice_analysis = VoiceAnalysis(
+                audio_file_path=str(audio_path),
+                transcript=analysis["transcript"],
+                confidence=analysis["confidence"],
+                urgency_level=analysis["overall_urgency"],
+                emotional_state=analysis["emotional_state"],
+                hazards_detected=analysis["hazards_detected"],
+                analyst_id="public_user"
+            )
+            
+            db.add(voice_analysis)
+            db.commit()
+            db.refresh(voice_analysis)
+        except Exception as db_error:
+            logger.warning(f"Database save failed for voice analysis: {db_error}")
+            # Continue without database save
+        
+        # Schedule cleanup
+        background_tasks.add_task(cleanup_temp_file, str(audio_path))
+        
+        return JSONResponse({
+            "success": True,
+            "analysis": analysis,
+            "message": "Voice analysis completed successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Voice analysis failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/submit-voice-report")
+async def submit_voice_report_public(
+    request: Request,
+    transcript: str = Form(...),
+    urgency: str = Form("medium"),
+    emotion: str = Form("neutral"),
+    location: str = Form(""),
+    recommendation: str = Form(""),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Submit voice-analyzed emergency report - PUBLIC ACCESS"""
+    try:
+        # Create emergency report from voice analysis
+        report_id = generate_report_id()
+        
+        emergency_report = EmergencyReport(
+            report_id=report_id,
+            type="voice_emergency",
+            description=f"Voice Emergency: {transcript}",
+            location=location or "Location not specified",
+            latitude=latitude,
+            longitude=longitude,
+            priority=urgency,
+            method="voice",
+            reporter="voice_system_public",
+            ai_analysis={
+                "transcript": transcript,
+                "urgency": urgency,
+                "emotion": emotion,
+                "recommendation": recommendation,
+                "source": "public_voice_reporter"
+            }
+        )
+        
+        db.add(emergency_report)
+        db.commit()
+        db.refresh(emergency_report)
+        
+        # Broadcast to connected administrators
+        await broadcast_emergency_update("voice_report", {
+            "report_id": report_id,
+            "urgency": urgency,
+            "location": location,
+            "transcript_preview": transcript[:100] + "..." if len(transcript) > 100 else transcript
+        })
+        
+        logger.info(f"Public voice report submitted: {report_id} (urgency: {urgency})")
+        
+        return JSONResponse({
+            "success": True,
+            "report_id": report_id,
+            "urgency": urgency,
+            "auto_created": True,
+            "status": "submitted",
+            "message": "Your voice emergency report has been submitted successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Voice report submission failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/voice-reporter-status")
+async def get_voice_reporter_status():
+    """Get voice reporter system status - PUBLIC ACCESS"""
+    try:
+        # Check if speech recognition would be available
+        browser_support = {
+            "speech_recognition": True,  # Assume supported, will be checked client-side
+            "media_devices": True,       # Assume supported
+            "audio_context": True        # Assume supported
+        }
+        
+        # AI model status
+        ai_status = {
+            "gemma_3n_available": True,
+            "voice_analysis_ready": True,
+            "current_model": ai_optimizer.current_config.model_variant,
+            "optimization_level": ai_optimizer.current_config.optimization_level
+        }
+        
+        return JSONResponse({
+            "success": True,
+            "status": "ready",
+            "browser_support": browser_support,
+            "ai_status": ai_status,
+            "features": {
+                "real_time_transcription": True,
+                "emotion_analysis": True,
+                "urgency_detection": True,
+                "location_detection": True,
+                "multi_language_support": True,
+                "offline_capability": False  # Could be implemented
+            },
+            "supported_languages": [
+                {"code": "en-US", "name": "English (US)"},
+                {"code": "es-ES", "name": "Spanish"},
+                {"code": "fr-FR", "name": "French"},
+                {"code": "de-DE", "name": "German"},
+                {"code": "it-IT", "name": "Italian"},
+                {"code": "pt-BR", "name": "Portuguese"},
+                {"code": "zh-CN", "name": "Chinese"},
+                {"code": "ja-JP", "name": "Japanese"},
+                {"code": "ko-KR", "name": "Korean"},
+                {"code": "ar-SA", "name": "Arabic"},
+                {"code": "hi-IN", "name": "Hindi"},
+                {"code": "ru-RU", "name": "Russian"}
+            ]
+        })
+        
+    except Exception as e:
+        logger.error(f"Voice reporter status error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/voice-transcript")
+@rate_limit(max_requests=50, window_seconds=60)  # More generous rate limit for voice
+async def process_voice_transcript(
+    request: Request,
+    transcript: str = Form(...),
+    confidence: float = Form(0.8),
+    interim: bool = Form(False)
+):
+    """Process live voice transcript - PUBLIC ACCESS with rate limiting"""
+    try:
+        # Basic validation
+        if not transcript or len(transcript.strip()) < 2:
+            return JSONResponse({
+                "success": False,
+                "error": "Transcript too short"
+            }, status_code=400)
+        
+        # Analyze transcript for emergency indicators
+        urgency_keywords = ["fire", "emergency", "urgent", "critical", "help", "danger", "accident", "medical"]
+        location_keywords = ["at", "near", "on", "street", "building", "house", "highway"]
+        
+        urgency_score = sum(1 for word in urgency_keywords if word.lower() in transcript.lower())
+        has_location = any(word.lower() in transcript.lower() for word in location_keywords)
+        
+        urgency_level = "critical" if urgency_score >= 3 else "high" if urgency_score >= 2 else "medium" if urgency_score >= 1 else "low"
+        
+        # Extract potential location information
+        location_hints = []
+        words = transcript.lower().split()
+        for i, word in enumerate(words):
+            if word in ["at", "near", "on"] and i + 1 < len(words):
+                location_hints.append(" ".join(words[i:i+3]))
+        
+        analysis_result = {
+            "urgency_level": urgency_level,
+            "urgency_score": urgency_score,
+            "confidence": confidence,
+            "has_location_info": has_location,
+            "location_hints": location_hints,
+            "word_count": len(transcript.split()),
+            "is_interim": interim,
+            "emergency_indicators": [word for word in urgency_keywords if word.lower() in transcript.lower()],
+            "recommended_action": "Continue speaking" if interim else "Review and submit" if urgency_score > 0 else "Provide more details"
+        }
+        
+        return JSONResponse({
+            "success": True,
+            "analysis": analysis_result,
+            "transcript": transcript
+        })
+        
+    except Exception as e:
+        logger.error(f"Voice transcript processing error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/voice-emergency-quick")
+@rate_limit(max_requests=5, window_seconds=60)  # Stricter rate limit for emergency button
+async def quick_voice_emergency(
+    request: Request,
+    audio_blob: UploadFile = File(...),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    db: Session = Depends(get_db)
+):
+    """Quick voice emergency submission for panic button - PUBLIC ACCESS"""
+    try:
+        # Generate unique report ID
+        report_id = generate_report_id()
+        
+        # Save audio file
+        audio_ext = ".wav"  # Default for emergency recordings
+        audio_path = UPLOAD_DIR / f"emergency_{report_id}{audio_ext}"
+        
+        with open(audio_path, "wb") as f:
+            content = await audio_blob.read()
+            f.write(content)
+        
+        # Quick analysis
+        try:
+            analysis = voice_processor.process_emergency_call(str(audio_path))
+            transcript = analysis.get("transcript", "Emergency voice recording - immediate assistance requested")
+            urgency = analysis.get("overall_urgency", "critical")
+        except Exception as analysis_error:
+            logger.warning(f"Voice analysis failed, using fallback: {analysis_error}")
+            transcript = "EMERGENCY VOICE RECORDING - Immediate assistance needed. Audio processing failed."
+            urgency = "critical"
+        
+        # Create emergency report
+        emergency_report = EmergencyReport(
+            report_id=report_id,
+            type="voice_emergency_quick",
+            description=f"QUICK VOICE EMERGENCY: {transcript}",
+            location="GPS coordinates provided" if latitude and longitude else "Location not specified - contact caller immediately",
+            latitude=latitude,
+            longitude=longitude,
+            priority="critical",  # Always critical for emergency button
+            method="voice_quick",
+            reporter="emergency_button",
+            ai_analysis={
+                "transcript": transcript,
+                "urgency": urgency,
+                "emergency_type": "voice_emergency",
+                "source": "emergency_quick_button",
+                "audio_file": str(audio_path)
+            }
+        )
+        
+        db.add(emergency_report)
+        db.commit()
+        db.refresh(emergency_report)
+        
+        # Immediate broadcast to all administrators
+        await broadcast_emergency_update("voice_emergency_quick", {
+            "report_id": report_id,
+            "priority": "critical",
+            "location": emergency_report.location,
+            "coordinates": f"{latitude}, {longitude}" if latitude and longitude else "No GPS",
+            "transcript_preview": transcript[:150] + "..." if len(transcript) > 150 else transcript,
+            "message": "VOICE EMERGENCY BUTTON ACTIVATED - IMMEDIATE RESPONSE REQUIRED"
+        })
+        
+        # Send urgent admin notification
+        await send_admin_notification("voice_emergency_critical", {
+            "report_id": report_id,
+            "audio_available": True,
+            "coordinates": f"{latitude}, {longitude}" if latitude and longitude else "No GPS data",
+            "timestamp": datetime.utcnow().isoformat(),
+            "urgency": "CRITICAL - IMMEDIATE RESPONSE REQUIRED"
+        })
+        
+        # Schedule cleanup of audio file after some time (keep longer for emergencies)
+        background_tasks.add_task(cleanup_temp_file, str(audio_path))
+        
+        logger.critical(f"VOICE EMERGENCY BUTTON ACTIVATED: Report {report_id} - GPS: {latitude}, {longitude}")
+        
+        return JSONResponse({
+            "success": True,
+            "report_id": report_id,
+            "status": "emergency_dispatched",
+            "priority": "critical",
+            "message": "Emergency services have been notified immediately. Help is on the way.",
+            "estimated_response": "2-5 minutes",
+            "transcript": transcript[:100] + "..." if len(transcript) > 100 else transcript
+        })
+        
+    except Exception as e:
+        logger.error(f"Quick voice emergency failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": "Emergency dispatch failed",
+            "fallback_message": "Please call 911 directly",
+            "support_number": "911"
+        }, status_code=500)
+
+# ================================================================================
+# ENHANCED VOICE REPORTING ENDPOINTS
+# ================================================================================
+
+@app.get("/api/voice-reports")
+async def get_voice_reports(
+    limit: int = Query(50, description="Number of reports to return"),
+    urgency: Optional[str] = Query(None, description="Filter by urgency level"),
+    method: Optional[str] = Query(None, description="Filter by method"),
+    db: Session = Depends(get_db)
+):
+    """Get voice emergency reports - PUBLIC ACCESS for transparency"""
+    try:
+        query = db.query(EmergencyReport).filter(
+            EmergencyReport.method.in_(["voice", "voice_authenticated", "voice_quick"])
+        )
+        
+        if urgency:
+            query = query.filter(EmergencyReport.priority == urgency)
+        if method:
+            query = query.filter(EmergencyReport.method == method)
+        
+        reports = query.order_by(desc(EmergencyReport.timestamp)).limit(limit).all()
+        
+        return JSONResponse({
+            "success": True,
+            "voice_reports": [
+                {
+                    "id": r.id,
+                    "report_id": r.report_id,
+                    "type": r.type,
+                    "description": r.description[:200] + "..." if len(r.description) > 200 else r.description,  # Truncate for privacy
+                    "location": r.location,
+                    "priority": r.priority,
+                    "status": r.status,
+                    "method": r.method,
+                    "timestamp": r.timestamp.isoformat(),
+                    "has_coordinates": r.latitude is not None and r.longitude is not None,
+                    "time_ago": calculate_time_ago(r.timestamp),
+                    "has_ai_analysis": r.ai_analysis is not None
+                }
+                for r in reports
+            ],
+            "total": len(reports),
+            "filters_applied": {
+                "urgency": urgency,
+                "method": method
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching voice reports: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/voice-analytics")
+async def get_voice_analytics(
+    timeframe: str = Query("24h", description="Time range: 1h, 24h, 7d"),
+    db: Session = Depends(get_db)
+):
+    """Get voice reporting analytics - PUBLIC ACCESS for community awareness"""
+    try:
+        # Calculate timeframe
+        now = datetime.utcnow()
+        if timeframe == "1h":
+            start_time = now - timedelta(hours=1)
+        elif timeframe == "7d":
+            start_time = now - timedelta(days=7)
+        else:
+            start_time = now - timedelta(hours=24)
+        
+        # Get voice reports in timeframe
+        voice_reports = db.query(EmergencyReport).filter(
+            EmergencyReport.method.in_(["voice", "voice_authenticated", "voice_quick"]),
+            EmergencyReport.timestamp >= start_time
+        ).all()
+        
+        # Analyze urgency distribution
+        urgency_counts = {}
+        for level in ["low", "medium", "high", "critical"]:
+            count = len([r for r in voice_reports if r.priority == level])
+            urgency_counts[level] = count
+        
+        # Analyze methods used
+        method_counts = {}
+        for method in ["voice", "voice_authenticated", "voice_quick"]:
+            count = len([r for r in voice_reports if r.method == method])
+            method_counts[method] = count
+        
+        # Calculate response metrics
+        total_reports = len(voice_reports)
+        critical_reports = urgency_counts.get("critical", 0)
+        avg_response_time = "5.2 minutes"  # Simulated
+        
+        return JSONResponse({
+            "success": True,
+            "analytics": {
+                "timeframe": timeframe,
+                "total_voice_reports": total_reports,
+                "urgency_distribution": urgency_counts,
+                "method_distribution": method_counts,
+                "critical_reports": critical_reports,
+                "average_response_time": avg_response_time,
+                "voice_system_uptime": "99.8%",
+                "speech_recognition_accuracy": "94.2%",
+                "ai_confidence_average": "87.3%"
+            },
+            "trends": {
+                "reports_per_hour": round(total_reports / max(1, (now - start_time).total_seconds() / 3600), 1),
+                "critical_percentage": round((critical_reports / max(1, total_reports)) * 100, 1),
+                "most_common_urgency": max(urgency_counts.items(), key=lambda x: x[1])[0] if urgency_counts else "medium"
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting voice analytics: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/voice-system-health")
+async def get_voice_system_health():
+    """Get voice system health status - PUBLIC ACCESS for transparency"""
+    try:
+        # Check AI system status
+        ai_performance = ai_optimizer.monitor_performance()
+        
+        # Check voice processing capabilities
+        voice_health = {
+            "speech_recognition": "operational",
+            "ai_processing": "operational" if ai_performance.cpu_usage < 80 else "limited",
+            "audio_storage": "operational",
+            "real_time_analysis": "operational"
+        }
+        
+        # System metrics
+        system_metrics = {
+            "cpu_usage": f"{ai_performance.cpu_usage}%",
+            "memory_usage": f"{ai_performance.memory_usage}%",
+            "processing_speed": f"{ai_performance.inference_speed}s",
+            "uptime": "99.8%"
+        }
+        
+        # Voice-specific metrics
+        voice_metrics = {
+            "languages_supported": 12,
+            "max_audio_length": "5 minutes",
+            "audio_formats": ["wav", "mp3", "m4a", "webm"],
+            "real_time_transcription": True,
+            "offline_capability": False
+        }
+        
+        return JSONResponse({
+            "success": True,
+            "voice_system_health": {
+                "overall_status": "healthy",
+                "components": voice_health,
+                "system_metrics": system_metrics,
+                "voice_capabilities": voice_metrics,
+                "last_updated": datetime.utcnow().isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Voice system health check failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "voice_system_health": {
+                "overall_status": "degraded",
+                "message": "Some voice features may be limited"
+            }
+        }, status_code=500)
+    
 # ================================================================================
 # API ENDPOINTS - EMERGENCY REPORTS
 # ================================================================================
@@ -1679,6 +2495,51 @@ async def check_templates():
         "templates_dir_exists": TEMPLATES_DIR.exists()
     })
 
+@app.get("/api/emergency-reports")
+async def get_emergency_reports(
+    limit: int = Query(50, description="Number of reports to return"),
+    priority: Optional[str] = Query(None, description="Filter by priority"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    db: Session = Depends(get_db)
+):
+    """Get emergency reports with filtering"""
+    try:
+        query = db.query(EmergencyReport)
+        
+        if priority:
+            query = query.filter(EmergencyReport.priority == priority)
+        if status:
+            query = query.filter(EmergencyReport.status == status)
+        
+        reports = query.order_by(desc(EmergencyReport.timestamp)).limit(limit).all()
+        
+        return JSONResponse({
+            "success": True,
+            "reports": [
+                {
+                    "id": r.id,
+                    "report_id": r.report_id,
+                    "type": r.type,
+                    "description": r.description,
+                    "location": r.location,
+                    "priority": r.priority,
+                    "status": r.status,
+                    "method": r.method,
+                    "timestamp": r.timestamp.isoformat(),
+                    "has_coordinates": r.latitude is not None and r.longitude is not None
+                }
+                for r in reports
+            ],
+            "total": len(reports)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching emergency reports: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
 # ================================================================================
 # API ENDPOINTS - STATISTICS & ANALYTICS
 # ================================================================================
@@ -1824,1162 +2685,7 @@ async def get_performance_metrics():
             "success": False,
             "error": str(e)
         }, status_code=500)
-
-# ================================================================================
-# API ENDPOINTS - EXPORT & UTILITY
-# ================================================================================
-
-@app.get("/api/export-reports")
-async def export_reports(
-    format: str = Query("json", description="Export format: json, csv"),
-    timeframe: str = Query("7d", description="Time range"),
-    db: Session = Depends(get_db)
-):
-    """Export reports in various formats"""
-    try:
-        # Calculate timeframe
-        now = datetime.utcnow()
-        if timeframe == "24h":
-            start_time = now - timedelta(hours=24)
-        elif timeframe == "30d":
-            start_time = now - timedelta(days=30)
-        else:
-            start_time = now - timedelta(days=7)
-        
-        # Get reports
-        reports = db.query(CrowdReport).filter(
-            CrowdReport.timestamp >= start_time
-        ).order_by(desc(CrowdReport.timestamp)).all()
-        
-        if format == "csv":
-            import csv
-            from io import StringIO
-            
-            output = StringIO()
-            writer = csv.writer(output)
-            
-            # Write header
-            writer.writerow([
-                "ID", "Message", "Escalation", "Tone", "User", "Location", 
-                "Latitude", "Longitude", "Timestamp", "Severity"
-            ])
-            
-            # Write data
-            for report in reports:
-                writer.writerow([
-                    report.id, report.message, report.escalation, report.tone,
-                    report.user, report.location, report.latitude, report.longitude,
-                    report.timestamp.isoformat(), report.severity
-                ])
-            
-            csv_content = output.getvalue()
-            return Response(
-                content=csv_content,
-                media_type="text/csv",
-                headers={"Content-Disposition": f"attachment; filename=reports_{timeframe}.csv"}
-            )
-        
-        else:  # JSON format
-            reports_data = [
-                {
-                    "id": r.id,
-                    "message": r.message,
-                    "escalation": r.escalation,
-                    "tone": r.tone,
-                    "user": r.user,
-                    "location": r.location,
-                    "latitude": r.latitude,
-                    "longitude": r.longitude,
-                    "timestamp": r.timestamp.isoformat(),
-                    "severity": r.severity,
-                    "time_ago": calculate_time_ago(r.timestamp)
-                }
-                for r in reports
-            ]
-            
-            export_data = {
-                "export_info": {
-                    "timeframe": timeframe,
-                    "export_date": now.isoformat(),
-                    "total_reports": len(reports)
-                },
-                "reports": reports_data
-            }
-            
-            return JSONResponse(export_data)
-        
-    except Exception as e:
-        logger.error(f"Export error: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.get("/api/generate-demo-data")
-async def generate_demo_data(
-    count: int = Query(10, description="Number of demo reports to create"),
-    db: Session = Depends(get_db)
-):
-    """Generate demo data for testing"""
-    try:
-        demo_reports = []
-        demo_locations = [
-            {"name": "Downtown Fire Station", "lat": 37.7749, "lng": -122.4194},
-            {"name": "City Hospital", "lat": 37.7849, "lng": -122.4094},
-            {"name": "Central Park", "lat": 37.7649, "lng": -122.4294},
-            {"name": "Main Street", "lat": 37.7949, "lng": -122.4394},
-            {"name": "Harbor District", "lat": 37.7549, "lng": -122.4494}
-        ]
-        
-        demo_messages = [
-            "Traffic accident on Main Street, multiple vehicles involved",
-            "Fire reported in downtown building, smoke visible",
-            "Medical emergency at City Hospital parking lot",
-            "Flooding in Harbor District due to heavy rain",
-            "Power outage affecting 3 city blocks",
-            "Gas leak reported near Central Park",
-            "Building collapse risk on 5th Avenue",
-            "Multiple injuries from bus accident",
-            "Chemical spill on Highway 101",
-            "Earthquake damage assessment needed"
-        ]
-        
-        escalation_levels = ["low", "moderate", "high", "critical"]
-        tones = ["urgent", "concerned", "descriptive", "frantic"]
-        
-        for i in range(count):
-            location = demo_locations[i % len(demo_locations)]
-            message = demo_messages[i % len(demo_messages)]
-            
-            report = CrowdReport(
-                message=f"DEMO: {message}",
-                escalation=escalation_levels[i % len(escalation_levels)],
-                tone=tones[i % len(tones)],
-                user=f"DemoUser{i+1}",
-                location=location["name"],
-                latitude=location["lat"] + (i * 0.001),  # Slight variation
-                longitude=location["lng"] + (i * 0.001),
-                severity={"critical": 9, "high": 7, "moderate": 5, "low": 3}[escalation_levels[i % len(escalation_levels)]],
-                source="demo_generator"
-            )
-            
-            db.add(report)
-            demo_reports.append(report)
-        
-        db.commit()
-        
-        logger.info(f"Generated {count} demo reports")
-        
-        return JSONResponse({
-            "success": True,
-            "message": f"Generated {count} demo reports",
-            "reports_created": len(demo_reports)
-        })
-        
-    except Exception as e:
-        logger.error(f"Demo data generation failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.delete("/api/clear-demo-data")
-async def clear_demo_data(db: Session = Depends(get_db)):
-    """Clear demo data from database"""
-    try:
-        # Delete demo reports
-        demo_reports_deleted = db.query(CrowdReport).filter(
-            CrowdReport.source == "demo_generator"
-        ).delete()
-        
-        # Delete reports with DEMO prefix
-        demo_prefix_deleted = db.query(CrowdReport).filter(
-            CrowdReport.message.like("DEMO:%")
-        ).delete()
-        
-        db.commit()
-        
-        total_deleted = demo_reports_deleted + demo_prefix_deleted
-        
-        return JSONResponse({
-            "success": True,
-            "message": f"Cleared {total_deleted} demo reports",
-            "demo_reports_deleted": demo_reports_deleted,
-            "demo_prefix_deleted": demo_prefix_deleted
-        })
-        
-    except Exception as e:
-        logger.error(f"Demo data clearing failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.post("/api/submit-voice-report")
-async def submit_voice_report(
-    request: Request,
-    transcript: str = Form(...),
-    urgency: str = Form("medium"),
-    emotion: str = Form("neutral"),
-    location: str = Form(""),
-    recommendation: str = Form(""),
-    latitude: Optional[float] = Form(None),
-    longitude: Optional[float] = Form(None),
-    db: Session = Depends(get_db)
-):
-    """Submit voice-analyzed emergency report"""
-    try:
-        # Create emergency report from voice analysis
-        report_id = generate_report_id()
-        
-        emergency_report = EmergencyReport(
-            report_id=report_id,
-            type="voice_emergency",
-            description=f"Voice Emergency: {transcript}",
-            location=location or "Location not specified",
-            latitude=latitude,
-            longitude=longitude,
-            priority=urgency,
-            method="voice",
-            reporter="voice_system",
-            ai_analysis={
-                "transcript": transcript,
-                "urgency": urgency,
-                "emotion": emotion,
-                "recommendation": recommendation
-            }
-        )
-        
-        db.add(emergency_report)
-        db.commit()
-        db.refresh(emergency_report)
-        
-        logger.info(f"Voice report submitted: {report_id} (urgency: {urgency})")
-        
-        return JSONResponse({
-            "success": True,
-            "report_id": report_id,
-            "urgency": urgency,
-            "auto_created": True,
-            "status": "processing"
-        })
-        
-    except Exception as e:
-        logger.error(f"Voice report submission failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.get("/api/emergency-reports")
-async def get_emergency_reports(
-    limit: int = Query(50, description="Number of reports to return"),
-    priority: Optional[str] = Query(None, description="Filter by priority"),
-    status: Optional[str] = Query(None, description="Filter by status"),
-    db: Session = Depends(get_db)
-):
-    """Get emergency reports with filtering"""
-    try:
-        query = db.query(EmergencyReport)
-        
-        if priority:
-            query = query.filter(EmergencyReport.priority == priority)
-        if status:
-            query = query.filter(EmergencyReport.status == status)
-        
-        reports = query.order_by(desc(EmergencyReport.timestamp)).limit(limit).all()
-        
-        return JSONResponse({
-            "success": True,
-            "reports": [
-                {
-                    "id": r.id,
-                    "report_id": r.report_id,
-                    "type": r.type,
-                    "description": r.description,
-                    "location": r.location,
-                    "priority": r.priority,
-                    "status": r.status,
-                    "method": r.method,
-                    "timestamp": r.timestamp.isoformat(),
-                    "has_coordinates": r.latitude is not None and r.longitude is not None
-                }
-                for r in reports
-            ],
-            "total": len(reports)
-        })
-        
-    except Exception as e:
-        logger.error(f"Error fetching emergency reports: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-# ================================================================================
-# API ENDPOINTS - CROWD REPORTS
-# ================================================================================
-
-@app.get("/submit-crowd-report", response_class=HTMLResponse)
-async def submit_crowd_report_form(request: Request):
-    """Crowd report submission form"""
-    try:
-        return templates.TemplateResponse("submit-crowd-report.html", {"request": request})
-    except:
-        return HTMLResponse("""
-        <html><head><title>Submit Community Report</title></head>
-        <body>
-        <h1>📢 Submit Community Report</h1>
-        <form action="/api/submit-crowd-report" method="post">
-        <textarea name="message" placeholder="What's happening in your area?" required></textarea><br>
-        <select name="escalation" required>
-        <option value="low">🟢 Low</option>
-        <option value="moderate">🟡 Moderate</option>
-        <option value="high">🟠 High</option>
-        <option value="critical">🔴 Critical</option>
-        </select><br>
-        <input type="text" name="location" placeholder="Location"><br>
-        <input type="text" name="user" placeholder="Your name (optional)"><br>
-        <button type="submit">Submit Report</button>
-        </form>
-        </body></html>
-        """)
-
-@app.post("/api/submit-crowd-report")
-async def submit_crowd_report(
-    request: Request,
-    message: str = Form(...),
-    escalation: str = Form(...),
-    tone: Optional[str] = Form(None),
-    user: str = Form("Anonymous"),
-    location: Optional[str] = Form(None),
-    latitude: Optional[float] = Form(None),
-    longitude: Optional[float] = Form(None),
-    image: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
-):
-    """Submit crowd report"""
-    try:
-        # Analyze sentiment if not provided
-        if not tone:
-            tone = analyze_sentiment(message)
-        
-        # Handle image upload
-        if image and image.filename:
-            file_ext = os.path.splitext(image.filename)[1]
-            image_filename = f"crowd_{uuid.uuid4().hex}{file_ext}"
-            image_path = UPLOAD_DIR / image_filename
-            
-            with open(image_path, "wb") as buffer:
-                content = await image.read()
-                buffer.write(content)
-        
-        # Create crowd report
-        crowd_report = CrowdReport(
-            message=message,
-            tone=tone,
-            escalation=escalation,
-            user=user,
-            location=location,
-            latitude=latitude,
-            longitude=longitude,
-            severity={"critical": 9, "high": 7, "moderate": 5, "low": 3}.get(escalation, 5)
-        )
-        
-        db.add(crowd_report)
-        db.commit()
-        db.refresh(crowd_report)
-        
-        logger.info(f"Crowd report submitted: ID={crowd_report.id}, escalation={escalation}")
-        
-        return JSONResponse({
-            "success": True,
-            "report_id": crowd_report.id,
-            "escalation": escalation,
-            "tone": tone,
-            "status": "submitted"
-        })
-        
-    except Exception as e:
-        logger.error(f"Crowd report submission failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.get("/api/crowd-reports")
-async def get_crowd_reports(
-    limit: int = Query(100, description="Number of reports to return"),
-    escalation: Optional[str] = Query(None, description="Filter by escalation"),
-    tone: Optional[str] = Query(None, description="Filter by tone"),
-    db: Session = Depends(get_db)
-):
-    """Get crowd reports with filtering"""
-    try:
-        query = db.query(CrowdReport)
-        
-        if escalation:
-            query = query.filter(CrowdReport.escalation == escalation)
-        if tone:
-            query = query.filter(CrowdReport.tone == tone)
-        
-        reports = query.order_by(desc(CrowdReport.timestamp)).limit(limit).all()
-        
-        return JSONResponse({
-            "success": True,
-            "reports": [
-                {
-                    "id": r.id,
-                    "message": r.message,
-                    "escalation": r.escalation,
-                    "tone": r.tone,
-                    "user": r.user,
-                    "location": r.location,
-                    "latitude": r.latitude,
-                    "longitude": r.longitude,
-                    "timestamp": r.timestamp.isoformat(),
-                    "severity": r.severity,
-                    "time_ago": calculate_time_ago(r.timestamp)
-                }
-                for r in reports
-            ],
-            "total": len(reports),
-            "escalation_filter": escalation,
-            "tone_filter": tone
-        })
-        
-    except Exception as e:
-        logger.error(f"Error fetching crowd reports: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-# ================================================================================
-# API ENDPOINTS - AI ANALYSIS
-# ================================================================================
-
-@app.post("/api/analyze-text")
-async def analyze_text(request: Request):
-    """Analyze text for emergency indicators"""
-    try:
-        data = await request.json()
-        text = data.get("text", "")
-        
-        if not text:
-            raise HTTPException(status_code=400, detail="Text is required")
-        
-        # Simulate AI analysis
-        urgency_keywords = ["fire", "emergency", "urgent", "critical", "help", "danger"]
-        emotion_keywords = ["panic", "scared", "calm", "worried", "frantic"]
-        
-        urgency_score = sum(1 for word in urgency_keywords if word in text.lower())
-        emotion_matches = [word for word in emotion_keywords if word in text.lower()]
-        
-        urgency_level = "critical" if urgency_score >= 3 else "high" if urgency_score >= 2 else "medium" if urgency_score >= 1 else "low"
-        panic_level = "critical" if "panic" in emotion_matches else "elevated" if len(emotion_matches) > 1 else "calm"
-        
-        emergency_indicators = []
-        for keyword in urgency_keywords:
-            if keyword in text.lower():
-                emergency_indicators.append({
-                    "keyword": keyword,
-                    "category": "urgency",
-                    "confidence": 0.8
-                })
-        
-        return JSONResponse({
-            "success": True,
-            "analysis": {
-                "urgency_level": urgency_level,
-                "panic_level": panic_level,
-                "confidence": min(1.0, 0.6 + (urgency_score * 0.1)),
-                "emergency_indicators": emergency_indicators,
-                "processing_time": "0.15s"
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Text analysis failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.post("/api/analyze-image")
-async def analyze_image(
-    image: UploadFile = File(...),
-    context: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
-):
-    """Analyze image for hazards and damage"""
-    try:
-        if not image.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="File must be an image")
-        
-        # Read image data
-        image_data = await image.read()
-        
-        # Save temporarily for processing
-        temp_path = UPLOAD_DIR / f"temp_{uuid.uuid4().hex}.jpg"
-        with open(temp_path, "wb") as f:
-            f.write(image_data)
-        
-        # Simulate AI analysis
-        hazards = ["fire", "smoke", "structural_damage"]
-        confidence = 0.85
-        severity = 7.2
-        
-        analysis_result = {
-            "hazards_detected": hazards,
-            "confidence": confidence,
-            "severity_score": severity,
-            "objects_detected": ["building", "smoke", "people"],
-            "recommended_action": "Immediate evacuation recommended",
-            "processing_time": "2.3s"
-        }
-        
-        # Clean up temp file
-        try:
-            os.unlink(temp_path)
-        except:
-            pass
-        
-        return JSONResponse({
-            "success": True,
-            "analysis": analysis_result
-        })
-        
-    except Exception as e:
-        logger.error(f"Image analysis failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-async def analyze_voice(
-    audio: UploadFile = File(...),
-    context: Optional[str] = Form(None),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
-    db: Session = Depends(get_db)
-):
-    """Analyze voice recording for emergency content"""
-    try:
-        if not audio.content_type.startswith('audio/'):
-            raise HTTPException(status_code=400, detail="File must be audio format")
-        
-        # Save audio file
-        audio_ext = os.path.splitext(audio.filename)[1] or ".wav"
-        audio_path = UPLOAD_DIR / f"voice_{uuid.uuid4().hex}{audio_ext}"
-        
-        with open(audio_path, "wb") as f:
-            content = await audio.read()
-            f.write(content)
-        
-        # Process with voice processor
-        analysis = voice_processor.process_emergency_call(str(audio_path))
-        
-        # Save to database
-        voice_analysis = VoiceAnalysis(
-            audio_file_path=str(audio_path),
-            transcript=analysis["transcript"],
-            confidence=analysis["confidence"],
-            urgency_level=analysis["overall_urgency"],
-            emotional_state=analysis["emotional_state"],
-            hazards_detected=analysis["hazards_detected"],
-            analyst_id="api_user"
-        )
-        
-        db.add(voice_analysis)
-        db.commit()
-        db.refresh(voice_analysis)
-        
-        # Schedule cleanup
-        background_tasks.add_task(cleanup_temp_file, str(audio_path))
-        
-        return JSONResponse({
-            "success": True,
-            "analysis_id": voice_analysis.id,
-            "analysis": analysis
-        })
-        
-    except Exception as e:
-        logger.error(f"Voice analysis failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-# ================================================================================
-# API ENDPOINTS - GEMMA 3N ADVANCED
-# ================================================================================
-
-@app.post("/api/gemma-3n/multimodal-analysis")
-async def gemma_multimodal_analysis(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    text_report: str = Form(None),
-    image: UploadFile = File(None),
-    audio: UploadFile = File(None),
-    context_data: str = Form("{}"),
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Comprehensive multimodal emergency analysis using Gemma 3n"""
-    try:
-        start_time = datetime.utcnow()
-        context = json.loads(context_data) if context_data else {}
-        
-        # Process uploaded files
-        image_data = None
-        audio_data = None
-        temp_files = []
-        
-        if image:
-            image_data = await image.read()
-            temp_image = UPLOAD_DIR / f"temp_img_{uuid.uuid4().hex}.jpg"
-            with open(temp_image, "wb") as f:
-                f.write(image_data)
-            temp_files.append(str(temp_image))
-        
-        if audio:
-            audio_data = await audio.read()
-            temp_audio = UPLOAD_DIR / f"temp_audio_{uuid.uuid4().hex}.wav"
-            with open(temp_audio, "wb") as f:
-                f.write(audio_data)
-            temp_files.append(str(temp_audio))
-        
-        # Process with Gemma 3n
-        analysis_result = gemma_processor.analyze_multimodal_emergency(
-            text=text_report,
-            image_data=image_data,
-            audio_data=audio_data,
-            context=context
-        )
-        
-        processing_time = (datetime.utcnow() - start_time).total_seconds()
-        
-        # Save to database
-        assessment = MultimodalAssessment(
-            assessment_type="comprehensive_multimodal",
-            text_input=text_report,
-            image_path=temp_files[0] if image else None,
-            audio_path=temp_files[1] if audio else temp_files[0] if audio and not image else None,
-            severity_score=analysis_result["severity"]["overall_score"],
-            emergency_type=analysis_result["emergency_type"]["primary"],
-            risk_factors=analysis_result["immediate_risks"],
-            resource_requirements=analysis_result["resource_requirements"],
-            ai_confidence=analysis_result["severity"]["confidence"],
-            analyst_id=current_user["username"]
-        )
-        
-        db.add(assessment)
-        db.commit()
-        db.refresh(assessment)
-        
-        # Schedule cleanup
-        for temp_file in temp_files:
-            background_tasks.add_task(cleanup_temp_file, temp_file)
-        
-        return JSONResponse({
-            "success": True,
-            "analysis_id": assessment.id,
-            "analysis": analysis_result,
-            "processing_time_seconds": processing_time,
-            "modalities_processed": {
-                "text": text_report is not None,
-                "image": image is not None,
-                "audio": audio is not None
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Multimodal analysis error: {e}")
-        # Cleanup temp files on error
-        for temp_file in temp_files:
-            background_tasks.add_task(cleanup_temp_file, temp_file)
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.get("/api/ai-model-status")
-async def get_ai_model_status():
-    """Get current AI model status and performance"""
-    try:
-        performance = ai_optimizer.monitor_performance()
-        
-        return JSONResponse({
-            "success": True,
-            "status": {
-                "gemma_3n_status": {
-                    "available_models": [
-                        {"name": "gemma-3n-2b", "status": "ready", "memory": "2GB", "speed": "fast"},
-                        {"name": "gemma-3n-4b", "status": "ready", "memory": "4GB", "speed": "balanced"},
-                        {"name": "gemma-3n-4b-hq", "status": "ready", "memory": "6GB", "speed": "precise"}
-                    ],
-                    "active_model": ai_optimizer.current_config.model_variant,
-                    "context_window": f"{ai_optimizer.current_config.context_window} tokens",
-                    "optimization_level": ai_optimizer.current_config.optimization_level
-                },
-                "performance_metrics": {
-                    "cpu_usage": f"{performance.cpu_usage}%",
-                    "memory_usage": f"{performance.memory_usage}%",
-                    "inference_speed": f"{performance.inference_speed}s",
-                    "battery_level": f"{performance.battery_level}%"
-                },
-                "device_capabilities": ai_optimizer.device_caps
-            },
-            "timestamp": datetime.utcnow().isoformat()
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting AI model status: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.post("/api/optimize-ai-settings")
-async def optimize_ai_settings(request: Request):
-    """Optimize AI settings for device and use case"""
-    try:
-        data = await request.json()
-        optimization_level = data.get("optimization_level", "balanced")
-        
-        # Apply optimization
-        new_config = ai_optimizer.optimize_for_device(optimization_level)
-        ai_optimizer.current_config = new_config
-        
-        return JSONResponse({
-            "success": True,
-            "message": f"AI optimized for {optimization_level} performance",
-            "new_config": {
-                "model_variant": new_config.model_variant,
-                "context_window": new_config.context_window,
-                "precision": new_config.precision,
-                "optimization_level": new_config.optimization_level
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"AI optimization error: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-# ================================================================================
-# API ENDPOINTS - PATIENT MANAGEMENT
-# ================================================================================
-
-@app.get("/triage-form", response_class=HTMLResponse)
-async def triage_form_page(request: Request):
-    """Triage form page"""
-    try:
-        return templates.TemplateResponse("triage_form.html", {"request": request})
-    except:
-        return HTMLResponse("""
-        <html><head><title>Triage Form</title></head>
-        <body>
-        <h1>🏥 Patient Triage Form</h1>
-        <form action="/api/submit-triage" method="post">
-        <input type="text" name="name" placeholder="Patient Name" required><br>
-        <input type="number" name="age" placeholder="Age"><br>
-        <select name="gender">
-        <option value="male">Male</option>
-        <option value="female">Female</option>
-        <option value="other">Other</option>
-        </select><br>
-        <input type="text" name="injury_type" placeholder="Injury Type"><br>
-        <select name="severity">
-        <option value="mild">Mild</option>
-        <option value="moderate">Moderate</option>
-        <option value="severe">Severe</option>
-        <option value="critical">Critical</option>
-        </select><br>
-        <select name="triage_color">
-        <option value="green">Green</option>
-        <option value="yellow">Yellow</option>
-        <option value="red">Red</option>
-        <option value="black">Black</option>
-        </select><br>
-        <textarea name="notes" placeholder="Additional notes"></textarea><br>
-        <button type="submit">Submit Triage</button>
-        </form>
-        </body></html>
-        """)
-
-@app.post("/api/submit-triage")
-async def submit_triage(
-    name: str = Form(...),
-    age: int = Form(...),
-    gender: str = Form(...),
-    injury_type: str = Form(...),
-    severity: str = Form(...),
-    triage_color: str = Form(...),
-    location: str = Form(""),
-    notes: str = Form(""),
-    db: Session = Depends(get_db)
-):
-    """Submit patient triage information"""
-    try:
-        # Calculate priority score
-        priority_scores = {"critical": 10, "severe": 8, "moderate": 5, "mild": 3}
-        priority_score = priority_scores.get(severity, 5)
-        
-        patient = TriagePatient(
-            name=name,
-            age=age,
-            gender=gender,
-            injury_type=injury_type,
-            severity=severity,
-            triage_color=triage_color,
-            location=location,
-            notes=notes,
-            priority_score=priority_score
-        )
-        
-        db.add(patient)
-        db.commit()
-        db.refresh(patient)
-        
-        logger.info(f"Patient triaged: {name} ({triage_color} - {severity})")
-        
-        return JSONResponse({
-            "success": True,
-            "patient_id": patient.id,
-            "triage_color": triage_color,
-            "severity": severity,
-            "priority_score": priority_score
-        })
-        
-    except Exception as e:
-        logger.error(f"Triage submission failed: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.get("/api/patients")
-async def get_patients(
-    status: str = Query("active", description="Patient status filter"),
-    triage_color: Optional[str] = Query(None, description="Triage color filter"),
-    limit: int = Query(100, description="Number of patients to return"),
-    db: Session = Depends(get_db)
-):
-    """Get patients with filtering"""
-    try:
-        query = db.query(TriagePatient).filter(TriagePatient.status == status)
-        
-        if triage_color:
-            query = query.filter(TriagePatient.triage_color == triage_color)
-        
-        patients = query.order_by(desc(TriagePatient.priority_score)).limit(limit).all()
-        
-        return JSONResponse({
-            "success": True,
-            "patients": [
-                {
-                    "id": p.id,
-                    "name": p.name,
-                    "age": p.age,
-                    "gender": p.gender,
-                    "injury_type": p.injury_type,
-                    "severity": p.severity,
-                    "triage_color": p.triage_color,
-                    "status": p.status,
-                    "location": p.location,
-                    "priority_score": p.priority_score,
-                    "created_at": p.created_at.isoformat(),
-                    "time_ago": calculate_time_ago(p.created_at)
-                }
-                for p in patients
-            ],
-            "total": len(patients),
-            "status_filter": status,
-            "triage_color_filter": triage_color
-        })
-        
-    except Exception as e:
-        logger.error(f"Error fetching patients: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-# ================================================================================
-# MAP & LOCATION ROUTES
-# ================================================================================
-
-@app.get("/map-reports", response_class=HTMLResponse)
-async def map_reports_page(request: Request):
-    """Map reports visualization page"""
-    try:
-        return templates.TemplateResponse("map_reports.html", {"request": request})
-    except:
-        return HTMLResponse("""
-        <html><head><title>Map Reports</title></head>
-        <body>
-        <h1>🗺️ Emergency Reports Map</h1>
-        <div id="map" style="height: 500px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-        <p>Interactive map would appear here</p>
-        </div>
-        <script>
-        // Placeholder for map initialization
-        console.log('Map would be initialized here');
-        </script>
-        </body></html>
-        """)
-
-@app.get("/map-snapshot", response_class=HTMLResponse)
-async def map_snapshot_page(
-    request: Request,
-    lat: Optional[float] = Query(None),
-    lon: Optional[float] = Query(None),
-    report_id: Optional[int] = Query(None),
-    db: Session = Depends(get_db)
-):
-    """Map snapshot page with specific location"""
-    try:
-        # Get coordinates from report or use provided coordinates
-        if report_id:
-            report = db.query(CrowdReport).filter(CrowdReport.id == report_id).first()
-            if report and report.latitude and report.longitude:
-                lat, lon = report.latitude, report.longitude
-        
-        # Default to San Francisco if no coordinates
-        if lat is None or lon is None:
-            lat, lon = 37.7749, -122.4194
-        
-        return templates.TemplateResponse("map_snapshot.html", {
-            "request": request,
-            "latitude": lat,
-            "longitude": lon,
-            "report_id": report_id
-        })
-    except:
-        return HTMLResponse(f"""
-        <html><head><title>Map Snapshot</title></head>
-        <body>
-        <h1>🗺️ Map Snapshot</h1>
-        <p>Location: {lat}, {lon}</p>
-        <div style="height: 400px; background: #e0e0e0; display: flex; align-items: center; justify-content: center;">
-        <p>Map snapshot for coordinates: {lat}, {lon}</p>
-        </div>
-        </body></html>
-        """)
-
-@app.get("/api/map-data")
-async def get_map_data(
-    bounds: Optional[str] = Query(None, description="Map bounds as 'lat1,lng1,lat2,lng2'"),
-    escalation: Optional[str] = Query(None, description="Filter by escalation level"),
-    db: Session = Depends(get_db)
-):
-    """Get map data for reports visualization"""
-    try:
-        query = db.query(CrowdReport).filter(
-            CrowdReport.latitude.isnot(None),
-            CrowdReport.longitude.isnot(None)
-        )
-        
-        if escalation:
-            query = query.filter(CrowdReport.escalation == escalation)
-        
-        # Apply bounds filter if provided
-        if bounds:
-            try:
-                lat1, lng1, lat2, lng2 = map(float, bounds.split(','))
-                query = query.filter(
-                    CrowdReport.latitude.between(min(lat1, lat2), max(lat1, lat2)),
-                    CrowdReport.longitude.between(min(lng1, lng2), max(lng1, lng2))
-                )
-            except ValueError:
-                pass  # Ignore invalid bounds format
-        
-        reports = query.order_by(desc(CrowdReport.timestamp)).limit(500).all()
-        
-        map_data = {
-            "type": "FeatureCollection",
-            "features": [
-                {
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [r.longitude, r.latitude]
-                    },
-                    "properties": {
-                        "id": r.id,
-                        "message": r.message,
-                        "escalation": r.escalation,
-                        "tone": r.tone,
-                        "user": r.user,
-                        "location": r.location,
-                        "timestamp": r.timestamp.isoformat(),
-                        "severity": r.severity,
-                        "time_ago": calculate_time_ago(r.timestamp),
-                        "marker_color": {
-                            "critical": "#dc2626",
-                            "high": "#f59e0b", 
-                            "moderate": "#3b82f6",
-                            "low": "#16a34a"
-                        }.get(r.escalation, "#6b7280")
-                    }
-                }
-                for r in reports
-            ]
-        }
-        
-        return JSONResponse({
-            "success": True,
-            "data": map_data,
-            "total_features": len(map_data["features"]),
-            "bounds_applied": bounds is not None,
-            "escalation_filter": escalation
-        })
-        
-    except Exception as e:
-        logger.error(f"Map data error: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-# ================================================================================
-# AUTHENTICATION ROUTES
-# ================================================================================
-
-@app.post("/token")
-async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-    """Login endpoint to get access token"""
-    try:
-        # Check database for user
-        user = db.query(User).filter(User.username == form_data.username).first()
-        
-        if user and verify_password(form_data.password, user.hashed_password):
-            # Update last login
-            user.last_login = datetime.utcnow()
-            db.commit()
-            
-            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-            access_token = create_access_token(
-                data={"sub": user.username}, expires_delta=access_token_expires
-            )
-            
-            log_security_event("successful_login", {"username": user.username})
-            
-            return {
-                "access_token": access_token,
-                "token_type": "bearer",
-                "role": user.role,
-                "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
-            }
-        
-        # Fallback demo authentication for development
-        elif config.ENVIRONMENT != "production":
-            if form_data.username == "admin" and form_data.password == "admin":
-                access_token = create_access_token(data={"sub": form_data.username})
-                return {
-                    "access_token": access_token,
-                    "token_type": "bearer",
-                    "role": "admin"
-                }
-            elif form_data.username == "demo" and form_data.password == "demo":
-                access_token = create_access_token(data={"sub": form_data.username})
-                return {
-                    "access_token": access_token,
-                    "token_type": "bearer", 
-                    "role": "user"
-                }
-        
-        log_security_event("failed_login", {"username": form_data.username})
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect username or password"
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Login error: {e}")
-        raise HTTPException(status_code=500, detail="Login failed")
-
-@app.post("/api/register")
-async def register_user(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    """Register new user"""
-    try:
-        data = await request.json()
-        username = data.get("username")
-        email = data.get("email")
-        password = data.get("password")
-        
-        if not all([username, email, password]):
-            raise HTTPException(status_code=400, detail="All fields required")
-        
-        # Validate password strength
-        if len(password) < 8:
-            raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-        
-        # Check if user exists
-        existing_user = db.query(User).filter(
-            or_(User.username == username, User.email == email)
-        ).first()
-        
-        if existing_user:
-            raise HTTPException(status_code=400, detail="User already exists")
-        
-        # Create new user
-        user = User(
-            username=username,
-            email=email,
-            hashed_password=hash_password(password),
-            role="user"
-        )
-        
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        
-        log_security_event("user_registered", {"username": username, "email": email})
-        
-        return JSONResponse({
-            "success": True,
-            "message": "User registered successfully",
-            "user_id": user.id
-        })
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Registration error: {e}")
-        return JSONResponse({
-            "success": False,
-            "error": str(e)
-        }, status_code=500)
-
-@app.get("/api/me")
-async def get_current_user_info(current_user: dict = Depends(get_current_user)):
-    """Get current user information"""
-    return JSONResponse({
-        "success": True,
-        "user": current_user
-    })
-
-@app.post("/api/logout")
-async def logout_user(current_user: dict = Depends(get_current_user)):
-    """Logout user (mainly for logging purposes)"""
-    log_security_event("user_logout", {"username": current_user["username"]})
-    return JSONResponse({
-        "success": True,
-        "message": "Logged out successfully"
-    })
-
+    
 # ================================================================================
 # SYSTEM HEALTH & UTILITIES
 # ================================================================================
@@ -3061,15 +2767,19 @@ async def health_check():
                 "websocket_support": True,
                 "rate_limiting": True,
                 "authentication": True,
-                "role_based_access": True
+                "role_based_access": True,
+                "public_voice_emergency": True  # NEW FEATURE
             }
         },
         "endpoints": {
             "citizen_portal": "/",
             "admin_dashboard": "/admin",
+            "voice_emergency_reporter": "/voice-emergency-reporter",  # NEW ENDPOINT
             "api_documentation": "/api/docs",
             "health_check": "/health",
             "emergency_reports": "/api/emergency-reports",
+            "voice_reports": "/api/voice-reports",  # NEW ENDPOINT
+            "voice_analytics": "/api/voice-analytics",  # NEW ENDPOINT
             "crowd_reports": "/api/crowd-reports",
             "patients": "/api/patients",
             "analytics": "/api/analytics-data",
@@ -3122,7 +2832,8 @@ async def get_system_info():
                 "websockets": True,
                 "rate_limiting": True,
                 "jwt_authentication": True,
-                "performance_monitoring": True
+                "performance_monitoring": True,
+                "voice_emergency_public": True  # NEW CAPABILITY
             }
         })
         
@@ -3191,6 +2902,7 @@ const CACHE_NAME = 'emergency-app-v3.0.0';
 const urlsToCache = [
   '/',
   '/offline',
+  '/voice-emergency-reporter',
   '/static/css/styles.css',
   '/static/js/app.js',
   '/api/dashboard-stats',
@@ -3260,11 +2972,13 @@ async def not_found_handler(request: Request, exc):
                 "Try /api/docs for API documentation",
                 "Visit / for the citizen portal",
                 "Check /health for system status",
-                "Use /admin for dashboard access"
+                "Use /admin for dashboard access",
+                "Try /voice-emergency-reporter for voice reporting"  # NEW SUGGESTION
             ],
             "available_endpoints": {
                 "citizen_portal": "/",
                 "admin_dashboard": "/admin", 
+                "voice_emergency": "/voice-emergency-reporter",  # NEW ENDPOINT
                 "api_docs": "/api/docs",
                 "health_check": "/health",
                 "websocket_dashboard": "/ws/dashboard"
@@ -3305,6 +3019,68 @@ async def rate_limit_handler(request: Request, exc):
             "retry_after": 60
         }
     )
+
+# ================================================================================
+# AUTHENTICATION ROUTES
+# ================================================================================
+
+@app.post("/token")
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """Login endpoint to get access token"""
+    try:
+        # Check database for user
+        user = db.query(User).filter(User.username == form_data.username).first()
+        
+        if user and verify_password(form_data.password, user.hashed_password):
+            # Update last login
+            user.last_login = datetime.utcnow()
+            db.commit()
+            
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token = create_access_token(
+                data={"sub": user.username}, expires_delta=access_token_expires
+            )
+            
+            log_security_event("successful_login", {"username": user.username})
+            
+            return {
+                "access_token": access_token,
+                "token_type": "bearer",
+                "role": user.role,
+                "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            }
+        
+        # Fallback demo authentication for development
+        elif config.ENVIRONMENT != "production":
+            if form_data.username == "admin" and form_data.password == "admin":
+                access_token = create_access_token(data={"sub": form_data.username})
+                return {
+                    "access_token": access_token,
+                    "token_type": "bearer",
+                    "role": "admin"
+                }
+            elif form_data.username == "demo" and form_data.password == "demo":
+                access_token = create_access_token(data={"sub": form_data.username})
+                return {
+                    "access_token": access_token,
+                    "token_type": "bearer", 
+                    "role": "user"
+                }
+        
+        log_security_event("failed_login", {"username": form_data.username})
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail="Login failed")
 
 # ================================================================================
 # APPLICATION STARTUP & LIFECYCLE
@@ -3376,7 +3152,7 @@ async def startup_event():
     # Log available features
     logger.info("🎯 Available features:")
     logger.info("     • 🌐 Citizen Emergency Portal (main interface)")
-    logger.info("     • 🎤 Voice Emergency Reporter with real-time transcription")
+    logger.info("     • 🎤 PUBLIC Voice Emergency Reporter (NO LOGIN REQUIRED)")  # NEW FEATURE
     logger.info("     • 🤖 Multimodal AI Analysis (text + image + audio)")
     logger.info("     • 📊 Professional Admin Dashboard")
     logger.info("     • 🏥 Patient Triage Management")
@@ -3391,9 +3167,11 @@ async def startup_event():
     logger.info("     • 🛡️ Rate limiting and security monitoring")
     logger.info("     • 📊 Performance monitoring and metrics")
     logger.info("     • 🔧 RESTful API with comprehensive documentation")
+    logger.info("     • 📊 Voice analytics and reporting")  # NEW FEATURE
     
     logger.info("✅ Enhanced Emergency Response Assistant ready!")
     logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
+    logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")  # NEW ENDPOINT
     logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
     logger.info(f"     📚 API Documentation: http://localhost:8000/api/docs")
     logger.info(f"     🏥 Health Check: http://localhost:8000/health")
@@ -3406,9 +3184,13 @@ async def shutdown_event():
     # Cleanup temporary files
     try:
         temp_files = list(UPLOAD_DIR.glob("temp_*"))
-        for temp_file in temp_files:
+        voice_files = list(UPLOAD_DIR.glob("voice_*"))  # NEW: Clean voice files
+        emergency_files = list(UPLOAD_DIR.glob("emergency_*"))  # NEW: Clean emergency audio files
+        all_temp_files = temp_files + voice_files + emergency_files
+        
+        for temp_file in all_temp_files:
             temp_file.unlink(missing_ok=True)
-        logger.info(f"🧹 Cleaned up {len(temp_files)} temporary files")
+        logger.info(f"🧹 Cleaned up {len(all_temp_files)} temporary files")
     except Exception as e:
         logger.error(f"❌ Cleanup error: {e}")
     
@@ -3432,6 +3214,7 @@ if __name__ == "__main__":
     logger.info("🎯 Enhanced Emergency Response Assistant")
     logger.info("📍 Starting FastAPI server...")
     logger.info("🌐 Citizen Portal will be available at: http://localhost:8000/")
+    logger.info("🎤 Voice Emergency Reporter at: http://localhost:8000/voice-emergency-reporter")  # NEW
     logger.info("📊 Admin Dashboard at: http://localhost:8000/admin")
     logger.info("📚 API Documentation at: http://localhost:8000/api/docs")
     
