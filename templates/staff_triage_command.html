@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Medical Triage Dashboard - Disaster Response</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --critical-red: #dc2626;
+            --urgent-yellow: #f59e0b;
+            --stable-green: #16a34a;
+            --expectant-black: #374151;
+            --info-blue: #3b82f6;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --border-color: #e5e7eb;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--critical-red) 0%, #b91c1c 100%);
+            color: white;
+            padding: 1.5rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .live-indicator {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #16a34a;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        .workflow-nav {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--info-blue);
+        }
+
+        .workflow-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .workflow-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .workflow-step {
+            background: var(--bg-light);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .workflow-step:hover {
+            border-color: var(--info-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .workflow-step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .workflow-step:hover::before {
+            left: 100%;
+        }
+
+        .step-number {
+            background: var(--info-blue);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-title {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .step-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 350px;
+            gap: 2rem;
+        }
+
+        .dashboard-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--info-blue) 0%, #1e40af 100%);
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        /* Triage Stats */
+        .triage-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .triage-stat {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .triage-stat:hover {
+            transform: scale(1.05);
+        }
+
+        .stat-red { background: linear-gradient(135deg, var(--critical-red) 0%, #b91c1c 100%); }
+        .stat-yellow { background: linear-gradient(135deg, var(--urgent-yellow) 0%, #d97706 100%); }
+        .stat-green { background: linear-gradient(135deg, var(--stable-green) 0%, #15803d 100%); }
+        .stat-black { background: linear-gradient(135deg, var(--expectant-black) 0%, #1f2937 100%); }
+
+        .stat-number {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Patient Queue */
+        .patient-queue {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .patient-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .patient-item:hover {
+            background: var(--bg-light);
+        }
+
+        .priority-indicator {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .priority-1 { background: var(--critical-red); }
+        .priority-2 { background: var(--urgent-yellow); }
+        .priority-3 { background: var(--stable-green); }
+        .priority-4 { background: var(--expectant-black); }
+
+        .patient-info {
+            flex: 1;
+        }
+
+        .patient-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .patient-details {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .patient-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+
+        /* Critical Alerts */
+        .critical-alert {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 1px solid #fecaca;
+            border-left: 4px solid var(--critical-red);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            animation: alert-pulse 2s infinite;
+            cursor: pointer;
+        }
+
+        @keyframes alert-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: bold;
+            color: #991b1b;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-details {
+            font-size: 0.9rem;
+            color: #7f1d1d;
+        }
+
+        /* Activity Feed */
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .activity-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--info-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            margin-top: 0.25rem;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+
+        /* Map */
+        #map {
+            height: 300px;
+            border-radius: 8px;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, var(--info-blue) 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--critical-red) 0%, #b91c1c 100%);
+        }
+
+        .action-btn.secondary {
+            background: linear-gradient(135deg, var(--stable-green) 0%, #15803d 100%);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--info-blue);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .workflow-steps {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workflow-steps {
+                grid-template-columns: 1fr;
+            }
+            
+            .triage-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--info-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: var(--stable-green);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            z-index: 10001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: var(--critical-red);
+        }
+
+        .notification.warning {
+            background: var(--urgent-yellow);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-title">
+                <span>👩‍⚕️</span>
+                <span>Medical Triage Control Center</span>
+            </div>
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                <span>LIVE</span>
+                <span id="current-time"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Workflow Navigation -->
+        <div class="workflow-nav">
+            <div class="workflow-title">
+                <span>🔄</span>
+                <span>Medical Response Workflow</span>
+            </div>
+            <div class="workflow-steps">
+                <a href="#" class="workflow-step" onclick="openTriageDashboard()">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Triage Dashboard</div>
+                    <div class="step-description">Overview of all patients and priorities</div>
+                </a>
+                <a href="#" class="workflow-step" onclick="openTriageForm()">
+                    <div class="step-number">2</div>
+                    <div class="step-title">New Triage</div>
+                    <div class="step-description">Assess and categorize new patients</div>
+                </a>
+                <a href="#" class="workflow-step" onclick="openPatientTracker()">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Patient Tracker</div>
+                    <div class="step-description">Monitor active patient status</div>
+                </a>
+                <a href="#" class="workflow-step" onclick="exportReports()">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Export Reports</div>
+                    <div class="step-description">Generate medical documentation</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="action-btn primary" onclick="openTriageForm()">
+                <span>🚑</span>
+                <span>URGENT: New Patient Intake</span>
+            </button>
+            <button class="action-btn secondary" onclick="openPatientTracker()">
+                <span>📋</span>
+                <span>View Active Patients</span>
+            </button>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Triage Overview -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span>🏷️</span>
+                        <span>Triage Status</span>
+                    </div>
+                    <span id="total-patients">24 Patients</span>
+                </div>
+                <div class="card-content">
+                    <div class="triage-stats">
+                        <div class="triage-stat stat-red" onclick="filterPatients('red')">
+                            <div class="stat-number" id="red-count">3</div>
+                            <div class="stat-label">🔴 CRITICAL</div>
+                        </div>
+                        <div class="triage-stat stat-yellow" onclick="filterPatients('yellow')">
+                            <div class="stat-number" id="yellow-count">8</div>
+                            <div class="stat-label">🟡 URGENT</div>
+                        </div>
+                        <div class="triage-stat stat-green" onclick="filterPatients('green')">
+                            <div class="stat-number" id="green-count">11</div>
+                            <div class="stat-label">🟢 DELAYED</div>
+                        </div>
+                        <div class="triage-stat stat-black" onclick="filterPatients('black')">
+                            <div class="stat-number" id="black-count">2</div>
+                            <div class="stat-label">⚫ EXPECTANT</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priority Queue -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span>📋</span>
+                        <span>Priority Queue</span>
+                    </div>
+                    <button onclick="refreshQueue()" style="background: none; border: none; color: white; cursor: pointer;">🔄</button>
+                </div>
+                <div class="card-content">
+                    <div class="patient-queue" id="patient-queue">
+                        <!-- Patient items will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Critical Alerts -->
+                <div class="dashboard-card">
+                    <div class="card-header" style="background: linear-gradient(135deg, var(--critical-red) 0%, #b91c1c 100%);">
+                        <div class="card-title">
+                            <span>🚨</span>
+                            <span>Critical Alerts</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="critical-alerts">
+                            <!-- Critical alerts will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Map -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>🗺️</span>
+                            <span>Incident Locations</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="map"></div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>🕒</span>
+                            <span>Recent Activity</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="activity-feed">
+                            <!-- Activity items will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Triage Form Modal -->
+    <div class="modal" id="triage-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🚑 Emergency Triage Assessment</div>
+                <button class="close-btn" onclick="closeModal('triage-modal')">&times;</button>
+            </div>
+            <form id="triage-form">
+                <div class="form-group">
+                    <label class="form-label">Patient Name/ID *</label>
+                    <input type="text" class="form-input" id="patient-name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Age</label>
+                    <input type="number" class="form-input" id="patient-age" min="0" max="120">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Primary Injury/Condition *</label>
+                    <input type="text" class="form-input" id="injury-type" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Consciousness Level *</label>
+                    <select class="form-input" id="consciousness" required>
+                        <option value="">Select level</option>
+                        <option value="alert">Alert & Oriented</option>
+                        <option value="verbal">Responds to Verbal</option>
+                        <option value="pain">Responds to Pain</option>
+                        <option value="unresponsive">Unresponsive</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Breathing Status *</label>
+                    <select class="form-input" id="breathing" required>
+                        <option value="">Select status</option>
+                        <option value="normal">Normal</option>
+                        <option value="labored">Labored</option>
+                        <option value="shallow">Shallow</option>
+                        <option value="absent">Absent/Obstructed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Severity *</label>
+                    <select class="form-input" id="severity" required>
+                        <option value="">Select severity</option>
+                        <option value="mild">Mild</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="severe">Severe</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Triage Color *</label>
+                    <select class="form-input" id="triage-color" required>
+                        <option value="">Select color</option>
+                        <option value="red">🔴 RED - Immediate</option>
+                        <option value="yellow">🟡 YELLOW - Urgent</option>
+                        <option value="green">🟢 GREEN - Delayed</option>
+                        <option value="black">⚫ BLACK - Expectant</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="action-btn" onclick="closeModal('triage-modal')" style="flex: 1;">Cancel</button>
+                    <button type="submit" class="action-btn primary" style="flex: 2;">Submit Triage</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Patient Details Modal -->
+    <div class="modal" id="patient-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">👤 Patient Details</div>
+                <button class="close-btn" onclick="closeModal('patient-modal')">&times;</button>
+            </div>
+            <div id="patient-details">
+                <!-- Patient details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Sample data
+        let patients = [
+            {
+                id: 1,
+                name: "John Smith",
+                age: 45,
+                injury: "Chest trauma",
+                severity: "critical",
+                triageColor: "red",
+                priority: 1,
+                consciousness: "verbal",
+                breathing: "labored",
+                timestamp: new Date(Date.now() - 300000),
+                vitals: { hr: 120, bp: "90/60", rr: 28, temp: 99.8, o2: 88 }
+            },
+            {
+                id: 2,
+                name: "Maria Garcia",
+                age: 32,
+                injury: "Fracture - left arm",
+                severity: "moderate",
+                triageColor: "yellow",
+                priority: 2,
+                consciousness: "alert",
+                breathing: "normal",
+                timestamp: new Date(Date.now() - 600000),
+                vitals: { hr: 85, bp: "120/80", rr: 16, temp: 98.6, o2: 98 }
+            },
+            {
+                id: 3,
+                name: "Robert Wilson",
+                age: 67,
+                injury: "Cardiac event",
+                severity: "critical",
+                triageColor: "red",
+                priority: 1,
+                consciousness: "verbal",
+                breathing: "labored",
+                timestamp: new Date(Date.now() - 900000),
+                vitals: { hr: 140, bp: "180/110", rr: 24, temp: 98.9, o2: 91 }
+            },
+            {
+                id: 4,
+                name: "Sarah Johnson",
+                age: 28,
+                injury: "Minor lacerations",
+                severity: "mild",
+                triageColor: "green",
+                priority: 3,
+                consciousness: "alert",
+                breathing: "normal",
+                timestamp: new Date(Date.now() - 1200000),
+                vitals: { hr: 75, bp: "110/70", rr: 14, temp: 98.4, o2: 99 }
+            }
+        ];
+
+        let activities = [
+            { type: "admission", text: "John Smith admitted with chest trauma", time: new Date(Date.now() - 300000), color: "red" },
+            { type: "update", text: "Maria Garcia vitals updated", time: new Date(Date.now() - 450000), color: "yellow" },
+            { type: "discharge", text: "Patient #125 discharged", time: new Date(Date.now() - 720000), color: "green" },
+            { type: "admission", text: "Robert Wilson cardiac event", time: new Date(Date.now() - 900000), color: "red" }
+        ];
+
+        // Clock update
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }
+
+        // Map initialization
+        let map;
+        function initializeMap() {
+            map = L.map('map').setView([30.2672, -97.7431], 11);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add sample incident markers
+            const incidents = [
+                { lat: 30.2672, lng: -97.7431, severity: 'critical', description: 'Multi-vehicle accident' },
+                { lat: 30.2500, lng: -97.7500, severity: 'urgent', description: 'Building collapse' },
+                { lat: 30.2800, lng: -97.7300, severity: 'delayed', description: 'Minor injuries' }
+            ];
+
+            incidents.forEach(incident => {
+                const color = incident.severity === 'critical' ? '#dc2626' : 
+                             incident.severity === 'urgent' ? '#f59e0b' : '#16a34a';
+                
+                L.circleMarker([incident.lat, incident.lng], {
+                    color: color,
+                    radius: 8,
+                    fillOpacity: 0.8
+                }).addTo(map).bindPopup(incident.description);
+            });
+        }
+
+        // Render patient queue
+        function renderPatientQueue() {
+            const queue = document.getElementById('patient-queue');
+            queue.innerHTML = '';
+
+            const sortedPatients = patients.sort((a, b) => a.priority - b.priority);
+
+            sortedPatients.forEach(patient => {
+                const item = document.createElement('div');
+                item.className = 'patient-item';
+                item.onclick = () => openPatientDetails(patient);
+                
+                const timeAgo = getTimeAgo(patient.timestamp);
+                
+                item.innerHTML = `
+                    <div class="priority-indicator priority-${patient.priority}">
+                        ${patient.priority}
+                    </div>
+                    <div class="patient-info">
+                        <div class="patient-name">${patient.name}</div>
+                        <div class="patient-details">
+                            <span>${patient.injury}</span>
+                            <span>${patient.severity}</span>
+                            <span style="color: ${getTriageColor(patient.triageColor)}">
+                                ${patient.triageColor.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="patient-time">${timeAgo}</div>
+                `;
+                
+                queue.appendChild(item);
+            });
+        }
+
+        // Render critical alerts
+        function renderCriticalAlerts() {
+            const alerts = document.getElementById('critical-alerts');
+            alerts.innerHTML = '';
+
+            const criticalPatients = patients.filter(p => 
+                p.severity === 'critical' || 
+                p.vitals.o2 < 90 || 
+                p.vitals.hr > 130 || 
+                p.consciousness === 'unresponsive'
+            );
+
+            if (criticalPatients.length === 0) {
+                alerts.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">No critical alerts</div>';
+                return;
+            }
+
+            criticalPatients.forEach(patient => {
+                const alert = document.createElement('div');
+                alert.className = 'critical-alert';
+                alert.onclick = () => openPatientDetails(patient);
+                
+                alert.innerHTML = `
+                    <div class="alert-header">
+                        <span>⚠️</span>
+                        <span>${patient.name}</span>
+                    </div>
+                    <div class="alert-details">
+                        ${getCriticalReason(patient)}
+                    </div>
+                `;
+                
+                alerts.appendChild(alert);
+            });
+        }
+
+        // Render activity feed
+        function renderActivityFeed() {
+            const feed = document.getElementById('activity-feed');
+            feed.innerHTML = '';
+
+            activities.forEach(activity => {
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                
+                item.innerHTML = `
+                    <div class="activity-icon" style="background: ${getTriageColor(activity.color)}">
+                        ${getActivityIcon(activity.type)}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">${activity.text}</div>
+                        <div class="activity-time">${getTimeAgo(activity.time)}</div>
+                    </div>
+                `;
+                
+                feed.appendChild(item);
+            });
+        }
+
+        // Update triage statistics
+        function updateTriageStats() {
+            const stats = {
+                red: patients.filter(p => p.triageColor === 'red').length,
+                yellow: patients.filter(p => p.triageColor === 'yellow').length,
+                green: patients.filter(p => p.triageColor === 'green').length,
+                black: patients.filter(p => p.triageColor === 'black').length
+            };
+
+            document.getElementById('red-count').textContent = stats.red;
+            document.getElementById('yellow-count').textContent = stats.yellow;
+            document.getElementById('green-count').textContent = stats.green;
+            document.getElementById('black-count').textContent = stats.black;
+            document.getElementById('total-patients').textContent = `${patients.length} Patients`;
+        }
+
+        // Utility functions
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours}h ago`;
+            
+            const diffDays = Math.floor(diffHours / 24);
+            return `${diffDays}d ago`;
+        }
+
+        function getTriageColor(color) {
+            const colors = {
+                red: '#dc2626',
+                yellow: '#f59e0b',
+                green: '#16a34a',
+                black: '#374151'
+            };
+            return colors[color] || '#6b7280';
+        }
+
+        function getCriticalReason(patient) {
+            const reasons = [];
+            if (patient.vitals.o2 < 90) reasons.push('Low oxygen saturation');
+            if (patient.vitals.hr > 130) reasons.push('Elevated heart rate');
+            if (patient.consciousness === 'unresponsive') reasons.push('Unresponsive');
+            if (patient.severity === 'critical') reasons.push('Critical condition');
+            
+            return reasons.join(', ') || 'Requires immediate attention';
+        }
+
+        function getActivityIcon(type) {
+            const icons = {
+                admission: '+',
+                update: '↻',
+                discharge: '→',
+                alert: '!',
+                treatment: '⚕'
+            };
+            return icons[type] || '•';
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Workflow functions
+        function openTriageDashboard() {
+            showNotification('Triage dashboard is currently active', 'success');
+        }
+
+        function openTriageForm() {
+            openModal('triage-modal');
+        }
+
+        function openPatientTracker() {
+            showNotification('Opening patient tracker...', 'success');
+            // In a real app, this would navigate to the patient tracker page
+            setTimeout(() => {
+                window.open('#patient-tracker', '_blank');
+            }, 1000);
+        }
+
+        function exportReports() {
+            showNotification('Generating medical reports...', 'success');
+            // Simulate PDF generation
+            setTimeout(() => {
+                const blob = new Blob(['Sample Medical Report'], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'medical-report.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+                showNotification('Report downloaded successfully', 'success');
+            }, 2000);
+        }
+
+        function openPatientDetails(patient) {
+            const details = document.getElementById('patient-details');
+            
+            details.innerHTML = `
+                <div style="display: grid; gap: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                        <h3>${patient.name}</h3>
+                        <span style="background: ${getTriageColor(patient.triageColor)}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">
+                            ${patient.triageColor.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                        <div>
+                            <strong>Age:</strong> ${patient.age || 'Unknown'}
+                        </div>
+                        <div>
+                            <strong>Priority:</strong> ${patient.priority}
+                        </div>
+                        <div>
+                            <strong>Injury:</strong> ${patient.injury}
+                        </div>
+                        <div>
+                            <strong>Severity:</strong> ${patient.severity}
+                        </div>
+                        <div>
+                            <strong>Consciousness:</strong> ${patient.consciousness}
+                        </div>
+                        <div>
+                            <strong>Breathing:</strong> ${patient.breathing}
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--bg-light); padding: 1rem; border-radius: 8px;">
+                        <h4 style="margin-bottom: 0.5rem;">Vital Signs</h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; font-size: 0.9rem;">
+                            <div><strong>HR:</strong> ${patient.vitals.hr} bpm</div>
+                            <div><strong>BP:</strong> ${patient.vitals.bp}</div>
+                            <div><strong>RR:</strong> ${patient.vitals.rr}/min</div>
+                            <div><strong>Temp:</strong> ${patient.vitals.temp}°F</div>
+                            <div><strong>O2 Sat:</strong> ${patient.vitals.o2}%</div>
+                            <div><strong>Admitted:</strong> ${getTimeAgo(patient.timestamp)}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button class="action-btn" onclick="editPatient(${patient.id})" style="flex: 1;">
+                            ✏️ Edit Patient
+                        </button>
+                        <button class="action-btn secondary" onclick="updateVitals(${patient.id})" style="flex: 1;">
+                            📊 Update Vitals
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            openModal('patient-modal');
+        }
+
+        // Filter functions
+        function filterPatients(color) {
+            showNotification(`Filtering patients by ${color.toUpperCase()} triage`, 'success');
+            // In a real app, this would filter the patient list
+        }
+
+        function refreshQueue() {
+            showNotification('Refreshing patient queue...', 'success');
+            renderPatientQueue();
+            renderCriticalAlerts();
+            updateTriageStats();
+        }
+
+        function refreshData() {
+            // Simulate real-time data updates
+            updateTriageStats();
+            renderPatientQueue();
+            renderCriticalAlerts();
+        }
+
+        // Form submission
+        document.getElementById('triage-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('patient-name').value,
+                age: document.getElementById('patient-age').value,
+                injury: document.getElementById('injury-type').value,
+                consciousness: document.getElementById('consciousness').value,
+                breathing: document.getElementById('breathing').value,
+                severity: document.getElementById('severity').value,
+                triageColor: document.getElementById('triage-color').value
+            };
+            
+            // Add new patient to the list
+            const newPatient = {
+                id: patients.length + 1,
+                name: formData.name,
+                age: parseInt(formData.age) || null,
+                injury: formData.injury,
+                severity: formData.severity,
+                triageColor: formData.triageColor,
+                priority: formData.triageColor === 'red' ? 1 : 
+                         formData.triageColor === 'yellow' ? 2 : 
+                         formData.triageColor === 'green' ? 3 : 4,
+                consciousness: formData.consciousness,
+                breathing: formData.breathing,
+                timestamp: new Date(),
+                vitals: { hr: '-', bp: '-', rr: '-', temp: '-', o2: '-' }
+            };
+            
+            patients.unshift(newPatient);
+            
+            // Add to activity feed
+            activities.unshift({
+                type: 'admission',
+                text: `${formData.name} admitted with ${formData.injury}`,
+                time: new Date(),
+                color: formData.triageColor
+            });
+            
+            // Update UI
+            renderPatientQueue();
+            renderActivityFeed();
+            updateTriageStats();
+            if (formData.severity === 'critical') {
+                renderCriticalAlerts();
+            }
+            
+            // Close modal and show success
+            closeModal('triage-modal');
+            showNotification(`Patient ${formData.name} successfully triaged as ${formData.triageColor.toUpperCase()}`, 'success');
+            
+            // Reset form
+            document.getElementById('triage-form').reset();
+        });
+
+        // Additional functions
+        function editPatient(id) {
+            closeModal('patient-modal');
+            showNotification('Opening patient editor...', 'success');
+            // In a real app, this would open the edit patient form
+        }
+
+        function updateVitals(id) {
+            closeModal('patient-modal');
+            showNotification('Opening vitals update form...', 'success');
+            // In a real app, this would open a vitals update modal
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'n':
+                        e.preventDefault();
+                        openTriageForm();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        refreshQueue();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        exportReports();
+                        break;
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                closeModal('triage-modal');
+                closeModal('patient-modal');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            initializeMap();
+            renderPatientQueue();
+            renderCriticalAlerts();
+            renderActivityFeed();
+            updateTriageStats();
+            
+            // Auto-refresh data every 30 seconds
+            setInterval(refreshData, 30000);
+            
+            // Show welcome message
+            setTimeout(() => {
+                showNotification('Medical Triage System Online - Ready for Emergency Response', 'success');
+            }, 1000);
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                refreshData();
+            }
+        });
+
+        console.log('🚑 Medical Triage Dashboard Loaded');
+        console.log('📋 Workflow: Dashboard → New Triage → Patient Tracker → Export Reports');
+        console.log('⌨️ Shortcuts: Ctrl+N (New Patient), Ctrl+R (Refresh), Ctrl+E (Export)');
+    </script>
+</body>
+</html>

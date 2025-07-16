@@ -1,18 +1,19 @@
 {% extends "base.html" %}
-
 {% block title %}Triage Dashboard - Disaster Response Assistant{% endblock %}
 {% block page_title %}📊 Emergency Triage Dashboard{% endblock %}
 {% block subtitle %}Real-time Patient Management & Critical Alert System{% endblock %}
-
 {% block header_actions %}
 <a href="/" class="btn btn-secondary-outline">
-  ⬅️ Back to Home
+ ⬅️ Back to Home
+</a>
+<a href="/staff-triage-command" class="btn btn-secondary">
+ 👩‍⚕️ Staff Command Center
 </a>
 <a href="/triage-form" class="btn btn-primary">
-  📝 New Triage
+ 📝 New Triage
 </a>
 <a href="/patient-list" class="btn btn-info">
-  👥 Patient List
+ 👥 Patient List
 </a>
 {% endblock %}
 

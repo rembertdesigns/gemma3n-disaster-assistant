@@ -1,29 +1,28 @@
 {% extends "base.html" %}
-
 {% block title %}Admin Dashboard - Disaster Response{% endblock %}
-
 {% block page_title %}👤 Admin Dashboard{% endblock %}
-
 {% block subtitle %}Secure Administrative Controls{% endblock %}
-
 {% block header_actions %}
 <a href="/reports" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #16a34a; color: #fff; border-radius: 6px; text-decoration: none; margin-right: 0.5rem;">
-  📄 All Reports
+ 📄 All Reports
 </a>
 <a href="/reports/export" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #dc2626; color: #fff; border-radius: 6px; text-decoration: none;">
-  📦 Export Archive
+ 📦 Export Archive
+</a>
+<a href="/staff-triage-command" class="admin-btn">
+ 🏥 Staff Triage Command
 </a>
 <a href="/crowd-reports" class="admin-btn">
-  📢 Crowd Reports
+ 📢 Crowd Reports
 </a>
 <a href="/map-reports" class="admin-btn">
-  🗺️ Map View
+ 🗺️ Map View
 </a>
 <a href="/analytics" class="admin-btn">
-  📊 Analytics Dashboard
+ 📊 Analytics Dashboard
 </a>
 <a href="/map-snapshot" class="admin-btn">
-  📍 Map Tool
+ 📍 Map Tool
 </a>
 {% endblock %}
 

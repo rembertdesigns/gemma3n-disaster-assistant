@@ -1342,6 +1342,133 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         <p>Analytics dashboard loading...</p>
         </body></html>
         """)
+    
+@app.get("/staff-triage-command", response_class=HTMLResponse)
+async def staff_triage_command_center(request: Request, db: Session = Depends(get_db)):
+    """Staff Medical Triage Command Center - Enhanced workflow dashboard"""
+    try:
+        # Get real-time statistics
+        total_patients = db.query(TriagePatient).count()
+        active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").count()
+        critical_patients = db.query(TriagePatient).filter(
+            or_(TriagePatient.triage_color == "red", TriagePatient.severity == "critical")
+        ).count()
+        
+        # Triage color breakdown
+        triage_breakdown = {
+            "red": {"count": db.query(TriagePatient).filter(TriagePatient.triage_color == "red").count(), "percentage": 0},
+            "yellow": {"count": db.query(TriagePatient).filter(TriagePatient.triage_color == "yellow").count(), "percentage": 0},
+            "green": {"count": db.query(TriagePatient).filter(TriagePatient.triage_color == "green").count(), "percentage": 0},
+            "black": {"count": db.query(TriagePatient).filter(TriagePatient.triage_color == "black").count(), "percentage": 0}
+        }
+        
+        # Calculate percentages
+        if total_patients > 0:
+            for color in triage_breakdown:
+                triage_breakdown[color]["percentage"] = round((triage_breakdown[color]["count"] / total_patients) * 100, 1)
+        
+        # Severity breakdown
+        severity_breakdown = {
+            "critical": db.query(TriagePatient).filter(TriagePatient.severity == "critical").count(),
+            "severe": db.query(TriagePatient).filter(TriagePatient.severity == "severe").count(),
+            "moderate": db.query(TriagePatient).filter(TriagePatient.severity == "moderate").count(),
+            "mild": db.query(TriagePatient).filter(TriagePatient.severity == "mild").count()
+        }
+        
+        # Priority queue - handle missing priority_score
+        try:
+            priority_queue = db.query(TriagePatient).filter(
+                TriagePatient.status == "active"
+            ).order_by(
+                TriagePatient.priority_score.desc(),
+                TriagePatient.created_at.desc()
+            ).limit(10).all()
+        except Exception:
+            # Fallback if priority_score doesn't exist
+            priority_queue = db.query(TriagePatient).filter(
+                TriagePatient.status == "active"
+            ).order_by(
+                TriagePatient.created_at.desc()
+            ).limit(10).all()
+            
+            # Add simulated priority_score for display
+            for i, patient in enumerate(priority_queue):
+                if not hasattr(patient, 'priority_score'):
+                    if patient.triage_color == "red": patient.priority_score = 1
+                    elif patient.triage_color == "yellow": patient.priority_score = 2
+                    elif patient.triage_color == "green": patient.priority_score = 3
+                    else: patient.priority_score = 4
+        
+        # Critical vitals patients
+        critical_vitals_patients = db.query(TriagePatient).filter(
+            and_(
+                TriagePatient.status == "active",
+                or_(
+                    TriagePatient.triage_color == "red",
+                    TriagePatient.severity == "critical"
+                )
+            )
+        ).limit(5).all()
+        
+        # Add missing attributes for critical patients
+        for patient in critical_vitals_patients:
+            if not hasattr(patient, 'priority_score'):
+                patient.priority_score = 1 if patient.triage_color == "red" else 2
+        
+        # Recent activity
+        recent_patients = db.query(TriagePatient).order_by(
+            desc(TriagePatient.created_at)
+        ).limit(8).all()
+        
+        # Statistics object
+        stats = {
+            "total_patients": total_patients,
+            "active_patients": active_patients,
+            "patients_today": db.query(TriagePatient).filter(
+                func.date(TriagePatient.created_at) == datetime.utcnow().date()
+            ).count(),
+            "critical_alerts": critical_patients
+        }
+        
+        return templates.TemplateResponse("staff_triage_command.html", {
+            "request": request,
+            "stats": stats,
+            "triage_breakdown": triage_breakdown,
+            "severity_breakdown": severity_breakdown,
+            "priority_queue": priority_queue,
+            "critical_vitals_patients": critical_vitals_patients,
+            "recent_patients": recent_patients,
+            "current_time": datetime.utcnow(),
+            "page_title": "Staff Medical Triage Command Center"
+        })
+        
+    except Exception as e:
+        logger.error(f"Staff triage command center error: {e}")
+        return HTMLResponse(f"""
+        <html>
+        <head>
+            <title>Staff Triage Command</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }}
+                .error {{ background: #fef2f2; border: 1px solid #fecaca; padding: 2rem; border-radius: 8px; }}
+                .btn {{ background: #3b82f6; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; margin: 0.5rem; }}
+            </style>
+        </head>
+        <body>
+            <div class="error">
+                <h1>🏥 Staff Medical Triage Command Center</h1>
+                <p><strong>Loading command center...</strong></p>
+                <p><strong>Database Error:</strong> {str(e)}</p>
+                <p>This usually means the database schema needs to be updated.</p>
+                <div>
+                    <a href="/admin" class="btn">← Back to Admin</a>
+                    <a href="/" class="btn">← Home</a>
+                    <a href="/triage-form" class="btn">📝 New Triage</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
 
 # ================================================================================
 # EMERGENCY REPORTING ROUTES - ENHANCED WITH PUBLIC VOICE ACCESS
@@ -2774,6 +2901,7 @@ async def health_check():
         "endpoints": {
             "citizen_portal": "/",
             "admin_dashboard": "/admin",
+            "staff_triage_command": "/staff-triage-command",
             "voice_emergency_reporter": "/voice-emergency-reporter",  # NEW ENDPOINT
             "api_documentation": "/api/docs",
             "health_check": "/health",
