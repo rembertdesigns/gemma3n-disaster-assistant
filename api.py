@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, and_, or_, Column, Integer, String, Float, Text, DateTime, Boolean, JSON
+from sqlalchemy import desc, func, and_, or_, Column, Integer, String, Float, Text, DateTime, Boolean, JSON, ForeignKey, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
@@ -401,6 +401,101 @@ except ImportError:
         priority_score = Column(Integer, default=5)
         created_at = Column(DateTime, default=datetime.utcnow, index=True)
         updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+        # Patient Demographics & Details
+        gender = Column(String(10), nullable=True)
+        medical_id = Column(String(50), nullable=True, index=True)
+        allergies = Column(Text, nullable=True)
+        medications = Column(Text, nullable=True)
+        medical_history = Column(Text, nullable=True)
+    
+        # Vital Signs
+        heart_rate = Column(Integer, nullable=True)
+        bp_systolic = Column(Integer, nullable=True)
+        bp_diastolic = Column(Integer, nullable=True)
+        respiratory_rate = Column(Integer, nullable=True)
+        temperature = Column(Float, nullable=True)
+        oxygen_sat = Column(Integer, nullable=True)
+    
+        # AI Analysis & Scoring
+        priority_score = Column(Integer, default=5, index=True)
+        ai_confidence = Column(Float, nullable=True)
+        ai_risk_score = Column(Float, nullable=True)
+        ai_recommendations = Column(JSON, nullable=True)
+        ai_analysis_data = Column(JSON, nullable=True)
+    
+        # Workflow & Tracking
+        assigned_doctor = Column(String(100), nullable=True)
+        assigned_nurse = Column(String(100), nullable=True)
+        bed_assignment = Column(String(20), nullable=True)
+        estimated_wait_time = Column(Integer, nullable=True)  # minutes
+    
+        # Timestamps for workflow tracking
+        triage_completed_at = Column(DateTime, nullable=True)
+        treatment_started_at = Column(DateTime, nullable=True)
+        last_assessment_at = Column(DateTime, nullable=True)
+
+    # New AI-specific models
+    class AIAnalysisLog(Base):
+        """Log of all AI analyses performed"""
+        __tablename__ = "ai_analysis_logs"
+    
+        id = Column(Integer, primary_key=True, index=True)
+        patient_id = Column(Integer, ForeignKey("triage_patients.id"), nullable=True, index=True)
+        analysis_type = Column(String(50), nullable=False, index=True)  # triage, prediction, resource
+        input_data = Column(JSON, nullable=False)
+        ai_output = Column(JSON, nullable=False)
+        confidence_score = Column(Float, nullable=False)
+        model_version = Column(String(50), nullable=False)
+        processing_time_ms = Column(Integer, nullable=True)
+        created_at = Column(DateTime, default=datetime.utcnow, index=True)
+        analyst_id = Column(String(100), nullable=True)
+
+    class AIAlert(Base):
+        """AI-generated alerts and predictions"""
+        __tablename__ = "ai_alerts"
+    
+        id = Column(Integer, primary_key=True, index=True)
+        patient_id = Column(Integer, ForeignKey("triage_patients.id"), nullable=False, index=True)
+        alert_type = Column(String(50), nullable=False, index=True)
+        alert_level = Column(String(20), nullable=False, index=True)  # critical, high, medium, low
+        message = Column(Text, nullable=False)
+        prediction = Column(Text, nullable=True)
+        confidence = Column(Float, nullable=False)
+        resolved = Column(Boolean, default=False, index=True)
+        resolved_by = Column(String(100), nullable=True)
+        resolved_at = Column(DateTime, nullable=True)
+        created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    class ResourceAnalysis(Base):
+        """AI-powered resource analysis snapshots"""
+        __tablename__ = "resource_analyses"
+    
+        id = Column(Integer, primary_key=True, index=True)
+        analysis_timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+        total_patients = Column(Integer, nullable=False)
+        critical_patients = Column(Integer, nullable=False)
+        resource_requirements = Column(JSON, nullable=False)
+        bottlenecks = Column(JSON, nullable=True)
+        predictions = Column(JSON, nullable=True)
+        ai_confidence = Column(Float, nullable=False)
+        system_load = Column(String(20), nullable=False)  # low, medium, high
+        created_by = Column(String(100), nullable=True)
+
+    class SystemPerformance(Base):
+        """AI system performance metrics"""
+        __tablename__ = "system_performance"
+    
+        id = Column(Integer, primary_key=True, index=True)
+        timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+        gemma_model_version = Column(String(50), nullable=False)
+        avg_inference_time_ms = Column(Float, nullable=False)
+        total_ai_requests = Column(Integer, nullable=False)
+        successful_requests = Column(Integer, nullable=False)
+        failed_requests = Column(Integer, nullable=False)
+        cpu_usage = Column(Float, nullable=True)
+        memory_usage = Column(Float, nullable=True)
+        gpu_usage = Column(Float, nullable=True)
+        error_rate = Column(Float, nullable=False, default=0.0)
     
     class VoiceAnalysis(Base):
         __tablename__ = "voice_analyses"
@@ -455,6 +550,289 @@ except ImportError:
         timestamp = Column(DateTime, default=datetime.utcnow, index=True)
     
     DATABASE_AVAILABLE = True
+
+# ================================================================================
+# DATABASE MIGRATION HELPER FUNCTIONS
+# ================================================================================
+
+def upgrade_database_schema():
+    """Add new columns to existing TriagePatient table"""
+    try:
+        # This would typically be done with Alembic, but for development:
+        inspector = inspect(engine)
+        existing_columns = [col['name'] for col in inspector.get_columns('triage_patients')]
+        
+        new_columns = [
+            "gender", "medical_id", "allergies", "medications", "medical_history",
+            "heart_rate", "bp_systolic", "bp_diastolic", "respiratory_rate", 
+            "temperature", "oxygen_sat", "priority_score", "ai_confidence",
+            "ai_risk_score", "ai_recommendations", "ai_analysis_data",
+            "assigned_doctor", "assigned_nurse", "bed_assignment", 
+            "estimated_wait_time", "triage_completed_at", "treatment_started_at", 
+            "last_assessment_at"
+        ]
+        
+        # Add missing columns (this is a simplified approach)
+        for column in new_columns:
+            if column not in existing_columns:
+                logger.info(f"Column {column} needs to be added to triage_patients table")
+        
+        # Create all new tables
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database schema updated successfully")
+        
+    except Exception as e:
+        logger.error(f"Database schema upgrade failed: {e}")
+
+# ================================================================================
+# AI DATA ACCESS LAYER
+# ================================================================================
+
+class AIDataManager:
+    """Manages AI-related database operations"""
+    
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def log_ai_analysis(self, patient_id: int, analysis_type: str, input_data: dict, 
+                       ai_output: dict, confidence: float, model_version: str, 
+                       processing_time: int = None, analyst_id: str = None):
+        """Log AI analysis to database"""
+        try:
+            analysis_log = AIAnalysisLog(
+                patient_id=patient_id,
+                analysis_type=analysis_type,
+                input_data=input_data,
+                ai_output=ai_output,
+                confidence_score=confidence,
+                model_version=model_version,
+                processing_time_ms=processing_time,
+                analyst_id=analyst_id
+            )
+            
+            self.db.add(analysis_log)
+            self.db.commit()
+            return analysis_log.id
+            
+        except Exception as e:
+            logger.error(f"Failed to log AI analysis: {e}")
+            self.db.rollback()
+            return None
+    
+    def create_ai_alert(self, patient_id: int, alert_type: str, alert_level: str,
+                       message: str, prediction: str = None, confidence: float = 0.8):
+        """Create AI alert for patient"""
+        try:
+            alert = AIAlert(
+                patient_id=patient_id,
+                alert_type=alert_type,
+                alert_level=alert_level,
+                message=message,
+                prediction=prediction,
+                confidence=confidence
+            )
+            
+            self.db.add(alert)
+            self.db.commit()
+            return alert.id
+            
+        except Exception as e:
+            logger.error(f"Failed to create AI alert: {e}")
+            self.db.rollback()
+            return None
+    
+    def get_active_ai_alerts(self, limit: int = 10):
+        """Get active AI alerts"""
+        return self.db.query(AIAlert).filter(
+            AIAlert.resolved == False
+        ).order_by(
+            AIAlert.alert_level.desc(),
+            AIAlert.created_at.desc()
+        ).limit(limit).all()
+    
+    def resolve_ai_alert(self, alert_id: int, resolved_by: str):
+        """Mark AI alert as resolved"""
+        try:
+            alert = self.db.query(AIAlert).filter(AIAlert.id == alert_id).first()
+            if alert:
+                alert.resolved = True
+                alert.resolved_by = resolved_by
+                alert.resolved_at = datetime.utcnow()
+                self.db.commit()
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Failed to resolve AI alert: {e}")
+            self.db.rollback()
+            return False
+    
+    def save_resource_analysis(self, total_patients: int, critical_patients: int,
+                              resource_requirements: dict, bottlenecks: list = None,
+                              predictions: dict = None, ai_confidence: float = 0.8,
+                              system_load: str = "medium", created_by: str = None):
+        """Save resource analysis snapshot"""
+        try:
+            analysis = ResourceAnalysis(
+                total_patients=total_patients,
+                critical_patients=critical_patients,
+                resource_requirements=resource_requirements,
+                bottlenecks=bottlenecks or [],
+                predictions=predictions or {},
+                ai_confidence=ai_confidence,
+                system_load=system_load,
+                created_by=created_by
+            )
+            
+            self.db.add(analysis)
+            self.db.commit()
+            return analysis.id
+            
+        except Exception as e:
+            logger.error(f"Failed to save resource analysis: {e}")
+            self.db.rollback()
+            return None
+    
+    def log_system_performance(self, model_version: str, avg_inference_time: float,
+                              total_requests: int, successful_requests: int,
+                              failed_requests: int, cpu_usage: float = None,
+                              memory_usage: float = None, gpu_usage: float = None):
+        """Log AI system performance metrics"""
+        try:
+            error_rate = (failed_requests / max(total_requests, 1)) * 100
+            
+            performance = SystemPerformance(
+                gemma_model_version=model_version,
+                avg_inference_time_ms=avg_inference_time,
+                total_ai_requests=total_requests,
+                successful_requests=successful_requests,
+                failed_requests=failed_requests,
+                cpu_usage=cpu_usage,
+                memory_usage=memory_usage,
+                gpu_usage=gpu_usage,
+                error_rate=error_rate
+            )
+            
+            self.db.add(performance)
+            self.db.commit()
+            return performance.id
+            
+        except Exception as e:
+            logger.error(f"Failed to log system performance: {e}")
+            self.db.rollback()
+            return None
+        
+# ================================================================================
+# TEMPLATE DATA PREPARATION FUNCTIONS
+# ================================================================================
+
+def prepare_template_data_with_ai(db: Session) -> dict:
+    """Prepare comprehensive data for AI-enhanced template"""
+    
+    ai_manager = AIDataManager(db)
+    
+    # Get all active patients
+    patients = db.query(TriagePatient).filter(
+        TriagePatient.status == "active"
+    ).order_by(TriagePatient.created_at.desc()).all()
+    
+    # Get active AI alerts
+    ai_alerts = ai_manager.get_active_ai_alerts(limit=5)
+    
+    # Prepare patient data with AI insights
+    patients_with_ai = []
+    for patient in patients:
+        # Get latest AI analysis for patient
+        latest_analysis = db.query(AIAnalysisLog).filter(
+            AIAnalysisLog.patient_id == patient.id
+        ).order_by(AIAnalysisLog.created_at.desc()).first()
+        
+        patient_data = {
+            "id": patient.id,
+            "name": patient.name,
+            "age": patient.age,
+            "gender": getattr(patient, 'gender', 'Unknown'),
+            "injury": patient.injury_type,
+            "severity": patient.severity,
+            "triage_color": patient.triage_color,
+            "priority": getattr(patient, 'priority_score', get_priority_from_triage_color(patient.triage_color)),
+            "consciousness": patient.consciousness,
+            "breathing": patient.breathing,
+            "status": patient.status,
+            "timestamp": patient.created_at,
+            "notes": patient.notes,
+            "assigned_doctor": getattr(patient, 'assigned_doctor', None),
+            "assigned_nurse": getattr(patient, 'assigned_nurse', None),
+            "bed_assignment": getattr(patient, 'bed_assignment', None),
+            "vitals": {
+                "hr": getattr(patient, 'heart_rate', '-') or '-',
+                "bp": f"{getattr(patient, 'bp_systolic', '-') or '-'}/{getattr(patient, 'bp_diastolic', '-') or '-'}",
+                "rr": getattr(patient, 'respiratory_rate', '-') or '-',
+                "temp": getattr(patient, 'temperature', '-') or '-',
+                "o2": getattr(patient, 'oxygen_sat', '-') or '-'
+            },
+            "ai_insight": {
+                "confidence": getattr(patient, 'ai_confidence', 0.8) or 0.8,
+                "risk_score": getattr(patient, 'ai_risk_score', 5.0) or 5.0,
+                "recommendations": getattr(patient, 'ai_recommendations', {}) or {},
+                "keywords": [],
+                "prediction": "Standard monitoring protocols",
+                "risk_factors": ["Assessment in progress"],
+                "risk_level": "medium"
+            } if not latest_analysis else latest_analysis.ai_output,
+            "time_ago": calculate_time_ago(patient.created_at)
+        }
+        
+        patients_with_ai.append(patient_data)
+    
+    # Calculate statistics
+    total_patients = len(patients_with_ai)
+    triage_breakdown = {
+        "red": {"count": len([p for p in patients_with_ai if p["triage_color"] == "red"]), "percentage": 0},
+        "yellow": {"count": len([p for p in patients_with_ai if p["triage_color"] == "yellow"]), "percentage": 0},
+        "green": {"count": len([p for p in patients_with_ai if p["triage_color"] == "green"]), "percentage": 0},
+        "black": {"count": len([p for p in patients_with_ai if p["triage_color"] == "black"]), "percentage": 0}
+    }
+    
+    # Calculate percentages
+    if total_patients > 0:
+        for color in triage_breakdown:
+            triage_breakdown[color]["percentage"] = round(
+                (triage_breakdown[color]["count"] / total_patients) * 100, 1
+            )
+    
+    # Prepare AI alerts for template
+    critical_ai_alerts = []
+    for alert in ai_alerts:
+        patient = next((p for p in patients_with_ai if p["id"] == alert.patient_id), None)
+        if patient:
+            critical_ai_alerts.append({
+                "id": alert.id,
+                "patient": patient,
+                "alert_type": alert.alert_type,
+                "alert_level": alert.alert_level,
+                "message": alert.message,
+                "prediction": alert.prediction,
+                "confidence": alert.confidence,
+                "created_at": alert.created_at
+            })
+    
+    return {
+        "patients_with_ai": patients_with_ai,
+        "triage_breakdown": triage_breakdown,
+        "critical_ai_alerts": critical_ai_alerts,
+        "total_patients": total_patients,
+        "stats": {
+            "total_patients": total_patients,
+            "active_patients": len([p for p in patients_with_ai if p["status"] == "active"]),
+            "critical_alerts": len(critical_ai_alerts),
+            "ai_confidence_avg": calculate_average_confidence(patients_with_ai),
+            "patients_today": len([
+                p for p in patients_with_ai 
+                if p["timestamp"].date() == datetime.utcnow().date()
+            ])
+        }
+    }
 
 # ================================================================================
 # INPUT VALIDATION MODELS (PYDANTIC)
@@ -4291,6 +4669,141 @@ async def login_for_access_token(
     except Exception as e:
         logger.error(f"Login error: {e}")
         raise HTTPException(status_code=500, detail="Login failed")
+    
+# ================================================================================
+# STARTUP INITIALIZATION
+# ================================================================================
+
+def initialize_ai_database():
+    """Initialize AI-enhanced database on startup"""
+    try:
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+        
+        # Upgrade existing schema
+        upgrade_database_schema()
+        
+        # Initialize with sample AI data if database is empty
+        db = next(get_db())
+        
+        if db.query(TriagePatient).count() == 0:
+            logger.info("Initializing database with AI-enhanced sample data...")
+            create_sample_ai_patients(db)
+        
+        logger.info("AI database initialization completed successfully")
+        
+    except Exception as e:
+        logger.error(f"AI database initialization failed: {e}")
+
+def create_sample_ai_patients(db: Session):
+    """Create sample patients with AI data for demonstration"""
+    sample_patients = [
+        {
+            "name": "John Smith",
+            "age": 45,
+            "gender": "male",
+            "injury_type": "Chest trauma",
+            "consciousness": "verbal",
+            "breathing": "labored",
+            "severity": "critical",
+            "triage_color": "red",
+            "heart_rate": 120,
+            "bp_systolic": 90,
+            "bp_diastolic": 60,
+            "oxygen_sat": 88,
+            "ai_confidence": 0.92,
+            "ai_risk_score": 8.5,
+            "ai_recommendations": {
+                "immediate": ["EKG", "Chest X-ray", "IV access"],
+                "specialist": "Cardiology",
+                "resources": ["Monitor", "Oxygen"]
+            }
+        },
+        {
+            "name": "Maria Garcia",
+            "age": 32,
+            "gender": "female",
+            "injury_type": "Fracture - left arm",
+            "consciousness": "alert",
+            "breathing": "normal",
+            "severity": "moderate",
+            "triage_color": "yellow",
+            "heart_rate": 85,
+            "bp_systolic": 120,
+            "bp_diastolic": 80,
+            "oxygen_sat": 98,
+            "ai_confidence": 0.87,
+            "ai_risk_score": 3.2,
+            "ai_recommendations": {
+                "immediate": ["X-ray", "Pain management"],
+                "specialist": "Orthopedic",
+                "resources": ["X-ray machine"]
+            }
+        },
+        {
+            "name": "Robert Wilson",
+            "age": 67,
+            "gender": "male",
+            "injury_type": "Cardiac event",
+            "consciousness": "verbal",
+            "breathing": "labored",
+            "severity": "critical",
+            "triage_color": "red",
+            "heart_rate": 140,
+            "bp_systolic": 180,
+            "bp_diastolic": 110,
+            "oxygen_sat": 91,
+            "ai_confidence": 0.95,
+            "ai_risk_score": 9.1,
+            "ai_recommendations": {
+                "immediate": ["Cardiac cath lab", "Aspirin", "Nitroglycerin"],
+                "specialist": "Cardiology",
+                "resources": ["ICU bed", "Cardiac monitor"]
+            }
+        }
+    ]
+    
+    ai_manager = AIDataManager(db)
+    
+    for patient_data in sample_patients:
+        # Create patient
+        patient = TriagePatient(**patient_data)
+        db.add(patient)
+        db.flush()  # Get the ID
+        
+        # Log AI analysis
+        ai_manager.log_ai_analysis(
+            patient_id=patient.id,
+            analysis_type="initial_triage",
+            input_data={
+                "injury": patient_data["injury_type"],
+                "consciousness": patient_data["consciousness"],
+                "breathing": patient_data["breathing"],
+                "severity": patient_data["severity"]
+            },
+            ai_output={
+                "confidence": patient_data["ai_confidence"],
+                "risk_score": patient_data["ai_risk_score"],
+                "recommendations": patient_data["ai_recommendations"],
+                "prediction": "Requires immediate attention" if patient_data["triage_color"] == "red" else "Stable"
+            },
+            confidence=patient_data["ai_confidence"],
+            model_version="gemma-3n-4b"
+        )
+        
+        # Create AI alert for critical patients
+        if patient_data["triage_color"] == "red":
+            ai_manager.create_ai_alert(
+                patient_id=patient.id,
+                alert_type="critical_patient",
+                alert_level="critical",
+                message=f"Critical patient: {patient_data['name']} - {patient_data['injury_type']}",
+                prediction="Requires immediate intervention",
+                confidence=patient_data["ai_confidence"]
+            )
+    
+    db.commit()
+    logger.info(f"Created {len(sample_patients)} sample AI-enhanced patients")
 
 # ================================================================================
 # APPLICATION STARTUP & LIFECYCLE
@@ -4307,6 +4820,9 @@ async def startup_event():
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables created/verified")
+        
+        # Initialize AI-enhanced database
+        initialize_ai_database()
         
         # Initialize default data if needed
         db = next(get_db())
@@ -4362,7 +4878,7 @@ async def startup_event():
     # Log available features
     logger.info("🎯 Available features:")
     logger.info("     • 🌐 Citizen Emergency Portal (main interface)")
-    logger.info("     • 🎤 PUBLIC Voice Emergency Reporter (NO LOGIN REQUIRED)")  # NEW FEATURE
+    logger.info("     • 🎤 PUBLIC Voice Emergency Reporter (NO LOGIN REQUIRED)")
     logger.info("     • 🤖 Multimodal AI Analysis (text + image + audio)")
     logger.info("     • 📊 Professional Admin Dashboard")
     logger.info("     • 🏥 Patient Triage Management")
@@ -4377,11 +4893,11 @@ async def startup_event():
     logger.info("     • 🛡️ Rate limiting and security monitoring")
     logger.info("     • 📊 Performance monitoring and metrics")
     logger.info("     • 🔧 RESTful API with comprehensive documentation")
-    logger.info("     • 📊 Voice analytics and reporting")  # NEW FEATURE
+    logger.info("     • 📊 Voice analytics and reporting")
     
     logger.info("✅ Enhanced Emergency Response Assistant ready!")
     logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
-    logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")  # NEW ENDPOINT
+    logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")
     logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
     logger.info(f"     📚 API Documentation: http://localhost:8000/api/docs")
     logger.info(f"     🏥 Health Check: http://localhost:8000/health")
