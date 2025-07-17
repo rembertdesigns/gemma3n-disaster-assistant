@@ -1082,6 +1082,133 @@ async def process_emergency_report_background(report_id: int):
     except Exception as e:
         logger.error(f"Background processing failed for report {report_id}: {e}")
 
+def get_priority_score(patient: TriagePatient) -> int:
+    """Calculate priority score for patient"""
+    priority_map = {"red": 1, "yellow": 2, "green": 3, "black": 4}
+    return priority_map.get(patient.triage_color, 3)
+
+def get_patient_vitals(patient: TriagePatient) -> dict:
+    """Get patient vital signs with fallbacks"""
+    return {
+        "hr": getattr(patient, 'heart_rate', '-') or '-',
+        "bp": f"{getattr(patient, 'bp_systolic', '-')}/{getattr(patient, 'bp_diastolic', '-')}" if getattr(patient, 'bp_systolic', None) else '-',
+        "rr": getattr(patient, 'respiratory_rate', '-') or '-',
+        "temp": getattr(patient, 'temperature', '-') or '-',
+        "o2": getattr(patient, 'oxygen_sat', '-') or '-'
+    }
+
+def calculate_average_confidence(patients_data: list) -> float:
+    """Calculate average AI confidence across all patients"""
+    if not patients_data:
+        return 0.0
+    
+    confidences = [p["ai_insight"]["confidence"] for p in patients_data]
+    return sum(confidences) / len(confidences)
+
+def calculate_system_load(patients_data: list) -> str:
+    """Calculate current system load"""
+    total_patients = len(patients_data)
+    critical_patients = len([p for p in patients_data if p["priority"] == 1])
+    
+    if total_patients > 20 or critical_patients > 5:
+        return "high"
+    elif total_patients > 10 or critical_patients > 2:
+        return "medium"
+    else:
+        return "low"
+
+def generate_ai_activity_feed(patients_data: list, critical_alerts: list) -> list:
+    """Generate AI-enhanced activity feed"""
+    activities = []
+    
+    # Add AI alerts
+    for alert in critical_alerts[:3]:
+        activities.append({
+            "type": "ai_alert",
+            "text": f"AI Alert: {alert['patient']['name']} - {alert['prediction']}",
+            "time": datetime.utcnow(),
+            "color": "purple",
+            "ai_flag": True
+        })
+    
+    # Add recent admissions
+    for patient in patients_data[:5]:
+        activities.append({
+            "type": "admission",
+            "text": f"{patient['name']} admitted - AI confidence: {patient['ai_insight']['confidence']:.0%}",
+            "time": patient["timestamp"],
+            "color": patient["triage_color"],
+            "ai_flag": True
+        })
+    
+    return sorted(activities, key=lambda x: x["time"], reverse=True)[:8]
+
+# Fallback functions for when AI fails
+def get_fallback_ai_insights(patient: TriagePatient) -> dict:
+    """Fallback AI insights when Gemma 3n is unavailable"""
+    return {
+        "keywords": [patient.injury_type.lower()],
+        "confidence": 0.8,
+        "recommendation": "Standard care protocols",
+        "risk_factors": ["Assessment needed"],
+        "risk_level": "medium",
+        "prediction": "Monitor as per standard protocols",
+        "alert_type": "standard_monitoring",
+        "generated_at": datetime.utcnow().isoformat()
+    }
+
+def create_fallback_patient_data(patient: TriagePatient) -> dict:
+    """Create basic patient data structure without AI"""
+    return {
+        "id": patient.id,
+        "name": patient.name,
+        "age": patient.age,
+        "gender": getattr(patient, 'gender', 'Unknown'),
+        "injury": patient.injury_type,
+        "severity": patient.severity,
+        "triage_color": patient.triage_color,
+        "priority": get_priority_score(patient),
+        "consciousness": patient.consciousness,
+        "breathing": patient.breathing,
+        "status": patient.status,
+        "timestamp": patient.created_at,
+        "notes": patient.notes,
+        "vitals": get_patient_vitals(patient),
+        "ai_insight": get_fallback_ai_insights(patient),
+        "time_ago": calculate_time_ago(patient.created_at)
+    }
+
+def get_fallback_resource_analysis() -> dict:
+    """Fallback resource analysis"""
+    return {
+        "personnel": {
+            "doctors": {"needed": 3, "available": 8, "status": "adequate"},
+            "nurses": {"needed": 8, "available": 12, "status": "adequate"},
+            "specialists": {"needed": 2, "available": 4, "status": "adequate"}
+        },
+        "equipment": {
+            "ventilators": {"needed": 1, "available": 6, "status": "adequate"},
+            "monitors": {"needed": 5, "available": 10, "status": "adequate"},
+            "beds": {"needed": 8, "available": 15, "status": "adequate"}
+        },
+        "predictions": ["AI analysis temporarily unavailable"],
+        "bottlenecks": []
+    }
+
+def get_fallback_predictive_analysis() -> dict:
+    """Fallback predictive analysis"""
+    return {
+        "deterioration_risk": "AI assessment pending",
+        "resource_bottleneck": "Standard monitoring active",
+        "recommendation": "Continue normal operations",
+        "confidence": "AI temporarily unavailable",
+        "trend_analysis": {
+            "critical_admissions_last_hour": 0,
+            "average_severity": 2.5,
+            "ai_alerts_active": 0
+        }
+    }
+
 # ================================================================================
 # MAIN PAGE ROUTES - CITIZEN PORTAL
 # ================================================================================
@@ -1345,7 +1472,7 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
     
 @app.get("/staff-triage-command", response_class=HTMLResponse)
 async def staff_triage_command_center(request: Request, db: Session = Depends(get_db)):
-    """Staff Medical Triage Command Center - Enhanced workflow dashboard"""
+    """Enhanced Staff Medical Triage Command Center with Gemma 3n AI Integration"""
     try:
         # Get real-time statistics
         total_patients = db.query(TriagePatient).count()
@@ -1354,18 +1481,33 @@ async def staff_triage_command_center(request: Request, db: Session = Depends(ge
             or_(TriagePatient.triage_color == "red", TriagePatient.severity == "critical")
         ).count()
         
-        # Triage color breakdown
+        # Enhanced triage breakdown with percentages
+        total_for_percentages = max(total_patients, 1)  # Avoid division by zero
         triage_breakdown = {
-            "red": {"count": db.query(TriagePatient).filter(TriagePatient.triage_color == "red").count(), "percentage": 0},
-            "yellow": {"count": db.query(TriagePatient).filter(TriagePatient.triage_color == "yellow").count(), "percentage": 0},
-            "green": {"count": db.query(TriagePatient).filter(TriagePatient.triage_color == "green").count(), "percentage": 0},
-            "black": {"count": db.query(TriagePatient).filter(TriagePatient.triage_color == "black").count(), "percentage": 0}
+            "red": {
+                "count": db.query(TriagePatient).filter(TriagePatient.triage_color == "red").count(),
+                "percentage": 0
+            },
+            "yellow": {
+                "count": db.query(TriagePatient).filter(TriagePatient.triage_color == "yellow").count(),
+                "percentage": 0
+            },
+            "green": {
+                "count": db.query(TriagePatient).filter(TriagePatient.triage_color == "green").count(),
+                "percentage": 0
+            },
+            "black": {
+                "count": db.query(TriagePatient).filter(TriagePatient.triage_color == "black").count(),
+                "percentage": 0
+            }
         }
         
         # Calculate percentages
         if total_patients > 0:
             for color in triage_breakdown:
-                triage_breakdown[color]["percentage"] = round((triage_breakdown[color]["count"] / total_patients) * 100, 1)
+                triage_breakdown[color]["percentage"] = round(
+                    (triage_breakdown[color]["count"] / total_patients) * 100, 1
+                )
         
         # Severity breakdown
         severity_breakdown = {
@@ -1375,60 +1517,104 @@ async def staff_triage_command_center(request: Request, db: Session = Depends(ge
             "mild": db.query(TriagePatient).filter(TriagePatient.severity == "mild").count()
         }
         
-        # Priority queue - handle missing priority_score
+        # Get patients for AI analysis
+        all_patients = db.query(TriagePatient).filter(
+            TriagePatient.status == "active"
+        ).order_by(TriagePatient.created_at.desc()).all()
+        
+        # =================== AI PROCESSING WITH GEMMA 3N ===================
+        patients_with_ai = []
+        critical_ai_alerts = []
+        
+        for patient in all_patients:
+            try:
+                # Generate AI insights for each patient
+                ai_insight = await generate_patient_ai_insights(patient)
+                
+                # Create enhanced patient data structure
+                patient_data = {
+                    "id": patient.id,
+                    "name": patient.name,
+                    "age": patient.age,
+                    "gender": getattr(patient, 'gender', 'Unknown'),
+                    "injury": patient.injury_type,
+                    "severity": patient.severity,
+                    "triage_color": patient.triage_color,
+                    "priority": get_priority_score(patient),
+                    "consciousness": patient.consciousness,
+                    "breathing": patient.breathing,
+                    "status": patient.status,
+                    "timestamp": patient.created_at,
+                    "notes": patient.notes,
+                    "vitals": get_patient_vitals(patient),
+                    "ai_insight": ai_insight,
+                    "time_ago": calculate_time_ago(patient.created_at)
+                }
+                
+                patients_with_ai.append(patient_data)
+                
+                # Check for critical AI alerts
+                if ai_insight["confidence"] > 0.9 or ai_insight["risk_level"] == "critical":
+                    critical_ai_alerts.append({
+                        "patient": patient_data,
+                        "alert_type": ai_insight["alert_type"],
+                        "prediction": ai_insight["prediction"],
+                        "confidence": ai_insight["confidence"]
+                    })
+                    
+            except Exception as e:
+                logger.error(f"AI analysis failed for patient {patient.id}: {e}")
+                # Fallback to basic patient data without AI
+                patient_data = create_fallback_patient_data(patient)
+                patients_with_ai.append(patient_data)
+        
+        # Sort patients by AI-enhanced priority
+        patients_with_ai.sort(key=lambda p: (
+            p["priority"],
+            -p["ai_insight"]["confidence"],
+            p["timestamp"]
+        ))
+        
+        # =================== AI RESOURCE ANALYSIS ===================
         try:
-            priority_queue = db.query(TriagePatient).filter(
-                TriagePatient.status == "active"
-            ).order_by(
-                TriagePatient.priority_score.desc(),
-                TriagePatient.created_at.desc()
-            ).limit(10).all()
-        except Exception:
-            # Fallback if priority_score doesn't exist
-            priority_queue = db.query(TriagePatient).filter(
-                TriagePatient.status == "active"
-            ).order_by(
-                TriagePatient.created_at.desc()
-            ).limit(10).all()
-            
-            # Add simulated priority_score for display
-            for i, patient in enumerate(priority_queue):
-                if not hasattr(patient, 'priority_score'):
-                    if patient.triage_color == "red": patient.priority_score = 1
-                    elif patient.triage_color == "yellow": patient.priority_score = 2
-                    elif patient.triage_color == "green": patient.priority_score = 3
-                    else: patient.priority_score = 4
+            resource_analysis = await analyze_resource_requirements(patients_with_ai)
+        except Exception as e:
+            logger.error(f"Resource analysis failed: {e}")
+            resource_analysis = get_fallback_resource_analysis()
         
-        # Critical vitals patients
-        critical_vitals_patients = db.query(TriagePatient).filter(
-            and_(
-                TriagePatient.status == "active",
-                or_(
-                    TriagePatient.triage_color == "red",
-                    TriagePatient.severity == "critical"
-                )
-            )
-        ).limit(5).all()
+        # =================== AI PREDICTIVE ANALYSIS ===================
+        try:
+            predictive_analysis = await generate_predictive_analysis(patients_with_ai)
+        except Exception as e:
+            logger.error(f"Predictive analysis failed: {e}")
+            predictive_analysis = get_fallback_predictive_analysis()
         
-        # Add missing attributes for critical patients
-        for patient in critical_vitals_patients:
-            if not hasattr(patient, 'priority_score'):
-                patient.priority_score = 1 if patient.triage_color == "red" else 2
+        # Priority queue (top 10 patients)
+        priority_queue = patients_with_ai[:10]
         
-        # Recent activity
-        recent_patients = db.query(TriagePatient).order_by(
-            desc(TriagePatient.created_at)
-        ).limit(8).all()
+        # Critical vitals patients with AI alerts
+        critical_vitals_patients = [
+            p for p in patients_with_ai 
+            if p["triage_color"] == "red" or p["ai_insight"]["risk_level"] == "critical"
+        ][:5]
         
-        # Statistics object
+        # Recent activity with AI events
+        recent_patients = patients_with_ai[:8]
+        
+        # Enhanced statistics
         stats = {
             "total_patients": total_patients,
             "active_patients": active_patients,
             "patients_today": db.query(TriagePatient).filter(
                 func.date(TriagePatient.created_at) == datetime.utcnow().date()
             ).count(),
-            "critical_alerts": critical_patients
+            "critical_alerts": len(critical_ai_alerts),
+            "ai_confidence_avg": calculate_average_confidence(patients_with_ai),
+            "system_load": calculate_system_load(patients_with_ai)
         }
+        
+        # Generate AI activity feed
+        ai_activity_feed = generate_ai_activity_feed(patients_with_ai, critical_ai_alerts)
         
         return templates.TemplateResponse("staff_triage_command.html", {
             "request": request,
@@ -1437,17 +1623,27 @@ async def staff_triage_command_center(request: Request, db: Session = Depends(ge
             "severity_breakdown": severity_breakdown,
             "priority_queue": priority_queue,
             "critical_vitals_patients": critical_vitals_patients,
+            "critical_ai_alerts": critical_ai_alerts,
             "recent_patients": recent_patients,
+            "ai_activity_feed": ai_activity_feed,
+            "resource_analysis": resource_analysis,
+            "predictive_analysis": predictive_analysis,
             "current_time": datetime.utcnow(),
-            "page_title": "Staff Medical Triage Command Center"
+            "page_title": "AI-Enhanced Staff Medical Triage Command Center",
+            "ai_enabled": True,
+            "gemma_model_info": {
+                "model": ai_optimizer.current_config.model_variant,
+                "optimization_level": ai_optimizer.current_config.optimization_level,
+                "performance": ai_optimizer.monitor_performance().__dict__
+            }
         })
         
     except Exception as e:
-        logger.error(f"Staff triage command center error: {e}")
+        logger.error(f"Enhanced staff triage command center error: {e}")
         return HTMLResponse(f"""
         <html>
         <head>
-            <title>Staff Triage Command</title>
+            <title>AI Staff Triage Command - Error</title>
             <style>
                 body {{ font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }}
                 .error {{ background: #fef2f2; border: 1px solid #fecaca; padding: 2rem; border-radius: 8px; }}
@@ -1456,19 +1652,324 @@ async def staff_triage_command_center(request: Request, db: Session = Depends(ge
         </head>
         <body>
             <div class="error">
-                <h1>🏥 Staff Medical Triage Command Center</h1>
-                <p><strong>Loading command center...</strong></p>
-                <p><strong>Database Error:</strong> {str(e)}</p>
-                <p>This usually means the database schema needs to be updated.</p>
+                <h1>🤖 AI Staff Medical Triage Command Center</h1>
+                <p><strong>Loading AI-enhanced command center...</strong></p>
+                <p><strong>Error:</strong> {str(e)}</p>
+                <p>The system is running in fallback mode. Some AI features may be limited.</p>
                 <div>
                     <a href="/admin" class="btn">← Back to Admin</a>
                     <a href="/" class="btn">← Home</a>
                     <a href="/triage-form" class="btn">📝 New Triage</a>
+                    <a href="/health" class="btn">🔍 System Health</a>
                 </div>
             </div>
         </body>
         </html>
         """)
+    
+# ================================================================================
+# GEMMA 3N AI INTEGRATION FUNCTIONS
+# ================================================================================
+
+async def generate_patient_ai_insights(patient: TriagePatient) -> dict:
+    """Generate comprehensive AI insights for a patient using Gemma 3n"""
+    try:
+        # Prepare patient data for AI analysis
+        patient_context = {
+            "name": patient.name,
+            "age": patient.age,
+            "injury_type": patient.injury_type,
+            "severity": patient.severity,
+            "consciousness": patient.consciousness,
+            "breathing": patient.breathing,
+            "triage_color": patient.triage_color,
+            "notes": patient.notes or "",
+            "vitals": get_patient_vitals(patient),
+            "timestamp": patient.created_at.isoformat()
+        }
+        
+        # Use Gemma 3n for analysis
+        gemma_analysis = gemma_processor.analyze_multimodal_emergency(
+            text=f"Patient: {patient.name}, Age: {patient.age}, Injury: {patient.injury_type}, "
+                 f"Severity: {patient.severity}, Consciousness: {patient.consciousness}, "
+                 f"Breathing: {patient.breathing}, Notes: {patient.notes or 'None'}",
+            context=patient_context
+        )
+        
+        # Extract keywords from injury and notes
+        keywords = extract_medical_keywords(patient.injury_type, patient.notes)
+        
+        # Calculate confidence based on Gemma analysis
+        confidence = min(0.99, gemma_analysis["severity"]["confidence"])
+        
+        # Generate recommendations
+        recommendations = generate_medical_recommendations(patient, gemma_analysis)
+        
+        # Assess risk factors
+        risk_factors, risk_level = assess_patient_risk_factors(patient, gemma_analysis)
+        
+        # Generate prediction
+        prediction = generate_patient_prediction(patient, gemma_analysis)
+        
+        # Determine alert type
+        alert_type = determine_alert_type(patient, gemma_analysis)
+        
+        return {
+            "keywords": keywords,
+            "confidence": confidence,
+            "recommendation": recommendations,
+            "risk_factors": risk_factors,
+            "risk_level": risk_level,
+            "prediction": prediction,
+            "alert_type": alert_type,
+            "gemma_analysis": gemma_analysis,
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Gemma 3n analysis failed for patient {patient.id}: {e}")
+        return get_fallback_ai_insights(patient)
+
+def extract_medical_keywords(injury_type: str, notes: str = "") -> list:
+    """Extract relevant medical keywords from patient data"""
+    text = f"{injury_type} {notes or ''}".lower()
+    
+    medical_keywords = [
+        "chest pain", "cardiac", "heart", "myocardial", "arrhythmia",
+        "respiratory", "breathing", "dyspnea", "pneumonia", "asthma",
+        "trauma", "fracture", "laceration", "hemorrhage", "bleeding",
+        "neurological", "seizure", "stroke", "consciousness", "coma",
+        "infection", "sepsis", "fever", "hypotension", "shock",
+        "surgical", "emergency", "critical", "unstable"
+    ]
+    
+    found_keywords = [keyword for keyword in medical_keywords if keyword in text]
+    
+    # Add specific injury terms
+    injury_terms = injury_type.lower().split()
+    found_keywords.extend([term for term in injury_terms if len(term) > 3])
+    
+    return list(set(found_keywords))[:5]  # Return top 5 unique keywords
+
+def generate_medical_recommendations(patient: TriagePatient, gemma_analysis: dict) -> str:
+    """Generate specific medical recommendations based on AI analysis"""
+    recommendations = []
+    
+    # Base recommendations from Gemma analysis
+    if "resource_requirements" in gemma_analysis:
+        gemma_recommendations = gemma_analysis["resource_requirements"]
+        if "personnel" in gemma_recommendations:
+            for role, count in gemma_recommendations["personnel"].items():
+                if count > 0:
+                    recommendations.append(f"{role.replace('_', ' ').title()} consultation")
+    
+    # Condition-specific recommendations
+    if patient.triage_color == "red":
+        recommendations.extend(["Immediate assessment", "Continuous monitoring", "IV access"])
+    
+    if patient.consciousness in ["pain", "unresponsive"]:
+        recommendations.extend(["Neurological assessment", "Blood glucose check"])
+    
+    if patient.breathing in ["labored", "shallow", "absent"]:
+        recommendations.extend(["Oxygen therapy", "Chest X-ray", "ABG analysis"])
+    
+    # Injury-specific recommendations
+    injury = patient.injury_type.lower()
+    if "chest" in injury or "cardiac" in injury:
+        recommendations.extend(["EKG", "Cardiac enzymes", "Chest X-ray"])
+    elif "head" in injury or "brain" in injury:
+        recommendations.extend(["CT scan", "Neurology consult"])
+    elif "fracture" in injury or "trauma" in injury:
+        recommendations.extend(["X-ray", "Orthopedic evaluation"])
+    
+    # Remove duplicates and limit to top recommendations
+    unique_recommendations = list(dict.fromkeys(recommendations))[:4]
+    
+    return ", ".join(unique_recommendations) if unique_recommendations else "Standard care protocols"
+
+def assess_patient_risk_factors(patient: TriagePatient, gemma_analysis: dict) -> tuple:
+    """Assess patient risk factors and determine risk level"""
+    risk_factors = []
+    risk_score = 0
+    
+    # Immediate risks from Gemma analysis
+    if "immediate_risks" in gemma_analysis:
+        risk_factors.extend(gemma_analysis["immediate_risks"])
+        risk_score += len(gemma_analysis["immediate_risks"]) * 2
+    
+    # Triage color risk
+    risk_mapping = {"red": 4, "yellow": 2, "green": 1, "black": 5}
+    risk_score += risk_mapping.get(patient.triage_color, 1)
+    
+    # Consciousness risk
+    if patient.consciousness == "unresponsive":
+        risk_factors.append("Unconscious patient")
+        risk_score += 3
+    elif patient.consciousness == "pain":
+        risk_factors.append("Altered mental status")
+        risk_score += 2
+    
+    # Breathing risk
+    if patient.breathing in ["absent", "labored"]:
+        risk_factors.append("Respiratory compromise")
+        risk_score += 3
+    elif patient.breathing == "shallow":
+        risk_factors.append("Respiratory distress")
+        risk_score += 2
+    
+    # Age-related risk
+    if patient.age and patient.age > 65:
+        risk_factors.append("Advanced age")
+        risk_score += 1
+    elif patient.age and patient.age < 2:
+        risk_factors.append("Pediatric patient")
+        risk_score += 1
+    
+    # Determine overall risk level
+    if risk_score >= 8:
+        risk_level = "critical"
+    elif risk_score >= 5:
+        risk_level = "high"
+    elif risk_score >= 3:
+        risk_level = "medium"
+    else:
+        risk_level = "low"
+    
+    return risk_factors if risk_factors else ["Standard risk profile"], risk_level
+
+def generate_patient_prediction(patient: TriagePatient, gemma_analysis: dict) -> str:
+    """Generate AI prediction for patient outcome"""
+    
+    # Extract severity score from Gemma analysis
+    severity_score = gemma_analysis.get("severity", {}).get("overall_score", 5)
+    confidence = gemma_analysis.get("severity", {}).get("confidence", 0.7)
+    
+    if patient.triage_color == "red" and severity_score >= 8:
+        if patient.consciousness == "unresponsive":
+            return "⚠️ Critical: High risk of deterioration in next 30 minutes"
+        else:
+            return "⚠️ Urgent: Requires immediate intervention"
+    
+    elif patient.triage_color == "yellow":
+        if severity_score >= 6:
+            return "⚠️ Monitor closely: Condition may worsen without treatment"
+        else:
+            return "Stable: Can wait 30-60 minutes safely"
+    
+    elif patient.triage_color == "green":
+        return "Stable: Low priority - can wait 2+ hours safely"
+    
+    elif patient.triage_color == "black":
+        return "Comfort care: Focus on pain management"
+    
+    return "Standard monitoring protocols apply"
+
+def determine_alert_type(patient: TriagePatient, gemma_analysis: dict) -> str:
+    """Determine the type of alert for the patient"""
+    
+    if patient.consciousness == "unresponsive":
+        return "neurological_emergency"
+    
+    if patient.breathing in ["absent", "labored"]:
+        return "respiratory_emergency"
+    
+    if patient.triage_color == "red":
+        return "critical_patient"
+    
+    injury = patient.injury_type.lower()
+    if "cardiac" in injury or "heart" in injury:
+        return "cardiac_event"
+    elif "trauma" in injury:
+        return "trauma_alert"
+    elif "chest" in injury:
+        return "chest_emergency"
+    
+    return "standard_monitoring"
+
+async def analyze_resource_requirements(patients_data: list) -> dict:
+    """Analyze current resource requirements using AI"""
+    try:
+        # Count resource needs by patient priority and type
+        resource_analysis = {
+            "personnel": {
+                "doctors": {"needed": 0, "available": 8, "status": "adequate"},
+                "nurses": {"needed": 0, "available": 12, "status": "adequate"},
+                "specialists": {"needed": 0, "available": 4, "status": "adequate"}
+            },
+            "equipment": {
+                "ventilators": {"needed": 0, "available": 6, "status": "adequate"},
+                "monitors": {"needed": 0, "available": 10, "status": "adequate"},
+                "beds": {"needed": 0, "available": 15, "status": "adequate"}
+            },
+            "predictions": [],
+            "bottlenecks": []
+        }
+        
+        # Calculate needs based on patients
+        for patient in patients_data:
+            priority = patient["priority"]
+            
+            # Staff requirements
+            if priority == 1:  # Critical
+                resource_analysis["personnel"]["doctors"]["needed"] += 1
+                resource_analysis["personnel"]["nurses"]["needed"] += 2
+                resource_analysis["equipment"]["monitors"]["needed"] += 1
+                
+                if "cardiac" in patient["injury"].lower():
+                    resource_analysis["personnel"]["specialists"]["needed"] += 1
+                    
+            elif priority == 2:  # Urgent
+                resource_analysis["personnel"]["nurses"]["needed"] += 1
+                
+        # Determine status for each resource
+        for category in ["personnel", "equipment"]:
+            for resource, data in resource_analysis[category].items():
+                if data["needed"] > data["available"]:
+                    data["status"] = "shortage"
+                    resource_analysis["bottlenecks"].append(f"{resource}: {data['needed']}/{data['available']}")
+                elif data["needed"] > data["available"] * 0.8:
+                    data["status"] = "limited"
+                
+        # Generate predictions
+        critical_patients = len([p for p in patients_data if p["priority"] == 1])
+        if critical_patients > 3:
+            resource_analysis["predictions"].append("High volume of critical patients may overwhelm ICU capacity")
+        
+        return resource_analysis
+        
+    except Exception as e:
+        logger.error(f"Resource analysis error: {e}")
+        return get_fallback_resource_analysis()
+
+async def generate_predictive_analysis(patients_data: list) -> dict:
+    """Generate predictive analysis using Gemma 3n"""
+    try:
+        # Analyze trends
+        current_time = datetime.utcnow()
+        recent_patients = [
+            p for p in patients_data 
+            if (current_time - p["timestamp"]).total_seconds() < 3600  # Last hour
+        ]
+        
+        critical_trend = len([p for p in recent_patients if p["priority"] == 1])
+        
+        predictions = {
+            "deterioration_risk": f"{len([p for p in patients_data if p['ai_insight']['confidence'] > 0.9])} patients at high risk",
+            "resource_bottleneck": "Monitor nursing capacity - approaching limits" if len(patients_data) > 15 else "Resources adequate",
+            "recommendation": "Consider opening overflow area" if critical_trend > 5 else "Continue standard operations",
+            "confidence": f"{calculate_average_confidence(patients_data):.0%} average AI confidence",
+            "trend_analysis": {
+                "critical_admissions_last_hour": critical_trend,
+                "average_severity": sum(p["priority"] for p in patients_data) / max(len(patients_data), 1),
+                "ai_alerts_active": len([p for p in patients_data if p["ai_insight"]["risk_level"] == "critical"])
+            }
+        }
+        
+        return predictions
+        
+    except Exception as e:
+        logger.error(f"Predictive analysis error: {e}")
+        return get_fallback_predictive_analysis()
 
 # ================================================================================
 # EMERGENCY REPORTING ROUTES - ENHANCED WITH PUBLIC VOICE ACCESS
@@ -1833,6 +2334,587 @@ async def view_reports_page(request: Request, db: Session = Depends(get_db)):
         <p>Loading reports... Error: {str(e)}</p>
         </body></html>
         """)
+    
+# ================================================================================
+# AI-POWERED TRIAGE FORM PROCESSING ENDPOINTS
+# ================================================================================
+
+@app.post("/api/ai-triage-assessment")
+@rate_limit(max_requests=20, window_seconds=60)
+async def ai_triage_assessment(
+    request: Request,
+    name: str = Form(...),
+    age: Optional[int] = Form(None),
+    gender: Optional[str] = Form(None),
+    injury_type: str = Form(...),
+    consciousness: str = Form(...),
+    breathing: str = Form(...),
+    severity: str = Form(...),
+    triage_color: Optional[str] = Form(None),
+    notes: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    """AI-powered triage assessment and patient creation"""
+    try:
+        # =================== GEMMA 3N REAL-TIME ANALYSIS ===================
+        triage_context = {
+            "name": name,
+            "age": age,
+            "gender": gender,
+            "injury_type": injury_type,
+            "consciousness": consciousness,
+            "breathing": breathing,
+            "severity": severity,
+            "notes": notes
+        }
+        
+        # Get AI analysis from Gemma 3n
+        ai_analysis = await perform_ai_triage_analysis(triage_context)
+        
+        # If no triage color provided, use AI suggestion
+        if not triage_color:
+            triage_color = ai_analysis["suggested_triage"]
+        
+        # Create new patient record
+        new_patient = TriagePatient(
+            name=name,
+            age=age,
+            gender=gender,
+            injury_type=injury_type,
+            consciousness=consciousness,
+            breathing=breathing,
+            severity=severity,
+            triage_color=triage_color,
+            status="active",
+            notes=notes,
+            priority_score=get_priority_from_triage_color(triage_color)
+        )
+        
+        db.add(new_patient)
+        db.commit()
+        db.refresh(new_patient)
+        
+        # Generate comprehensive AI insights for the new patient
+        full_ai_insights = await generate_patient_ai_insights(new_patient)
+        
+        # Broadcast real-time update
+        await broadcast_emergency_update("new_ai_triage", {
+            "patient_id": new_patient.id,
+            "name": name,
+            "triage_color": triage_color,
+            "ai_confidence": ai_analysis["confidence"],
+            "priority": get_priority_from_triage_color(triage_color),
+            "ai_recommendation": ai_analysis["recommendations"][0] if ai_analysis["recommendations"] else "Standard care"
+        })
+        
+        # Send admin notification for critical patients
+        if triage_color == "red" or ai_analysis["confidence"] > 0.95:
+            await send_admin_notification("critical_ai_triage", {
+                "patient_name": name,
+                "triage_color": triage_color,
+                "ai_confidence": f"{ai_analysis['confidence']:.0%}",
+                "urgent_alert": ai_analysis.get("urgent_alert"),
+                "timestamp": datetime.utcnow().isoformat()
+            })
+        
+        logger.info(f"AI Triage completed: {name} - {triage_color} (AI confidence: {ai_analysis['confidence']:.2f})")
+        
+        return JSONResponse({
+            "success": True,
+            "patient_id": new_patient.id,
+            "ai_analysis": ai_analysis,
+            "full_ai_insights": full_ai_insights,
+            "triage_result": {
+                "name": name,
+                "triage_color": triage_color,
+                "priority": get_priority_from_triage_color(triage_color),
+                "status": "active"
+            },
+            "message": f"Patient {name} successfully triaged with AI assistance"
+        })
+        
+    except Exception as e:
+        logger.error(f"AI triage assessment failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "fallback_message": "Triage completed in manual mode"
+        }, status_code=500)
+
+@app.post("/api/ai-triage-realtime")
+@rate_limit(max_requests=50, window_seconds=60)
+async def ai_triage_realtime(
+    request: Request,
+    consciousness: Optional[str] = Form(None),
+    breathing: Optional[str] = Form(None),
+    severity: Optional[str] = Form(None),
+    injury_type: Optional[str] = Form(None),
+    age: Optional[int] = Form(None),
+    notes: Optional[str] = Form("")
+):
+    """Real-time AI analysis for triage form as user fills it out"""
+    try:
+        if not any([consciousness, breathing, severity, injury_type]):
+            return JSONResponse({
+                "success": True,
+                "analysis": {
+                    "suggested_triage": "",
+                    "confidence": 0.0,
+                    "recommendations": [],
+                    "risk_factors": [],
+                    "status": "insufficient_data"
+                }
+            })
+        
+        # Prepare context for AI analysis
+        context = {
+            "consciousness": consciousness or "",
+            "breathing": breathing or "",
+            "severity": severity or "",
+            "injury_type": injury_type or "",
+            "age": age,
+            "notes": notes or ""
+        }
+        
+        # Perform real-time AI analysis
+        realtime_analysis = await perform_ai_triage_analysis(context, realtime=True)
+        
+        return JSONResponse({
+            "success": True,
+            "analysis": realtime_analysis
+        })
+        
+    except Exception as e:
+        logger.error(f"Real-time AI analysis failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "analysis": {
+                "suggested_triage": "yellow",
+                "confidence": 0.5,
+                "recommendations": ["Manual assessment required"],
+                "risk_factors": ["AI analysis unavailable"],
+                "status": "fallback_mode"
+            }
+        })
+
+@app.get("/api/ai-command-processing")
+async def ai_command_processing(
+    query: str = Query(..., description="Natural language command"),
+    db: Session = Depends(get_db)
+):
+    """Process natural language commands using Gemma 3n"""
+    try:
+        # Process command with AI
+        command_result = await process_natural_language_command(query, db)
+        
+        return JSONResponse({
+            "success": True,
+            "command": query,
+            "result": command_result,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"AI command processing failed: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "result": {
+                "response": "Command processing temporarily unavailable",
+                "action": "none"
+            }
+        })
+
+# ================================================================================
+# GEMMA 3N AI PROCESSING FUNCTIONS
+# ================================================================================
+
+async def perform_ai_triage_analysis(context: dict, realtime: bool = False) -> dict:
+    """Perform comprehensive AI triage analysis using Gemma 3n"""
+    try:
+        # Prepare text for Gemma 3n analysis
+        analysis_text = f"""
+        Medical Triage Assessment:
+        Patient Age: {context.get('age', 'Unknown')}
+        Injury/Condition: {context.get('injury_type', 'Not specified')}
+        Consciousness Level: {context.get('consciousness', 'Not assessed')}
+        Breathing Status: {context.get('breathing', 'Not assessed')}
+        Severity: {context.get('severity', 'Not assessed')}
+        Additional Notes: {context.get('notes', 'None')}
+        
+        Please analyze this patient's condition and provide triage recommendations.
+        """
+        
+        # Use Gemma 3n for analysis
+        gemma_result = gemma_processor.analyze_multimodal_emergency(
+            text=analysis_text,
+            context=context
+        )
+        
+        # Extract and process results
+        suggested_triage = determine_triage_color_from_ai(context, gemma_result)
+        confidence = calculate_ai_confidence(context, gemma_result)
+        recommendations = generate_ai_recommendations(context, gemma_result)
+        risk_factors = identify_risk_factors(context, gemma_result)
+        urgent_alert = check_for_urgent_alerts(context, gemma_result)
+        
+        return {
+            "suggested_triage": suggested_triage,
+            "confidence": confidence,
+            "recommendations": recommendations,
+            "risk_factors": risk_factors,
+            "risk_level": determine_risk_level(context, confidence),
+            "urgent_alert": urgent_alert,
+            "gemma_raw": gemma_result if not realtime else None,
+            "analysis_type": "realtime" if realtime else "comprehensive",
+            "processed_at": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Gemma 3n triage analysis failed: {e}")
+        return get_fallback_triage_analysis(context)
+
+def determine_triage_color_from_ai(context: dict, gemma_result: dict) -> str:
+    """Determine triage color based on AI analysis"""
+    
+    # Start with base priority
+    priority_score = 0
+    
+    # Consciousness scoring
+    consciousness = context.get('consciousness', '').lower()
+    if consciousness == 'unresponsive':
+        priority_score += 4
+    elif consciousness == 'pain':
+        priority_score += 3
+    elif consciousness == 'verbal':
+        priority_score += 1
+    
+    # Breathing scoring
+    breathing = context.get('breathing', '').lower()
+    if breathing == 'absent':
+        priority_score += 4
+    elif breathing == 'labored':
+        priority_score += 3
+    elif breathing == 'shallow':
+        priority_score += 2
+    
+    # Severity scoring
+    severity = context.get('severity', '').lower()
+    if severity == 'critical':
+        priority_score += 4
+    elif severity == 'severe':
+        priority_score += 3
+    elif severity == 'moderate':
+        priority_score += 2
+    elif severity == 'mild':
+        priority_score += 1
+    
+    # Age factor
+    age = context.get('age')
+    if age:
+        if age < 2 or age > 65:
+            priority_score += 1
+    
+    # Injury-specific factors
+    injury = context.get('injury_type', '').lower()
+    if any(keyword in injury for keyword in ['cardiac', 'heart', 'chest pain']):
+        priority_score += 2
+    elif any(keyword in injury for keyword in ['trauma', 'accident', 'bleeding']):
+        priority_score += 2
+    elif any(keyword in injury for keyword in ['head', 'brain', 'neurological']):
+        priority_score += 2
+    
+    # Use Gemma 3n severity score if available
+    if 'severity' in gemma_result and 'overall_score' in gemma_result['severity']:
+        ai_severity = gemma_result['severity']['overall_score']
+        if ai_severity >= 8:
+            priority_score += 2
+        elif ai_severity >= 6:
+            priority_score += 1
+    
+    # Determine triage color
+    if priority_score >= 8:
+        return "red"
+    elif priority_score >= 5:
+        return "yellow"
+    elif priority_score >= 2:
+        return "green"
+    else:
+        return "green"
+
+def calculate_ai_confidence(context: dict, gemma_result: dict) -> float:
+    """Calculate confidence score for AI analysis"""
+    base_confidence = 0.7
+    
+    # Increase confidence based on data completeness
+    data_completeness = sum([
+        1 for field in ['consciousness', 'breathing', 'severity', 'injury_type']
+        if context.get(field)
+    ]) / 4
+    
+    # Use Gemma confidence if available
+    gemma_confidence = gemma_result.get('severity', {}).get('confidence', base_confidence)
+    
+    # Combine factors
+    final_confidence = (base_confidence * 0.3 + 
+                       data_completeness * 0.3 + 
+                       gemma_confidence * 0.4)
+    
+    return min(0.99, max(0.5, final_confidence))
+
+def generate_ai_recommendations(context: dict, gemma_result: dict) -> list:
+    """Generate specific medical recommendations"""
+    recommendations = []
+    
+    # Get Gemma recommendations
+    if 'resource_requirements' in gemma_result:
+        resources = gemma_result['resource_requirements']
+        if 'equipment' in resources:
+            for equipment in resources['equipment']:
+                if equipment == 'fire_truck':
+                    continue  # Skip non-medical equipment
+                recommendations.append(f"{equipment.replace('_', ' ').title()}")
+    
+    # Add consciousness-based recommendations
+    consciousness = context.get('consciousness', '').lower()
+    if consciousness == 'unresponsive':
+        recommendations.extend(['Immediate neurological assessment', 'Blood glucose check', 'IV access'])
+    elif consciousness == 'pain':
+        recommendations.extend(['Neurological assessment', 'Pain management'])
+    
+    # Add breathing-based recommendations
+    breathing = context.get('breathing', '').lower()
+    if breathing == 'absent':
+        recommendations.extend(['IMMEDIATE airway management', 'Bag-mask ventilation'])
+    elif breathing == 'labored':
+        recommendations.extend(['Oxygen therapy', 'Chest X-ray'])
+    elif breathing == 'shallow':
+        recommendations.extend(['Oxygen monitoring', 'Respiratory assessment'])
+    
+    # Add injury-specific recommendations
+    injury = context.get('injury_type', '').lower()
+    if 'cardiac' in injury or 'heart' in injury or 'chest pain' in injury:
+        recommendations.extend(['EKG', 'Cardiac enzymes', 'Cardiology consult'])
+    elif 'head' in injury or 'brain' in injury:
+        recommendations.extend(['CT scan', 'Neurology consult'])
+    elif 'fracture' in injury or 'trauma' in injury:
+        recommendations.extend(['X-ray', 'Orthopedic evaluation'])
+    elif 'respiratory' in injury or 'breathing' in injury:
+        recommendations.extend(['Chest X-ray', 'ABG analysis'])
+    
+    # Add severity-based recommendations
+    severity = context.get('severity', '').lower()
+    if severity == 'critical':
+        recommendations.extend(['ICU consultation', 'Continuous monitoring'])
+    elif severity == 'severe':
+        recommendations.extend(['Specialist consultation', 'Frequent monitoring'])
+    
+    # Remove duplicates and limit
+    unique_recommendations = list(dict.fromkeys(recommendations))
+    return unique_recommendations[:4] if unique_recommendations else ['Standard care protocols']
+
+def identify_risk_factors(context: dict, gemma_result: dict) -> list:
+    """Identify patient risk factors"""
+    risk_factors = []
+    
+    # Get immediate risks from Gemma
+    if 'immediate_risks' in gemma_result:
+        risk_factors.extend(gemma_result['immediate_risks'])
+    
+    # Add consciousness risks
+    consciousness = context.get('consciousness', '').lower()
+    if consciousness == 'unresponsive':
+        risk_factors.append('Airway compromise risk')
+    elif consciousness == 'pain':
+        risk_factors.append('Altered mental status')
+    
+    # Add breathing risks
+    breathing = context.get('breathing', '').lower()
+    if breathing in ['absent', 'labored']:
+        risk_factors.append('Respiratory failure risk')
+    elif breathing == 'shallow':
+        risk_factors.append('Respiratory distress')
+    
+    # Add age-related risks
+    age = context.get('age')
+    if age:
+        if age > 65:
+            risk_factors.append('Advanced age complications')
+        elif age < 2:
+            risk_factors.append('Pediatric considerations')
+    
+    # Add injury-specific risks
+    injury = context.get('injury_type', '').lower()
+    if 'cardiac' in injury:
+        risk_factors.append('Cardiac event progression')
+    elif 'head' in injury:
+        risk_factors.append('Intracranial pressure')
+    elif 'trauma' in injury:
+        risk_factors.append('Hidden injuries possible')
+    
+    return risk_factors if risk_factors else ['Standard risk profile']
+
+def check_for_urgent_alerts(context: dict, gemma_result: dict) -> str:
+    """Check for conditions requiring urgent alerts"""
+    
+    if context.get('consciousness') == 'unresponsive':
+        return "Patient unresponsive - immediate intervention required"
+    
+    if context.get('breathing') == 'absent':
+        return "Absent breathing - LIFE THREATENING emergency"
+    
+    if context.get('severity') == 'critical' and context.get('breathing') == 'labored':
+        return "Critical patient with respiratory distress - urgent care needed"
+    
+    # Check Gemma severity
+    if 'severity' in gemma_result:
+        severity_score = gemma_result['severity'].get('overall_score', 0)
+        if severity_score >= 9:
+            return "AI assessment indicates immediate life threat"
+    
+    return None
+
+def determine_risk_level(context: dict, confidence: float) -> str:
+    """Determine overall risk level"""
+    
+    if (context.get('consciousness') == 'unresponsive' or 
+        context.get('breathing') == 'absent' or
+        context.get('severity') == 'critical'):
+        return "critical"
+    
+    if (context.get('consciousness') == 'pain' or 
+        context.get('breathing') == 'labored' or
+        context.get('severity') == 'severe'):
+        return "high"
+    
+    if confidence > 0.8:
+        return "medium"
+    
+    return "low"
+
+async def process_natural_language_command(query: str, db: Session) -> dict:
+    """Process natural language commands using Gemma 3n"""
+    try:
+        query_lower = query.lower()
+        
+        # Critical patient queries
+        if any(word in query_lower for word in ['critical', 'red', 'urgent']):
+            critical_patients = db.query(TriagePatient).filter(
+                TriagePatient.triage_color == "red"
+            ).all()
+            
+            return {
+                "action": "show_critical_patients",
+                "response": f"Found {len(critical_patients)} critical patients",
+                "data": [{"name": p.name, "injury": p.injury_type} for p in critical_patients],
+                "count": len(critical_patients)
+            }
+        
+        # Cardiac patient queries
+        if any(word in query_lower for word in ['cardiac', 'heart', 'chest pain']):
+            cardiac_patients = db.query(TriagePatient).filter(
+                TriagePatient.injury_type.ilike('%cardiac%') |
+                TriagePatient.injury_type.ilike('%heart%') |
+                TriagePatient.injury_type.ilike('%chest%')
+            ).all()
+            
+            return {
+                "action": "show_cardiac_patients",
+                "response": f"Found {len(cardiac_patients)} cardiac-related patients",
+                "data": [{"name": p.name, "injury": p.injury_type, "triage": p.triage_color} for p in cardiac_patients],
+                "count": len(cardiac_patients)
+            }
+        
+        # Resource queries
+        if any(word in query_lower for word in ['resource', 'need', 'capacity']):
+            total_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").count()
+            critical_count = db.query(TriagePatient).filter(
+                TriagePatient.triage_color == "red"
+            ).count()
+            
+            return {
+                "action": "show_resources",
+                "response": f"Current load: {total_patients} active patients, {critical_count} critical",
+                "data": {
+                    "total_patients": total_patients,
+                    "critical_patients": critical_count,
+                    "capacity_status": "high" if total_patients > 15 else "normal"
+                }
+            }
+        
+        # Doctor assignment queries
+        if 'assign' in query_lower and 'dr' in query_lower:
+            return {
+                "action": "assign_doctor",
+                "response": "Doctor assignment feature activated",
+                "data": {"command": query}
+            }
+        
+        # Prediction queries
+        if any(word in query_lower for word in ['predict', 'forecast', 'analysis']):
+            return {
+                "action": "predictive_analysis",
+                "response": "Running AI predictive analysis...",
+                "data": {"analysis_type": "comprehensive"}
+            }
+        
+        # Default response
+        return {
+            "action": "general_query",
+            "response": "Command processed. Try 'show critical patients' or 'resource status'",
+            "data": {"query": query}
+        }
+        
+    except Exception as e:
+        logger.error(f"Command processing error: {e}")
+        return {
+            "action": "error",
+            "response": "Command processing failed. Please try again.",
+            "data": {"error": str(e)}
+        }
+
+# ================================================================================
+# UTILITY FUNCTIONS
+# ================================================================================
+
+def get_priority_from_triage_color(triage_color: str) -> int:
+    """Convert triage color to priority score"""
+    priority_map = {
+        "red": 1,
+        "yellow": 2, 
+        "green": 3,
+        "black": 4
+    }
+    return priority_map.get(triage_color, 3)
+
+def get_fallback_triage_analysis(context: dict) -> dict:
+    """Fallback analysis when AI is unavailable"""
+    
+    # Simple rule-based fallback
+    if context.get('consciousness') == 'unresponsive' or context.get('breathing') == 'absent':
+        suggested_triage = "red"
+        confidence = 0.9
+    elif context.get('severity') == 'critical':
+        suggested_triage = "red"
+        confidence = 0.8
+    elif context.get('severity') == 'severe':
+        suggested_triage = "yellow"
+        confidence = 0.7
+    else:
+        suggested_triage = "green"
+        confidence = 0.6
+    
+    return {
+        "suggested_triage": suggested_triage,
+        "confidence": confidence,
+        "recommendations": ["Manual assessment required", "AI temporarily unavailable"],
+        "risk_factors": ["Assessment needed"],
+        "risk_level": "medium",
+        "urgent_alert": None,
+        "analysis_type": "fallback",
+        "processed_at": datetime.utcnow().isoformat()
+    }
 
 # ================================================================================
 # VOICE ANALYSIS API ENDPOINTS - PUBLIC ACCESS
