@@ -1189,6 +1189,58 @@
         </div>
     </div>
 
+    <!-- Patient Edit Modal -->
+    <div class="modal" id="edit-patient-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">✏️ Edit Patient Information</div>
+                <button class="close-btn" onclick="closeModal('edit-patient-modal')">&times;</button>
+            </div>
+            <div id="edit-patient-form">
+                <!-- Form will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient List Modal -->
+    <div class="modal" id="patient-list-modal">
+        <div class="modal-content" style="max-width: 1200px;">
+            <div class="modal-header">
+                <div class="modal-title">📋 Complete Patient Roster</div>
+                <button class="close-btn" onclick="closeModal('patient-list-modal')">&times;</button>
+            </div>
+            <div id="patient-list-content">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Tracker Modal -->
+    <div class="modal" id="patient-tracker-modal">
+        <div class="modal-content" style="max-width: 1400px;">
+            <div class="modal-header">
+                <div class="modal-title">📊 Live Patient Flow Tracker</div>
+                <button class="close-btn" onclick="closeModal('patient-tracker-modal')">&times;</button>
+            </div>
+            <div id="patient-tracker-content">
+                <!-- Kanban-style board will be here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff AI Tools Modal -->
+    <div class="modal" id="staff-ai-tools-modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <div class="modal-title">🧠 Advanced Staff AI Analysis</div>
+                <button class="close-btn" onclick="closeModal('staff-ai-tools-modal')">&times;</button>
+            </div>
+            <div id="staff-ai-tools-content">
+                <!-- AI tools will be here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Notification -->
     <div class="notification" id="notification"></div>
 
