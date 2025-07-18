@@ -797,6 +797,9 @@
                 <div class="suggestion-pill" onclick="fillCommand('What resources do we need?')">Resource requirements</div>
                 <div class="suggestion-pill" onclick="fillCommand('Who needs immediate attention?')">Immediate attention</div>
                 <div class="suggestion-pill" onclick="fillCommand('Update patient status')">Update status</div>
+                <div class="suggestion-pill" onclick="fillCommand('Edit patient status')">Edit patients</div>
+                <div class="suggestion-pill" onclick="fillCommand('Export PDF report')">Export PDF</div>
+                <div class="suggestion-pill" onclick="fillCommand('Open staff AI tools')">Staff AI tools</div>
             </div>
         </div>
     </div>
@@ -1375,6 +1378,27 @@
                             critical_patients: 2,
                             capacity_status: 'normal'
                         }
+                    };
+                }
+
+                if (lowerCommand.includes('edit') && lowerCommand.includes('patient')) {
+                    return {
+                        action: 'open_patient_list',
+                        response: 'Opening patient list for editing'
+                    };
+                }
+
+                if (lowerCommand.includes('export') && lowerCommand.includes('pdf')) {
+                    return {
+                        action: 'export_pdf',
+                        response: 'Generating PDF report'
+                    };
+                }
+
+                if (lowerCommand.includes('staff') && lowerCommand.includes('tools')) {
+                    return {
+                        action: 'open_staff_tools',
+                        response: 'Opening advanced AI tools'
                     };
                 }
                 
