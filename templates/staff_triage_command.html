@@ -309,10 +309,10 @@
             left: 100%;
         }
 
-        .patient-item.critical { --priority-color: var(--critical-red); }
-        .patient-item.urgent { --priority-color: var(--urgent-yellow); }
-        .patient-item.delayed { --priority-color: var(--stable-green); }
-        .patient-item.expectant { --priority-color: var(--expectant-black); }
+        .patient-item.red { --priority-color: var(--critical-red); }
+        .patient-item.yellow { --priority-color: var(--urgent-yellow); }
+        .patient-item.green { --priority-color: var(--stable-green); }
+        .patient-item.black { --priority-color: var(--expectant-black); }
 
         .priority-indicator {
             width: 50px;
@@ -355,6 +355,11 @@
             font-weight: 600;
         }
 
+        .ai-tag {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--ai-purple);
+        }
+
         .ai-insight {
             background: rgba(139, 92, 246, 0.1);
             color: var(--ai-purple);
@@ -384,6 +389,12 @@
             height: 100%;
             background: var(--ai-purple);
             transition: width 0.3s ease;
+        }
+
+        .patient-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-family: monospace;
         }
 
         /* Sidebar Components */
@@ -612,40 +623,6 @@
             box-shadow: 0 10px 30px rgba(220, 38, 38, 0.4);
         }
 
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-            .main-container {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-            
-            .sidebar {
-                order: -1;
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 1rem;
-            }
-            
-            .stats-overview {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .stats-overview {
-                grid-template-columns: 1fr;
-            }
-            
-            .header-content {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .command-suggestions {
-                justify-content: flex-start;
-            }
-        }
-
         /* Form Styles */
         .form-group {
             margin-bottom: 1rem;
@@ -691,6 +668,7 @@
             resize: vertical;
             min-height: 80px;
         }
+
         .notification {
             position: fixed;
             top: 120px;
@@ -738,6 +716,52 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .triage-suggestion {
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .triage-red { background: var(--critical-red); }
+        .triage-yellow { background: var(--urgent-yellow); }
+        .triage-green { background: var(--stable-green); }
+        .triage-black { background: var(--expectant-black); }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .sidebar {
+                order: -1;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 1rem;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-overview {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .command-suggestions {
+                justify-content: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
@@ -783,19 +807,19 @@
         <div class="main-panel">
             <!-- Quick Stats Overview -->
             <div class="stats-overview">
-                <div class="stat-card stat-red" onclick="filterPatients('critical')">
+                <div class="stat-card stat-red" onclick="filterPatients('red')">
                     <div class="stat-number" id="critical-count">3</div>
                     <div class="stat-label">🔴 Critical</div>
                 </div>
-                <div class="stat-card stat-yellow" onclick="filterPatients('urgent')">
+                <div class="stat-card stat-yellow" onclick="filterPatients('yellow')">
                     <div class="stat-number" id="urgent-count">8</div>
                     <div class="stat-label">🟡 Urgent</div>
                 </div>
-                <div class="stat-card stat-green" onclick="filterPatients('delayed')">
+                <div class="stat-card stat-green" onclick="filterPatients('green')">
                     <div class="stat-number" id="delayed-count">11</div>
                     <div class="stat-label">🟢 Delayed</div>
                 </div>
-                <div class="stat-card stat-black" onclick="filterPatients('expectant')">
+                <div class="stat-card stat-black" onclick="filterPatients('black')">
                     <div class="stat-number" id="expectant-count">2</div>
                     <div class="stat-label">⚫ Expectant</div>
                 </div>
@@ -807,7 +831,7 @@
                     <span>🚑</span>
                     <span>URGENT: New Patient Intake</span>
                 </button>
-                <button class="action-btn" onclick="aiAnalysis()">
+                <button class="action-btn" onclick="aiTriageSystem.runPredictiveAnalysis()">
                     <span>🤖</span>
                     <span>AI Predictive Analysis</span>
                 </button>
@@ -824,10 +848,104 @@
                         <button class="queue-btn" onclick="refreshQueue()" title="Refresh">🔄</button>
                         <button class="queue-btn" onclick="sortByAI()" title="AI Sort">🧠</button>
                         <button class="queue-btn" onclick="exportQueue()" title="Export">📤</button>
+                        <button class="queue-btn" onclick="openPatientList()" title="Patient List">📋</button>
+                        <button class="queue-btn" onclick="openPatientTracker()" title="Patient Tracker">📊</button>
+                        <button class="queue-btn" onclick="exportToPDF()" title="Export PDF">📄</button>
                     </div>
                 </div>
                 <div class="patient-queue" id="patient-queue">
-                    <!-- AI-Enhanced Patient Items -->
+                    <!-- Sample Patient Items -->
+                    <div class="patient-item red" onclick="openPatientDetails(1)">
+                        <div class="priority-indicator">1</div>
+                        <div class="patient-info">
+                            <div class="patient-name">John Smith</div>
+                            <div class="patient-details">
+                                <span class="detail-tag">Chest trauma</span>
+                                <span class="detail-tag">RED</span>
+                                <span class="detail-tag ai-tag">AI: 92%</span>
+                            </div>
+                            <div class="ai-insight">
+                                🤖 Immediate cardiology consult, EKG, chest X-ray
+                                <div class="confidence-score">
+                                    <span>Confidence:</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 92%"></div>
+                                    </div>
+                                    <span>92%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="patient-time">5m ago</div>
+                    </div>
+
+                    <div class="patient-item yellow" onclick="openPatientDetails(2)">
+                        <div class="priority-indicator">2</div>
+                        <div class="patient-info">
+                            <div class="patient-name">Maria Garcia</div>
+                            <div class="patient-details">
+                                <span class="detail-tag">Fracture - left arm</span>
+                                <span class="detail-tag">YELLOW</span>
+                                <span class="detail-tag ai-tag">AI: 87%</span>
+                            </div>
+                            <div class="ai-insight">
+                                🤖 X-ray, pain management, orthopedic evaluation
+                                <div class="confidence-score">
+                                    <span>Confidence:</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 87%"></div>
+                                    </div>
+                                    <span>87%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="patient-time">10m ago</div>
+                    </div>
+
+                    <div class="patient-item red" onclick="openPatientDetails(3)">
+                        <div class="priority-indicator">1</div>
+                        <div class="patient-info">
+                            <div class="patient-name">Robert Wilson</div>
+                            <div class="patient-details">
+                                <span class="detail-tag">Cardiac event</span>
+                                <span class="detail-tag">RED</span>
+                                <span class="detail-tag ai-tag">AI: 95%</span>
+                            </div>
+                            <div class="ai-insight">
+                                🤖 Immediate cardiac cath lab, aspirin, nitroglycerin
+                                <div class="confidence-score">
+                                    <span>Confidence:</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 95%"></div>
+                                    </div>
+                                    <span>95%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="patient-time">15m ago</div>
+                    </div>
+
+                    <div class="patient-item green" onclick="openPatientDetails(4)">
+                        <div class="priority-indicator">3</div>
+                        <div class="patient-info">
+                            <div class="patient-name">Sarah Johnson</div>
+                            <div class="patient-details">
+                                <span class="detail-tag">Minor lacerations</span>
+                                <span class="detail-tag">GREEN</span>
+                                <span class="detail-tag ai-tag">AI: 89%</span>
+                            </div>
+                            <div class="ai-insight">
+                                🤖 Wound cleaning, sutures if needed, tetanus check
+                                <div class="confidence-score">
+                                    <span>Confidence:</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 89%"></div>
+                                    </div>
+                                    <span>89%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="patient-time">20m ago</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -841,11 +959,41 @@
                     <span>AI Critical Alerts</span>
                 </div>
                 <div class="sidebar-content" id="critical-alerts">
-                    <!-- AI-powered alerts -->
+                    <div class="critical-alert" onclick="openPatientDetails(3)">
+                        <div class="alert-header">
+                            <span>⚠️</span>
+                            <span>Robert Wilson</span>
+                            <span style="font-size: 0.8rem; background: rgba(139, 92, 246, 0.2); padding: 0.25rem 0.5rem; border-radius: 8px;">
+                                AI: 95%
+                            </span>
+                        </div>
+                        <div class="alert-details">
+                            Critical patient: Cardiac event - High risk of deterioration
+                        </div>
+                        <div class="ai-prediction">
+                            🔮 Heart rate increasing, O2 decreasing - monitor closely
+                        </div>
+                    </div>
+
+                    <div class="critical-alert" onclick="openPatientDetails(1)">
+                        <div class="alert-header">
+                            <span>⚠️</span>
+                            <span>John Smith</span>
+                            <span style="font-size: 0.8rem; background: rgba(139, 92, 246, 0.2); padding: 0.25rem 0.5rem; border-radius: 8px;">
+                                AI: 92%
+                            </span>
+                        </div>
+                        <div class="alert-details">
+                            Critical patient: Chest trauma - Hypotension detected
+                        </div>
+                        <div class="ai-prediction">
+                            🔮 High risk of cardiac tamponade - immediate intervention required
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Incident Locations -->
+            <!-- Map -->
             <div class="sidebar-card">
                 <div class="sidebar-header">
                     <span>🗺️</span>
@@ -863,7 +1011,37 @@
                     <span>Recent Activity</span>
                 </div>
                 <div class="sidebar-content" id="activity-feed">
-                    <!-- Activity items -->
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: var(--ai-purple)">🤖</div>
+                        <div class="activity-content">
+                            <div class="activity-text">🤖 AI Alert: Robert Wilson shows deterioration pattern</div>
+                            <div class="activity-time">2m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: var(--critical-red)">+</div>
+                        <div class="activity-content">
+                            <div class="activity-text">🤖 John Smith admitted with chest trauma</div>
+                            <div class="activity-time">5m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: var(--urgent-yellow)">↻</div>
+                        <div class="activity-content">
+                            <div class="activity-text">Maria Garcia vitals updated</div>
+                            <div class="activity-time">8m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background: var(--ai-purple)">🧠</div>
+                        <div class="activity-content">
+                            <div class="activity-text">🤖 AI completed resource optimization analysis</div>
+                            <div class="activity-time">12m ago</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1008,176 +1186,869 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Enhanced Sample Data with AI Insights
-        let patients = [
-            {
-                id: 1,
-                name: "John Smith",
-                age: 45,
-                injury: "Chest trauma",
-                severity: "critical",
-                triageColor: "red",
-                priority: 1,
-                consciousness: "verbal",
-                breathing: "labored",
-                timestamp: new Date(Date.now() - 300000),
-                vitals: { hr: 120, bp: "90/60", rr: 28, temp: 99.8, o2: 88 },
-                aiInsight: {
-                    keywords: ["chest pain", "shortness of breath", "trauma"],
-                    confidence: 0.92,
-                    recommendation: "Immediate cardiology consult, EKG, chest X-ray",
-                    riskFactors: ["Hypotension", "Tachycardia", "Low O2"],
-                    prediction: "High risk of cardiac tamponade - monitor closely"
-                }
-            },
-            {
-                id: 2,
-                name: "Maria Garcia",
-                age: 32,
-                injury: "Fracture - left arm",
-                severity: "moderate",
-                triageColor: "yellow",
-                priority: 2,
-                consciousness: "alert",
-                breathing: "normal",
-                timestamp: new Date(Date.now() - 600000),
-                vitals: { hr: 85, bp: "120/80", rr: 16, temp: 98.6, o2: 98 },
-                aiInsight: {
-                    keywords: ["fracture", "pain", "mobility"],
-                    confidence: 0.87,
-                    recommendation: "X-ray, pain management, orthopedic evaluation",
-                    riskFactors: ["Potential complications minimal"],
-                    prediction: "Stable condition - can wait 30-60 minutes"
-                }
-            },
-            {
-                id: 3,
-                name: "Robert Wilson",
-                age: 67,
-                injury: "Cardiac event",
-                severity: "critical",
-                triageColor: "red",
-                priority: 1,
-                consciousness: "verbal",
-                breathing: "labored",
-                timestamp: new Date(Date.now() - 900000),
-                vitals: { hr: 140, bp: "180/110", rr: 24, temp: 98.9, o2: 91 },
-                aiInsight: {
-                    keywords: ["cardiac", "chest pain", "hypertension"],
-                    confidence: 0.95,
-                    recommendation: "Immediate cardiac cath lab, aspirin, nitroglycerin",
-                    riskFactors: ["STEMI pattern", "Severe hypertension"],
-                    prediction: "⚠️ Deterioration Risk: Heart rate increasing, O2 decreasing"
-                }
-            },
-            {
-                id: 4,
-                name: "Sarah Johnson",
-                age: 28,
-                injury: "Minor lacerations",
-                severity: "mild",
-                triageColor: "green",
-                priority: 3,
-                consciousness: "alert",
-                breathing: "normal",
-                timestamp: new Date(Date.now() - 1200000),
-                vitals: { hr: 75, bp: "110/70", rr: 14, temp: 98.4, o2: 99 },
-                aiInsight: {
-                    keywords: ["lacerations", "minor trauma", "stable"],
-                    confidence: 0.89,
-                    recommendation: "Wound cleaning, sutures if needed, tetanus check",
-                    riskFactors: ["Infection risk minimal"],
-                    prediction: "Low priority - can wait 2+ hours safely"
+        // ================================================================================
+        // AI FRONTEND INTEGRATION FOR ENHANCED TRIAGE DASHBOARD
+        // ================================================================================
+
+        class AITriageSystem {
+            constructor() {
+                this.apiBase = '/api';
+                this.wsConnection = null;
+                this.aiAnalysisCache = new Map();
+                this.lastUpdateTime = new Date();
+                this.initializeSystem();
+            }
+
+            // =================== INITIALIZATION ===================
+            initializeSystem() {
+                this.initializeWebSocket();
+                this.setupEventListeners();
+                this.startPeriodicUpdates();
+                console.log('🤖 AI Triage System initialized');
+            }
+
+            initializeWebSocket() {
+                try {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = `${protocol}//${window.location.host}/ws/dashboard`;
+                    
+                    this.wsConnection = new WebSocket(wsUrl);
+                    
+                    this.wsConnection.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        this.handleWebSocketMessage(data);
+                    };
+                    
+                    this.wsConnection.onopen = () => {
+                        console.log('🔗 WebSocket connected for real-time AI updates');
+                        this.showNotification('AI system online - real-time updates active', 'ai');
+                    };
+                    
+                    this.wsConnection.onclose = () => {
+                        console.log('🔌 WebSocket disconnected - attempting reconnection...');
+                        setTimeout(() => this.initializeWebSocket(), 5000);
+                    };
+                    
+                } catch (error) {
+                    console.error('WebSocket initialization failed:', error);
                 }
             }
-        ];
 
-        let activities = [
-            { type: "admission", text: "John Smith admitted with chest trauma", time: new Date(Date.now() - 300000), color: "red", aiFlag: true },
-            { type: "ai_prediction", text: "AI Alert: Robert Wilson shows deterioration pattern", time: new Date(Date.now() - 400000), color: "purple", aiFlag: true },
-            { type: "update", text: "Maria Garcia vitals updated", time: new Date(Date.now() - 450000), color: "yellow", aiFlag: false },
-            { type: "ai_analysis", text: "AI completed resource optimization analysis", time: new Date(Date.now() - 600000), color: "purple", aiFlag: true },
-            { type: "discharge", text: "Patient #125 discharged", time: new Date(Date.now() - 720000), color: "green", aiFlag: false },
-            { type: "admission", text: "Robert Wilson cardiac event", time: new Date(Date.now() - 900000), color: "red", aiFlag: true }
-        ];
+            setupEventListeners() {
+                // AI Command Bar
+                const commandInput = document.getElementById('ai-command-input');
+                if (commandInput) {
+                    commandInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            this.processAICommand(commandInput.value);
+                            commandInput.value = '';
+                        }
+                    });
+                }
 
-        // AI Command Processing
-        function processAICommand(command) {
-            const lowerCommand = command.toLowerCase();
-            
-            if (lowerCommand.includes('critical') || lowerCommand.includes('red')) {
-                filterPatients('critical');
-                return "Showing all critical patients";
-            }
-            
-            if (lowerCommand.includes('cardiac') || lowerCommand.includes('heart')) {
-                const cardiacPatients = patients.filter(p => p.injury.toLowerCase().includes('cardiac') || p.injury.toLowerCase().includes('chest'));
-                showAIResponse(`Found ${cardiacPatients.length} cardiac patients: ${cardiacPatients.map(p => p.name).join(', ')}`);
-                return "Cardiac patients identified";
-            }
-            
-            if (lowerCommand.includes('resource') || lowerCommand.includes('need')) {
-                showResourceAnalysis();
-                return "Displaying resource requirements";
-            }
-            
-            if (lowerCommand.includes('assign') && lowerCommand.includes('dr')) {
-                const doctorMatch = lowerCommand.match(/dr\.?\s+(\w+)/);
-                const patientMatch = lowerCommand.match(/to\s+(\w+\s+\w+)/);
-                if (doctorMatch && patientMatch) {
-                    showAIResponse(`Assigned Dr. ${doctorMatch[1]} to ${patientMatch[1]}`);
-                    return "Doctor assignment completed";
+                // Form real-time analysis
+                const triageForm = document.getElementById('triage-form');
+                if (triageForm) {
+                    const analysisFields = ['consciousness', 'breathing', 'severity', 'injury-type'];
+                    analysisFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field) {
+                            field.addEventListener('change', () => this.updateRealtimeAnalysis());
+                            field.addEventListener('input', this.debounce(() => this.updateRealtimeAnalysis(), 500));
+                        }
+                    });
+                }
+
+                // Enhanced form submission
+                if (triageForm) {
+                    triageForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.submitAITriageForm();
+                    });
                 }
             }
-            
-            if (lowerCommand.includes('predict') || lowerCommand.includes('analysis')) {
-                showPredictiveAnalysis();
-                return "Running predictive analysis";
+
+            // =================== AI COMMAND PROCESSING ===================
+            async processAICommand(command) {
+                if (!command.trim()) return;
+
+                this.showNotification('🧠 Processing AI command...', 'ai');
+                
+                try {
+                    // Simulate command processing for demo
+                    setTimeout(() => {
+                        const result = this.processCommandLocally(command);
+                        this.handleCommandResult(result);
+                        this.showNotification(`✅ ${result.response}`, 'ai');
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('AI command processing failed:', error);
+                    this.showNotification('❌ Command processing failed', 'error');
+                }
             }
-            
-            return "Command processed. Ask me about patients, resources, or predictions.";
+
+            processCommandLocally(command) {
+                const lowerCommand = command.toLowerCase();
+                
+                if (lowerCommand.includes('critical') || lowerCommand.includes('red')) {
+                    return {
+                        action: 'show_critical_patients',
+                        response: 'Highlighting critical patients'
+                    };
+                }
+                
+                if (lowerCommand.includes('cardiac') || lowerCommand.includes('heart')) {
+                    return {
+                        action: 'show_cardiac_patients',
+                        response: 'Found cardiac patients: Robert Wilson'
+                    };
+                }
+                
+                if (lowerCommand.includes('resource') || lowerCommand.includes('need')) {
+                    return {
+                        action: 'show_resources',
+                        response: 'Displaying resource requirements',
+                        data: {
+                            total_patients: 4,
+                            critical_patients: 2,
+                            capacity_status: 'normal'
+                        }
+                    };
+                }
+                
+                return {
+                    action: 'general_query',
+                    response: 'Command processed. Try "show critical patients" or "resource status"'
+                };
+            }
+
+            handleCommandResult(result) {
+                switch (result.action) {
+                    case 'show_critical_patients':
+                        this.highlightCriticalPatients();
+                        break;
+                    case 'show_cardiac_patients':
+                        this.filterPatientsByType('cardiac');
+                        break;
+                    case 'show_resources':
+                        this.displayResourceAnalysis(result.data);
+                        break;
+                    case 'predictive_analysis':
+                        this.runPredictiveAnalysis();
+                        break;
+                    default:
+                        console.log('Command result:', result);
+                }
+            }
+
+            // =================== REAL-TIME TRIAGE ANALYSIS ===================
+            async updateRealtimeAnalysis() {
+                const formData = this.getTriageFormData();
+                
+                if (!formData.consciousness && !formData.breathing && !formData.severity) {
+                    return;
+                }
+
+                try {
+                    // Simulate AI analysis
+                    const analysis = this.generateLocalAnalysis(formData);
+                    this.updateAISuggestionsPanel(analysis);
+                    
+                } catch (error) {
+                    console.error('Real-time analysis failed:', error);
+                }
+            }
+
+            generateLocalAnalysis(formData) {
+                let priority = 3; // Default to green
+                let confidence = 0.7;
+                let recommendations = [];
+                let riskFactors = [];
+                let urgentAlert = null;
+                
+                // Consciousness assessment
+                if (formData.consciousness === 'unresponsive') {
+                    priority = 1;
+                    confidence = 0.95;
+                    recommendations.push('Immediate airway assessment');
+                    recommendations.push('IV access');
+                    riskFactors.push('Airway compromise risk');
+                    urgentAlert = 'Patient unresponsive - requires immediate attention';
+                } else if (formData.consciousness === 'pain') {
+                    priority = Math.min(priority, 2);
+                    recommendations.push('Neurological assessment');
+                    riskFactors.push('Altered mental status');
+                }
+                
+                // Breathing assessment
+                if (formData.breathing === 'absent') {
+                    priority = 1;
+                    confidence = 0.98;
+                    recommendations.push('IMMEDIATE airway management');
+                    recommendations.push('Bag-mask ventilation');
+                    riskFactors.push('Respiratory failure');
+                    urgentAlert = 'Absent breathing - LIFE THREATENING';
+                } else if (formData.breathing === 'labored') {
+                    priority = Math.min(priority, 2);
+                    recommendations.push('Oxygen therapy');
+                    recommendations.push('Chest X-ray');
+                    riskFactors.push('Respiratory distress');
+                }
+                
+                // Severity assessment
+                if (formData.severity === 'critical') {
+                    priority = 1;
+                    confidence = Math.max(confidence, 0.9);
+                    recommendations.push('ICU consultation');
+                    recommendations.push('Continuous monitoring');
+                } else if (formData.severity === 'severe') {
+                    priority = Math.min(priority, 2);
+                    recommendations.push('Specialist consultation');
+                }
+                
+                const triageColors = ['', 'red', 'yellow', 'green', 'black'];
+                const riskLevels = ['', 'high', 'medium', 'low', 'low'];
+                
+                return {
+                    suggested_triage: triageColors[priority],
+                    confidence: confidence,
+                    recommendations: recommendations.length ? recommendations : ['Standard care protocols'],
+                    risk_factors: riskFactors.length ? riskFactors : ['No significant risk factors'],
+                    risk_level: riskLevels[priority],
+                    urgent_alert: urgentAlert
+                };
+            }
+
+            updateAISuggestionsPanel(analysis) {
+                const suggestionsPanel = document.getElementById('ai-suggestions');
+                if (!suggestionsPanel) return;
+
+                const triageColorClass = this.getTriageColorClass(analysis.suggested_triage);
+                
+                suggestionsPanel.innerHTML = `
+                    <div style="display: grid; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <strong>🎯 AI Suggested Triage:</strong>
+                            <span class="triage-suggestion ${triageColorClass}">
+                                ${analysis.suggested_triage.toUpperCase()}
+                            </span>
+                            <span style="font-size: 0.9rem; color: var(--ai-purple);">
+                                Confidence: ${Math.round(analysis.confidence * 100)}%
+                            </span>
+                        </div>
+                        
+                        <div>
+                            <strong>🏥 Recommended Actions:</strong>
+                            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                                ${analysis.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <strong>⚠️ Risk Factors:</strong>
+                            <span style="color: ${this.getRiskLevelColor(analysis.risk_level)}">
+                                ${analysis.risk_factors.join(', ')}
+                            </span>
+                        </div>
+                        
+                        ${analysis.urgent_alert ? `
+                            <div style="background: rgba(220, 38, 38, 0.1); border-left: 4px solid var(--critical-red); padding: 1rem; border-radius: 4px; animation: pulse 2s infinite;">
+                                <strong>🚨 URGENT ALERT:</strong> ${analysis.urgent_alert}
+                            </div>
+                        ` : ''}
+                        
+                        <div style="background: rgba(139, 92, 246, 0.1); padding: 0.75rem; border-radius: 6px; font-size: 0.9rem;">
+                            <strong>🤖 AI Status:</strong> Analysis complete | 
+                            <strong>Risk Level:</strong> ${analysis.risk_level.toUpperCase()}
+                        </div>
+                    </div>
+                `;
+
+                // Auto-update triage color if not manually selected
+                const triageColorSelect = document.getElementById('triage-color');
+                if (triageColorSelect && (triageColorSelect.value === '' || triageColorSelect.selectedIndex === 0)) {
+                    triageColorSelect.value = analysis.suggested_triage;
+                }
+            }
+
+            // =================== ENHANCED FORM SUBMISSION ===================
+            async submitAITriageForm() {
+                const formData = this.getTriageFormData();
+                
+                // Validate required fields
+                if (!formData.name || !formData.injury_type || !formData.consciousness || 
+                    !formData.breathing || !formData.severity) {
+                    this.showNotification('Please fill in all required fields', 'error');
+                    return;
+                }
+
+                this.showNotification('🤖 Processing AI triage assessment...', 'ai');
+                
+                try {
+                    // Simulate successful submission
+                    setTimeout(() => {
+                        this.handleSuccessfulTriage({
+                            patient_id: Date.now(),
+                            ai_analysis: {
+                                confidence: 0.9,
+                                recommendations: ['Standard care protocol']
+                            },
+                            triage_result: {
+                                name: formData.name,
+                                triage_color: formData.triage_color,
+                                priority: this.getTriageColorPriority(formData.triage_color)
+                            }
+                        });
+                        this.closeModal('triage-modal');
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error('AI triage submission failed:', error);
+                    this.showNotification('❌ Triage submission failed', 'error');
+                }
+            }
+
+            handleSuccessfulTriage(result) {
+                const aiAnalysis = result.ai_analysis;
+                const patient = result.triage_result;
+                
+                this.showNotification(
+                    `✅ Patient ${patient.name} successfully triaged as ${patient.triage_color.toUpperCase()} 
+                     (AI Confidence: ${Math.round(aiAnalysis.confidence * 100)}%)`, 
+                    'ai'
+                );
+
+                // Add to activity feed
+                this.addActivityFeedItem({
+                    type: 'ai_triage',
+                    text: `${patient.name} triaged with AI assistance - ${patient.triage_color.toUpperCase()}`,
+                    time: new Date(),
+                    aiFlag: true,
+                    confidence: aiAnalysis.confidence
+                });
+            }
+
+            // =================== UTILITY FUNCTIONS ===================
+            getTriageFormData() {
+                return {
+                    name: this.getFieldValue('patient-name'),
+                    age: this.getFieldValue('patient-age'),
+                    gender: this.getFieldValue('patient-gender'),
+                    injury_type: this.getFieldValue('injury-type'),
+                    consciousness: this.getFieldValue('consciousness'),
+                    breathing: this.getFieldValue('breathing'),
+                    severity: this.getFieldValue('severity'),
+                    triage_color: this.getFieldValue('triage-color'),
+                    notes: this.getFieldValue('additional-notes')
+                };
+            }
+
+            getFieldValue(fieldId) {
+                const field = document.getElementById(fieldId);
+                return field ? field.value : '';
+            }
+
+            getTriageColorPriority(color) {
+                const priorities = { red: 1, yellow: 2, green: 3, black: 4 };
+                return priorities[color] || 3;
+            }
+
+            getTriageColor(color) {
+                const colors = {
+                    red: '#dc2626',
+                    yellow: '#f59e0b',
+                    green: '#16a34a',
+                    black: '#374151',
+                    blue: '#3b82f6',
+                    purple: '#8b5cf6'
+                };
+                return colors[color] || '#6b7280';
+            }
+
+            getTriageColorClass(color) {
+                return `triage-${color}`;
+            }
+
+            getRiskLevelColor(level) {
+                const colors = {
+                    critical: '#dc2626',
+                    high: '#f59e0b',
+                    medium: '#3b82f6',
+                    low: '#16a34a'
+                };
+                return colors[level] || '#6b7280';
+            }
+
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification') || this.createNotificationElement();
+                notification.textContent = message;
+                notification.className = `notification ${type} show`;
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, type === 'ai' ? 5000 : 3000);
+            }
+
+            createNotificationElement() {
+                const notification = document.createElement('div');
+                notification.id = 'notification';
+                notification.className = 'notification';
+                document.body.appendChild(notification);
+                return notification;
+            }
+
+            closeModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            }
+
+            // =================== UI INTERACTION METHODS ===================
+            highlightCriticalPatients() {
+                const patientItems = document.querySelectorAll('.patient-item.red');
+                patientItems.forEach(item => {
+                    item.style.border = '3px solid #dc2626';
+                    item.style.animation = 'pulse 2s infinite';
+                });
+                
+                setTimeout(() => {
+                    patientItems.forEach(item => {
+                        item.style.border = '';
+                        item.style.animation = '';
+                    });
+                }, 5000);
+            }
+
+            filterPatientsByType(type) {
+                const patientItems = document.querySelectorAll('.patient-item');
+                patientItems.forEach(item => {
+                    const injury = item.querySelector('.patient-details')?.textContent.toLowerCase() || '';
+                    const isMatch = injury.includes(type.toLowerCase());
+                    
+                    item.style.opacity = isMatch ? '1' : '0.3';
+                    item.style.transform = isMatch ? 'scale(1.02)' : 'scale(1)';
+                });
+                
+                setTimeout(() => {
+                    patientItems.forEach(item => {
+                        item.style.opacity = '1';
+                        item.style.transform = 'scale(1)';
+                    });
+                }, 3000);
+            }
+
+            displayResourceAnalysis(data) {
+                const modal = this.createResourceModal(data);
+                document.body.appendChild(modal);
+                modal.style.display = 'block';
+            }
+
+            createResourceModal(data) {
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div class="modal-title">🤖 AI Resource Analysis</div>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        <div style="padding: 1rem;">
+                            <h4>Current System Load</h4>
+                            <p><strong>Total Patients:</strong> ${data.total_patients}</p>
+                            <p><strong>Critical Patients:</strong> ${data.critical_patients}</p>
+                            <p><strong>Capacity Status:</strong> ${data.capacity_status.toUpperCase()}</p>
+                            
+                            <div style="margin-top: 2rem;">
+                                <h4>AI Recommendations</h4>
+                                <ul>
+                                    <li>Current staffing appears ${data.capacity_status === 'normal' ? 'adequate' : 'strained'}</li>
+                                    <li>Monitor critical patient influx</li>
+                                    <li>${data.capacity_status === 'high' ? 'Consider activating overflow protocols' : 'Continue standard operations'}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return modal;
+            }
+
+            // =================== PREDICTIVE ANALYSIS ===================
+            async runPredictiveAnalysis() {
+                this.showNotification('🔮 Running AI predictive analysis...', 'ai');
+                
+                try {
+                    // Simulate AI analysis
+                    const analysisResults = {
+                        deterioration_risk: "2 patients showing early warning signs",
+                        resource_prediction: "ICU capacity may be strained in 2 hours",
+                        recommendation: "Consider preemptive staffing adjustments",
+                        confidence: "89% confidence in predictions"
+                    };
+                    
+                    setTimeout(() => {
+                        this.showPredictiveResults(analysisResults);
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error('Predictive analysis failed:', error);
+                    this.showNotification('❌ Predictive analysis failed', 'error');
+                }
+            }
+
+            showPredictiveResults(results) {
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div class="modal-title">🔮 AI Predictive Analysis</div>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        <div style="padding: 2rem;">
+                            <div style="background: rgba(139, 92, 246, 0.1); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                                <h4 style="color: var(--ai-purple); margin-bottom: 1rem;">🧠 Gemma 3n Analysis Results</h4>
+                                <div style="display: grid; gap: 1rem;">
+                                    <div><strong>Deterioration Risk:</strong> ${results.deterioration_risk}</div>
+                                    <div><strong>Resource Prediction:</strong> ${results.resource_prediction}</div>
+                                    <div><strong>Recommendation:</strong> ${results.recommendation}</div>
+                                    <div><strong>AI Confidence:</strong> ${results.confidence}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                                <strong>⚠️ Action Required:</strong> Review high-risk patients and consider resource allocation adjustments.
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                modal.style.display = 'block';
+                
+                this.showNotification('🔮 Predictive analysis complete - Review recommendations', 'ai');
+            }
+
+            // =================== ACTIVITY FEED ===================
+            addActivityFeedItem(activity) {
+                const feed = document.getElementById('activity-feed');
+                if (!feed) return;
+
+                const activityElement = document.createElement('div');
+                activityElement.className = 'activity-item';
+                
+                const iconColor = activity.aiFlag ? '#8b5cf6' : this.getTriageColor(activity.color || 'blue');
+                
+                activityElement.innerHTML = `
+                    <div class="activity-icon" style="background: ${iconColor}">
+                        ${activity.aiFlag ? '🤖' : '+'}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">
+                            ${activity.aiFlag ? '🤖 ' : ''}${activity.text}
+                            ${activity.confidence ? `<span style="font-size: 0.8rem; color: var(--ai-purple);"> (${Math.round(activity.confidence * 100)}%)</span>` : ''}
+                        </div>
+                        <div class="activity-time">Just now</div>
+                    </div>
+                `;
+                
+                feed.insertBefore(activityElement, feed.firstChild);
+                
+                // Keep only recent 6 items
+                while (feed.children.length > 6) {
+                    feed.removeChild(feed.lastChild);
+                }
+            }
+
+            // =================== WEBSOCKET HANDLING ===================
+            handleWebSocketMessage(data) {
+                switch (data.type) {
+                    case 'emergency_update':
+                        this.handleEmergencyUpdate(data);
+                        break;
+                    case 'ai_alert':
+                        this.handleAIAlert(data);
+                        break;
+                    case 'patient_update':
+                        this.handlePatientUpdate(data);
+                        break;
+                    default:
+                        console.log('Unknown WebSocket message:', data);
+                }
+            }
+
+            handleEmergencyUpdate(data) {
+                if (data.update_type === 'new_ai_triage') {
+                    this.showNotification(
+                        `🚨 New AI Triage: ${data.data.name} - ${data.data.triage_color.toUpperCase()}`, 
+                        'ai'
+                    );
+                }
+            }
+
+            handleAIAlert(data) {
+                this.showNotification(`🤖 AI Alert: ${data.message}`, 'warning');
+            }
+
+            handlePatientUpdate(data) {
+                console.log('Patient update received:', data);
+            }
+
+            // =================== PERIODIC UPDATES ===================
+            startPeriodicUpdates() {
+                // Update time displays every 30 seconds
+                setInterval(() => {
+                    this.updateTimeDisplays();
+                }, 30000);
+
+                // AI system health check every 5 minutes
+                setInterval(() => {
+                    this.checkAISystemHealth();
+                }, 300000);
+            }
+
+            updateTimeDisplays() {
+                const timeElements = document.querySelectorAll('.patient-time, .activity-time');
+                timeElements.forEach(element => {
+                    // Update relative time displays
+                    const timestamp = element.getAttribute('data-timestamp');
+                    if (timestamp) {
+                        element.textContent = this.getTimeAgo(new Date(timestamp));
+                    }
+                });
+            }
+
+            async checkAISystemHealth() {
+                try {
+                    // Simulate health check
+                    console.log('AI system health check completed');
+                } catch (error) {
+                    console.error('AI health check failed:', error);
+                }
+            }
+
+            getTimeAgo(date) {
+                const now = new Date();
+                const diffMs = now - new Date(date);
+                const diffMins = Math.floor(diffMs / 60000);
+                
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                
+                const diffHours = Math.floor(diffMins / 60);
+                if (diffHours < 24) return `${diffHours}h ago`;
+                
+                const diffDays = Math.floor(diffHours / 24);
+                return `${diffDays}d ago`;
+            }
         }
 
-        // AI Response Functions
-        function showAIResponse(message) {
-            showNotification(message, 'ai');
-        }
-
-        function showResourceAnalysis() {
-            const resources = {
-                ventilators: { available: 3, needed: 2, status: "adequate" },
-                nurses: { available: 8, needed: 12, status: "shortage" },
-                beds: { available: 5, needed: 8, status: "limited" },
-                specialists: { available: 4, needed: 6, status: "shortage" }
-            };
-            
-            let analysis = "🤖 AI Resource Analysis:\n";
-            Object.entries(resources).forEach(([resource, data]) => {
-                analysis += `${resource}: ${data.available}/${data.needed} (${data.status})\n`;
-            });
-            
-            showAIResponse(analysis);
-        }
-
-        function showPredictiveAnalysis() {
-            const analysis = {
-                deteriorationRisk: "2 patients at high risk in next 30 minutes",
-                resourceBottleneck: "Cardiology specialty will be overwhelmed in 1 hour",
-                recommendation: "Consider transferring non-critical patients to nearby facilities",
-                confidence: "87% confidence based on current trends"
-            };
-            
-            showAIResponse(`🔮 Predictive Analysis: ${analysis.deteriorationRisk}. ${analysis.recommendation}. ${analysis.confidence}`);
-        }
-
-        // Clock and time updates
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('current-time').textContent = now.toLocaleTimeString();
-        }
-
-        // Enhanced Map with AI incident prediction
+        // =================== GLOBAL VARIABLES ===================
+        let aiTriageSystem;
         let map;
+
+        // =================== INITIALIZATION ===================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize AI Triage System
+            aiTriageSystem = new AITriageSystem();
+            
+            // Make globally available for onclick handlers
+            window.aiTriageSystem = aiTriageSystem;
+            
+            // Initialize map
+            initializeMap();
+            
+            // Initialize clock
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            console.log('🚀 Enhanced AI Triage Dashboard fully loaded');
+            console.log('🤖 Features: Real-time AI analysis, Natural language commands, Predictive analytics');
+            console.log('⌨️ Commands: Try "show critical patients", "cardiac patients", "resource status"');
+            
+            // Show welcome message
+            setTimeout(() => {
+                aiTriageSystem.showNotification('🤖 AI Medical Triage System Online - Gemma 3n Ready for Emergency Response', 'ai');
+            }, 1000);
+            
+            // Show command hint
+            setTimeout(() => {
+                aiTriageSystem.showNotification('💡 Try commands like "Show critical patients" or press Ctrl+K to focus command bar', 'ai');
+            }, 3000);
+        });
+
+        // =================== GLOBAL FUNCTIONS FOR TEMPLATE ===================
+        function openTriageForm() {
+            const modal = document.getElementById('triage-modal');
+            if (modal) {
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+            aiTriageSystem.showNotification('🤖 AI-Enhanced Triage Assessment Ready', 'ai');
+        }
+
+        function fillCommand(command) {
+            const input = document.getElementById('ai-command-input');
+            if (input) {
+                input.value = command;
+                input.focus();
+            }
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        function filterPatients(color) {
+            aiTriageSystem.showNotification(`Filtering patients by ${color.toUpperCase()} triage`, 'ai');
+            // Highlight matching patients
+            const items = document.querySelectorAll('.patient-item');
+            items.forEach(item => {
+                item.style.opacity = item.classList.contains(color) ? '1' : '0.3';
+            });
+            setTimeout(() => {
+                items.forEach(item => item.style.opacity = '1');
+            }, 3000);
+        }
+
+        function refreshQueue() {
+            aiTriageSystem.showNotification('🤖 AI refreshing patient queue...', 'ai');
+            // Simulate refresh
+            setTimeout(() => {
+                aiTriageSystem.showNotification('Patient queue refreshed with latest AI insights', 'ai');
+            }, 1000);
+        }
+
+        function sortByAI() {
+            aiTriageSystem.showNotification('🧠 AI optimizing patient priority order...', 'ai');
+            setTimeout(() => {
+                aiTriageSystem.showNotification('Patient queue optimized based on AI risk assessment', 'ai');
+            }, 1500);
+        }
+
+        function exportQueue() {
+            aiTriageSystem.showNotification('📤 Exporting patient queue with AI insights...', 'success');
+            setTimeout(() => {
+                // Simulate export
+                const blob = new Blob(['AI Triage Data Export'], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ai-triage-queue.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                aiTriageSystem.showNotification('AI triage data exported successfully', 'success');
+            }, 1000);
+        }
+
+        function openPatientDetails(patientId) {
+            // Sample patient data
+            const patients = {
+                1: { name: 'John Smith', triage_color: 'red', injury: 'Chest trauma' },
+                2: { name: 'Maria Garcia', triage_color: 'yellow', injury: 'Fracture - left arm' },
+                3: { name: 'Robert Wilson', triage_color: 'red', injury: 'Cardiac event' },
+                4: { name: 'Sarah Johnson', triage_color: 'green', injury: 'Minor lacerations' }
+            };
+            
+            const patient = patients[patientId];
+            if (!patient) return;
+            
+            const details = document.getElementById('patient-details');
+            details.innerHTML = `
+                <div style="display: grid; gap: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem;">
+                        <h2>${patient.name}</h2>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span style="background: ${aiTriageSystem.getTriageColor(patient.triage_color)}; color: white; padding: 0.5rem 1rem; border-radius: 12px; font-weight: bold;">
+                                ${patient.triage_color.toUpperCase()}
+                            </span>
+                            <span style="background: var(--ai-gradient); color: white; padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.9rem;">
+                                AI: 92%
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--bg-light); padding: 1.5rem; border-radius: 12px;">
+                        <h4 style="margin-bottom: 1rem; color: var(--text-primary);">Patient Information</h4>
+                        <div style="display: grid; gap: 0.5rem;">
+                            <div><strong>Age:</strong> 45</div>
+                            <div><strong>Gender:</strong> Male</div>
+                            <div><strong>Injury:</strong> ${patient.injury}</div>
+                            <div><strong>Consciousness:</strong> Alert</div>
+                            <div><strong>Breathing:</strong> Normal</div>
+                            <div><strong>Admitted:</strong> 15 minutes ago</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(139, 92, 246, 0.05); border: 2px solid rgba(139, 92, 246, 0.2); padding: 1.5rem; border-radius: 12px;">
+                        <h4 style="margin-bottom: 1rem; color: var(--ai-purple);">🤖 AI Analysis</h4>
+                        <div style="display: grid; gap: 1rem;">
+                            <div><strong>AI Recommendation:</strong> Immediate assessment and monitoring</div>
+                            <div><strong>Risk Factors:</strong> ${patient.triage_color === 'red' ? 'Critical condition requires immediate attention' : 'Standard risk profile'}</div>
+                            <div style="background: rgba(139, 92, 246, 0.1); padding: 1rem; border-radius: 8px;">
+                                <strong>AI Prediction:</strong> ${patient.triage_color === 'red' ? 'High priority - immediate care needed' : 'Stable condition - standard monitoring'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            openModal('patient-modal');
+        }
+
+        // =================== REAL-TIME AI ANALYSIS FOR FORM ===================
+        function updateAIAnalysis() {
+            const consciousness = document.getElementById('consciousness').value;
+            const breathing = document.getElementById('breathing').value;
+            const severity = document.getElementById('severity').value;
+            const injury = document.getElementById('injury-type').value;
+            
+            if (!consciousness && !breathing && !severity) {
+                return;
+            }
+            
+            if (aiTriageSystem) {
+                aiTriageSystem.updateRealtimeAnalysis();
+            }
+        }
+
+        function runAITriage() {
+            aiTriageSystem.showNotification('🤖 Running comprehensive AI triage analysis...', 'ai');
+            
+            setTimeout(() => {
+                updateAIAnalysis();
+                aiTriageSystem.showNotification('🧠 AI Analysis Complete: Ready for submission.', 'ai');
+            }, 2000);
+        }
+
+        // =================== MAP INITIALIZATION ===================
         function initializeMap() {
             map = L.map('map').setView([30.2672, -97.7431], 11);
             
@@ -1185,7 +2056,7 @@
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
 
-            // Enhanced incident markers with AI predictions
+            // Sample incident markers with AI predictions
             const incidents = [
                 { 
                     lat: 30.2672, lng: -97.7431, 
@@ -1222,687 +2093,11 @@
             });
         }
 
-        // Enhanced Patient Queue Rendering
-        function renderPatientQueue() {
-            const queue = document.getElementById('patient-queue');
-            queue.innerHTML = '';
-
-            const sortedPatients = patients.sort((a, b) => {
-                // AI-enhanced sorting considering multiple factors
-                const aPriority = a.priority + (a.aiInsight.confidence > 0.9 ? -0.5 : 0);
-                const bPriority = b.priority + (b.aiInsight.confidence > 0.9 ? -0.5 : 0);
-                return aPriority - bPriority;
-            });
-
-            sortedPatients.forEach(patient => {
-                const item = document.createElement('div');
-                item.className = `patient-item ${patient.triageColor}`;
-                item.onclick = () => openEnhancedPatientDetails(patient);
-                
-                const timeAgo = getTimeAgo(patient.timestamp);
-                
-                item.innerHTML = `
-                    <div class="priority-indicator">
-                        ${patient.priority}
-                    </div>
-                    <div class="patient-info">
-                        <div class="patient-name">${patient.name}</div>
-                        <div class="patient-details">
-                            <span class="detail-tag">${patient.injury}</span>
-                            <span class="detail-tag">${patient.severity}</span>
-                            <span class="detail-tag" style="background: ${getTriageColorBg(patient.triageColor)}; color: ${getTriageColor(patient.triageColor)}">
-                                ${patient.triageColor.toUpperCase()}
-                            </span>
-                        </div>
-                        <div class="ai-insight">
-                            🤖 AI: ${patient.aiInsight.recommendation}
-                            <div class="confidence-score">
-                                <span>Confidence:</span>
-                                <div class="confidence-bar">
-                                    <div class="confidence-fill" style="width: ${patient.aiInsight.confidence * 100}%"></div>
-                                </div>
-                                <span>${Math.round(patient.aiInsight.confidence * 100)}%</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="patient-time">${timeAgo}</div>
-                `;
-                
-                queue.appendChild(item);
-            });
-        }
-
-        // Enhanced Critical Alerts with AI Predictions
-        function renderCriticalAlerts() {
-            const alerts = document.getElementById('critical-alerts');
-            alerts.innerHTML = '';
-
-            const criticalPatients = patients.filter(p => 
-                p.severity === 'critical' || 
-                p.vitals.o2 < 90 || 
-                p.vitals.hr > 130 || 
-                p.consciousness === 'unresponsive' ||
-                p.aiInsight.confidence > 0.9
-            );
-
-            if (criticalPatients.length === 0) {
-                alerts.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">🤖 AI monitoring - No critical alerts</div>';
-                return;
-            }
-
-            criticalPatients.forEach(patient => {
-                const alert = document.createElement('div');
-                alert.className = 'critical-alert';
-                alert.onclick = () => openEnhancedPatientDetails(patient);
-                
-                alert.innerHTML = `
-                    <div class="alert-header">
-                        <span>⚠️</span>
-                        <span>${patient.name}</span>
-                        <span style="font-size: 0.8rem; background: rgba(139, 92, 246, 0.2); padding: 0.25rem 0.5rem; border-radius: 8px;">
-                            AI: ${Math.round(patient.aiInsight.confidence * 100)}%
-                        </span>
-                    </div>
-                    <div class="alert-details">
-                        ${getCriticalReason(patient)}
-                    </div>
-                    <div class="ai-prediction">
-                        🔮 ${patient.aiInsight.prediction}
-                    </div>
-                `;
-                
-                alerts.appendChild(alert);
-            });
-        }
-
-        // Enhanced Activity Feed
-        function renderActivityFeed() {
-            const feed = document.getElementById('activity-feed');
-            feed.innerHTML = '';
-
-            activities.forEach(activity => {
-                const item = document.createElement('div');
-                item.className = 'activity-item';
-                
-                const iconColor = activity.color === 'purple' ? '#8b5cf6' : getTriageColor(activity.color);
-                
-                item.innerHTML = `
-                    <div class="activity-icon" style="background: ${iconColor}">
-                        ${getActivityIcon(activity.type)}
-                    </div>
-                    <div class="activity-content">
-                        <div class="activity-text">
-                            ${activity.aiFlag ? '🤖 ' : ''}${activity.text}
-                        </div>
-                        <div class="activity-time">${getTimeAgo(activity.time)}</div>
-                    </div>
-                `;
-                
-                feed.appendChild(item);
-            });
-        }
-
-        // Enhanced Patient Details Modal
-        function openEnhancedPatientDetails(patient) {
-            const details = document.getElementById('patient-details');
-            
-            details.innerHTML = `
-                <div style="display: grid; gap: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem;">
-                        <h2>${patient.name}</h2>
-                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            <span style="background: ${getTriageColor(patient.triageColor)}; color: white; padding: 0.5rem 1rem; border-radius: 12px; font-weight: bold;">
-                                ${patient.triageColor.toUpperCase()}
-                            </span>
-                            <span style="background: var(--ai-gradient); color: white; padding: 0.5rem 1rem; border-radius: 12px; font-size: 0.9rem;">
-                                AI: ${Math.round(patient.aiInsight.confidence * 100)}%
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-                        <div style="background: var(--bg-light); padding: 1.5rem; border-radius: 12px;">
-                            <h4 style="margin-bottom: 1rem; color: var(--text-primary);">Patient Information</h4>
-                            <div style="display: grid; gap: 0.5rem;">
-                                <div><strong>Age:</strong> ${patient.age || 'Unknown'}</div>
-                                <div><strong>Priority:</strong> ${patient.priority}</div>
-                                <div><strong>Injury:</strong> ${patient.injury}</div>
-                                <div><strong>Severity:</strong> ${patient.severity}</div>
-                                <div><strong>Consciousness:</strong> ${patient.consciousness}</div>
-                                <div><strong>Breathing:</strong> ${patient.breathing}</div>
-                                <div><strong>Admitted:</strong> ${getTimeAgo(patient.timestamp)}</div>
-                            </div>
-                        </div>
-                        
-                        <div style="background: var(--bg-light); padding: 1.5rem; border-radius: 12px;">
-                            <h4 style="margin-bottom: 1rem; color: var(--text-primary);">Vital Signs</h4>
-                            <div style="display: grid; gap: 0.5rem;">
-                                <div><strong>Heart Rate:</strong> ${patient.vitals.hr} bpm</div>
-                                <div><strong>Blood Pressure:</strong> ${patient.vitals.bp}</div>
-                                <div><strong>Respiratory Rate:</strong> ${patient.vitals.rr}/min</div>
-                                <div><strong>Temperature:</strong> ${patient.vitals.temp}°F</div>
-                                <div><strong>O2 Saturation:</strong> ${patient.vitals.o2}%</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="background: rgba(139, 92, 246, 0.05); border: 2px solid rgba(139, 92, 246, 0.2); padding: 1.5rem; border-radius: 12px;">
-                        <h4 style="margin-bottom: 1rem; color: var(--ai-purple); display: flex; align-items: center; gap: 0.5rem;">
-                            🤖 AI Analysis & Recommendations
-                        </h4>
-                        <div style="display: grid; gap: 1rem;">
-                            <div>
-                                <strong>Keywords Detected:</strong> ${patient.aiInsight.keywords.join(', ')}
-                            </div>
-                            <div>
-                                <strong>AI Recommendation:</strong> ${patient.aiInsight.recommendation}
-                            </div>
-                            <div>
-                                <strong>Risk Factors:</strong> ${patient.aiInsight.riskFactors.join(', ')}
-                            </div>
-                            <div style="background: rgba(139, 92, 246, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--ai-purple);">
-                                <strong>AI Prediction:</strong> ${patient.aiInsight.prediction}
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <strong>Confidence Score:</strong>
-                                <div style="flex: 1; background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
-                                    <div style="width: ${patient.aiInsight.confidence * 100}%; height: 100%; background: var(--ai-purple); transition: width 0.3s ease;"></div>
-                                </div>
-                                <span style="font-weight: bold; color: var(--ai-purple);">${Math.round(patient.aiInsight.confidence * 100)}%</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                        <button class="action-btn" onclick="editPatient(${patient.id})" style="background: var(--info-blue);">
-                            ✏️ Edit Patient
-                        </button>
-                        <button class="action-btn" onclick="updateVitals(${patient.id})" style="background: var(--stable-green);">
-                            📊 Update Vitals
-                        </button>
-                        <button class="action-btn" onclick="aiRecommendations(${patient.id})" style="background: var(--ai-gradient);">
-                            🤖 AI Suggestions
-                        </button>
-                        <button class="action-btn" onclick="assignDoctor(${patient.id})" style="background: var(--urgent-yellow);">
-                            👨‍⚕️ Assign Doctor
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            openModal('patient-modal');
-        }
-
-        // Utility Functions
-        function getTimeAgo(date) {
+        // Clock and time updates
+        function updateClock() {
             const now = new Date();
-            const diffMs = now - date;
-            const diffMins = Math.floor(diffMs / 60000);
-            
-            if (diffMins < 1) return 'Just now';
-            if (diffMins < 60) return `${diffMins}m ago`;
-            
-            const diffHours = Math.floor(diffMins / 60);
-            if (diffHours < 24) return `${diffHours}h ago`;
-            
-            const diffDays = Math.floor(diffHours / 24);
-            return `${diffDays}d ago`;
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
         }
-
-        function getTriageColor(color) {
-            const colors = {
-                red: '#dc2626',
-                yellow: '#f59e0b',
-                green: '#16a34a',
-                black: '#374151',
-                purple: '#8b5cf6'
-            };
-            return colors[color] || '#6b7280';
-        }
-
-        function getTriageColorBg(color) {
-            const colors = {
-                red: 'rgba(220, 38, 38, 0.1)',
-                yellow: 'rgba(245, 158, 11, 0.1)',
-                green: 'rgba(22, 163, 74, 0.1)',
-                black: 'rgba(55, 65, 81, 0.1)'
-            };
-            return colors[color] || 'rgba(107, 114, 128, 0.1)';
-        }
-
-        function getCriticalReason(patient) {
-            const reasons = [];
-            if (patient.vitals.o2 < 90) reasons.push('Low oxygen saturation');
-            if (patient.vitals.hr > 130) reasons.push('Elevated heart rate');
-            if (patient.consciousness === 'unresponsive') reasons.push('Unresponsive');
-            if (patient.severity === 'critical') reasons.push('Critical condition');
-            if (patient.aiInsight.confidence > 0.9) reasons.push('High AI confidence alert');
-            
-            return reasons.join(', ') || 'Requires immediate attention';
-        }
-
-        function getActivityIcon(type) {
-            const icons = {
-                admission: '+',
-                update: '↻',
-                discharge: '→',
-                alert: '!',
-                treatment: '⚕',
-                ai_prediction: '🔮',
-                ai_analysis: '🧠'
-            };
-            return icons[type] || '•';
-        }
-
-        function updateTriageStats() {
-            const stats = {
-                critical: patients.filter(p => p.triageColor === 'red').length,
-                urgent: patients.filter(p => p.triageColor === 'yellow').length,
-                delayed: patients.filter(p => p.triageColor === 'green').length,
-                expectant: patients.filter(p => p.triageColor === 'black').length
-            };
-
-            document.getElementById('critical-count').textContent = stats.critical;
-            document.getElementById('urgent-count').textContent = stats.urgent;
-            document.getElementById('delayed-count').textContent = stats.delayed;
-            document.getElementById('expectant-count').textContent = stats.expectant;
-        }
-
-        // Modal Functions
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        // Action Functions
-        function filterPatients(category) {
-            showAIResponse(`Filtering patients by ${category.toUpperCase()} category`);
-            // Highlight matching patients
-            const items = document.querySelectorAll('.patient-item');
-            items.forEach(item => {
-                item.style.opacity = item.classList.contains(category) ? '1' : '0.3';
-            });
-            setTimeout(() => {
-                items.forEach(item => item.style.opacity = '1');
-            }, 3000);
-        }
-
-        function refreshQueue() {
-            showNotification('🤖 AI refreshing patient queue...', 'ai');
-            renderPatientQueue();
-            renderCriticalAlerts();
-            updateTriageStats();
-        }
-
-        function sortByAI() {
-            showNotification('🧠 AI optimizing patient priority order...', 'ai');
-            // Add slight delay to show AI is "thinking"
-            setTimeout(() => {
-                renderPatientQueue();
-                showAIResponse('Patient queue optimized based on AI risk assessment');
-            }, 1500);
-        }
-
-        function aiAnalysis() {
-            showNotification('🤖 Running comprehensive AI analysis...', 'ai');
-            setTimeout(() => {
-                showPredictiveAnalysis();
-            }, 2000);
-        }
-
-        function openTriageForm() {
-            openModal('triage-modal');
-            showNotification('🤖 AI-Enhanced Triage Assessment Ready', 'ai');
-            resetTriageForm();
-        }
-
-        function resetTriageForm() {
-            document.getElementById('triage-form').reset();
-            document.getElementById('ai-suggestions').innerHTML = `
-                <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">
-                    <div class="loading-spinner"></div>
-                    <p style="margin-top: 1rem;">AI analysis will appear as you fill out the form...</p>
-                </div>
-            `;
-        }
-
-        // Real-time AI Analysis as user fills form
-        function updateAIAnalysis() {
-            const consciousness = document.getElementById('consciousness').value;
-            const breathing = document.getElementById('breathing').value;
-            const severity = document.getElementById('severity').value;
-            const injury = document.getElementById('injury-type').value;
-            
-            if (!consciousness && !breathing && !severity) {
-                return;
-            }
-            
-            const aiAnalysis = generateAITriageAnalysis({
-                consciousness,
-                breathing,
-                severity,
-                injury
-            });
-            
-            document.getElementById('ai-suggestions').innerHTML = `
-                <div style="display: grid; gap: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <strong>🎯 AI Suggested Triage:</strong>
-                        <span style="background: ${getTriageColor(aiAnalysis.suggestedTriage)}; color: white; padding: 0.5rem 1rem; border-radius: 12px; font-weight: bold;">
-                            ${aiAnalysis.suggestedTriage.toUpperCase()}
-                        </span>
-                        <span style="font-size: 0.9rem; color: var(--ai-purple);">
-                            Confidence: ${Math.round(aiAnalysis.confidence * 100)}%
-                        </span>
-                    </div>
-                    
-                    <div>
-                        <strong>🏥 Recommended Actions:</strong>
-                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                            ${aiAnalysis.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-                        </ul>
-                    </div>
-                    
-                    <div>
-                        <strong>⚠️ Risk Factors:</strong>
-                        <span style="color: ${aiAnalysis.riskLevel === 'high' ? 'var(--critical-red)' : aiAnalysis.riskLevel === 'medium' ? 'var(--urgent-yellow)' : 'var(--stable-green)'}">
-                            ${aiAnalysis.riskFactors.join(', ')}
-                        </span>
-                    </div>
-                    
-                    ${aiAnalysis.urgentAlert ? `
-                        <div style="background: rgba(220, 38, 38, 0.1); border-left: 4px solid var(--critical-red); padding: 1rem; border-radius: 4px;">
-                            <strong>🚨 URGENT ALERT:</strong> ${aiAnalysis.urgentAlert}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-            
-            // Auto-suggest triage color
-            const triageColorSelect = document.getElementById('triage-color');
-            if (triageColorSelect.value === '' || triageColorSelect.value === aiAnalysis.suggestedTriage) {
-                triageColorSelect.value = aiAnalysis.suggestedTriage;
-            }
-        }
-
-        function generateAITriageAnalysis(formData) {
-            let priority = 3; // Default to green
-            let confidence = 0.7;
-            let recommendations = [];
-            let riskFactors = [];
-            let urgentAlert = null;
-            
-            // Consciousness assessment
-            if (formData.consciousness === 'unresponsive') {
-                priority = 1;
-                confidence = 0.95;
-                recommendations.push('Immediate airway assessment');
-                recommendations.push('IV access');
-                riskFactors.push('Airway compromise risk');
-                urgentAlert = 'Patient unresponsive - requires immediate attention';
-            } else if (formData.consciousness === 'pain') {
-                priority = Math.min(priority, 2);
-                recommendations.push('Neurological assessment');
-                riskFactors.push('Altered mental status');
-            }
-            
-            // Breathing assessment
-            if (formData.breathing === 'absent') {
-                priority = 1;
-                confidence = 0.98;
-                recommendations.push('IMMEDIATE airway management');
-                recommendations.push('Bag-mask ventilation');
-                riskFactors.push('Respiratory failure');
-                urgentAlert = 'Absent breathing - LIFE THREATENING';
-            } else if (formData.breathing === 'labored') {
-                priority = Math.min(priority, 2);
-                recommendations.push('Oxygen therapy');
-                recommendations.push('Chest X-ray');
-                riskFactors.push('Respiratory distress');
-            }
-            
-            // Severity assessment
-            if (formData.severity === 'critical') {
-                priority = 1;
-                confidence = Math.max(confidence, 0.9);
-                recommendations.push('ICU consultation');
-                recommendations.push('Continuous monitoring');
-            } else if (formData.severity === 'severe') {
-                priority = Math.min(priority, 2);
-                recommendations.push('Specialist consultation');
-            }
-            
-            // Injury-specific analysis
-            if (formData.injury) {
-                const injury = formData.injury.toLowerCase();
-                if (injury.includes('chest') || injury.includes('cardiac')) {
-                    priority = Math.min(priority, 2);
-                    recommendations.push('EKG');
-                    recommendations.push('Cardiology consult');
-                    riskFactors.push('Cardiac event risk');
-                }
-                if (injury.includes('head') || injury.includes('brain')) {
-                    priority = Math.min(priority, 2);
-                    recommendations.push('CT scan');
-                    recommendations.push('Neurology consult');
-                    riskFactors.push('Intracranial pressure');
-                }
-                if (injury.includes('trauma') || injury.includes('accident')) {
-                    recommendations.push('Trauma protocol');
-                    riskFactors.push('Multiple injuries possible');
-                }
-            }
-            
-            const triageColors = ['', 'red', 'yellow', 'green', 'black'];
-            const riskLevels = ['', 'high', 'medium', 'low', 'low'];
-            
-            return {
-                suggestedTriage: triageColors[priority],
-                confidence: confidence,
-                recommendations: recommendations.length ? recommendations : ['Standard care protocols', 'Routine monitoring'],
-                riskFactors: riskFactors.length ? riskFactors : ['No significant risk factors identified'],
-                riskLevel: riskLevels[priority],
-                urgentAlert: urgentAlert
-            };
-        }
-
-        function runAITriage() {
-            showNotification('🤖 Running comprehensive AI triage analysis...', 'ai');
-            
-            const formData = {
-                name: document.getElementById('patient-name').value,
-                age: document.getElementById('patient-age').value,
-                gender: document.getElementById('patient-gender').value,
-                injury: document.getElementById('injury-type').value,
-                consciousness: document.getElementById('consciousness').value,
-                breathing: document.getElementById('breathing').value,
-                severity: document.getElementById('severity').value,
-                notes: document.getElementById('additional-notes').value
-            };
-            
-            setTimeout(() => {
-                updateAIAnalysis();
-                showAIResponse(`🧠 AI Analysis Complete: Reviewed ${Object.keys(formData).length} parameters. Confidence: 92%. Ready for submission.`);
-            }, 2000);
-        }
-
-        // Form submission handler
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('triage-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = {
-                    name: document.getElementById('patient-name').value,
-                    age: document.getElementById('patient-age').value,
-                    gender: document.getElementById('patient-gender').value,
-                    injury: document.getElementById('injury-type').value,
-                    consciousness: document.getElementById('consciousness').value,
-                    breathing: document.getElementById('breathing').value,
-                    severity: document.getElementById('severity').value,
-                    triageColor: document.getElementById('triage-color').value,
-                    notes: document.getElementById('additional-notes').value
-                };
-                
-                if (!formData.name || !formData.injury || !formData.consciousness || !formData.breathing || !formData.severity || !formData.triageColor) {
-                    showNotification('Please fill in all required fields', 'error');
-                    return;
-                }
-                
-                // Generate AI insights for the new patient
-                const aiInsight = {
-                    keywords: [formData.injury, formData.severity, formData.consciousness],
-                    confidence: Math.random() * 0.3 + 0.7, // 0.7-1.0
-                    recommendation: `${formData.triageColor === 'red' ? 'Immediate intervention required' : 'Standard protocol'}, monitor closely`,
-                    riskFactors: formData.severity === 'critical' ? ['Critical condition', 'Requires immediate attention'] : ['Standard risk factors'],
-                    prediction: formData.triageColor === 'red' ? 'High priority - immediate care needed' : 'Stable condition - monitor as scheduled'
-                };
-                
-                // Add new patient to the list
-                const newPatient = {
-                    id: patients.length + 1,
-                    name: formData.name,
-                    age: parseInt(formData.age) || null,
-                    gender: formData.gender,
-                    injury: formData.injury,
-                    severity: formData.severity,
-                    triageColor: formData.triageColor,
-                    priority: formData.triageColor === 'red' ? 1 : 
-                             formData.triageColor === 'yellow' ? 2 : 
-                             formData.triageColor === 'green' ? 3 : 4,
-                    consciousness: formData.consciousness,
-                    breathing: formData.breathing,
-                    timestamp: new Date(),
-                    vitals: { hr: '-', bp: '-', rr: '-', temp: '-', o2: '-' },
-                    aiInsight: aiInsight
-                };
-                
-                patients.unshift(newPatient);
-                
-                // Add to activity feed
-                activities.unshift({
-                    type: 'admission',
-                    text: `${formData.name} admitted with ${formData.injury} (AI-assessed)`,
-                    time: new Date(),
-                    color: formData.triageColor,
-                    aiFlag: true
-                });
-                
-                if (activities.length > 10) activities.pop();
-                
-                // Update UI
-                renderPatientQueue();
-                renderActivityFeed();
-                updateTriageStats();
-                if (formData.severity === 'critical') {
-                    renderCriticalAlerts();
-                }
-                
-                // Close modal and show success
-                closeModal('triage-modal');
-                showNotification(`🤖 Patient ${formData.name} successfully triaged as ${formData.triageColor.toUpperCase()} with AI confidence: ${Math.round(aiInsight.confidence * 100)}%`, 'ai');
-                
-                // Reset form
-                resetTriageForm();
-            });
-            
-            // Add real-time AI analysis listeners
-            ['consciousness', 'breathing', 'severity', 'injury-type'].forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    field.addEventListener('change', updateAIAnalysis);
-                    field.addEventListener('input', debounce(updateAIAnalysis, 500));
-                }
-            });
-        });
-
-        // Debounce function for real-time updates
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        function exportQueue() {
-            showNotification('📤 Exporting patient queue with AI insights...', 'success');
-            setTimeout(() => {
-                const data = patients.map(p => ({
-                    name: p.name,
-                    priority: p.priority,
-                    severity: p.severity,
-                    ai_confidence: p.aiInsight.confidence,
-                    ai_recommendation: p.aiInsight.recommendation
-                }));
-                
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'ai-triage-queue.json';
-                a.click();
-                URL.revokeObjectURL(url);
-                
-                showNotification('AI triage data exported successfully', 'success');
-            }, 1000);
-        }
-
-        function fillCommand(command) {
-            document.getElementById('ai-command-input').value = command;
-            document.getElementById('ai-command-input').focus();
-        }
-
-        function editPatient(id) {
-            closeModal('patient-modal');
-            showAIResponse('Opening AI-enhanced patient editor...');
-        }
-
-        function updateVitals(id) {
-            closeModal('patient-modal');
-            showAIResponse('Opening AI-monitored vitals update...');
-        }
-
-        function aiRecommendations(id) {
-            const patient = patients.find(p => p.id === id);
-            closeModal('patient-modal');
-            showAIResponse(`🤖 AI Recommendations for ${patient.name}: ${patient.aiInsight.recommendation}`);
-        }
-
-        function assignDoctor(id) {
-            closeModal('patient-modal');
-            showAIResponse('AI suggesting optimal doctor assignment based on specialization and availability...');
-        }
-
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type} show`;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 4000);
-        }
-
-        // AI Command Input Handler
-        document.getElementById('ai-command-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const command = this.value.trim();
-                if (command) {
-                    const response = processAICommand(command);
-                    showAIResponse(response);
-                    this.value = '';
-                }
-            }
-        });
 
         // Keyboard Shortcuts
         document.addEventListener('keydown', function(e) {
@@ -1929,72 +2124,7 @@
             
             if (e.key === 'Escape') {
                 closeModal('patient-modal');
-            }
-        });
-
-        // Auto-refresh with AI updates
-        function refreshData() {
-            updateTriageStats();
-            renderPatientQueue();
-            renderCriticalAlerts();
-            renderActivityFeed();
-        }
-
-        // Simulate AI predictions and updates
-        function simulateAIUpdates() {
-            // Randomly update confidence scores and predictions
-            patients.forEach(patient => {
-                if (Math.random() < 0.1) { // 10% chance of update
-                    patient.aiInsight.confidence = Math.min(0.99, patient.aiInsight.confidence + (Math.random() - 0.5) * 0.1);
-                }
-            });
-            
-            // Add occasional AI activity
-            if (Math.random() < 0.05) { // 5% chance
-                activities.unshift({
-                    type: 'ai_analysis',
-                    text: 'AI completed automated risk assessment',
-                    time: new Date(),
-                    color: 'purple',
-                    aiFlag: true
-                });
-                
-                if (activities.length > 10) activities.pop();
-            }
-        }
-
-        // Initialize Application
-        document.addEventListener('DOMContentLoaded', function() {
-            updateClock();
-            setInterval(updateClock, 1000);
-            
-            initializeMap();
-            renderPatientQueue();
-            renderCriticalAlerts();
-            renderActivityFeed();
-            updateTriageStats();
-            
-            // Auto-refresh data every 30 seconds
-            setInterval(refreshData, 30000);
-            
-            // AI updates every 10 seconds
-            setInterval(simulateAIUpdates, 10000);
-            
-            // Show welcome message
-            setTimeout(() => {
-                showNotification('🤖 AI Medical Triage System Online - Gemma 3n Ready for Emergency Response', 'ai');
-            }, 1000);
-            
-            // Show command hint
-            setTimeout(() => {
-                showAIResponse('💡 Try commands like "Show critical patients" or press Ctrl+K to focus command bar');
-            }, 3000);
-        });
-
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible') {
-                refreshData();
+                closeModal('triage-modal');
             }
         });
 

@@ -54,14 +54,24 @@
     --bg-hover: #3a455c;
     --scroll-thumb: #6b7280;
     --scroll-track: #4a5568;
-
-    /* Darker gradients for triage/severity specific colors in dark mode */
-    .triage-red { background: linear-gradient(135deg, #b32020 0%, #8c1616 100%); }
-    .triage-yellow { background: linear-gradient(135deg, #d28c0a 0%, #a66e07 100%); }
-    .triage-green { background: linear-gradient(135deg, #13873f 0%, #106631 100%); }
-    .triage-black { background: linear-gradient(135deg, #2a323c 0%, #181d24 100%); }
   }
 
+  /* Darker gradients for triage/severity specific colors in dark mode */
+  [data-theme="dark"] .triage-red { 
+    background: linear-gradient(135deg, #b32020 0%, #8c1616 100%); 
+  }
+  
+  [data-theme="dark"] .triage-yellow { 
+    background: linear-gradient(135deg, #d28c0a 0%, #a66e07 100%); 
+  }
+  
+  [data-theme="dark"] .triage-green { 
+    background: linear-gradient(135deg, #13873f 0%, #106631 100%); 
+  }
+  
+  [data-theme="dark"] .triage-black { 
+    background: linear-gradient(135deg, #2a323c 0%, #181d24 100%); 
+  }
 
   /* Base Layout */
   .dashboard-layout {
@@ -131,10 +141,21 @@
     font-weight: 500;
   }
   
-  .stat-total { --accent-color: var(--color-blue); }
-  .stat-active { --accent-color: var(--color-yellow); }
-  .stat-today { --accent-color: var(--color-green); }
-  .stat-critical { --accent-color: var(--color-red); }
+  .stat-total { 
+    --accent-color: var(--color-blue); 
+  }
+  
+  .stat-active { 
+    --accent-color: var(--color-yellow); 
+  }
+  
+  .stat-today { 
+    --accent-color: var(--color-green); 
+  }
+  
+  .stat-critical { 
+    --accent-color: var(--color-red); 
+  }
   
   /* Main Dashboard Grid */
   .dashboard-grid {
@@ -202,10 +223,21 @@
     left: 100%;
   }
   
-  .triage-red { background: linear-gradient(135deg, var(--color-red) 0%, #b91c1c 100%); }
-  .triage-yellow { background: linear-gradient(135deg, var(--color-yellow) 0%, #d97706 100%); }
-  .triage-green { background: linear-gradient(135deg, var(--color-green) 0%, #15803d 100%); }
-  .triage-black { background: linear-gradient(135deg, var(--color-black) 0%, #1f2937 100%); }
+  .triage-red { 
+    background: linear-gradient(135deg, var(--color-red) 0%, #b91c1c 100%); 
+  }
+  
+  .triage-yellow { 
+    background: linear-gradient(135deg, var(--color-yellow) 0%, #d97706 100%); 
+  }
+  
+  .triage-green { 
+    background: linear-gradient(135deg, var(--color-green) 0%, #15803d 100%); 
+  }
+  
+  .triage-black { 
+    background: linear-gradient(135deg, var(--color-black) 0%, #1f2937 100%); 
+  }
   
   .triage-count {
     font-size: 2rem;
@@ -247,10 +279,21 @@
     background: var(--bg-hover);
   }
   
-  .severity-critical { --severity-color: var(--color-red); }
-  .severity-severe { --severity-color: var(--color-yellow); }
-  .severity-moderate { --severity-color: var(--color-blue); }
-  .severity-mild { --severity-color: var(--color-green); }
+  .severity-critical { 
+    --severity-color: var(--color-red); 
+  }
+  
+  .severity-severe { 
+    --severity-color: var(--color-yellow); 
+  }
+  
+  .severity-moderate { 
+    --severity-color: var(--color-blue); 
+  }
+  
+  .severity-mild { 
+    --severity-color: var(--color-green); 
+  }
   
   .severity-info h4 {
     margin: 0;
@@ -277,10 +320,12 @@
   .priority-queue::-webkit-scrollbar {
     width: 8px;
   }
+  
   .priority-queue::-webkit-scrollbar-track {
     background: var(--scroll-track);
     border-radius: 10px;
   }
+  
   .priority-queue::-webkit-scrollbar-thumb {
     background: var(--scroll-thumb);
     border-radius: 10px;
@@ -317,10 +362,21 @@
     flex-shrink: 0;
   }
   
-  .priority-1 { background: var(--color-red); }
-  .priority-2 { background: var(--color-yellow); }
-  .priority-3 { background: var(--color-green); }
-  .priority-4 { background: var(--color-black); }
+  .priority-1 { 
+    background: var(--color-red); 
+  }
+  
+  .priority-2 { 
+    background: var(--color-yellow); 
+  }
+  
+  .priority-3 { 
+    background: var(--color-green); 
+  }
+  
+  .priority-4 { 
+    background: var(--color-black); 
+  }
   
   .queue-details {
     flex: 1;
@@ -363,8 +419,12 @@
   }
   
   @keyframes alert-pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.01); }
+    0%, 100% { 
+      transform: scale(1); 
+    }
+    50% { 
+      transform: scale(1.01); 
+    }
   }
   
   .alert-header {
@@ -388,13 +448,16 @@
     scrollbar-width: thin;
     scrollbar-color: var(--scroll-thumb) var(--scroll-track);
   }
+  
   .activity-list::-webkit-scrollbar {
     width: 8px;
   }
+  
   .activity-list::-webkit-scrollbar-track {
     background: var(--scroll-track);
     border-radius: 10px;
   }
+  
   .activity-list::-webkit-scrollbar-thumb {
     background: var(--scroll-thumb);
     border-radius: 10px;
@@ -428,10 +491,21 @@
   }
 
   /* Specific activity icons based on triage color */
-  .activity-icon.red { background: var(--color-red); }
-  .activity-icon.yellow { background: var(--color-yellow); }
-  .activity-icon.green { background: var(--color-green); }
-  .activity-icon.black { background: var(--color-black); }
+  .activity-icon.red { 
+    background: var(--color-red); 
+  }
+  
+  .activity-icon.yellow { 
+    background: var(--color-yellow); 
+  }
+  
+  .activity-icon.green { 
+    background: var(--color-green); 
+  }
+  
+  .activity-icon.black { 
+    background: var(--color-black); 
+  }
   
   .activity-content {
     flex: 1;
@@ -476,8 +550,12 @@
   }
   
   @keyframes live-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+    0%, 100% { 
+      opacity: 1; 
+    }
+    50% { 
+      opacity: 0.3; 
+    }
   }
   
   /* Empty States */
@@ -508,9 +586,11 @@
     .dashboard-grid {
       grid-template-columns: 1fr;
     }
+    
     .stats-row {
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     }
+    
     .triage-chart {
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     }
@@ -520,9 +600,11 @@
     .stats-row {
       grid-template-columns: 1fr;
     }
+    
     .dashboard-grid {
         gap: 1.5rem;
     }
+    
     .triage-chart {
         grid-template-columns: 1fr;
     }
@@ -545,6 +627,7 @@
     .card-header {
         padding: 1rem;
     }
+    
     .card-content {
         padding: 1rem;
     }
