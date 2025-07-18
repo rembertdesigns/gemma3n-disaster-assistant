@@ -1986,6 +1986,55 @@
             }
         }
 
+        // Patient Management Functions
+        function editPatient(patientId) {
+            // Open edit modal with patient data
+            fetch(`/api/patient/${patientId}`)
+                .then(response => response.json())
+                .then(data => {
+                    populateEditForm(data);
+                    openModal('edit-patient-modal');
+                });
+        }
+
+        function openPatientList() {
+            fetch('/api/patient-list')
+                .then(response => response.json())
+                .then(data => {
+                    populatePatientList(data);
+                    openModal('patient-list-modal');
+                });
+        }
+
+        function openPatientTracker() {
+            fetch('/api/patient-tracker')
+                .then(response => response.json())
+                .then(data => {
+                    populatePatientTracker(data);
+                    openModal('patient-tracker-modal');
+                });
+        }
+
+        function openStaffAITools() {
+            openModal('staff-ai-tools-modal');
+            loadStaffAITools();
+        }
+
+        function exportToPDF() {
+            aiTriageSystem.showNotification('📄 Generating PDF report...', 'ai');
+            fetch('/api/export-pdf', { method: 'POST' })
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `triage-report-${new Date().toISOString().split('T')[0]}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    aiTriageSystem.showNotification('✅ PDF report downloaded', 'success');
+                });
+        }
+
         function filterPatients(color) {
             aiTriageSystem.showNotification(`Filtering patients by ${color.toUpperCase()} triage`, 'ai');
             // Highlight matching patients
