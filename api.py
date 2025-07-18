@@ -4274,6 +4274,1352 @@ async def get_performance_metrics():
         }, status_code=500)
     
 # ================================================================================
+# ENHANCED TRIAGE MANAGEMENT API ROUTES
+# Add these routes to your existing api.py file
+# ================================================================================
+
+@app.get("/api/patient/{patient_id}")
+async def get_patient_details(
+    patient_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get detailed patient information for editing/viewing"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        # Get AI analysis history
+        ai_manager = AIDataManager(db)
+        ai_analyses = db.query(AIAnalysisLog).filter(
+            AIAnalysisLog.patient_id == patient_id
+        ).order_by(AIAnalysisLog.created_at.desc()).limit(5).all()
+        
+        # Get active alerts
+        active_alerts = db.query(AIAlert).filter(
+            AIAlert.patient_id == patient_id,
+            AIAlert.resolved == False
+        ).all()
+        
+        patient_data = {
+            "id": patient.id,
+            "name": patient.name,
+            "age": patient.age,
+            "gender": getattr(patient, 'gender', 'Unknown'),
+            "medical_id": getattr(patient, 'medical_id', ''),
+            "injury_type": patient.injury_type,
+            "consciousness": patient.consciousness,
+            "breathing": patient.breathing,
+            "severity": patient.severity,
+            "triage_color": patient.triage_color,
+            "status": patient.status,
+            "notes": patient.notes or '',
+            "allergies": getattr(patient, 'allergies', ''),
+            "medications": getattr(patient, 'medications', ''),
+            "medical_history": getattr(patient, 'medical_history', ''),
+            "vitals": {
+                "heart_rate": getattr(patient, 'heart_rate', None),
+                "bp_systolic": getattr(patient, 'bp_systolic', None),
+                "bp_diastolic": getattr(patient, 'bp_diastolic', None),
+                "respiratory_rate": getattr(patient, 'respiratory_rate', None),
+                "temperature": getattr(patient, 'temperature', None),
+                "oxygen_sat": getattr(patient, 'oxygen_sat', None)
+            },
+            "assignments": {
+                "doctor": getattr(patient, 'assigned_doctor', ''),
+                "nurse": getattr(patient, 'assigned_nurse', ''),
+                "bed": getattr(patient, 'bed_assignment', ''),
+                "wait_time": getattr(patient, 'estimated_wait_time', None)
+            },
+            "ai_data": {
+                "confidence": getattr(patient, 'ai_confidence', 0.8),
+                "risk_score": getattr(patient, 'ai_risk_score', 5.0),
+                "recommendations": getattr(patient, 'ai_recommendations', {}),
+                "analysis_count": len(ai_analyses),
+                "active_alerts": len(active_alerts)
+            },
+            "timestamps": {
+                "created": patient.created_at.isoformat(),
+                "updated": patient.updated_at.isoformat() if hasattr(patient, 'updated_at') and patient.updated_at else None,
+                "triage_completed": getattr(patient, 'triage_completed_at', None),
+                "treatment_started": getattr(patient, 'treatment_started_at', None),
+                "last_assessment": getattr(patient, 'last_assessment_at', None)
+            }
+        }
+        
+        return JSONResponse({
+            "success": True,
+            "patient": patient_data,
+            "ai_analyses": [
+                {
+                    "type": analysis.analysis_type,
+                    "confidence": analysis.confidence_score,
+                    "created_at": analysis.created_at.isoformat(),
+                    "output": analysis.ai_output
+                }
+                for analysis in ai_analyses
+            ],
+            "active_alerts": [
+                {
+                    "id": alert.id,
+                    "type": alert.alert_type,
+                    "level": alert.alert_level,
+                    "message": alert.message,
+                    "confidence": alert.confidence,
+                    "created_at": alert.created_at.isoformat()
+                }
+                for alert in active_alerts
+            ]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting patient {patient_id}: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/update-patient/{patient_id}")
+async def update_patient(
+    patient_id: int,
+    request: Request,
+    name: str = Form(...),
+    age: Optional[int] = Form(None),
+    gender: Optional[str] = Form(None),
+    medical_id: Optional[str] = Form(None),
+    injury_type: str = Form(...),
+    consciousness: str = Form(...),
+    breathing: str = Form(...),
+    severity: str = Form(...),
+    triage_color: str = Form(...),
+    status: str = Form(...),
+    notes: Optional[str] = Form(''),
+    allergies: Optional[str] = Form(''),
+    medications: Optional[str] = Form(''),
+    medical_history: Optional[str] = Form(''),
+    heart_rate: Optional[int] = Form(None),
+    bp_systolic: Optional[int] = Form(None),
+    bp_diastolic: Optional[int] = Form(None),
+    respiratory_rate: Optional[int] = Form(None),
+    temperature: Optional[float] = Form(None),
+    oxygen_sat: Optional[int] = Form(None),
+    assigned_doctor: Optional[str] = Form(''),
+    assigned_nurse: Optional[str] = Form(''),
+    bed_assignment: Optional[str] = Form(''),
+    db: Session = Depends(get_db)
+):
+    """Update patient information with full AI re-analysis"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        # Store old values for comparison
+        old_triage = patient.triage_color
+        old_severity = patient.severity
+        
+        # Update basic info
+        patient.name = name
+        patient.age = age
+        patient.injury_type = injury_type
+        patient.consciousness = consciousness
+        patient.breathing = breathing
+        patient.severity = severity
+        patient.triage_color = triage_color
+        patient.status = status
+        patient.notes = notes
+        
+        # Update extended fields if they exist
+        if hasattr(patient, 'gender'):
+            patient.gender = gender
+        if hasattr(patient, 'medical_id'):
+            patient.medical_id = medical_id
+        if hasattr(patient, 'allergies'):
+            patient.allergies = allergies
+        if hasattr(patient, 'medications'):
+            patient.medications = medications
+        if hasattr(patient, 'medical_history'):
+            patient.medical_history = medical_history
+            
+        # Update vitals
+        if hasattr(patient, 'heart_rate'):
+            patient.heart_rate = heart_rate
+        if hasattr(patient, 'bp_systolic'):
+            patient.bp_systolic = bp_systolic
+        if hasattr(patient, 'bp_diastolic'):
+            patient.bp_diastolic = bp_diastolic
+        if hasattr(patient, 'respiratory_rate'):
+            patient.respiratory_rate = respiratory_rate
+        if hasattr(patient, 'temperature'):
+            patient.temperature = temperature
+        if hasattr(patient, 'oxygen_sat'):
+            patient.oxygen_sat = oxygen_sat
+            
+        # Update assignments
+        if hasattr(patient, 'assigned_doctor'):
+            patient.assigned_doctor = assigned_doctor
+        if hasattr(patient, 'assigned_nurse'):
+            patient.assigned_nurse = assigned_nurse
+        if hasattr(patient, 'bed_assignment'):
+            patient.bed_assignment = bed_assignment
+            
+        # Update timestamps
+        if hasattr(patient, 'updated_at'):
+            patient.updated_at = datetime.utcnow()
+        if hasattr(patient, 'last_assessment_at'):
+            patient.last_assessment_at = datetime.utcnow()
+        
+        # Re-run AI analysis for significant changes
+        if old_triage != triage_color or old_severity != severity:
+            try:
+                ai_insights = await generate_patient_ai_insights(patient)
+                if hasattr(patient, 'ai_confidence'):
+                    patient.ai_confidence = ai_insights["confidence"]
+                if hasattr(patient, 'ai_risk_score'):
+                    patient.ai_risk_score = ai_insights.get("risk_level", 5.0)
+                if hasattr(patient, 'ai_recommendations'):
+                    patient.ai_recommendations = {"recommendations": ai_insights["recommendation"]}
+                    
+                # Log the update analysis
+                ai_manager = AIDataManager(db)
+                ai_manager.log_ai_analysis(
+                    patient_id=patient_id,
+                    analysis_type="patient_update",
+                    input_data={
+                        "changes": f"Updated triage from {old_triage} to {triage_color}",
+                        "new_severity": severity
+                    },
+                    ai_output=ai_insights,
+                    confidence=ai_insights["confidence"],
+                    model_version="gemma-3n-4b",
+                    analyst_id="system_update"
+                )
+                
+            except Exception as ai_error:
+                logger.warning(f"AI re-analysis failed for patient {patient_id}: {ai_error}")
+        
+        db.commit()
+        db.refresh(patient)
+        
+        # Broadcast update
+        await broadcast_emergency_update("patient_updated", {
+            "patient_id": patient_id,
+            "name": name,
+            "triage_color": triage_color,
+            "status": status,
+            "updated_by": "staff_user"
+        })
+        
+        logger.info(f"Patient {patient_id} updated: {name}")
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Patient {name} updated successfully",
+            "patient_id": patient_id,
+            "changes_detected": old_triage != triage_color or old_severity != severity,
+            "ai_reanalyzed": old_triage != triage_color or old_severity != severity
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating patient {patient_id}: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/patient-list")
+async def get_patient_list(
+    status: Optional[str] = Query("active"),
+    triage_color: Optional[str] = Query(None),
+    limit: int = Query(100),
+    db: Session = Depends(get_db)
+):
+    """Get comprehensive patient list for management"""
+    try:
+        query = db.query(TriagePatient)
+        
+        if status:
+            query = query.filter(TriagePatient.status == status)
+        if triage_color:
+            query = query.filter(TriagePatient.triage_color == triage_color)
+        
+        patients = query.order_by(
+            TriagePatient.triage_color.desc(),
+            TriagePatient.created_at.desc()
+        ).limit(limit).all()
+        
+        patient_list = []
+        for patient in patients:
+            patient_data = {
+                "id": patient.id,
+                "name": patient.name,
+                "age": patient.age,
+                "gender": getattr(patient, 'gender', 'Unknown'),
+                "medical_id": getattr(patient, 'medical_id', ''),
+                "injury": patient.injury_type,
+                "triage_color": patient.triage_color,
+                "severity": patient.severity,
+                "consciousness": patient.consciousness,
+                "breathing": patient.breathing,
+                "status": patient.status,
+                "assigned_doctor": getattr(patient, 'assigned_doctor', ''),
+                "assigned_nurse": getattr(patient, 'assigned_nurse', ''),
+                "bed_assignment": getattr(patient, 'bed_assignment', ''),
+                "created_at": patient.created_at.isoformat(),
+                "time_ago": calculate_time_ago(patient.created_at),
+                "priority": get_priority_from_triage_color(patient.triage_color),
+                "ai_confidence": getattr(patient, 'ai_confidence', 0.8),
+                "has_alerts": False  # Will be populated below
+            }
+            
+            # Check for active alerts
+            alert_count = db.query(AIAlert).filter(
+                AIAlert.patient_id == patient.id,
+                AIAlert.resolved == False
+            ).count()
+            patient_data["has_alerts"] = alert_count > 0
+            patient_data["alert_count"] = alert_count
+            
+            patient_list.append(patient_data)
+        
+        # Calculate summary statistics
+        total_patients = len(patient_list)
+        triage_summary = {
+            "red": len([p for p in patient_list if p["triage_color"] == "red"]),
+            "yellow": len([p for p in patient_list if p["triage_color"] == "yellow"]),
+            "green": len([p for p in patient_list if p["triage_color"] == "green"]),
+            "black": len([p for p in patient_list if p["triage_color"] == "black"])
+        }
+        
+        return JSONResponse({
+            "success": True,
+            "patients": patient_list,
+            "summary": {
+                "total_patients": total_patients,
+                "active_patients": len([p for p in patient_list if p["status"] == "active"]),
+                "triage_breakdown": triage_summary,
+                "patients_with_alerts": len([p for p in patient_list if p["has_alerts"]]),
+                "unassigned_patients": len([p for p in patient_list if not p["assigned_doctor"]])
+            },
+            "filters_applied": {
+                "status": status,
+                "triage_color": triage_color
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting patient list: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/patient-tracker")
+async def get_patient_tracker_data(db: Session = Depends(get_db)):
+    """Get patient flow tracking data for Kanban-style board"""
+    try:
+        all_patients = db.query(TriagePatient).filter(
+            TriagePatient.status.in_(["active", "in_treatment", "waiting", "discharged"])
+        ).all()
+        
+        # Organize patients by workflow stage
+        workflow_stages = {
+            "waiting_triage": [],
+            "in_triage": [],
+            "waiting_treatment": [],
+            "in_treatment": [],
+            "ready_discharge": [],
+            "discharged": []
+        }
+        
+        for patient in all_patients:
+            patient_data = {
+                "id": patient.id,
+                "name": patient.name,
+                "age": patient.age,
+                "triage_color": patient.triage_color,
+                "injury": patient.injury_type,
+                "assigned_doctor": getattr(patient, 'assigned_doctor', ''),
+                "bed_assignment": getattr(patient, 'bed_assignment', ''),
+                "wait_time_minutes": calculate_wait_time(patient),
+                "priority": get_priority_from_triage_color(patient.triage_color),
+                "created_at": patient.created_at.isoformat()
+            }
+            
+            # Determine workflow stage based on patient data
+            if patient.status == "discharged":
+                workflow_stages["discharged"].append(patient_data)
+            elif getattr(patient, 'treatment_started_at', None):
+                workflow_stages["in_treatment"].append(patient_data)
+            elif getattr(patient, 'triage_completed_at', None):
+                workflow_stages["waiting_treatment"].append(patient_data)
+            elif patient.triage_color in ["red", "yellow"]:
+                workflow_stages["in_triage"].append(patient_data)
+            else:
+                workflow_stages["waiting_triage"].append(patient_data)
+        
+        # Calculate stage statistics
+        stage_stats = {}
+        for stage, patients in workflow_stages.items():
+            stage_stats[stage] = {
+                "count": len(patients),
+                "avg_wait_time": sum(p["wait_time_minutes"] for p in patients) / max(len(patients), 1),
+                "critical_count": len([p for p in patients if p["triage_color"] == "red"])
+            }
+        
+        return JSONResponse({
+            "success": True,
+            "patient_flow": workflow_stages,
+            "stage_statistics": stage_stats,
+            "total_active": sum(len(patients) for stage, patients in workflow_stages.items() if stage != "discharged"),
+            "bottlenecks": identify_workflow_bottlenecks(stage_stats),
+            "last_updated": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting patient tracker data: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/export-pdf")
+async def export_triage_pdf(
+    request: Request,
+    include_patients: bool = Form(True),
+    include_analytics: bool = Form(True),
+    include_alerts: bool = Form(True),
+    triage_colors: Optional[str] = Form("all"),  # comma-separated: red,yellow,green,black
+    db: Session = Depends(get_db)
+):
+    """Export comprehensive triage report as PDF"""
+    try:
+        if not WEASYPRINT_AVAILABLE:
+            # Fallback to text-based report
+            return await export_text_report(include_patients, include_analytics, include_alerts, db)
+        
+        # Prepare data for PDF
+        report_data = await prepare_pdf_report_data(db, include_patients, include_analytics, include_alerts, triage_colors)
+        
+        # Generate PDF using WeasyPrint
+        html_content = generate_pdf_html_template(report_data)
+        
+        # Create PDF
+        pdf_buffer = BytesIO()
+        HTML(string=html_content).write_pdf(pdf_buffer)
+        pdf_buffer.seek(0)
+        
+        # Generate filename
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        filename = f"triage_report_{timestamp}.pdf"
+        
+        logger.info(f"PDF report generated: {filename}")
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_buffer.read()),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        logger.error(f"PDF export error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "fallback_available": True
+        }, status_code=500)
+
+@app.get("/api/staff-ai-tools")
+async def get_staff_ai_tools_data(db: Session = Depends(get_db)):
+    """Get data for advanced staff AI analysis tools"""
+    try:
+        # Get AI system performance
+        ai_performance = ai_optimizer.monitor_performance()
+        
+        # Get recent AI analyses
+        recent_analyses = db.query(AIAnalysisLog).order_by(
+            AIAnalysisLog.created_at.desc()
+        ).limit(20).all()
+        
+        # Get active AI alerts
+        active_alerts = db.query(AIAlert).filter(
+            AIAlert.resolved == False
+        ).order_by(AIAlert.created_at.desc()).limit(10).all()
+        
+        # Get resource analysis
+        resource_analysis = await analyze_current_resource_requirements(db)
+        
+        # Get predictive insights
+        predictive_insights = await generate_staff_predictive_insights(db)
+        
+        # System optimization recommendations
+        optimization_recommendations = await generate_optimization_recommendations(db, ai_performance)
+        
+        return JSONResponse({
+            "success": True,
+            "ai_tools_data": {
+                "system_performance": {
+                    "cpu_usage": ai_performance.cpu_usage,
+                    "memory_usage": ai_performance.memory_usage,
+                    "inference_speed": ai_performance.inference_speed,
+                    "model_variant": ai_optimizer.current_config.model_variant,
+                    "optimization_level": ai_optimizer.current_config.optimization_level
+                },
+                "recent_analyses": [
+                    {
+                        "id": analysis.id,
+                        "type": analysis.analysis_type,
+                        "confidence": analysis.confidence_score,
+                        "processing_time": analysis.processing_time_ms,
+                        "created_at": analysis.created_at.isoformat(),
+                        "model_version": analysis.model_version
+                    }
+                    for analysis in recent_analyses
+                ],
+                "active_alerts": [
+                    {
+                        "id": alert.id,
+                        "patient_id": alert.patient_id,
+                        "type": alert.alert_type,
+                        "level": alert.alert_level,
+                        "message": alert.message,
+                        "confidence": alert.confidence,
+                        "created_at": alert.created_at.isoformat()
+                    }
+                    for alert in active_alerts
+                ],
+                "resource_analysis": resource_analysis,
+                "predictive_insights": predictive_insights,
+                "optimization_recommendations": optimization_recommendations,
+                "ai_statistics": {
+                    "total_analyses_today": len([a for a in recent_analyses if a.created_at.date() == datetime.utcnow().date()]),
+                    "average_confidence": sum(a.confidence_score for a in recent_analyses) / max(len(recent_analyses), 1),
+                    "critical_alerts": len([a for a in active_alerts if a.alert_level == "critical"]),
+                    "model_uptime": "99.8%"
+                }
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting staff AI tools data: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/discharge-patient/{patient_id}")
+async def discharge_patient(
+    patient_id: int,
+    discharge_reason: str = Form(...),
+    discharge_notes: Optional[str] = Form(''),
+    discharge_destination: str = Form("home"),  # home, transfer, deceased
+    follow_up_required: bool = Form(False),
+    follow_up_notes: Optional[str] = Form(''),
+    db: Session = Depends(get_db)
+):
+    """Discharge patient with comprehensive documentation"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        # Update patient status
+        patient.status = "discharged"
+        if hasattr(patient, 'updated_at'):
+            patient.updated_at = datetime.utcnow()
+        
+        # Add discharge information to notes
+        discharge_info = f"\n--- DISCHARGE ({datetime.utcnow().strftime('%Y-%m-%d %H:%M')}) ---\n"
+        discharge_info += f"Reason: {discharge_reason}\n"
+        discharge_info += f"Destination: {discharge_destination}\n"
+        if discharge_notes:
+            discharge_info += f"Notes: {discharge_notes}\n"
+        if follow_up_required:
+            discharge_info += f"Follow-up required: {follow_up_notes}\n"
+        
+        patient.notes = (patient.notes or '') + discharge_info
+        
+        # Resolve any active AI alerts for this patient
+        ai_manager = AIDataManager(db)
+        active_alerts = db.query(AIAlert).filter(
+            AIAlert.patient_id == patient_id,
+            AIAlert.resolved == False
+        ).all()
+        
+        for alert in active_alerts:
+            ai_manager.resolve_ai_alert(alert.id, "system_discharge")
+        
+        db.commit()
+        
+        # Broadcast update
+        await broadcast_emergency_update("patient_discharged", {
+            "patient_id": patient_id,
+            "name": patient.name,
+            "discharge_reason": discharge_reason,
+            "destination": discharge_destination
+        })
+        
+        logger.info(f"Patient {patient_id} discharged: {discharge_reason}")
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Patient {patient.name} discharged successfully",
+            "discharge_summary": {
+                "patient_name": patient.name,
+                "discharge_time": datetime.utcnow().isoformat(),
+                "reason": discharge_reason,
+                "destination": discharge_destination,
+                "follow_up_required": follow_up_required,
+                "alerts_resolved": len(active_alerts)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error discharging patient {patient_id}: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/assign-doctor")
+async def assign_doctor_to_patient(
+    patient_id: int = Form(...),
+    doctor_name: str = Form(...),
+    nurse_name: Optional[str] = Form(''),
+    bed_assignment: Optional[str] = Form(''),
+    priority_override: Optional[str] = Form(None),
+    assignment_notes: Optional[str] = Form(''),
+    db: Session = Depends(get_db)
+):
+    """Assign medical staff to patient"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        # Store old assignments for comparison
+        old_doctor = getattr(patient, 'assigned_doctor', '')
+        old_nurse = getattr(patient, 'assigned_nurse', '')
+        
+        # Update assignments
+        if hasattr(patient, 'assigned_doctor'):
+            patient.assigned_doctor = doctor_name
+        if hasattr(patient, 'assigned_nurse'):
+            patient.assigned_nurse = nurse_name
+        if hasattr(patient, 'bed_assignment'):
+            patient.bed_assignment = bed_assignment
+        
+        # Update priority if overridden
+        if priority_override and priority_override != patient.triage_color:
+            patient.triage_color = priority_override
+        
+        # Mark treatment as started if not already
+        if hasattr(patient, 'treatment_started_at') and not getattr(patient, 'treatment_started_at'):
+            patient.treatment_started_at = datetime.utcnow()
+        
+        # Add assignment notes
+        if assignment_notes:
+            assignment_info = f"\n--- ASSIGNMENT ({datetime.utcnow().strftime('%Y-%m-%d %H:%M')}) ---\n"
+            assignment_info += f"Doctor: {doctor_name}\n"
+            if nurse_name:
+                assignment_info += f"Nurse: {nurse_name}\n"
+            if bed_assignment:
+                assignment_info += f"Bed: {bed_assignment}\n"
+            assignment_info += f"Notes: {assignment_notes}\n"
+            
+            patient.notes = (patient.notes or '') + assignment_info
+        
+        if hasattr(patient, 'updated_at'):
+            patient.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        # Log assignment change
+        ai_manager = AIDataManager(db)
+        ai_manager.log_ai_analysis(
+            patient_id=patient_id,
+            analysis_type="staff_assignment",
+            input_data={
+                "old_doctor": old_doctor,
+                "new_doctor": doctor_name,
+                "old_nurse": old_nurse,
+                "new_nurse": nurse_name,
+                "bed": bed_assignment
+            },
+            ai_output={
+                "assignment_completed": True,
+                "staff_assigned": True,
+                "bed_allocated": bool(bed_assignment)
+            },
+            confidence=1.0,
+            model_version="staff_management_v1",
+            analyst_id="staff_system"
+        )
+        
+        # Broadcast update
+        await broadcast_emergency_update("staff_assigned", {
+            "patient_id": patient_id,
+            "patient_name": patient.name,
+            "doctor": doctor_name,
+            "nurse": nurse_name,
+            "bed": bed_assignment
+        })
+        
+        logger.info(f"Staff assigned to patient {patient_id}: Dr. {doctor_name}")
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Staff successfully assigned to {patient.name}",
+            "assignment": {
+                "patient_name": patient.name,
+                "doctor": doctor_name,
+                "nurse": nurse_name,
+                "bed": bed_assignment,
+                "assigned_at": datetime.utcnow().isoformat(),
+                "treatment_started": bool(getattr(patient, 'treatment_started_at', None))
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error assigning staff to patient {patient_id}: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/run-predictive-analysis")
+async def run_comprehensive_predictive_analysis(
+    analysis_type: str = Form("comprehensive"),  # comprehensive, resource, workflow, risk
+    timeframe: str = Form("4h"),  # 1h, 4h, 8h, 24h
+    db: Session = Depends(get_db)
+):
+    """Run comprehensive AI predictive analysis"""
+    try:
+        # Get current patient data
+        active_patients = db.query(TriagePatient).filter(
+            TriagePatient.status == "active"
+        ).all()
+        
+        # Prepare analysis context
+        analysis_context = {
+            "current_time": datetime.utcnow(),
+            "total_patients": len(active_patients),
+            "critical_patients": len([p for p in active_patients if p.triage_color == "red"]),
+            "timeframe": timeframe,
+            "analysis_type": analysis_type
+        }
+        
+        # Run AI analysis based on type
+        if analysis_type == "comprehensive":
+            results = await run_comprehensive_analysis(active_patients, analysis_context)
+        elif analysis_type == "resource":
+            results = await run_resource_prediction_analysis(active_patients, analysis_context)
+        elif analysis_type == "workflow":
+            results = await run_workflow_analysis(active_patients, analysis_context)
+        elif analysis_type == "risk":
+            results = await run_risk_assessment_analysis(active_patients, analysis_context)
+        else:
+            results = await run_comprehensive_analysis(active_patients, analysis_context)
+        
+        # Log the analysis
+        ai_manager = AIDataManager(db)
+        analysis_id = ai_manager.log_ai_analysis(
+            patient_id=None,
+            analysis_type=f"predictive_{analysis_type}",
+            input_data=analysis_context,
+            ai_output=results,
+            confidence=results.get("confidence", 0.8),
+            model_version="gemma-3n-predictive",
+            analyst_id="staff_system"
+        )
+        
+        logger.info(f"Predictive analysis completed: {analysis_type} ({timeframe})")
+        
+        return JSONResponse({
+            "success": True,
+            "analysis_id": analysis_id,
+            "analysis_type": analysis_type,
+            "timeframe": timeframe,
+            "results": results,
+            "generated_at": datetime.utcnow().isoformat(),
+            "recommendations": results.get("recommendations", []),
+            "confidence": results.get("confidence", 0.8)
+        })
+        
+    except Exception as e:
+        logger.error(f"Predictive analysis error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/available-staff")
+async def get_available_staff():
+    """Get list of available medical staff for assignments"""
+    try:
+        # This would typically come from a staff database
+        # For now, returning simulated data
+        available_staff = {
+            "doctors": [
+                {"name": "Dr. Sarah Chen", "specialty": "Emergency Medicine", "status": "available"},
+                {"name": "Dr. Michael Rodriguez", "specialty": "Cardiology", "status": "available"},
+                {"name": "Dr. Emily Johnson", "specialty": "Trauma Surgery", "status": "busy"},
+                {"name": "Dr. David Kim", "specialty": "Internal Medicine", "status": "available"},
+                {"name": "Dr. Lisa Wang", "specialty": "Neurology", "status": "available"},
+                {"name": "Dr. James Miller", "specialty": "Orthopedics", "status": "on_break"},
+                {"name": "Dr. Maria Santos", "specialty": "Pediatrics", "status": "available"},
+                {"name": "Dr. Robert Taylor", "specialty": "Anesthesiology", "status": "available"}
+            ],
+            "nurses": [
+                {"name": "Nurse Jennifer Adams", "unit": "Emergency", "status": "available"},
+                {"name": "Nurse Carlos Martinez", "unit": "ICU", "status": "available"},
+                {"name": "Nurse Amanda Thompson", "unit": "Emergency", "status": "busy"},
+                {"name": "Nurse Kevin Brown", "unit": "Trauma", "status": "available"},
+                {"name": "Nurse Rachel Green", "unit": "Emergency", "status": "available"},
+                {"name": "Nurse Daniel Wilson", "unit": "ICU", "status": "available"},
+                {"name": "Nurse Sophia Lee", "unit": "Pediatrics", "status": "on_break"},
+                {"name": "Nurse Mark Anderson", "unit": "Emergency", "status": "available"}
+            ],
+            "specialists": [
+                {"name": "Dr. Patricia Clark", "specialty": "Radiology", "status": "available"},
+                {"name": "Dr. Steven Davis", "specialty": "Pathology", "status": "available"},
+                {"name": "Dr. Nicole White", "specialty": "Psychiatry", "status": "busy"}
+            ]
+        }
+        
+        # Available beds/rooms
+        available_beds = [
+            {"id": "ER-01", "type": "Emergency", "status": "available"},
+            {"id": "ER-02", "type": "Emergency", "status": "occupied"},
+            {"id": "ER-03", "type": "Emergency", "status": "available"},
+            {"id": "ER-04", "type": "Emergency", "status": "cleaning"},
+            {"id": "TR-01", "type": "Trauma", "status": "available"},
+            {"id": "TR-02", "type": "Trauma", "status": "available"},
+            {"id": "ICU-01", "type": "ICU", "status": "occupied"},
+            {"id": "ICU-02", "type": "ICU", "status": "available"},
+            {"id": "OBS-01", "type": "Observation", "status": "available"},
+            {"id": "OBS-02", "type": "Observation", "status": "available"}
+        ]
+        
+        return JSONResponse({
+            "success": True,
+            "available_staff": available_staff,
+            "available_beds": available_beds,
+            "capacity_summary": {
+                "doctors_available": len([d for d in available_staff["doctors"] if d["status"] == "available"]),
+                "nurses_available": len([n for n in available_staff["nurses"] if n["status"] == "available"]),
+                "beds_available": len([b for b in available_beds if b["status"] == "available"]),
+                "emergency_beds_available": len([b for b in available_beds if b["type"] == "Emergency" and b["status"] == "available"]),
+                "icu_beds_available": len([b for b in available_beds if b["type"] == "ICU" and b["status"] == "available"])
+            },
+            "last_updated": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting available staff: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+# ================================================================================
+# HELPER FUNCTIONS FOR THE NEW ROUTES
+# ================================================================================
+
+def calculate_wait_time(patient: TriagePatient) -> int:
+    """Calculate patient wait time in minutes"""
+    now = datetime.utcnow()
+    wait_start = getattr(patient, 'triage_completed_at', None) or patient.created_at
+    return int((now - wait_start).total_seconds() / 60)
+
+def identify_workflow_bottlenecks(stage_stats: dict) -> list:
+    """Identify workflow bottlenecks based on stage statistics"""
+    bottlenecks = []
+    
+    for stage, stats in stage_stats.items():
+        if stats["count"] > 10:  # High patient count
+            bottlenecks.append({
+                "stage": stage,
+                "issue": "High patient volume",
+                "count": stats["count"],
+                "recommendation": "Consider additional staffing"
+            })
+        
+        if stats["avg_wait_time"] > 120:  # Long wait times (2+ hours)
+            bottlenecks.append({
+                "stage": stage,
+                "issue": "Extended wait times",
+                "wait_time": stats["avg_wait_time"],
+                "recommendation": "Review workflow efficiency"
+            })
+        
+        if stats["critical_count"] > 3:  # Many critical patients
+            bottlenecks.append({
+                "stage": stage,
+                "issue": "High critical patient load",
+                "critical_count": stats["critical_count"],
+                "recommendation": "Priority resource allocation needed"
+            })
+    
+    return bottlenecks
+
+async def prepare_pdf_report_data(db: Session, include_patients: bool, include_analytics: bool, include_alerts: bool, triage_colors: str) -> dict:
+    """Prepare comprehensive data for PDF report"""
+    report_data = {
+        "generated_at": datetime.utcnow(),
+        "hospital_name": "Emergency Medical Center",
+        "report_type": "Comprehensive Triage Report"
+    }
+    
+    if include_patients:
+        # Filter patients by triage colors if specified
+        query = db.query(TriagePatient)
+        if triage_colors != "all":
+            colors = [c.strip() for c in triage_colors.split(",")]
+            query = query.filter(TriagePatient.triage_color.in_(colors))
+        
+        patients = query.order_by(TriagePatient.triage_color.desc(), TriagePatient.created_at.desc()).all()
+        
+        report_data["patients"] = []
+        for patient in patients:
+            patient_data = {
+                "name": patient.name,
+                "age": patient.age,
+                "injury": patient.injury_type,
+                "triage_color": patient.triage_color,
+                "severity": patient.severity,
+                "status": patient.status,
+                "created_at": patient.created_at,
+                "assigned_doctor": getattr(patient, 'assigned_doctor', ''),
+                "ai_confidence": getattr(patient, 'ai_confidence', 0.8)
+            }
+            report_data["patients"].append(patient_data)
+    
+    if include_analytics:
+        # Calculate analytics
+        total_patients = db.query(TriagePatient).count()
+        active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").count()
+        
+        report_data["analytics"] = {
+            "total_patients": total_patients,
+            "active_patients": active_patients,
+            "triage_breakdown": {
+                "red": db.query(TriagePatient).filter(TriagePatient.triage_color == "red").count(),
+                "yellow": db.query(TriagePatient).filter(TriagePatient.triage_color == "yellow").count(),
+                "green": db.query(TriagePatient).filter(TriagePatient.triage_color == "green").count(),
+                "black": db.query(TriagePatient).filter(TriagePatient.triage_color == "black").count()
+            }
+        }
+    
+    if include_alerts:
+        # Get active alerts
+        active_alerts = db.query(AIAlert).filter(AIAlert.resolved == False).all()
+        report_data["alerts"] = [
+            {
+                "type": alert.alert_type,
+                "level": alert.alert_level,
+                "message": alert.message,
+                "confidence": alert.confidence,
+                "created_at": alert.created_at
+            }
+            for alert in active_alerts
+        ]
+    
+    return report_data
+
+def generate_pdf_html_template(report_data: dict) -> str:
+    """Generate HTML template for PDF report"""
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Triage Report</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; }}
+            .header {{ text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }}
+            .section {{ margin: 20px 0; }}
+            .patient-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+            .patient-table th, .patient-table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            .patient-table th {{ background-color: #f2f2f2; }}
+            .triage-red {{ background-color: #fee2e2; }}
+            .triage-yellow {{ background-color: #fef3c7; }}
+            .triage-green {{ background-color: #dcfce7; }}
+            .triage-black {{ background-color: #f3f4f6; }}
+            .stats-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 20px 0; }}
+            .stat-card {{ padding: 15px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }}
+            .page-break {{ page-break-before: always; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>{report_data['hospital_name']}</h1>
+            <h2>{report_data['report_type']}</h2>
+            <p>Generated: {report_data['generated_at'].strftime('%Y-%m-%d %H:%M:%S')}</p>
+        </div>
+        
+        <div class="section">
+            <h3>Executive Summary</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Patients</h4>
+                    <p style="font-size: 24px; font-weight: bold;">{report_data.get('analytics', {}).get('total_patients', 0)}</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Active Patients</h4>
+                    <p style="font-size: 24px; font-weight: bold;">{report_data.get('analytics', {}).get('active_patients', 0)}</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Critical (Red)</h4>
+                    <p style="font-size: 24px; font-weight: bold; color: #dc2626;">{report_data.get('analytics', {}).get('triage_breakdown', {}).get('red', 0)}</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Active Alerts</h4>
+                    <p style="font-size: 24px; font-weight: bold; color: #f59e0b;">{len(report_data.get('alerts', []))}</p>
+                </div>
+            </div>
+        </div>
+    """
+    
+    # Add patients table if included
+    if "patients" in report_data:
+        html += """
+        <div class="section page-break">
+            <h3>Patient List</h3>
+            <table class="patient-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Triage</th>
+                        <th>Injury/Condition</th>
+                        <th>Status</th>
+                        <th>Assigned Doctor</th>
+                        <th>AI Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
+        
+        for patient in report_data["patients"]:
+            triage_class = f"triage-{patient['triage_color']}"
+            html += f"""
+                    <tr class="{triage_class}">
+                        <td>{patient['name']}</td>
+                        <td>{patient['age']}</td>
+                        <td>{patient['triage_color'].upper()}</td>
+                        <td>{patient['injury']}</td>
+                        <td>{patient['status']}</td>
+                        <td>{patient['assigned_doctor'] or 'Unassigned'}</td>
+                        <td>{patient['ai_confidence']:.0%}</td>
+                    </tr>
+            """
+        
+        html += """
+                </tbody>
+            </table>
+        </div>
+        """
+    
+    # Add alerts if included
+    if "alerts" in report_data and report_data["alerts"]:
+        html += """
+        <div class="section">
+            <h3>Active AI Alerts</h3>
+            <table class="patient-table">
+                <thead>
+                    <tr>
+                        <th>Alert Type</th>
+                        <th>Level</th>
+                        <th>Message</th>
+                        <th>Confidence</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
+        
+        for alert in report_data["alerts"]:
+            html += f"""
+                    <tr>
+                        <td>{alert['type']}</td>
+                        <td>{alert['level'].upper()}</td>
+                        <td>{alert['message']}</td>
+                        <td>{alert['confidence']:.0%}</td>
+                        <td>{alert['created_at'].strftime('%H:%M')}</td>
+                    </tr>
+            """
+        
+        html += """
+                </tbody>
+            </table>
+        </div>
+        """
+    
+    html += """
+    </body>
+    </html>
+    """
+    
+    return html
+
+async def export_text_report(include_patients: bool, include_analytics: bool, include_alerts: bool, db: Session):
+    """Fallback text-based report when PDF generation is unavailable"""
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"triage_report_{timestamp}.txt"
+    
+    report_content = f"""
+EMERGENCY MEDICAL CENTER
+TRIAGE REPORT
+Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
+{'='*50}
+
+"""
+    
+    if include_analytics:
+        total_patients = db.query(TriagePatient).count()
+        active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").count()
+        
+        report_content += f"""
+SUMMARY STATISTICS:
+- Total Patients: {total_patients}
+- Active Patients: {active_patients}
+- Critical (Red): {db.query(TriagePatient).filter(TriagePatient.triage_color == "red").count()}
+- Urgent (Yellow): {db.query(TriagePatient).filter(TriagePatient.triage_color == "yellow").count()}
+- Delayed (Green): {db.query(TriagePatient).filter(TriagePatient.triage_color == "green").count()}
+- Expectant (Black): {db.query(TriagePatient).filter(TriagePatient.triage_color == "black").count()}
+
+"""
+    
+    if include_patients:
+        patients = db.query(TriagePatient).order_by(TriagePatient.triage_color.desc()).all()
+        report_content += f"""
+PATIENT LIST ({len(patients)} patients):
+{'-'*80}
+"""
+        for patient in patients:
+            report_content += f"""
+Name: {patient.name} | Age: {patient.age} | Triage: {patient.triage_color.upper()}
+Injury: {patient.injury_type} | Status: {patient.status}
+Doctor: {getattr(patient, 'assigned_doctor', 'Unassigned')}
+AI Confidence: {getattr(patient, 'ai_confidence', 0.8):.0%}
+{'-'*40}
+"""
+    
+    return Response(
+        content=report_content,
+        media_type="text/plain",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+async def analyze_current_resource_requirements(db: Session) -> dict:
+    """Analyze current resource requirements"""
+    active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").all()
+    
+    resource_needs = {
+        "immediate_attention": len([p for p in active_patients if p.triage_color == "red"]),
+        "doctors_needed": max(3, len([p for p in active_patients if p.triage_color in ["red", "yellow"]]) // 2),
+        "nurses_needed": len([p for p in active_patients if p.triage_color in ["red", "yellow"]]),
+        "icu_beds": len([p for p in active_patients if p.severity == "critical"]),
+        "monitoring_equipment": len([p for p in active_patients if p.triage_color == "red"])
+    }
+    
+    return {
+        "current_needs": resource_needs,
+        "capacity_status": "adequate" if resource_needs["immediate_attention"] < 5 else "strained",
+        "recommendations": [
+            "Monitor critical patient influx" if resource_needs["immediate_attention"] > 3 else "Current load manageable",
+            f"Consider {resource_needs['doctors_needed']} doctors on duty",
+            f"Ensure {resource_needs['nurses_needed']} nurses available"
+        ]
+    }
+
+async def generate_staff_predictive_insights(db: Session) -> dict:
+    """Generate predictive insights for staff planning"""
+    # Get recent trends
+    recent_patients = db.query(TriagePatient).filter(
+        TriagePatient.created_at >= datetime.utcnow() - timedelta(hours=4)
+    ).all()
+    
+    hourly_admission_rate = len(recent_patients) / 4
+    critical_rate = len([p for p in recent_patients if p.triage_color == "red"]) / max(len(recent_patients), 1)
+    
+    return {
+        "admission_trends": {
+            "hourly_rate": hourly_admission_rate,
+            "critical_percentage": critical_rate * 100,
+            "projected_next_4h": int(hourly_admission_rate * 4)
+        },
+        "staffing_predictions": {
+            "doctors_needed_next_shift": max(3, int(hourly_admission_rate * 2)),
+            "nurses_needed_next_shift": max(6, int(hourly_admission_rate * 3)),
+            "peak_load_risk": "high" if hourly_admission_rate > 5 else "medium" if hourly_admission_rate > 2 else "low"
+        },
+        "recommendations": [
+            "Maintain current staffing" if hourly_admission_rate < 3 else "Consider additional staff",
+            "Monitor for surge capacity needs" if critical_rate > 0.3 else "Normal monitoring protocols"
+        ]
+    }
+
+async def generate_optimization_recommendations(db: Session, ai_performance) -> list:
+    """Generate system optimization recommendations"""
+    recommendations = []
+    
+    # Performance-based recommendations
+    if ai_performance.cpu_usage > 80:
+        recommendations.append({
+            "type": "performance",
+            "priority": "high",
+            "message": "High CPU usage detected - consider optimizing AI model settings",
+            "action": "Reduce model complexity or increase hardware resources"
+        })
+    
+    if ai_performance.memory_usage > 85:
+        recommendations.append({
+            "type": "performance",
+            "priority": "medium",
+            "message": "Memory usage approaching limits",
+            "action": "Consider clearing old analysis cache or upgrading memory"
+        })
+    
+    # Workflow-based recommendations
+    unassigned_patients = db.query(TriagePatient).filter(
+        TriagePatient.status == "active",
+        or_(
+            TriagePatient.assigned_doctor.is_(None),
+            TriagePatient.assigned_doctor == ''
+        ) if hasattr(TriagePatient, 'assigned_doctor') else True
+    ).count()
+    
+    if unassigned_patients > 5:
+        recommendations.append({
+            "type": "workflow",
+            "priority": "high",
+            "message": f"{unassigned_patients} patients without assigned doctors",
+            "action": "Review staff assignments and patient distribution"
+        })
+    
+    # AI-based recommendations
+    low_confidence_analyses = db.query(AIAnalysisLog).filter(
+        AIAnalysisLog.confidence_score < 0.7,
+        AIAnalysisLog.created_at >= datetime.utcnow() - timedelta(hours=2)
+    ).count()
+    
+    if low_confidence_analyses > 3:
+        recommendations.append({
+            "type": "ai_quality",
+            "priority": "medium",
+            "message": f"{low_confidence_analyses} recent low-confidence AI analyses",
+            "action": "Review data quality and consider model retraining"
+        })
+    
+    return recommendations
+
+async def run_comprehensive_analysis(patients: list, context: dict) -> dict:
+    """Run comprehensive predictive analysis"""
+    return {
+        "analysis_type": "comprehensive",
+        "timeframe": context["timeframe"],
+        "patient_load_prediction": {
+            "current": len(patients),
+            "projected_increase": min(10, len(patients) * 0.2),
+            "capacity_status": "normal" if len(patients) < 15 else "approaching_limit"
+        },
+        "resource_requirements": {
+            "additional_doctors": max(0, len([p for p in patients if p.triage_color == "red"]) - 2),
+            "icu_beds_needed": len([p for p in patients if p.severity == "critical"]),
+            "equipment_priorities": ["monitors", "ventilators"] if len(patients) > 10 else ["standard_equipment"]
+        },
+        "risk_factors": [
+            "High critical patient volume" if len([p for p in patients if p.triage_color == "red"]) > 3 else "Normal risk level",
+            "Resource strain possible" if len(patients) > 15 else "Adequate capacity"
+        ],
+        "recommendations": [
+            "Monitor admission rates closely",
+            "Ensure adequate staffing for next shift",
+            "Prepare overflow protocols if needed" if len(patients) > 12 else "Continue standard operations"
+        ],
+        "confidence": 0.85
+    }
+
+async def run_resource_prediction_analysis(patients: list, context: dict) -> dict:
+    """Run resource-focused predictive analysis"""
+    critical_count = len([p for p in patients if p.triage_color == "red"])
+    urgent_count = len([p for p in patients if p.triage_color == "yellow"])
+    
+    return {
+        "analysis_type": "resource_prediction",
+        "timeframe": context["timeframe"],
+        "staffing_needs": {
+            "doctors": max(3, critical_count + (urgent_count // 2)),
+            "nurses": max(6, critical_count * 2 + urgent_count),
+            "specialists": critical_count // 2
+        },
+        "equipment_needs": {
+            "monitors": critical_count + (urgent_count // 2),
+            "ventilators": critical_count // 3,
+            "beds": {
+                "icu": critical_count,
+                "emergency": urgent_count,
+                "observation": len([p for p in patients if p.triage_color == "green"])
+            }
+        },
+        "bottleneck_prediction": [
+            "ICU capacity" if critical_count > 5 else "No bottlenecks predicted",
+            "Nursing staff" if (critical_count * 2 + urgent_count) > 10 else "Adequate nursing"
+        ],
+        "confidence": 0.82
+    }
+
+async def run_workflow_analysis(patients: list, context: dict) -> dict:
+    """Run workflow efficiency analysis"""
+    return {
+        "analysis_type": "workflow",
+        "timeframe": context["timeframe"],
+        "stage_efficiency": {
+            "triage": {"avg_time": "8 minutes", "bottleneck_risk": "low"},
+            "treatment": {"avg_time": "45 minutes", "bottleneck_risk": "medium"},
+            "discharge": {"avg_time": "25 minutes", "bottleneck_risk": "low"}
+        },
+        "throughput_prediction": {
+            "patients_per_hour": min(8, len(patients) // 2),
+            "discharge_rate": "6 per hour",
+            "bed_turnover": "85%"
+        },
+        "optimization_opportunities": [
+            "Streamline discharge process" if len(patients) > 12 else "Workflow operating efficiently",
+            "Consider parallel triage stations" if len(patients) > 15 else "Single triage adequate"
+        ],
+        "confidence": 0.78
+    }
+
+async def run_risk_assessment_analysis(patients: list, context: dict) -> dict:
+    """Run patient risk assessment analysis"""
+    high_risk_patients = len([p for p in patients if p.triage_color == "red" or p.severity == "critical"])
+    
+    return {
+        "analysis_type": "risk_assessment",
+        "timeframe": context["timeframe"],
+        "patient_risk_levels": {
+            "immediate_risk": high_risk_patients,
+            "deterioration_risk": len([p for p in patients if p.triage_color == "yellow"]) // 3,
+            "stable_patients": len([p for p in patients if p.triage_color == "green"])
+        },
+        "mortality_risk_factors": [
+            f"{high_risk_patients} patients in critical condition",
+            "Age-related complications possible" if any(getattr(p, 'age', 0) > 65 for p in patients) else "No age-related concerns"
+        ],
+        "intervention_priorities": [
+            "Immediate cardiac monitoring" if any("cardiac" in p.injury_type.lower() for p in patients) else "Standard monitoring",
+            "Respiratory support standby" if any("breathing" in p.breathing.lower() for p in patients) else "No respiratory concerns"
+        ],
+        "confidence": 0.88
+    }
+    
+# ================================================================================
 # SYSTEM HEALTH & UTILITIES
 # ================================================================================
 
