@@ -831,6 +831,10 @@
                     <span>🚑</span>
                     <span>URGENT: New Patient Intake</span>
                 </button>
+                <button class="action-btn" onclick="openStaffAITools()">
+                    <span>🧠</span>
+                    <span>Staff AI Analysis Tools</span>
+                </button>
                 <button class="action-btn" onclick="aiTriageSystem.runPredictiveAnalysis()">
                     <span>🤖</span>
                     <span>AI Predictive Analysis</span>
@@ -854,101 +858,106 @@
                     </div>
                 </div>
                 <div class="patient-queue" id="patient-queue">
-                    <!-- Sample Patient Items -->
-                    <div class="patient-item red" onclick="openPatientDetails(1)">
-                        <div class="priority-indicator">1</div>
-                        <div class="patient-info">
-                            <div class="patient-name">John Smith</div>
-                            <div class="patient-details">
-                                <span class="detail-tag">Chest trauma</span>
-                                <span class="detail-tag">RED</span>
-                                <span class="detail-tag ai-tag">AI: 92%</span>
-                            </div>
-                            <div class="ai-insight">
-                                🤖 Immediate cardiology consult, EKG, chest X-ray
-                                <div class="confidence-score">
-                                    <span>Confidence:</span>
-                                    <div class="confidence-bar">
-                                        <div class="confidence-fill" style="width: 92%"></div>
-                                    </div>
-                                    <span>92%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="patient-time">5m ago</div>
-                    </div>
-
-                    <div class="patient-item yellow" onclick="openPatientDetails(2)">
-                        <div class="priority-indicator">2</div>
-                        <div class="patient-info">
-                            <div class="patient-name">Maria Garcia</div>
-                            <div class="patient-details">
-                                <span class="detail-tag">Fracture - left arm</span>
-                                <span class="detail-tag">YELLOW</span>
-                                <span class="detail-tag ai-tag">AI: 87%</span>
-                            </div>
-                            <div class="ai-insight">
-                                🤖 X-ray, pain management, orthopedic evaluation
-                                <div class="confidence-score">
-                                    <span>Confidence:</span>
-                                    <div class="confidence-bar">
-                                        <div class="confidence-fill" style="width: 87%"></div>
-                                    </div>
-                                    <span>87%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="patient-time">10m ago</div>
-                    </div>
-
-                    <div class="patient-item red" onclick="openPatientDetails(3)">
-                        <div class="priority-indicator">1</div>
-                        <div class="patient-info">
-                            <div class="patient-name">Robert Wilson</div>
-                            <div class="patient-details">
-                                <span class="detail-tag">Cardiac event</span>
-                                <span class="detail-tag">RED</span>
-                                <span class="detail-tag ai-tag">AI: 95%</span>
-                            </div>
-                            <div class="ai-insight">
-                                🤖 Immediate cardiac cath lab, aspirin, nitroglycerin
-                                <div class="confidence-score">
-                                    <span>Confidence:</span>
-                                    <div class="confidence-bar">
-                                        <div class="confidence-fill" style="width: 95%"></div>
-                                    </div>
-                                    <span>95%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="patient-time">15m ago</div>
-                    </div>
-
-                    <div class="patient-item green" onclick="openPatientDetails(4)">
-                        <div class="priority-indicator">3</div>
-                        <div class="patient-info">
-                            <div class="patient-name">Sarah Johnson</div>
-                            <div class="patient-details">
-                                <span class="detail-tag">Minor lacerations</span>
-                                <span class="detail-tag">GREEN</span>
-                                <span class="detail-tag ai-tag">AI: 89%</span>
-                            </div>
-                            <div class="ai-insight">
-                                🤖 Wound cleaning, sutures if needed, tetanus check
-                                <div class="confidence-score">
-                                    <span>Confidence:</span>
-                                    <div class="confidence-bar">
-                                        <div class="confidence-fill" style="width: 89%"></div>
-                                    </div>
-                                    <span>89%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="patient-time">20m ago</div>
-                    </div>
+                   <!-- Sample Patient Items -->
+<div class="patient-item red" onclick="openPatientDetails(1)">
+    <div class="priority-indicator">1</div>
+    <div class="patient-info">
+        <div class="patient-name">John Smith</div>
+        <div class="patient-details">
+            <span class="detail-tag">Chest trauma</span>
+            <span class="detail-tag">RED</span>
+            <span class="detail-tag ai-tag">AI: 92%</span>
+        </div>
+        <div class="ai-insight">
+            🤖 Immediate cardiology consult, EKG, chest X-ray
+            <div class="confidence-score">
+                <span>Confidence:</span>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: 92%"></div>
                 </div>
+                <span>92%</span>
             </div>
         </div>
+    </div>
+    <div class="patient-time">5m ago</div>
+    <button class="queue-btn" onclick="editPatient(1); event.stopPropagation();" title="Edit Patient" 
+            style="position: absolute; top: 10px; right: 10px;">✏️</button>
+</div>
+
+<div class="patient-item yellow" onclick="openPatientDetails(2)">
+    <div class="priority-indicator">2</div>
+    <div class="patient-info">
+        <div class="patient-name">Maria Garcia</div>
+        <div class="patient-details">
+            <span class="detail-tag">Fracture - left arm</span>
+            <span class="detail-tag">YELLOW</span>
+            <span class="detail-tag ai-tag">AI: 87%</span>
+        </div>
+        <div class="ai-insight">
+            🤖 X-ray, pain management, orthopedic evaluation
+            <div class="confidence-score">
+                <span>Confidence:</span>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: 87%"></div>
+                </div>
+                <span>87%</span>
+            </div>
+        </div>
+    </div>
+    <div class="patient-time">10m ago</div>
+    <button class="queue-btn" onclick="editPatient(2); event.stopPropagation();" title="Edit Patient" 
+            style="position: absolute; top: 10px; right: 10px;">✏️</button>
+</div>
+
+<div class="patient-item red" onclick="openPatientDetails(3)">
+    <div class="priority-indicator">1</div>
+    <div class="patient-info">
+        <div class="patient-name">Robert Wilson</div>
+        <div class="patient-details">
+            <span class="detail-tag">Cardiac event</span>
+            <span class="detail-tag">RED</span>
+            <span class="detail-tag ai-tag">AI: 95%</span>
+        </div>
+        <div class="ai-insight">
+            🤖 Immediate cardiac cath lab, aspirin, nitroglycerin
+            <div class="confidence-score">
+                <span>Confidence:</span>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: 95%"></div>
+                </div>
+                <span>95%</span>
+            </div>
+        </div>
+    </div>
+    <div class="patient-time">15m ago</div>
+    <button class="queue-btn" onclick="editPatient(3); event.stopPropagation();" title="Edit Patient" 
+            style="position: absolute; top: 10px; right: 10px;">✏️</button>
+</div>
+
+<div class="patient-item green" onclick="openPatientDetails(4)">
+    <div class="priority-indicator">3</div>
+    <div class="patient-info">
+        <div class="patient-name">Sarah Johnson</div>
+        <div class="patient-details">
+            <span class="detail-tag">Minor lacerations</span>
+            <span class="detail-tag">GREEN</span>
+            <span class="detail-tag ai-tag">AI: 89%</span>
+        </div>
+        <div class="ai-insight">
+            🤖 Wound cleaning, sutures if needed, tetanus check
+            <div class="confidence-score">
+                <span>Confidence:</span>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: 89%"></div>
+                </div>
+                <span>89%</span>
+            </div>
+        </div>
+    </div>
+    <div class="patient-time">20m ago</div>
+    <button class="queue-btn" onclick="editPatient(4); event.stopPropagation();" title="Edit Patient" 
+            style="position: absolute; top: 10px; right: 10px;">✏️</button>
+</div>
 
         <!-- Sidebar -->
         <div class="sidebar">
