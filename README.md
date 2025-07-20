@@ -38,3 +38,63 @@ A comprehensive, **offline-first AI-powered medical triage dashboard** designed 
 - 2GB RAM minimum, 4GB recommended
 - Internet connection (system works offline after initial load)
 
+### **Installation & Setup**
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-org/ai-medical-triage-system.git
+   cd ai-medical-triage-system
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   npm install
+   ```
+
+3. **Configure Environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+4. **Launch the System**
+   ```bash
+   python app.py
+   # Or for production:
+   gunicorn --workers 4 --bind 0.0.0.0:8000 app:app
+   ```
+
+5. **Access the Dashboard**
+   - Navigate to `http://localhost:8000`
+   - Staff interface: `http://localhost:8000/staff_triage_command.html`
+   - Citizen portal: `http://localhost:8000/home.html`
+
+---
+
+## 🏗️ **System Architecture**
+
+### **Frontend Stack**
+- **HTML5/CSS3/JavaScript** - Modern web standards
+- **Progressive Web App (PWA)** - Offline-first architecture
+- **Material Design Icons** - Consistent, accessible iconography
+- **Leaflet.js** - Interactive mapping and geolocation
+- **Service Workers** - Background sync and caching
+
+### **Backend Infrastructure**
+- **FastAPI** - High-performance async API framework
+- **SQLite + SQLAlchemy** - Embedded database with ORM
+- **WebSocket Support** - Real-time updates and notifications
+- **JWT Authentication** - Secure token-based auth
+- **WeasyPrint** - Professional PDF generation
+
+### **AI/ML Pipeline**
+- **Gemma 3n** - Google's advanced multimodal AI model
+- **OpenAI Whisper** - Speech-to-text transcription
+- **PyTorch + torchvision** - Computer vision and object detection
+- **Custom NLP Models** - Emergency-specific language processing
+- **Real-time Analysis Engine** - Sub-second response times
+
+---
+
+## 📋 **Complete Feature Documentation**
