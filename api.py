@@ -2175,6 +2175,65 @@ async def triage_dashboard(request: Request, db: Session = Depends(get_db)):
         </html>
         """)
     
+@app.get("/triage-form", response_class=HTMLResponse)
+async def triage_form_page(request: Request):
+    """Enhanced AI-integrated triage form for rapid patient intake"""
+    try:
+        return templates.TemplateResponse("triage_form.html", {
+            "request": request,
+            "page_title": "New Patient Triage - AI Emergency Assistant",
+            "current_time": datetime.utcnow()
+        })
+    except Exception as e:
+        logger.error(f"Error serving triage_form.html: {e}")
+        return HTMLResponse("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>New Patient Triage - AI Emergency Assistant</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }
+                .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; }
+                .error { color: #dc2626; background: #fef2f2; padding: 1rem; border-radius: 4px; margin: 1rem 0; }
+                .btn { display: inline-block; background: #3b82f6; color: white; padding: 0.75rem 1.5rem; 
+                       border-radius: 6px; text-decoration: none; margin: 0.5rem; }
+                .btn:hover { background: #2563eb; }
+                .btn-red { background: #dc2626; }
+                .btn-red:hover { background: #b91c1c; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚑 New Patient Triage</h1>
+                <div class="error">
+                    <p><strong>Template Error:</strong> The triage form template is not available.</p>
+                    <p>Error: {str(e)}</p>
+                </div>
+                
+                <h3>Quick Actions:</h3>
+                <a href="/staff-triage-command" class="btn">🏥 Return to Command Center</a>
+                <a href="/triage-dashboard" class="btn">📊 Triage Dashboard</a>
+                <a href="/admin" class="btn">📈 Admin Dashboard</a>
+                
+                <h3>Alternative Access:</h3>
+                <p>You can also access triage functionality through:</p>
+                <ul>
+                    <li><a href="/triage-dashboard">Triage Dashboard</a> - View and manage all patients</li>
+                    <li><a href="/admin">Admin Dashboard</a> - System overview</li>
+                    <li><a href="/api/docs">API Documentation</a> - Direct API access</li>
+                </ul>
+                
+                <div style="margin-top: 2rem; padding: 1rem; background: #fef3c7; border-radius: 6px;">
+                    <h4>💡 Developer Note:</h4>
+                    <p>Create <code>templates/triage_form.html</code> to use the enhanced triage form interface.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+    
 # ================================================================================
 # GEMMA 3N AI INTEGRATION FUNCTIONS
 # ================================================================================

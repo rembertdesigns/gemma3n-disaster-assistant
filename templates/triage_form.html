@@ -1,1128 +1,1933 @@
-<!-- templates/triage_form.html -->
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Patient Triage - AI Emergency Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --color-red: #dc2626;
+            --color-yellow: #f59e0b;
+            --color-green: #16a34a;
+            --color-blue: #3b82f6;
+            --color-black: #374151;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --border-color: #e5e7eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
 
-{% block title %}Medical Emergency Triage - Disaster Response Assistant{% endblock %}
-{% block page_title %}🚑 Medical Emergency Triage{% endblock %}
-{% block subtitle %}Rapid Patient Assessment & Prioritization System{% endblock %}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block header_actions %}
-<a href="/" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #6b7280; color: #fff; border-radius: 6px; text-decoration: none;">
-  ⬅️ Back to Home
-</a>
-<a href="/triage-dashboard" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background-color: #dc2626; color: #fff; border-radius: 6px; text-decoration: none; margin-left: 0.5rem;">
-  📊 Triage Dashboard
-</a>
-{% endblock %}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
 
-{% block extra_styles %}
-<style>
-  .triage-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 2rem;
-    align-items: start;
-  }
-  
-  .main-triage-form {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    border-left: 6px solid #dc2626;
-  }
-  
-  .form-header {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    color: white;
-    padding: 2rem;
-    text-align: center;
-    position: relative;
-  }
-  
-  .form-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 20px,
-      rgba(255,255,255,0.05) 20px,
-      rgba(255,255,255,0.05) 40px
-    );
-    animation: medical-pulse 3s ease-in-out infinite;
-  }
-  
-  @keyframes medical-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
-  
-  .emergency-badge {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 1rem;
-    display: inline-block;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .form-title {
-    font-size: 2rem;
-    font-weight: bold;
-    margin: 0 0 0.5rem 0;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .form-subtitle {
-    font-size: 1rem;
-    opacity: 0.9;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .form-content {
-    padding: 2rem;
-  }
-  
-  .triage-sections {
-    display: grid;
-    gap: 2rem;
-  }
-  
-  .triage-section {
-    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
-  }
-  
-  .triage-section:hover {
-    border-color: #dc2626;
-    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.1);
-  }
-  
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #1e40af;
-  }
-  
-  .section-icon {
-    font-size: 1.8rem;
-    padding: 0.5rem;
-    background: rgba(220, 38, 38, 0.1);
-    border-radius: 8px;
-  }
-  
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-  }
-  
-  .form-field {
-    position: relative;
-  }
-  
-  .field-label {
-    display: block;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .required-field {
-    color: #dc2626;
-    margin-left: 0.25rem;
-  }
-  
-  .field-input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 2px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
-    background: white;
-  }
-  
-  .field-input:focus {
-    outline: none;
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-  }
-  
-  .field-input.error {
-    border-color: #ef4444;
-    background: #fef2f2;
-  }
-  
-  .field-input.valid {
-    border-color: #16a34a;
-    background: #f0fdf4;
-  }
-  
-  .field-textarea {
-    min-height: 100px;
-    resize: vertical;
-    font-family: inherit;
-    line-height: 1.5;
-  }
-  
-  .vitals-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
-  }
-  
-  .vital-field {
-    text-align: center;
-  }
-  
-  .vital-label {
-    font-size: 0.8rem;
-    color: #6b7280;
-    margin-bottom: 0.25rem;
-    display: block;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  
-  .vital-input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 2px solid #d1d5db;
-    border-radius: 6px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 1.1rem;
-  }
-  
-  .vital-input:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
-  }
-  
-  .vital-normal { border-color: #16a34a; background: #f0fdf4; }
-  .vital-warning { border-color: #f59e0b; background: #fffbeb; }
-  .vital-critical { border-color: #dc2626; background: #fef2f2; }
-  
-  .severity-selector {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
-    margin-top: 0.5rem;
-  }
-  
-  .severity-option {
-    position: relative;
-  }
-  
-  .severity-radio {
-    display: none;
-  }
-  
-  .severity-label {
-    display: block;
-    padding: 1rem;
-    text-align: center;
-    border: 2px solid #e5e7eb;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 600;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .severity-label::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    transition: left 0.5s;
-  }
-  
-  .severity-radio:checked + .severity-label::before {
-    left: 100%;
-  }
-  
-  .severity-mild {
-    border-color: #16a34a;
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    color: #15803d;
-  }
-  
-  .severity-radio:checked + .severity-mild {
-    background: #16a34a;
-    color: white;
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(22, 163, 74, 0.3);
-  }
-  
-  .severity-moderate {
-    border-color: #f59e0b;
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-    color: #92400e;
-  }
-  
-  .severity-radio:checked + .severity-moderate {
-    background: #f59e0b;
-    color: white;
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
-  }
-  
-  .severity-severe {
-    border-color: #dc2626;
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-    color: #991b1b;
-  }
-  
-  .severity-radio:checked + .severity-severe {
-    background: #dc2626;
-    color: white;
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
-  }
-  
-  .severity-critical {
-    border-color: #7f1d1d;
-    background: linear-gradient(135deg, #450a0a 0%, #991b1b 100%);
-    color: white;
-    animation: critical-pulse 2s infinite;
-  }
-  
-  @keyframes critical-pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-  }
-  
-  .severity-radio:checked + .severity-critical {
-    background: #450a0a;
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(127, 29, 29, 0.5);
-  }
-  
-  .triage-color-section {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-    color: white;
-    border: none;
-    margin-top: 2rem;
-  }
-  
-  .triage-color-section .section-header {
-    color: white;
-  }
-  
-  .triage-color-section .section-icon {
-    background: rgba(255, 255, 255, 0.2);
-  }
-  
-  .triage-colors {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  
-  .color-option {
-    padding: 1.5rem 1rem;
-    border-radius: 12px;
-    cursor: pointer;
-    color: white;
-    font-weight: bold;
-    text-align: center;
-    transition: all 0.3s ease;
-    border: 3px solid transparent;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .color-option::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.5s;
-  }
-  
-  .color-option.selected::before {
-    left: 100%;
-  }
-  
-  .color-red {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
-  }
-  
-  .color-red.selected {
-    border-color: white;
-    transform: scale(1.05);
-    box-shadow: 0 8px 30px rgba(220, 38, 38, 0.5);
-  }
-  
-  .color-yellow {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
-  }
-  
-  .color-yellow.selected {
-    border-color: white;
-    transform: scale(1.05);
-    box-shadow: 0 8px 30px rgba(245, 158, 11, 0.5);
-  }
-  
-  .color-green {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-    box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
-  }
-  
-  .color-green.selected {
-    border-color: white;
-    transform: scale(1.05);
-    box-shadow: 0 8px 30px rgba(22, 163, 74, 0.5);
-  }
-  
-  .color-black {
-    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
-    box-shadow: 0 4px 15px rgba(55, 65, 81, 0.3);
-  }
-  
-  .color-black.selected {
-    border-color: white;
-    transform: scale(1.05);
-    box-shadow: 0 8px 30px rgba(55, 65, 81, 0.5);
-  }
-  
-  .color-description {
-    font-size: 0.8rem;
-    opacity: 0.9;
-    margin-top: 0.5rem;
-    line-height: 1.3;
-  }
-  
-  .submit-section {
-    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-    padding: 2rem;
-    border-radius: 12px;
-    border: 2px solid #e5e7eb;
-    text-align: center;
-    margin-top: 2rem;
-  }
-  
-  .submit-button {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    color: white;
-    border: none;
-    padding: 1rem 2.5rem;
-    border-radius: 12px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    min-width: 250px;
-  }
-  
-  .submit-button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-  }
-  
-  .submit-button:hover::before {
-    left: 100%;
-  }
-  
-  .submit-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 35px rgba(220, 38, 38, 0.4);
-  }
-  
-  .submit-button:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-  
-  /* Sidebar */
-  .triage-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  
-  .info-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-  }
-  
-  .info-card-header {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    color: white;
-    padding: 1rem;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .info-card-content {
-    padding: 1rem;
-  }
-  
-  .triage-guide {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .triage-guide li {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
-    line-height: 1.4;
-  }
-  
-  .triage-color-indicator {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 0.1rem;
-  }
-  
-  .indicator-red { background: #dc2626; }
-  .indicator-yellow { background: #f59e0b; }
-  .indicator-green { background: #16a34a; }
-  .indicator-black { background: #374151; }
-  
-  .quick-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-  
-  .stat-card {
-    text-align: center;
-    padding: 1rem;
-    background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-  }
-  
-  .stat-number {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #dc2626;
-    display: block;
-  }
-  
-  .stat-label {
-    font-size: 0.8rem;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 0.25rem;
-  }
-  
-  .timestamp-display {
-    background: #1f2937;
-    color: white;
-    padding: 1rem;
-    border-radius: 8px;
-    font-family: 'Courier New', monospace;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-  
-  .status-message {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border-radius: 8px;
-    font-weight: bold;
-    text-align: center;
-    display: none;
-  }
-  
-  .status-success {
-    background: #d1fae5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-  }
-  
-  .status-error {
-    background: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 1024px) {
-    .triage-container {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-    
-    .triage-sidebar {
-      order: -1;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .form-content {
-      padding: 1rem;
-    }
-    
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .severity-selector,
-    .triage-colors {
-      grid-template-columns: 1fr 1fr;
-    }
-    
-    .vitals-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-  
-  /* Validation states */
-  .field-error {
-    color: #dc2626;
-    font-size: 0.8rem;
-    margin-top: 0.25rem;
-  }
-  
-  .field-success {
-    color: #16a34a;
-    font-size: 0.8rem;
-    margin-top: 0.25rem;
-  }
-</style>
-{% endblock %}
+        /* Header with workflow context */
+        .triage-header {
+            background: linear-gradient(135deg, var(--color-red) 0%, #b91c1c 100%);
+            color: white;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
 
-{% block content %}
-<div class="triage-container">
-  <!-- Main Triage Form -->
-  <div class="main-triage-form">
-    <!-- Form Header -->
-    <div class="form-header">
-      <div class="emergency-badge">🚨 MEDICAL EMERGENCY</div>
-      <h1 class="form-title">Patient Triage Assessment</h1>
-      <p class="form-subtitle">Rapid medical prioritization for emergency response</p>
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0.25rem 0;
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .status-online { background: rgba(34, 197, 94, 0.3); }
+        .status-offline { background: rgba(239, 68, 68, 0.3); }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-secondary { background: rgba(255, 255, 255, 0.2); color: white; }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.3); }
+
+        .shortcut {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-left: 0.25rem;
+        }
+
+        /* AI Status Banner */
+        .ai-status-banner {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 0.75rem 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .ai-confidence {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+        }
+
+        /* Main Container */
+        .triage-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        /* Main Form */
+        .main-form-container {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            border-left: 6px solid var(--color-red);
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .patient-id-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .auto-id {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+
+        .scan-button {
+            background: var(--color-blue);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .timestamp {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Form Sections */
+        .form-content {
+            padding: 2rem;
+        }
+
+        .rapid-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 20%, #fef3c7 100%);
+            border: 2px solid var(--color-yellow);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .rapid-section::before {
+            content: '⚡ RAPID TRIAGE';
+            position: absolute;
+            top: -12px;
+            left: 1rem;
+            background: var(--color-yellow);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            border-color: var(--color-blue);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--color-blue);
+        }
+
+        .section-icon {
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+        }
+
+        /* Form Fields */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-field {
+            position: relative;
+        }
+
+        .field-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .required { color: var(--color-red); }
+
+        .field-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .field-input:focus {
+            outline: none;
+            border-color: var(--color-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .field-input.error {
+            border-color: var(--color-red);
+            background: #fef2f2;
+        }
+
+        .field-input.valid {
+            border-color: var(--color-green);
+            background: #f0fdf4;
+        }
+
+        /* Voice Input */
+        .voice-input-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .voice-button {
+            background: var(--color-red);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .voice-button:hover {
+            background: #b91c1c;
+            transform: scale(1.1);
+        }
+
+        .voice-button.recording {
+            background: #dc2626;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Vitals Grid */
+        .vitals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+
+        .vital-field {
+            text-align: center;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .vital-field:hover {
+            border-color: var(--color-blue);
+        }
+
+        .vital-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .vital-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: none;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            background: transparent;
+        }
+
+        .vital-input:focus {
+            outline: none;
+        }
+
+        .vital-normal { border-color: var(--color-green); background: #f0fdf4; }
+        .vital-warning { border-color: var(--color-yellow); background: #fffbeb; }
+        .vital-critical { border-color: var(--color-red); background: #fef2f2; }
+
+        /* Triage Color Selector */
+        .triage-colors {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .color-option {
+            padding: 1.5rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            position: relative;
+        }
+
+        .color-option.selected {
+            border-color: white;
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-red { background: linear-gradient(135deg, var(--color-red) 0%, #b91c1c 100%); }
+        .color-yellow { background: linear-gradient(135deg, var(--color-yellow) 0%, #d97706 100%); }
+        .color-green { background: linear-gradient(135deg, var(--color-green) 0%, #15803d 100%); }
+        .color-black { background: linear-gradient(135deg, var(--color-black) 0%, #1f2937 100%); }
+
+        /* AI Guidance Panel */
+        .ai-guidance {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border: none;
+        }
+
+        .ai-suggestion {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .ai-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .ai-recommendation {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .confidence-meter {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-yellow), var(--color-green));
+            transition: width 0.5s ease;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            background: var(--bg-primary);
+            padding: 1.5rem 2rem;
+            border-top: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-red) 0%, #b91c1c 100%);
+            color: white;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--color-blue);
+            color: var(--color-blue);
+        }
+
+        .btn-outline:hover {
+            background: var(--color-blue);
+            color: white;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, var(--color-blue) 0%, #2563eb 100%);
+            color: white;
+            padding: 1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-content {
+            padding: 1rem;
+        }
+
+        /* Status Messages */
+        .status-message {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .triage-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .sidebar { order: -1; }
+            
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .triage-container { padding: 1rem; }
+            .form-content { padding: 1rem; }
+            .form-grid { grid-template-columns: 1fr; }
+            .triage-colors { grid-template-columns: 1fr 1fr; }
+            .vitals-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Print Styles */
+        @media print {
+            .header-actions,
+            .voice-button,
+            .action-bar {
+                display: none !important;
+            }
+            
+            .main-form-container {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with Workflow Context -->
+    <header class="triage-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div>
+                    <div class="breadcrumb">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                        <i class="fas fa-chevron-right"></i>
+                        <span>New Triage</span>
+                    </div>
+                    <h1 class="page-title">New Patient Triage</h1>
+                </div>
+            </div>
+            
+            <div class="header-status">
+                <div class="status-indicator status-online" id="connection-status">
+                    <i class="fas fa-wifi"></i>
+                    <span id="status-text">Online</span>
+                </div>
+                <div class="status-indicator">
+                    <i class="fas fa-sync"></i>
+                    <span id="sync-status">Synced</span>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <a href="http://localhost:8000/staff-triage-command#" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Return to Dashboard <span class="shortcut">Esc</span>
+                </a>
+                <button class="btn btn-secondary" onclick="openKeyboardShortcuts()">
+                    <i class="fas fa-keyboard"></i> Shortcuts <span class="shortcut">?</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- AI Status Banner -->
+    <div class="ai-status-banner">
+        <div>
+            <i class="fas fa-brain"></i>
+            <strong>AI Medical Assistant Active</strong> - Real-time triage recommendations enabled
+        </div>
+        <div class="ai-confidence">
+            <span>Confidence:</span>
+            <span id="ai-confidence-display">---%</span>
+        </div>
     </div>
-    
-    <!-- Form Content -->
-    <div class="form-content">
-      <form id="triage-form" method="POST" action="/submit-triage">
-        <div class="triage-sections">
-          
-          <!-- Patient Information Section -->
-          <div class="triage-section">
-            <div class="section-header">
-              <div class="section-icon">👤</div>
-              <span>Patient Information</span>
-            </div>
-            
-            <div class="form-grid">
-              <div class="form-field">
-                <label for="name" class="field-label">
-                  Patient Name/ID
-                  <span class="required-field">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  id="name" 
-                  name="name" 
-                  class="field-input" 
-                  placeholder="Full name or patient identifier"
-                  required 
-                />
-                <div class="field-error" id="name-error"></div>
-              </div>
-              
-              <div class="form-field">
-                <label for="age" class="field-label">Age</label>
-                <input 
-                  type="number" 
-                  id="age" 
-                  name="age" 
-                  class="field-input" 
-                  min="0" 
-                  max="120"
-                  placeholder="Years"
-                />
-              </div>
-              
-              <div class="form-field">
-                <label for="gender" class="field-label">Gender</label>
-                <select id="gender" name="gender" class="field-input">
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="unknown">Unknown</option>
-                </select>
-              </div>
-              
-              <div class="form-field">
-                <label for="medical_id" class="field-label">Medical ID/Bracelet</label>
-                <input 
-                  type="text" 
-                  id="medical_id" 
-                  name="medical_id" 
-                  class="field-input"
-                  placeholder="Medical alert information"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <!-- Medical Assessment Section -->
-          <div class="triage-section">
-            <div class="section-header">
-              <div class="section-icon">🩺</div>
-              <span>Medical Assessment</span>
-            </div>
-            
-            <div class="form-grid">
-              <div class="form-field">
-                <label for="injury_type" class="field-label">
-                  Primary Injury/Condition
-                  <span class="required-field">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  id="injury_type" 
-                  name="injury_type" 
-                  class="field-input"
-                  placeholder="e.g., Chest pain, Fracture, Burns, etc."
-                  required
-                />
-              </div>
-              
-              <div class="form-field">
-                <label for="mechanism" class="field-label">Mechanism of Injury</label>
-                <select id="mechanism" name="mechanism" class="field-input">
-                  <option value="">Select mechanism</option>
-                  <option value="fall">Fall</option>
-                  <option value="mva">Motor Vehicle Accident</option>
-                  <option value="assault">Assault</option>
-                  <option value="medical">Medical Emergency</option>
-                  <option value="burn">Burn</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              
-              <div class="form-field">
-                <label for="consciousness" class="field-label">
-                  Level of Consciousness
-                  <span class="required-field">*</span>
-                </label>
-                <select id="consciousness" name="consciousness" class="field-input" required>
-                  <option value="">Select level</option>
-                  <option value="alert">Alert & Oriented</option>
-                  <option value="verbal">Responds to Verbal</option>
-                  <option value="pain">Responds to Pain</option>
-                  <option value="unresponsive">Unresponsive</option>
-                </select>
-              </div>
-              
-              <div class="form-field">
-                <label for="breathing" class="field-label">
-                  Breathing Status
-                  <span class="required-field">*</span>
-                </label>
-                <select id="breathing" name="breathing" class="field-input" required>
-                  <option value="">Select status</option>
-                  <option value="normal">Normal</option>
-                  <option value="labored">Labored</option>
-                  <option value="shallow">Shallow</option>
-                  <option value="absent">Absent/Obstructed</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Vital Signs Section -->
-          <div class="triage-section">
-            <div class="section-header">
-              <div class="section-icon">📊</div>
-              <span>Vital Signs</span>
-            </div>
-            
-            <div class="vitals-grid">
-              <div class="vital-field">
-                <label for="heart_rate" class="vital-label">Heart Rate</label>
-                <input 
-                  type="number" 
-                  id="heart_rate" 
-                  name="heart_rate" 
-                  class="vital-input"
-                  placeholder="BPM"
-                  min="0"
-                  max="300"
-                />
-              </div>
-              
-              <div class="vital-field">
-                <label for="bp_systolic" class="vital-label">BP Systolic</label>
-                <input 
-                  type="number" 
-                  id="bp_systolic" 
-                  name="bp_systolic" 
-                  class="vital-input"
-                  placeholder="mmHg"
-                  min="0"
-                  max="300"
-                />
-              </div>
-              
-              <div class="vital-field">
-                <label for="bp_diastolic" class="vital-label">BP Diastolic</label>
-                <input 
-                  type="number" 
-                  id="bp_diastolic" 
-                  name="bp_diastolic" 
-                  class="vital-input"
-                  placeholder="mmHg"
-                  min="0"
-                  max="200"
-                />
-              </div>
-              
-              <div class="vital-field">
-                <label for="respiratory_rate" class="vital-label">Resp. Rate</label>
-                <input 
-                  type="number" 
-                  id="respiratory_rate" 
-                  name="respiratory_rate" 
-                  class="vital-input"
-                  placeholder="/min"
-                  min="0"
-                  max="100"
-                />
-              </div>
-              
-              <div class="vital-field">
-                <label for="temperature" class="vital-label">Temperature</label>
-                <input 
-                  type="number" 
-                  id="temperature" 
-                  name="temperature" 
-                  class="vital-input"
-                  placeholder="°F"
-                  min="80"
-                  max="115"
-                  step="0.1"
-                />
-              </div>
-              
-              <div class="vital-field">
-                <label for="oxygen_sat" class="vital-label">O2 Sat</label>
-                <input 
-                  type="number" 
-                  id="oxygen_sat" 
-                  name="oxygen_sat" 
-                  class="vital-input"
-                  placeholder="%"
-                  min="0"
-                  max="100"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <!-- Severity Assessment Section -->
-          <div class="triage-section">
-            <div class="section-header">
-              <div class="section-icon">⚡</div>
-              <span>Severity Assessment</span>
-            </div>
-            
-            <div class="form-field">
-              <label class="field-label">
-                Overall Condition Severity
-                <span class="required-field">*</span>
-              </label>
-              <div class="severity-selector">
-                <div class="severity-option">
-                  <input type="radio" id="mild" name="severity" value="mild" class="severity-radio">
-                  <label for="mild" class="severity-label severity-mild">
-                    🟢 MILD<br>
-                    <small>Minor injuries</small>
-                  </label>
+
+    <!-- Main Container -->
+    <div class="triage-container">
+        <!-- Main Form -->
+        <div class="main-form-container">
+            <!-- Form Header with Patient ID -->
+            <div class="form-header">
+                <div class="patient-id-section">
+                    <div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Patient ID</div>
+                        <div class="auto-id" id="patient-id">T-20250720-001</div>
+                    </div>
+                    <button class="scan-button" onclick="scanPatientId()">
+                        <i class="fas fa-qrcode"></i> Scan
+                    </button>
                 </div>
-                <div class="severity-option">
-                  <input type="radio" id="moderate" name="severity" value="moderate" class="severity-radio">
-                  <label for="moderate" class="severity-label severity-moderate">
-                    🟡 MODERATE<br>
-                    <small>Stable but urgent</small>
-                  </label>
+                <div class="timestamp">
+                    <i class="fas fa-clock"></i>
+                    <span id="triage-timestamp">2025-07-20 14:30:25</span>
                 </div>
-                <div class="severity-option">
-                  <input type="radio" id="severe" name="severity" value="severe" class="severity-radio">
-                  <label for="severe" class="severity-label severity-severe">
-                    🔴 SEVERE<br>
-                    <small>Life-threatening</small>
-                  </label>
-                </div>
-                <div class="severity-option">
-                  <input type="radio" id="critical" name="severity" value="critical" class="severity-radio">
-                  <label for="critical" class="severity-label severity-critical">
-                    ⚫ CRITICAL<br>
-                    <small>Immediate care</small>
-                  </label>
-                </div>
-              </div>
             </div>
-          </div>
-          
-          <!-- Triage Color Assignment Section -->
-          <div class="triage-section triage-color-section">
-            <div class="section-header">
-              <div class="section-icon">🏷️</div>
-              <span>Triage Color Assignment</span>
+
+            <div class="form-content">
+                <form id="triage-form">
+                    <!-- Rapid Triage Section -->
+                    <div class="rapid-section">
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="chief_complaint" class="field-label">
+                                    Chief Complaint <span class="required">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="chief_complaint" 
+                                    name="chief_complaint" 
+                                    class="field-input" 
+                                    placeholder="Primary concern or injury..."
+                                    autocomplete="off"
+                                    list="complaint-suggestions"
+                                    required
+                                />
+                                <datalist id="complaint-suggestions">
+                                    <option value="Chest pain">
+                                    <option value="Difficulty breathing">
+                                    <option value="Abdominal pain">
+                                    <option value="Head trauma">
+                                    <option value="Fracture">
+                                    <option value="Laceration">
+                                    <option value="Burns">
+                                    <option value="Cardiac event">
+                                </datalist>
+                                <div class="voice-input-section">
+                                    <button type="button" class="voice-button" onclick="startVoiceCapture('chief_complaint')" title="Voice input">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Click to speak</span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="onset_time" class="field-label">Symptom Onset</label>
+                                <select id="onset_time" name="onset_time" class="field-input">
+                                    <option value="">Select onset time</option>
+                                    <option value="0-30min">0-30 minutes ago</option>
+                                    <option value="30min-1h">30 minutes - 1 hour</option>
+                                    <option value="1-6h">1-6 hours ago</option>
+                                    <option value="6-24h">6-24 hours ago</option>
+                                    <option value="1-7d">1-7 days ago</option>
+                                    <option value="over_week">Over a week ago</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patient Information -->
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span>Patient Information</span>
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="name" class="field-label">
+                                    Patient Name/ID <span class="required">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="name" 
+                                    name="name" 
+                                    class="field-input" 
+                                    placeholder="Full name or identifier"
+                                    required 
+                                />
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="age" class="field-label">Age</label>
+                                <input 
+                                    type="number" 
+                                    id="age" 
+                                    name="age" 
+                                    class="field-input" 
+                                    min="0" 
+                                    max="120"
+                                    placeholder="Years"
+                                />
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="gender" class="field-label">Sex</label>
+                                <select id="gender" name="gender" class="field-input">
+                                    <option value="">Select</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                    <option value="unknown">Unknown</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="allergies" class="field-label">Known Allergies</label>
+                                <input 
+                                    type="text" 
+                                    id="allergies" 
+                                    name="allergies" 
+                                    class="field-input"
+                                    placeholder="Drug/food allergies, NKDA"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vital Signs -->
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <span>Vital Signs</span>
+                        </div>
+                        
+                        <div class="vitals-grid">
+                            <div class="vital-field">
+                                <label for="heart_rate" class="vital-label">Heart Rate</label>
+                                <input 
+                                    type="number" 
+                                    id="heart_rate" 
+                                    name="heart_rate" 
+                                    class="vital-input"
+                                    placeholder="BPM"
+                                    min="0"
+                                    max="300"
+                                />
+                            </div>
+                            
+                            <div class="vital-field">
+                                <label for="bp_systolic" class="vital-label">BP Sys</label>
+                                <input 
+                                    type="number" 
+                                    id="bp_systolic" 
+                                    name="bp_systolic" 
+                                    class="vital-input"
+                                    placeholder="mmHg"
+                                    min="0"
+                                    max="300"
+                                />
+                            </div>
+                            
+                            <div class="vital-field">
+                                <label for="bp_diastolic" class="vital-label">BP Dia</label>
+                                <input 
+                                    type="number" 
+                                    id="bp_diastolic" 
+                                    name="bp_diastolic" 
+                                    class="vital-input"
+                                    placeholder="mmHg"
+                                    min="0"
+                                    max="200"
+                                />
+                            </div>
+                            
+                            <div class="vital-field">
+                                <label for="respiratory_rate" class="vital-label">Resp Rate</label>
+                                <input 
+                                    type="number" 
+                                    id="respiratory_rate" 
+                                    name="respiratory_rate" 
+                                    class="vital-input"
+                                    placeholder="/min"
+                                    min="0"
+                                    max="100"
+                                />
+                            </div>
+                            
+                            <div class="vital-field">
+                                <label for="temperature" class="vital-label">Temp</label>
+                                <input 
+                                    type="number" 
+                                    id="temperature" 
+                                    name="temperature" 
+                                    class="vital-input"
+                                    placeholder="°F"
+                                    min="80"
+                                    max="115"
+                                    step="0.1"
+                                />
+                            </div>
+                            
+                            <div class="vital-field">
+                                <label for="oxygen_sat" class="vital-label">O2 Sat</label>
+                                <input 
+                                    type="number" 
+                                    id="oxygen_sat" 
+                                    name="oxygen_sat" 
+                                    class="vital-input"
+                                    placeholder="%"
+                                    min="0"
+                                    max="100"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clinical Assessment -->
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-stethoscope"></i>
+                            </div>
+                            <span>Clinical Assessment</span>
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="consciousness" class="field-label">
+                                    Level of Consciousness <span class="required">*</span>
+                                </label>
+                                <select id="consciousness" name="consciousness" class="field-input" required>
+                                    <option value="">Select level</option>
+                                    <option value="alert">Alert & Oriented</option>
+                                    <option value="verbal">Responds to Verbal</option>
+                                    <option value="pain">Responds to Pain</option>
+                                    <option value="unresponsive">Unresponsive</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="breathing" class="field-label">
+                                    Breathing Status <span class="required">*</span>
+                                </label>
+                                <select id="breathing" name="breathing" class="field-input" required>
+                                    <option value="">Select status</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="labored">Labored</option>
+                                    <option value="shallow">Shallow</option>
+                                    <option value="absent">Absent/Obstructed</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="severity" class="field-label">
+                                    Condition Severity <span class="required">*</span>
+                                </label>
+                                <select id="severity" name="severity" class="field-input" required>
+                                    <option value="">Select severity</option>
+                                    <option value="mild">Mild - Minor injuries</option>
+                                    <option value="moderate">Moderate - Stable but urgent</option>
+                                    <option value="severe">Severe - Life-threatening</option>
+                                    <option value="critical">Critical - Immediate care</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="mechanism" class="field-label">Mechanism of Injury</label>
+                                <select id="mechanism" name="mechanism" class="field-input">
+                                    <option value="">Select mechanism</option>
+                                    <option value="fall">Fall</option>
+                                    <option value="mva">Motor Vehicle Accident</option>
+                                    <option value="assault">Assault</option>
+                                    <option value="medical">Medical Emergency</option>
+                                    <option value="burn">Burn</option>
+                                    <option value="penetrating">Penetrating Trauma</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Guidance Panel -->
+                    <div class="ai-guidance" id="ai-guidance" style="display: none;">
+                        <div class="ai-suggestion">
+                            <div class="ai-icon">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight: bold; font-size: 1.1rem;">AI Triage Recommendation</div>
+                                <div style="opacity: 0.9;">Based on current input data</div>
+                            </div>
+                        </div>
+                        
+                        <div class="ai-recommendation">
+                            <div style="font-weight: bold; margin-bottom: 0.5rem;">
+                                Suggested Triage: <span id="ai-suggested-color">--</span>
+                            </div>
+                            <div id="ai-reasoning">Analyzing patient data...</div>
+                            
+                            <div style="margin-top: 1rem;">
+                                <div style="font-size: 0.9rem; margin-bottom: 0.25rem;">AI Confidence Level</div>
+                                <div class="confidence-meter">
+                                    <div class="confidence-fill" id="confidence-bar" style="width: 0%"></div>
+                                </div>
+                                <div style="font-size: 0.8rem; margin-top: 0.25rem; opacity: 0.8;">
+                                    <span id="confidence-text">Analyzing...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="ai-warnings" style="margin-top: 1rem; display: none;">
+                            <div style="background: rgba(220, 38, 38, 0.2); border: 1px solid rgba(220, 38, 38, 0.3); padding: 0.75rem; border-radius: 6px;">
+                                <div style="font-weight: bold; color: #fca5a5;">⚠️ Special Attention Required</div>
+                                <div id="ai-warning-text" style="margin-top: 0.25rem; font-size: 0.9rem;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Triage Color Assignment -->
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <span>Triage Color Assignment</span>
+                        </div>
+                        
+                        <div class="triage-colors">
+                            <div class="color-option color-red" data-color="red" onclick="selectTriageColor('red')">
+                                🔴 RED<br>
+                                <div style="font-size: 0.8rem; margin-top: 0.5rem;">Immediate<br>Life-threatening</div>
+                            </div>
+                            <div class="color-option color-yellow" data-color="yellow" onclick="selectTriageColor('yellow')">
+                                🟡 YELLOW<br>
+                                <div style="font-size: 0.8rem; margin-top: 0.5rem;">Urgent<br>2-4 hours</div>
+                            </div>
+                            <div class="color-option color-green" data-color="green" onclick="selectTriageColor('green')">
+                                🟢 GREEN<br>
+                                <div style="font-size: 0.8rem; margin-top: 0.5rem;">Delayed<br>4+ hours</div>
+                            </div>
+                            <div class="color-option color-black" data-color="black" onclick="selectTriageColor('black')">
+                                ⚫ BLACK<br>
+                                <div style="font-size: 0.8rem; margin-top: 0.5rem;">Expectant<br>Palliative care</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="triage_color" name="triage_color" required>
+                    </div>
+
+                    <!-- Resource Assignment -->
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <span>Resource Assignment</span>
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="assigned_doctor" class="field-label">Assign to Doctor</label>
+                                <select id="assigned_doctor" name="assigned_doctor" class="field-input">
+                                    <option value="">Auto-assign</option>
+                                    <option value="Dr. Sarah Chen">Dr. Sarah Chen (Emergency)</option>
+                                    <option value="Dr. Michael Rodriguez">Dr. Michael Rodriguez (Cardiology)</option>
+                                    <option value="Dr. Emily Johnson">Dr. Emily Johnson (Trauma)</option>
+                                    <option value="Dr. David Kim">Dr. David Kim (Internal Medicine)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="assigned_nurse" class="field-label">Assign to Nurse</label>
+                                <select id="assigned_nurse" name="assigned_nurse" class="field-input">
+                                    <option value="">Auto-assign</option>
+                                    <option value="Nurse Jennifer Adams">Nurse Jennifer Adams</option>
+                                    <option value="Nurse Carlos Martinez">Nurse Carlos Martinez</option>
+                                    <option value="Nurse Amanda Thompson">Nurse Amanda Thompson</option>
+                                    <option value="Nurse Kevin Brown">Nurse Kevin Brown</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="bed_assignment" class="field-label">Bed Assignment</label>
+                                <select id="bed_assignment" name="bed_assignment" class="field-input">
+                                    <option value="">Auto-assign</option>
+                                    <option value="ER-01">ER-01 (Available)</option>
+                                    <option value="ER-03">ER-03 (Available)</option>
+                                    <option value="TR-01">TR-01 (Trauma - Available)</option>
+                                    <option value="TR-02">TR-02 (Trauma - Available)</option>
+                                    <option value="ICU-02">ICU-02 (Critical Care)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="priority_override" class="field-label">Priority Override</label>
+                                <select id="priority_override" name="priority_override" class="field-input">
+                                    <option value="">Use triage color</option>
+                                    <option value="emergency">Emergency Priority</option>
+                                    <option value="expedite">Expedite</option>
+                                    <option value="hold">Hold for specialist</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clinical Notes -->
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-clipboard"></i>
+                            </div>
+                            <span>Clinical Notes & Observations</span>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="notes" class="field-label">Assessment Notes</label>
+                            <textarea 
+                                id="notes" 
+                                name="notes" 
+                                class="field-input"
+                                rows="4"
+                                placeholder="Clinical observations, treatment given, patient response, etc."
+                            ></textarea>
+                            <div class="voice-input-section">
+                                <button type="button" class="voice-button" onclick="startVoiceCapture('notes')" title="Voice input">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                                <span style="font-size: 0.8rem; color: var(--text-secondary);">Voice notes</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Photo Attachment -->
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                            <span>Photo Documentation</span>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="photo_upload" class="field-label">Attach Photo (wounds, symptoms, etc.)</label>
+                            <input 
+                                type="file" 
+                                id="photo_upload" 
+                                name="photo_upload" 
+                                class="field-input"
+                                accept="image/*"
+                                capture="environment"
+                            />
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                Tap to use camera or select from gallery
+                            </div>
+                        </div>
+                        
+                        <div id="photo-preview" style="margin-top: 1rem; display: none;">
+                            <img id="preview-image" style="max-width: 200px; border-radius: 8px; border: 2px solid var(--border-color);">
+                            <button type="button" onclick="removePhoto()" style="margin-left: 1rem; padding: 0.5rem; background: var(--color-red); color: white; border: none; border-radius: 4px;">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status Message -->
+                    <div class="status-message" id="status-message"></div>
+                </form>
             </div>
-            
-            <div class="form-field">
-              <label class="field-label">
-                Assign Triage Color
-                <span class="required-field">*</span>
-              </label>
-              <div class="triage-colors">
-                <div class="color-option color-red" data-color="red">
-                  🔴 RED<br>
-                  <div class="color-description">Immediate<br>Life-threatening</div>
+
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <div class="action-group">
+                    <button type="button" class="btn btn-outline" onclick="discardTriage()">
+                        <i class="fas fa-times"></i> Discard <span class="shortcut">Ctrl+D</span>
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="printTriageTag()">
+                        <i class="fas fa-print"></i> Print Tag <span class="shortcut">Ctrl+P</span>
+                    </button>
                 </div>
-                <div class="color-option color-yellow" data-color="yellow">
-                  🟡 YELLOW<br>
-                  <div class="color-description">Urgent<br>2-4 hours</div>
+                
+                <div class="action-group">
+                    <button type="button" class="btn btn-outline" onclick="saveDraft()">
+                        <i class="fas fa-save"></i> Save Draft <span class="shortcut">Ctrl+S</span>
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submit-btn" form="triage-form">
+                        <i class="fas fa-check"></i> Submit & Return <span class="shortcut">Ctrl+Enter</span>
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="submitAndNext()">
+                        <i class="fas fa-forward"></i> Save & Next Patient
+                    </button>
                 </div>
-                <div class="color-option color-green" data-color="green">
-                  🟢 GREEN<br>
-                  <div class="color-description">Delayed<br>4+ hours</div>
-                </div>
-                <div class="color-option color-black" data-color="black">
-                  ⚫ BLACK<br>
-                  <div class="color-description">Expectant<br>Palliative care</div>
-                </div>
-              </div>
-              <input type="hidden" id="triage_color" name="triage_color" required>
             </div>
-          </div>
-          
-          <!-- Additional Notes Section -->
-          <div class="triage-section">
-            <div class="section-header">
-              <div class="section-icon">📝</div>
-              <span>Additional Information</span>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- System Status -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-heartbeat"></i>
+                    <span>System Status</span>
+                </div>
+                <div class="sidebar-content">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                        <div style="text-align: center; padding: 0.5rem; background: #f0fdf4; border-radius: 6px;">
+                            <div style="font-weight: bold; color: var(--color-green);">Online</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Connection</div>
+                        </div>
+                        <div style="text-align: center; padding: 0.5rem; background: #fef3c7; border-radius: 6px;">
+                            <div style="font-weight: bold; color: var(--color-yellow);">92%</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">AI Confidence</div>
+                        </div>
+                    </div>
+                    
+                    <div id="sync-queue" style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 6px;">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">SYNC QUEUE</div>
+                        <div style="font-weight: bold;">All data synchronized</div>
+                    </div>
+                </div>
             </div>
-            
-            <div class="form-grid">
-              <div class="form-field">
-                <label for="allergies" class="field-label">Known Allergies</label>
-                <input 
-                  type="text" 
-                  id="allergies" 
-                  name="allergies" 
-                  class="field-input"
-                  placeholder="Drug allergies, food allergies, etc."
-                />
-              </div>
-              
-              <div class="form-field">
-                <label for="medications" class="field-label">Current Medications</label>
-                <input 
-                  type="text" 
-                  id="medications" 
-                  name="medications" 
-                  class="field-input"
-                  placeholder="Current prescriptions"
-                />
-              </div>
-              
-              <div class="form-field">
-                <label for="medical_history" class="field-label">Medical History</label>
-                <textarea 
-                  id="medical_history" 
-                  name="medical_history" 
-                  class="field-input field-textarea"
-                  placeholder="Relevant medical conditions, surgeries, etc."
-                ></textarea>
-              </div>
-              
-              <div class="form-field">
-                <label for="notes" class="field-label">Assessment Notes</label>
-                <textarea 
-                  id="notes" 
-                  name="notes" 
-                  class="field-input field-textarea"
-                  placeholder="Additional observations, treatment given, etc."
-                ></textarea>
-              </div>
+
+            <!-- Quick Stats -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Current Load</span>
+                </div>
+                <div class="sidebar-content">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-red);">3</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Critical</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-yellow);">8</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Urgent</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-green);">12</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Stable</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-blue);">23</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Total</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-          
-          <!-- Submit Section -->
-          <div class="submit-section">
-            <button type="submit" class="submit-button" id="submit-btn">
-              🚑 Submit Triage Assessment
+
+            <!-- Triage Guidelines -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-book-medical"></i>
+                    <span>Triage Guidelines</span>
+                </div>
+                <div class="sidebar-content">
+                    <div style="font-size: 0.85rem; line-height: 1.4;">
+                        <div style="margin-bottom: 0.75rem;">
+                            <strong style="color: var(--color-red);">🔴 RED - Immediate</strong><br>
+                            Life-threatening injuries requiring immediate care
+                        </div>
+                        <div style="margin-bottom: 0.75rem;">
+                            <strong style="color: var(--color-yellow);">🟡 YELLOW - Urgent</strong><br>
+                            Serious injuries that can wait 2-4 hours
+                        </div>
+                        <div style="margin-bottom: 0.75rem;">
+                            <strong style="color: var(--color-green);">🟢 GREEN - Delayed</strong><br>
+                            Minor injuries that can wait 4+ hours
+                        </div>
+                        <div>
+                            <strong style="color: var(--color-black);">⚫ BLACK - Expectant</strong><br>
+                            Injuries incompatible with survival
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <i class="fas fa-history"></i>
+                    <span>Recent Activity</span>
+                </div>
+                <div class="sidebar-content">
+                    <div style="font-size: 0.8rem;">
+                        <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 4px;">
+                            <div style="font-weight: bold;">14:25 - New RED patient</div>
+                            <div style="color: var(--text-secondary);">John Smith - Chest trauma</div>
+                        </div>
+                        <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 4px;">
+                            <div style="font-weight: bold;">14:20 - Discharged</div>
+                            <div style="color: var(--text-secondary);">Maria Garcia - Stable</div>
+                        </div>
+                        <div style="padding: 0.5rem; background: var(--bg-secondary); border-radius: 4px;">
+                            <div style="font-weight: bold;">14:15 - Updated</div>
+                            <div style="color: var(--text-secondary);">Robert Wilson - ICU transfer</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Overlay -->
+    <div id="shortcuts-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10001; padding: 2rem;">
+        <div style="background: white; border-radius: 16px; padding: 2rem; max-width: 600px; margin: 0 auto; max-height: 80vh; overflow-y: auto;">
+            <h2>Keyboard Shortcuts</h2>
+            <div style="display: grid; gap: 0.5rem; margin: 1.5rem 0;">
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    <span>Return to Dashboard</span>
+                    <span style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace;">Esc</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    <span>Submit Triage</span>
+                    <span style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace;">Ctrl+Enter</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    <span>Save Draft</span>
+                    <span style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace;">Ctrl+S</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    <span>Print Triage Tag</span>
+                    <span style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace;">Ctrl+P</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    <span>Discard</span>
+                    <span style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace;">Ctrl+D</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    <span>Show Shortcuts</span>
+                    <span style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace;">?</span>
+                </div>
+            </div>
+            <button onclick="closeKeyboardShortcuts()" style="background: var(--color-blue); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer;">
+                Close
             </button>
-            <div class="status-message" id="status-message"></div>
-          </div>
-          
         </div>
-      </form>
     </div>
-  </div>
-  
-  <!-- Sidebar -->
-  <div class="triage-sidebar">
-    <!-- Current Time -->
-    <div class="timestamp-display">
-      <div style="font-size: 0.8rem; opacity: 0.8;">Assessment Time</div>
-      <div id="current-time" style="font-size: 1.1rem; font-weight: bold;"></div>
-    </div>
-    
-    <!-- Triage Guide -->
-    <div class="info-card">
-      <div class="info-card-header">
-        <span>📋</span>
-        <span>Triage Color Guide</span>
-      </div>
-      <div class="info-card-content">
-        <ul class="triage-guide">
-          <li>
-            <div class="triage-color-indicator indicator-red"></div>
-            <div>
-              <strong>RED - Immediate</strong><br>
-              Life-threatening injuries requiring immediate care
-            </div>
-          </li>
-          <li>
-            <div class="triage-color-indicator indicator-yellow"></div>
-            <div>
-              <strong>YELLOW - Urgent</strong><br>
-              Serious injuries that can wait 2-4 hours
-            </div>
-          </li>
-          <li>
-            <div class="triage-color-indicator indicator-green"></div>
-            <div>
-              <strong>GREEN - Delayed</strong><br>
-              Minor injuries that can wait 4+ hours
-            </div>
-          </li>
-          <li>
-            <div class="triage-color-indicator indicator-black"></div>
-            <div>
-              <strong>BLACK - Expectant</strong><br>
-              Injuries incompatible with survival
-            </div>
-          </li>
-        </ul>
-      </div>
-    </div>
-    
-    <!-- Quick Stats -->
-    <div class="info-card">
-      <div class="info-card-header">
-        <span>📊</span>
-        <span>Today's Statistics</span>
-      </div>
-      <div class="info-card-content">
-        <div class="quick-stats">
-          <div class="stat-card">
-            <span class="stat-number">24</span>
-            <div class="stat-label">Total Patients</div>
-          </div>
-          <div class="stat-card">
-            <span class="stat-number">3</span>
-            <div class="stat-label">Critical</div>
-          </div>
-          <div class="stat-card">
-            <span class="stat-number">8</span>
-            <div class="stat-label">Urgent</div>
-          </div>
-          <div class="stat-card">
-            <span class="stat-number">13</span>
-            <div class="stat-label">Stable</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Quick Actions -->
-    <div class="info-card">
-      <div class="info-card-header">
-        <span>⚡</span>
-        <span>Quick Actions</span>
-      </div>
-      <div class="info-card-content">
-        <a href="/triage-dashboard" style="display: block; padding: 0.75rem; background: #dc2626; color: white; text-decoration: none; border-radius: 6px; text-align: center; margin-bottom: 0.5rem;">
-          📊 View Dashboard
-        </a>
-        <a href="/patient-list" style="display: block; padding: 0.75rem; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; text-align: center; margin-bottom: 0.5rem;">
-          👥 Patient List
-        </a>
-        <a href="/emergency-protocols" style="display: block; padding: 0.75rem; background: #f59e0b; color: white; text-decoration: none; border-radius: 6px; text-align: center;">
-          📖 Protocols
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock %}
 
-{% block scripts %}
-<script src="/static/js/triage-form.js"></script>
-{% endblock %}
+    <script>
+        // Form state management
+        let triageState = {
+            patientId: 'T-20250720-001',
+            aiConfidence: 0,
+            selectedTriageColor: null,
+            isRecording: false,
+            formData: {}
+        };
 
-{% block ai_status %}
-<div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 1rem; border-radius: 8px; margin-top: 2rem; text-align: center;">
-  <div style="font-weight: bold; margin-bottom: 0.5rem;">🤖 AI Medical Assistant</div>
-  <div style="font-size: 0.9rem; opacity: 0.9;">
-    AI-powered triage recommendations based on input data • Always verify with medical professional
-  </div>
-</div>
-{% endblock %}
+        // Initialize form
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTimestamp();
+            setInterval(updateTimestamp, 1000);
+            
+            // Auto-increment patient ID
+            generatePatientId();
+            
+            // Set up form validation and AI analysis
+            setupFormValidation();
+            setupVoiceRecognition();
+            setupPhotoCapture();
+            
+            // Keyboard shortcuts
+            setupKeyboardShortcuts();
+            
+            console.log('Enhanced Triage Form initialized');
+        });
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('triage-timestamp').textContent = now.toLocaleString();
+        }
+
+        function generatePatientId() {
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+            const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+            const sequence = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+            triageState.patientId = `T-${dateStr}-${sequence}`;
+            document.getElementById('patient-id').textContent = triageState.patientId;
+        }
+
+        function setupFormValidation() {
+            const form = document.getElementById('triage-form');
+            const requiredFields = ['name', 'chief_complaint', 'consciousness', 'breathing', 'severity'];
+            
+            // Real-time validation and AI analysis
+            form.addEventListener('input', function(e) {
+                validateField(e.target);
+                
+                // Trigger AI analysis when enough data is available
+                if (hasMinimumDataForAI()) {
+                    performAIAnalysis();
+                }
+            });
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitTriage();
+            });
+        }
+
+        function validateField(field) {
+            const value = field.value.trim();
+            const isRequired = field.hasAttribute('required');
+            
+            field.classList.remove('error', 'valid');
+            
+            if (isRequired && !value) {
+                field.classList.add('error');
+                return false;
+            } else if (value) {
+                field.classList.add('valid');
+                
+                // Validate vitals ranges
+                if (field.type === 'number') {
+                    validateVitalSign(field);
+                }
+                
+                return true;
+            }
+            
+            return true;
+        }
+
+        function validateVitalSign(field) {
+            const value = parseInt(field.value);
+            const fieldName = field.name;
+            
+            // Remove existing vital classes
+            field.parentElement.classList.remove('vital-normal', 'vital-warning', 'vital-critical');
+            
+            // Heart rate validation
+            if (fieldName === 'heart_rate') {
+                if (value >= 60 && value <= 100) {
+                    field.parentElement.classList.add('vital-normal');
+                } else if (value >= 50 && value <= 120) {
+                    field.parentElement.classList.add('vital-warning');
+                } else {
+                    field.parentElement.classList.add('vital-critical');
+                }
+            }
+            
+            // Blood pressure validation
+            if (fieldName === 'bp_systolic') {
+                if (value >= 90 && value <= 140) {
+                    field.parentElement.classList.add('vital-normal');
+                } else if (value >= 80 && value <= 160) {
+                    field.parentElement.classList.add('vital-warning');
+                } else {
+                    field.parentElement.classList.add('vital-critical');
+                }
+            }
+            
+            // Oxygen saturation validation
+            if (fieldName === 'oxygen_sat') {
+                if (value >= 95) {
+                    field.parentElement.classList.add('vital-normal');
+                } else if (value >= 90) {
+                    field.parentElement.classList.add('vital-warning');
+                } else {
+                    field.parentElement.classList.add('vital-critical');
+                }
+            }
+        }
+
+        function hasMinimumDataForAI() {
+            const consciousness = document.getElementById('consciousness').value;
+            const breathing = document.getElementById('breathing').value;
+            const severity = document.getElementById('severity').value;
+            const chiefComplaint = document.getElementById('chief_complaint').value;
+            
+            return consciousness && breathing && severity && chiefComplaint.length > 3;
+        }
+
+        async function performAIAnalysis() {
+            const guidance = document.getElementById('ai-guidance');
+            guidance.style.display = 'block';
+            
+            // Collect form data
+            const formData = {
+                consciousness: document.getElementById('consciousness').value,
+                breathing: document.getElementById('breathing').value,
+                severity: document.getElementById('severity').value,
+                chief_complaint: document.getElementById('chief_complaint').value,
+                age: document.getElementById('age').value,
+                heart_rate: document.getElementById('heart_rate').value,
+                bp_systolic: document.getElementById('bp_systolic').value,
+                oxygen_sat: document.getElementById('oxygen_sat').value
+            };
+            
+            try {
+                // Call AI analysis API
+                const response = await fetch('/api/ai-triage-realtime', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateAIGuidance(result.analysis);
+                }
+            } catch (error) {
+                console.error('AI analysis failed:', error);
+                // Fallback to local analysis
+                updateAIGuidance(performLocalAnalysis(formData));
+            }
+        }
+
+        function performLocalAnalysis(data) {
+            let score = 0;
+            let suggestedColor = 'green';
+            let reasoning = [];
+            
+            // Consciousness scoring
+            if (data.consciousness === 'unresponsive') {
+                score += 4;
+                reasoning.push('Patient unresponsive');
+            } else if (data.consciousness === 'pain') {
+                score += 3;
+                reasoning.push('Altered mental status');
+            }
+            
+            // Breathing scoring
+            if (data.breathing === 'absent') {
+                score += 4;
+                reasoning.push('Absent breathing - CRITICAL');
+            } else if (data.breathing === 'labored') {
+                score += 3;
+                reasoning.push('Respiratory distress');
+            }
+            
+            // Severity scoring
+            if (data.severity === 'critical') {
+                score += 4;
+                reasoning.push('Critical condition');
+            } else if (data.severity === 'severe') {
+                score += 3;
+                reasoning.push('Severe condition');
+            }
+            
+            // Vital signs analysis
+            if (data.oxygen_sat && parseInt(data.oxygen_sat) < 90) {
+                score += 2;
+                reasoning.push('Low oxygen saturation');
+            }
+            
+            if (data.heart_rate) {
+                const hr = parseInt(data.heart_rate);
+                if (hr > 120 || hr < 50) {
+                    score += 1;
+                    reasoning.push('Abnormal heart rate');
+                }
+            }
+            
+            // Determine triage color
+            if (score >= 6) {
+                suggestedColor = 'red';
+            } else if (score >= 4) {
+                suggestedColor = 'yellow';
+            } else if (score >= 2) {
+                suggestedColor = 'green';
+            }
+            
+            return {
+                suggested_triage: suggestedColor,
+                confidence: Math.min(0.95, 0.6 + (score * 0.1)),
+                recommendations: reasoning,
+                risk_level: score >= 6 ? 'critical' : score >= 4 ? 'high' : 'medium'
+            };
+        }
+
+        function updateAIGuidance(analysis) {
+            const colorDisplay = document.getElementById('ai-suggested-color');
+            const reasoning = document.getElementById('ai-reasoning');
+            const confidenceBar = document.getElementById('confidence-bar');
+            const confidenceText = document.getElementById('confidence-text');
+            const warnings = document.getElementById('ai-warnings');
+            const warningText = document.getElementById('ai-warning-text');
+            
+            // Update suggested color
+            const colorNames = {
+                'red': '🔴 RED (Immediate)',
+                'yellow': '🟡 YELLOW (Urgent)',
+                'green': '🟢 GREEN (Delayed)',
+                'black': '⚫ BLACK (Expectant)'
+            };
+            
+            colorDisplay.textContent = colorNames[analysis.suggested_triage] || 'Analyzing...';
+            
+            // Update reasoning
+            if (analysis.recommendations && analysis.recommendations.length > 0) {
+                reasoning.textContent = analysis.recommendations.join(', ');
+            } else {
+                reasoning.textContent = 'Based on clinical presentation and vital signs';
+            }
+            
+            // Update confidence
+            const confidence = Math.round(analysis.confidence * 100);
+            confidenceBar.style.width = confidence + '%';
+            confidenceText.textContent = `${confidence}% confidence`;
+            
+            // Update AI confidence display in header
+            document.getElementById('ai-confidence-display').textContent = `${confidence}%`;
+            
+            // Show warnings for critical conditions
+            if (analysis.risk_level === 'critical' || analysis.suggested_triage === 'red') {
+                warnings.style.display = 'block';
+                warningText.textContent = 'High-risk patient detected. Consider immediate intervention and specialist consultation.';
+            } else {
+                warnings.style.display = 'none';
+            }
+            
+            // Auto-suggest triage color (but don't auto-select)
+            highlightSuggestedColor(analysis.suggested_triage);
+        }
+
+        function highlightSuggestedColor(color) {
+            // Remove any existing suggestions
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.style.boxShadow = '';
+                option.style.border = '3px solid transparent';
+            });
+            
+            // Highlight suggested color
+            const suggestedOption = document.querySelector(`[data-color="${color}"]`);
+            if (suggestedOption) {
+                suggestedOption.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.8)';
+                suggestedOption.style.border = '3px solid rgba(255, 255, 255, 0.8)';
+            }
+        }
+
+        function selectTriageColor(color) {
+            // Remove selection from all options
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select the chosen color
+            document.querySelector(`[data-color="${color}"]`).classList.add('selected');
+            document.getElementById('triage_color').value = color;
+            triageState.selectedTriageColor = color;
+        }
+
+        // Voice Recognition Functions
+        function setupVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                console.log('Voice recognition available');
+            } else {
+                // Disable voice buttons if not supported
+                document.querySelectorAll('.voice-button').forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                });
+            }
+        }
+
+        function startVoiceCapture(targetFieldId) {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('Voice recognition not supported in this browser');
+                return;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            const button = event.target.closest('.voice-button');
+            const targetField = document.getElementById(targetFieldId);
+            
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            
+            button.classList.add('recording');
+            triageState.isRecording = true;
+            
+            recognition.onstart = function() {
+                console.log('Voice capture started for', targetFieldId);
+            };
+            
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                
+                if (targetField.tagName === 'TEXTAREA') {
+                    // Append to existing text for notes
+                    const currentValue = targetField.value;
+                    targetField.value = currentValue ? `${currentValue} ${transcript}` : transcript;
+                } else {
+                    // Replace value for single-line inputs
+                    targetField.value = transcript;
+                }
+                
+                // Trigger validation and AI analysis
+                targetField.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Voice recognition error:', event.error);
+                showStatusMessage('Voice capture failed: ' + event.error, 'error');
+            };
+            
+            recognition.onend = function() {
+                button.classList.remove('recording');
+                triageState.isRecording = false;
+            };
+            
+            recognition.start();
+        }
+
+        // Photo Capture Functions
+        function setupPhotoCapture() {
+            const photoInput = document.getElementById('photo_upload');
+            const preview = document.getElementById('photo-preview');
+            const previewImage = document.getElementById('preview-image');
+            
+            photoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function removePhoto() {
+            document.getElementById('photo_upload').value = '';
+            document.getElementById('photo-preview').style.display = 'none';
+        }
+
+        // Form Submission Functions
+        async function submitTriage() {
+            if (!validateForm()) {
+                return;
+            }
+            
+            const submitButton = document.getElementById('submit-btn');
+            const originalText = submitButton.innerHTML;
+            
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            
+            try {
+                const formData = new FormData(document.getElementById('triage-form'));
+                
+                const response = await fetch('/api/ai-triage-assessment', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatusMessage('✅ Triage completed successfully! Returning to dashboard...', 'success');
+                    
+                    // Redirect to dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'http://localhost:8000/staff-triage-command#';
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Submission failed');
+                }
+                
+            } catch (error) {
+                console.error('Triage submission error:', error);
+                showStatusMessage('❌ Submission failed: ' + error.message, 'error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        }
+
+        function submitAndNext() {
+            submitTriage().then(() => {
+                // Reset form for next patient instead of redirecting
+                setTimeout(() => {
+                    resetForm();
+                    generatePatientId();
+                    showStatusMessage('✅ Patient saved. Ready for next patient.', 'success');
+                }, 1000);
+            });
+        }
+
+        function validateForm() {
+            const requiredFields = ['name', 'chief_complaint', 'consciousness', 'breathing', 'severity', 'triage_color'];
+            let isValid = true;
+            
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.classList.add('error');
+                    isValid = false;
+                } else {
+                    field.classList.remove('error');
+                }
+            });
+            
+            if (!isValid) {
+                showStatusMessage('❌ Please fill in all required fields', 'error');
+            }
+            
+            return isValid;
+        }
+
+        function resetForm() {
+            document.getElementById('triage-form').reset();
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.getElementById('ai-guidance').style.display = 'none';
+            document.querySelectorAll('.field-input').forEach(field => {
+                field.classList.remove('error', 'valid');
+            });
+            triageState.selectedTriageColor = null;
+        }
+
+        // Utility Functions
+        function saveDraft() {
+            const formData = new FormData(document.getElementById('triage-form'));
+            const draftData = Object.fromEntries(formData);
+            
+            localStorage.setItem('triage_draft_' + triageState.patientId, JSON.stringify(draftData));
+            showStatusMessage('📄 Draft saved locally', 'success');
+        }
+
+        function discardTriage() {
+            if (confirm('Are you sure you want to discard this triage? All data will be lost.')) {
+                resetForm();
+                window.location.href = 'http://localhost:8000/staff-triage-command#';
+            }
+        }
+
+        function printTriageTag() {
+            const patientName = document.getElementById('name').value || 'Unknown Patient';
+            const triageColor = triageState.selectedTriageColor || 'Not assigned';
+            const timestamp = new Date().toLocaleString();
+            
+            const printContent = `
+                <div style="text-align: center; font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>TRIAGE TAG</h2>
+                    <div style="font-size: 24px; font-weight: bold; margin: 20px 0;">
+                        ${triageColor.toUpperCase()}
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <strong>Patient:</strong> ${patientName}
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <strong>ID:</strong> ${triageState.patientId}
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <strong>Time:</strong> ${timestamp}
+                    </div>
+                </div>
+            `;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function scanPatientId() {
+            // Simulate barcode/QR scan
+            const scannedId = prompt('Enter scanned patient ID:', triageState.patientId);
+            if (scannedId) {
+                triageState.patientId = scannedId;
+                document.getElementById('patient-id').textContent = scannedId;
+            }
+        }
+
+        function showStatusMessage(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Keyboard Shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Don't trigger shortcuts when typing in inputs
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                    return;
+                }
+                
+                if (e.key === 'Escape') {
+                    discardTriage();
+                } else if (e.ctrlKey || e.metaKey) {
+                    switch (e.key) {
+                        case 'Enter':
+                            e.preventDefault();
+                            submitTriage();
+                            break;
+                        case 's':
+                            e.preventDefault();
+                            saveDraft();
+                            break;
+                        case 'p':
+                            e.preventDefault();
+                            printTriageTag();
+                            break;
+                        case 'd':
+                            e.preventDefault();
+                            discardTriage();
+                            break;
+                    }
+                } else if (e.key === '?') {
+                    openKeyboardShortcuts();
+                }
+            });
+        }
+
+        function openKeyboardShortcuts() {
+            document.getElementById('shortcuts-overlay').style.display = 'block';
+        }
+
+        function closeKeyboardShortcuts() {
+            document.getElementById('shortcuts-overlay').style.display = 'none';
+        }
+
+        // Connection monitoring
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connection-status');
+            const statusText = document.getElementById('status-text');
+            const syncStatus = document.getElementById('sync-status');
+            
+            if (navigator.onLine) {
+                statusElement.className = 'status-indicator status-online';
+                statusText.textContent = 'Online';
+                syncStatus.textContent = 'Synced';
+            } else {
+                statusElement.className = 'status-indicator status-offline';
+                statusText.textContent = 'Offline';
+                syncStatus.textContent = 'Pending';
+                
+                // Show offline notification
+                showStatusMessage('⚠️ Working offline - data will sync when connection is restored', 'error');
+            }
+        }
+
+        // Monitor connection status
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+
+        // Initial connection check
+        updateConnectionStatus();
+    </script>
+</body>
+</html>

@@ -1,317 +1,1354 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Emergency Triage Dashboard - Disaster Response Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --color-red: #dc2626;
+            --color-yellow: #f59e0b;
+            --color-green: #16a34a;
+            --color-blue: #3b82f6;
+            --color-black: #374151;
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --bg-hover: #f3f4f6;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --critical-pulse: pulse-red 2s infinite;
+        }
 
-{% block title %}Triage Dashboard - Disaster Response Assistant{% endblock %}
-{% block page_title %}📊 Emergency Triage Dashboard{% endblock %}
-{% block subtitle %}Real-time Patient Management & Critical Alert System{% endblock %}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block header_actions %}
-<a href="/" class="btn btn-secondary-outline">⬅️ Back to Home</a>
-<a href="/triage-form" class="btn btn-primary">📝 New Triage</a>
-<a href="/patient-list" class="btn btn-info">👥 Patient List</a>
-<button onclick="triageDashboard.openShiftHandover()" class="btn btn-info">📋 Shift Handover</button>
-<button onclick="triageDashboard.openRealTimeChat()" class="btn btn-success">💬 Real-Time Chat</button>
-{% endblock %}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
 
-{% block extra_css %}
-{{ super() }}
-<style>
-    /*
-    Enhanced Triage Dashboard Styles
-    ---------------------------------
-    This stylesheet contains all specific styles for the triage_dashboard.html template.
-    It inherits variables from the base styles.css file.
-    */
+        /* Header */
+        .main-header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
 
-    /* Layout */
-    .dashboard-layout {
-        max-width: 1800px;
-        margin: 0 auto;
-        padding: 1.5rem;
-    }
-    .stats-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    .operations-grid {
-        display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        gap: 1.5rem;
-        align-items: start;
-    }
-    .main-column { 
-        grid-column: span 12; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 1.5rem; 
-    }
-    .sidebar-column { 
-        grid-column: span 12; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 1.5rem; 
-    }
+        .header-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
 
-    /* Responsive columns for larger screens */
-    @media (min-width: 1024px) {
-        .main-column { grid-column: span 8; }
-        .sidebar-column { grid-column: span 4; }
-    }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
 
-    /* Cards */
-    .dashboard-card {
-        background: var(--card-bg);
-        border-radius: 16px;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-    }
-    .card-header {
-        background: var(--header-bg, linear-gradient(135deg, #1e40af 0%, #3b82f6 100%));
-        color: white;
-        padding: 1rem 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        border-bottom: 1px solid transparent;
-    }
-    .card-title { font-size: 1.1rem; font-weight: bold; margin: 0; }
-    .card-content { padding: 1.5rem; flex-grow: 1; }
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
 
-    /* Stat Cards */
-    .stat-card { background: var(--card-bg); border-radius: 16px; box-shadow: var(--shadow-md); overflow: hidden; border: 1px solid var(--border-color); position: relative; }
-    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--accent-color); }
-    .stat-content { padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
-    .stat-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; background: var(--accent-color); flex-shrink: 0; }
-    .stat-details h3 { margin: 0; font-size: 2rem; font-weight: bold; color: var(--text-color-dark, var(--text-primary)); }
-    .stat-details p { margin: 0.25rem 0 0 0; color: var(--text-color-light, var(--text-secondary)); font-size: 0.9rem; }
-    .stat-total { --accent-color: var(--color-blue, #3b82f6); }
-    .stat-active { --accent-color: var(--color-yellow, #f59e0b); }
-    .stat-today { --accent-color: var(--color-green, #16a34a); }
-    .stat-critical { --accent-color: var(--color-red, #dc2626); }
+        .status-indicators {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
 
-    /* Priority Queue */
-    .priority-queue { max-height: 500px; overflow-y: auto; }
-    .queue-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--border-color); transition: background-color 0.2s ease; cursor: pointer; }
-    .queue-item:hover { background: var(--bg-hover, #f3f4f6); }
-    .queue-priority { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.8rem; flex-shrink: 0; }
-    .priority-1 { background: var(--color-red, #dc2626); }
-    .priority-2 { background: var(--color-yellow, #f59e0b); }
-    .priority-3 { background: var(--color-green, #16a34a); }
-    .priority-4 { background: var(--color-black, #374151); }
-    .queue-details { flex: 1; }
-    .queue-name { font-weight: 600; color: var(--text-color-dark, var(--text-primary)); }
-    .queue-info { font-size: 0.8rem; color: var(--text-color-light, var(--text-secondary)); }
-    .queue-time { font-size: 0.7rem; color: var(--text-color-faded, #9ca3af); }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+        }
 
-    /* AI Co-Pilot & Scenario Trainer */
-    .tool-card textarea { width: 100%; min-height: 100px; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; margin-bottom: 1rem; }
-    .tool-card select { width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 1rem; }
-    .ai-feedback { background: rgba(0,0,0,0.05); border-left: 4px solid #16a34a; padding: 1rem; margin-top: 1rem; border-radius: 4px; font-size: 0.9rem; white-space: pre-wrap; }
-    .scenario-checklist { list-style-type: none; padding-left: 0; }
-    .scenario-checklist li { padding: 0.5rem; border-bottom: 1px solid var(--border-color); }
-    
-    /* Modals */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; }
-    .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); border-radius: 20px; padding: 2rem; max-width: 900px; width: 90%; max-height: 90vh; overflow-y: auto; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem; }
-    .modal-close { background: none; border: none; font-size: 2rem; cursor: pointer; }
+        .status-online { background: rgba(34, 197, 94, 0.3); }
+        .status-offline { background: rgba(239, 68, 68, 0.3); }
 
-    @media (max-width: 1024px) {
-        .operations-grid { grid-template-columns: 1fr; }
-    }
-</style>
-{% endblock %}
+        .nav-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
 
-{% block content %}
-<div class="dashboard-layout">
-    <!-- Stats Row -->
-    <div class="stats-row">
-        <div class="stat-card stat-total"><div class="stat-content"><div class="stat-icon">👥</div><div class="stat-details"><h3 id="total-patients">...</h3><p>Total Patients</p></div></div></div>
-        <div class="stat-card stat-active"><div class="stat-content"><div class="stat-icon">🟡</div><div class="stat-details"><h3 id="active-patients">...</h3><p>Currently Active</p></div></div></div>
-        <div class="stat-card stat-today"><div class="stat-content"><div class="stat-icon">📅</div><div class="stat-details"><h3 id="patients-today">...</h3><p>Admitted Today</p></div></div></div>
-        <div class="stat-card stat-critical"><div class="stat-content"><div class="stat-icon">🚨</div><div class="stat-details"><h3 id="critical-alerts-count">...</h3><p>Critical Alerts</p></div></div></div>
-    </div>
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
 
-    <!-- Main Operations Grid -->
-    <div class="operations-grid">
-        <!-- Main Column -->
-        <div class="main-column">
-            <!-- Priority Queue -->
-            <div class="dashboard-card">
-                <div class="card-header"><span class="card-icon">📋</span><h3 class="card-title">Priority Queue</h3></div>
-                <div class="card-content priority-queue" id="priority-queue-list">
-                    <!-- Patient items will be dynamically inserted here -->
-                    <div class="empty-state"><div class="empty-icon">📋</div><p>No active patients in the queue.</p></div>
+        .btn-primary { background: #059669; color: white; }
+        .btn-primary:hover { background: #047857; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.2); color: white; }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.3); }
+
+        /* Keyboard shortcuts indicator */
+        .shortcut {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-left: 0.25rem;
+        }
+
+        /* Dashboard Layout */
+        .dashboard-layout {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* Last updated indicator */
+        .last-updated {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 6px;
+        }
+
+        .refresh-indicator {
+            display: inline-block;
+            margin-left: 0.5rem;
+            color: var(--color-green);
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-color);
+        }
+
+        .stat-content {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            background: var(--accent-color);
+            flex-shrink: 0;
+        }
+
+        .stat-details h3 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .stat-details p {
+            margin: 0.25rem 0 0 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stat-total { --accent-color: var(--color-blue); }
+        .stat-active { --accent-color: var(--color-yellow); }
+        .stat-today { --accent-color: var(--color-green); }
+        .stat-critical { --accent-color: var(--color-red); }
+
+        /* Operations Grid */
+        .operations-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .main-column {
+            grid-column: span 12;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-column {
+            grid-column: span 12;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .main-column { grid-column: span 8; }
+            .sidebar-column { grid-column: span 4; }
+        }
+
+        /* Cards */
+        .dashboard-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            border-bottom: 1px solid transparent;
+        }
+
+        .card-header.critical {
+            background: linear-gradient(135deg, var(--color-red) 0%, #ef4444 100%);
+            animation: var(--critical-pulse);
+        }
+
+        .card-title-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+        }
+
+        /* Priority Queue */
+        .priority-queue {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .queue-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .queue-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+
+        .queue-item:focus {
+            outline: 2px solid var(--color-blue);
+            background: var(--bg-hover);
+        }
+
+        .queue-item.critical {
+            border-left: 4px solid var(--color-red);
+            animation: pulse-glow 3s infinite;
+        }
+
+        .queue-priority {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .priority-1 { background: var(--color-red); }
+        .priority-2 { background: var(--color-yellow); }
+        .priority-3 { background: var(--color-green); }
+        .priority-4 { background: var(--color-black); }
+
+        .queue-details {
+            flex: 1;
+        }
+
+        .queue-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .queue-info {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .queue-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+
+        /* Critical Alerts */
+        .alert-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .alert-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Staff presence */
+        .staff-presence {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .staff-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--color-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
+        }
+
+        /* Chat notifications */
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--color-red);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Tool cards */
+        .tool-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .tool-icon {
+            font-size: 1.2rem;
+        }
+
+        .tool-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .tool-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-blue);
+        }
+
+        .action-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .action-button.primary {
+            background: var(--color-blue);
+            color: white;
+        }
+
+        .action-button.primary:hover {
+            background: #2563eb;
+        }
+
+        .action-button.success {
+            background: var(--color-green);
+            color: white;
+        }
+
+        .action-button.success:hover {
+            background: #059669;
+        }
+
+        /* Animations */
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(220, 38, 38, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.6); }
+        }
+
+        /* Snackbar */
+        .snackbar {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            display: none;
+            z-index: 10000;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        /* Help tooltip */
+        .help-tooltip {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--color-blue);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            z-index: 1000;
+        }
+
+        /* Keyboard shortcuts overlay */
+        .shortcuts-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10001;
+            padding: 2rem;
+        }
+
+        .shortcuts-content {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 600px;
+            margin: 0 auto;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .shortcut-key {
+            background: var(--bg-hover);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .operations-grid { grid-template-columns: 1fr; }
+            .header-content { flex-direction: column; align-items: stretch; }
+            .nav-buttons { justify-content: center; }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-layout { padding: 1rem; }
+            .stats-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="main-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="page-title">
+                    <i class="fas fa-heartbeat"></i>
+                    AI Emergency Triage Dashboard
                 </div>
-            </div>
-            <!-- AI Report Assistant -->
-            <div class="tool-card">
-                <span class="tool-icon">🤖</span>
-                <h3 class="tool-title">Offline Report Assistant</h3>
-                <p class="tool-description">Draft a report here to get on-device AI feedback for clarity and completeness.</p>
-                <textarea id="draft-input" placeholder="Describe the emergency..."></textarea>
-                <button class="action-button primary" onclick="triageDashboard.runOfflineAnalysis()">Analyze Draft</button>
-                <div class="ai-feedback" id="draft-feedback" style="display:none;"></div>
-            </div>
-        </div>
-
-        <!-- Sidebar Column -->
-        <div class="sidebar-column">
-            <!-- Critical AI Alerts -->
-            <div class="dashboard-card">
-                <div class="card-header" style="background: var(--color-red);"><span class="card-icon">🚨</span><h3 class="card-title">Critical AI Alerts</h3></div>
-                <div class="card-content" id="critical-alerts-list">
-                    <div class="empty-state"><p>No critical alerts at this time.</p></div>
-                </div>
-            </div>
-            <!-- Emergency Scenario Trainer -->
-            <div class="tool-card">
-                <span class="tool-icon">📖</span>
-                <h3 class="tool-title">Emergency Scenario Trainer</h3>
-                <p class="tool-description">Get AI-powered guidance for common emergency situations.</p>
-                <select id="scenario-select" class="form-input" onchange="triageDashboard.startScenario()">
-                    <option value="">-- Select a Scenario --</option>
-                    <option value="power_outage">Power Outage</option>
-                    <option value="flooding">Minor Flooding</option>
-                    <option value="earthquake">After an Earthquake</option>
-                </select>
-                <div class="ai-feedback" id="scenario-steps" style="display:none;"></div>
-            </div>
-            <!-- Intelligent Sync Queue -->
-            <div class="tool-card">
-                <span class="tool-icon">📤</span>
-                <h3 class="tool-title">Intelligent Sync Queue</h3>
-                <p class="tool-description">Reports saved offline, analyzed by on-device AI, and ready to sync.</p>
-                <div id="sync-queue-list"><p>Sync queue is empty.</p></div>
-                <button class="action-button success" onclick="triageDashboard.syncNow()" style="margin-top: 1rem;">Sync Now</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modals -->
-<div id="shift-handover-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header"><h2>📋 Shift Handover Log</h2><button class="modal-close" onclick="triageDashboard.closeModal('shift-handover-modal')">&times;</button></div>
-        <!-- Handover content -->
-    </div>
-</div>
-<div id="chat-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header"><h2>💬 Real-Time Staff Chat</h2><button class="modal-close" onclick="triageDashboard.closeModal('chat-modal')">&times;</button></div>
-        <!-- Chat content -->
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
-<script>
-(function() {
-    "use strict";
-
-    const triageDashboard = {};
-
-    // --- Mock Data ---
-    const mockPatients = [
-        { id: 1, name: 'John Smith', injury: 'Chest trauma', severity: 'critical', triage_color: 'red', priority_score: 1, timestamp: new Date(Date.now() - 5 * 60000) },
-        { id: 2, name: 'Robert Wilson', injury: 'Cardiac event', severity: 'urgent', triage_color: 'red', priority_score: 1, timestamp: new Date(Date.now() - 10 * 60000) },
-        { id: 3, name: 'Maria Garcia', injury: 'Arm fracture', severity: 'moderate', triage_color: 'yellow', priority_score: 2, timestamp: new Date(Date.now() - 15 * 60000) },
-        { id: 4, name: 'Sarah Johnson', injury: 'Minor lacerations', severity: 'mild', triage_color: 'green', priority_score: 3, timestamp: new Date(Date.now() - 21 * 60000) },
-    ];
-    const mockAlerts = [
-        { patient: mockPatients[0], prediction: 'Low oxygen saturation, Critical condition' },
-        { patient: mockPatients[1], prediction: 'Elevated heart rate, potential cardiac event' },
-    ];
-
-    // --- UI Update Functions ---
-    function updateDashboardStats() {
-        document.getElementById('total-patients').textContent = mockPatients.length;
-        document.getElementById('active-patients').textContent = mockPatients.filter(p => p.status !== 'discharged').length;
-        document.getElementById('patients-today').textContent = mockPatients.length; // Simplified for demo
-        document.getElementById('critical-alerts-count').textContent = mockAlerts.length;
-    }
-
-    function populatePriorityQueue() {
-        const queueList = document.getElementById('priority-queue-list');
-        queueList.innerHTML = mockPatients.sort((a, b) => a.priority_score - b.priority_score).map(p => `
-            <div class="queue-item" onclick="alert('Viewing patient ${p.id}')">
-                <div class="queue-priority priority-${p.priority_score}">${p.priority_score}</div>
-                <div class="queue-details">
-                    <div class="queue-name">${p.name}</div>
-                    <div class="queue-info">
-                        <span>${p.injury}</span><span>-</span><span>${p.severity}</span>
+                <div class="status-indicators">
+                    <div class="status-item status-online" id="connection-status">
+                        <i class="fas fa-wifi"></i>
+                        <span id="status-text">Online</span>
+                    </div>
+                    <div class="staff-presence">
+                        <span>Staff:</span>
+                        <div class="staff-avatar" title="Dr. Smith">DS</div>
+                        <div class="staff-avatar" title="Nurse Johnson">NJ</div>
+                        <div class="staff-avatar" title="You">ME</div>
                     </div>
                 </div>
-                <div class="queue-time">${new Date(p.timestamp).toLocaleTimeString()}</div>
             </div>
-        `).join('');
-    }
+            <nav class="nav-buttons">
+                <a href="http://localhost:8000/staff-triage-command#" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Command Center <span class="shortcut">H</span>
+                </a>
+                <a href="/triage-form" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Triage <span class="shortcut">N</span>
+                </a>
+                <a href="/patient-list" class="btn btn-secondary">
+                    <i class="fas fa-users"></i> Patient List <span class="shortcut">P</span>
+                </a>
+                <button onclick="triageDashboard.openShiftHandover()" class="btn btn-secondary">
+                    <i class="fas fa-clipboard-list"></i> Shift Handover <span class="shortcut">S</span>
+                </button>
+                <button onclick="triageDashboard.openRealTimeChat()" class="btn btn-secondary" style="position: relative;">
+                    <i class="fas fa-comments"></i> Real-Time Chat <span class="shortcut">C</span>
+                    <div class="notification-badge" id="chat-badge" style="display: none;">3</div>
+                </button>
+            </nav>
+        </div>
+    </header>
 
-    function populateCriticalAlerts() {
-        const alertsList = document.getElementById('critical-alerts-list');
-        alertsList.innerHTML = mockAlerts.map(alert => `
-            <div class="alert-item" onclick="alert('Viewing alert for ${alert.patient.name}')">
-                <div class="alert-header"><span>⚠️</span><span>${alert.patient.name}</span></div>
-                <div class="alert-details">${alert.prediction}</div>
+    <div class="dashboard-layout">
+        <!-- Live Data Indicator -->
+        <div class="last-updated" id="last-updated">
+            Last updated: <span id="update-time">--:--</span>
+            <i class="fas fa-sync-alt refresh-indicator" id="refresh-icon"></i>
+            Auto-refresh every 30 seconds
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card stat-total">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 id="total-patients" aria-live="polite">4</h3>
+                        <p>Total Patients</p>
+                    </div>
+                </div>
             </div>
-        `).join('');
-    }
+            <div class="stat-card stat-active">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 id="active-patients" aria-live="polite">4</h3>
+                        <p>Currently Active</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card stat-today">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 id="patients-today" aria-live="polite">4</h3>
+                        <p>Admitted Today</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card stat-critical">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 id="critical-alerts-count" aria-live="assertive">2</h3>
+                        <p>Critical Alerts</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    // --- Modal Functions ---
-    triageDashboard.openShiftHandover = () => document.getElementById('shift-handover-modal').style.display = 'block';
-    triageDashboard.openRealTimeChat = () => document.getElementById('chat-modal').style.display = 'block';
-    triageDashboard.closeModal = (modalId) => document.getElementById(modalId).style.display = 'none';
+        <!-- Main Operations Grid -->
+        <div class="operations-grid">
+            <!-- Main Column -->
+            <div class="main-column">
+                <!-- Priority Queue -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-title-section">
+                            <i class="fas fa-list-ol"></i>
+                            <h3 class="card-title">Priority Queue</h3>
+                        </div>
+                        <div class="staff-presence">
+                            <i class="fas fa-eye"></i>
+                            <span>3 viewing</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="priority-queue" id="priority-queue-list" role="region" aria-label="Patient priority queue">
+                            <!-- Patient items will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
 
-    // --- AI Tool Functions ---
-    triageDashboard.runOfflineAnalysis = function() {
-        const draftInput = document.getElementById('draft-input');
-        const feedbackPanel = document.getElementById('draft-feedback');
-        if (!draftInput.value.trim()) {
-            feedbackPanel.textContent = "Please enter a description to analyze.";
-            feedbackPanel.style.display = 'block';
-            return;
+                <!-- AI Report Assistant -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <i class="fas fa-robot tool-icon"></i>
+                        <h3 class="tool-title">Offline Report Assistant</h3>
+                    </div>
+                    <p class="tool-description">Draft a report here to get on-device AI feedback for clarity and completeness.</p>
+                    <textarea 
+                        id="draft-input" 
+                        class="form-input" 
+                        placeholder="Describe the emergency situation..." 
+                        rows="4"
+                        aria-label="Emergency report draft"
+                    ></textarea>
+                    <button class="action-button primary" onclick="triageDashboard.runOfflineAnalysis()">
+                        <i class="fas fa-brain"></i> Analyze Draft
+                    </button>
+                    <div class="ai-feedback" id="draft-feedback" style="display:none;" aria-live="polite"></div>
+                </div>
+            </div>
+
+            <!-- Sidebar Column -->
+            <div class="sidebar-column">
+                <!-- Critical AI Alerts -->
+                <div class="dashboard-card">
+                    <div class="card-header critical">
+                        <div class="card-title-section">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3 class="card-title">Critical AI Alerts</h3>
+                        </div>
+                        <div class="notification-badge">2</div>
+                    </div>
+                    <div class="card-content" id="critical-alerts-list" role="region" aria-label="Critical patient alerts" aria-live="assertive">
+                        <!-- Critical alerts will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Emergency Scenario Trainer -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <i class="fas fa-graduation-cap tool-icon"></i>
+                        <h3 class="tool-title">Emergency Scenario Trainer</h3>
+                    </div>
+                    <p class="tool-description">Get AI-powered guidance for common emergency situations.</p>
+                    <select 
+                        id="scenario-select" 
+                        class="form-input" 
+                        onchange="triageDashboard.startScenario()"
+                        aria-label="Emergency scenario selection"
+                    >
+                        <option value="">-- Select a Scenario --</option>
+                        <option value="power_outage">Power Outage Response</option>
+                        <option value="flooding">Minor Flooding Protocol</option>
+                        <option value="earthquake">Post-Earthquake Assessment</option>
+                        <option value="mass_casualty">Mass Casualty Triage</option>
+                    </select>
+                    <div class="ai-feedback" id="scenario-steps" style="display:none;" aria-live="polite"></div>
+                </div>
+
+                <!-- Intelligent Sync Queue -->
+                <div class="tool-card">
+                    <div class="tool-header">
+                        <i class="fas fa-sync tool-icon"></i>
+                        <h3 class="tool-title">Intelligent Sync Queue</h3>
+                    </div>
+                    <p class="tool-description">Reports saved offline, analyzed by on-device AI, and ready to sync.</p>
+                    <div id="sync-queue-list" aria-live="polite">
+                        <p>Last sync: <span id="last-sync-time">2 minutes ago</span></p>
+                        <p>Sync queue is empty.</p>
+                    </div>
+                    <button class="action-button success" onclick="triageDashboard.syncNow()" style="margin-top: 1rem;">
+                        <i class="fas fa-cloud-upload-alt"></i> Sync Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Tooltip -->
+    <div class="help-tooltip" onclick="triageDashboard.showShortcuts()" title="Show keyboard shortcuts (Press ?)">
+        <i class="fas fa-question"></i>
+    </div>
+
+    <!-- Keyboard Shortcuts Overlay -->
+    <div class="shortcuts-overlay" id="shortcuts-overlay" onclick="triageDashboard.hideShortcuts()">
+        <div class="shortcuts-content" onclick="event.stopPropagation()">
+            <h2>Keyboard Shortcuts</h2>
+            <div class="shortcut-item">
+                <span>New Triage</span>
+                <span class="shortcut-key">N</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Patient List</span>
+                <span class="shortcut-key">P</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Real-Time Chat</span>
+                <span class="shortcut-key">C</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Shift Handover</span>
+                <span class="shortcut-key">S</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Command Center</span>
+                <span class="shortcut-key">H</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Show Help</span>
+                <span class="shortcut-key">?</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Search Patients</span>
+                <span class="shortcut-key">/</span>
+            </div>
+            <button class="action-button primary" onclick="triageDashboard.hideShortcuts()" style="margin-top: 1rem;">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Snackbar -->
+    <div class="snackbar" id="snackbar"></div>
+
+    <script>
+        (function() {
+            "use strict";
+
+            const triageDashboard = {};
+
+            // Mock Data
+            const mockPatients = [
+                { 
+                    id: 1, 
+                    name: 'John Smith', 
+                    injury: 'Chest trauma', 
+                    severity: 'critical', 
+                    triage_color: 'red', 
+                    priority_score: 1, 
+                    timestamp: new Date(Date.now() - 5 * 60000),
+                    vitals: 'Low oxygen saturation'
+                },
+                { 
+                    id: 2, 
+                    name: 'Robert Wilson', 
+                    injury: 'Cardiac event', 
+                    severity: 'urgent', 
+                    triage_color: 'red', 
+                    priority_score: 1, 
+                    timestamp: new Date(Date.now() - 10 * 60000),
+                    vitals: 'Elevated heart rate'
+                },
+                { 
+                    id: 3, 
+                    name: 'Maria Garcia', 
+                    injury: 'Arm fracture', 
+                    severity: 'moderate', 
+                    triage_color: 'yellow', 
+                    priority_score: 2, 
+                    timestamp: new Date(Date.now() - 15 * 60000),
+                    vitals: 'Stable'
+                },
+                { 
+                    id: 4, 
+                    name: 'Sarah Johnson', 
+                    injury: 'Minor lacerations', 
+                    severity: 'mild', 
+                    triage_color: 'green', 
+                    priority_score: 3, 
+                    timestamp: new Date(Date.now() - 21 * 60000),
+                    vitals: 'Normal'
+                },
+            ];
+
+            const mockAlerts = [
+                { 
+                    patient: mockPatients[0], 
+                    prediction: 'Low oxygen saturation, Critical condition requiring immediate intervention',
+                    timestamp: new Date(Date.now() - 2 * 60000),
+                    severity: 'critical'
+                },
+                { 
+                    patient: mockPatients[1], 
+                    prediction: 'Elevated heart rate detected, potential cardiac event in progress',
+                    timestamp: new Date(Date.now() - 5 * 60000),
+                    severity: 'urgent'
+                },
+            ];
+
+            let lastActionTime = null;
+            let refreshInterval;
+            let chatNotifications = 3;
+
+            // UI Update Functions
+            function updateDashboardStats() {
+                document.getElementById('total-patients').textContent = mockPatients.length;
+                document.getElementById('active-patients').textContent = mockPatients.filter(p => p.status !== 'discharged').length;
+                document.getElementById('patients-today').textContent = mockPatients.length;
+                document.getElementById('critical-alerts-count').textContent = mockAlerts.length;
+                
+                updateLastUpdatedTime();
+            }
+
+            function updateLastUpdatedTime() {
+                const now = new Date();
+                document.getElementById('update-time').textContent = now.toLocaleTimeString();
+                
+                // Animate refresh icon
+                const refreshIcon = document.getElementById('refresh-icon');
+                refreshIcon.style.animation = 'none';
+                setTimeout(() => {
+                    refreshIcon.style.animation = 'spin 1s linear';
+                }, 10);
+            }
+
+            function populatePriorityQueue() {
+                const queueList = document.getElementById('priority-queue-list');
+                const sortedPatients = mockPatients.sort((a, b) => {
+                    if (a.priority_score !== b.priority_score) {
+                        return a.priority_score - b.priority_score;
+                    }
+                    return new Date(a.timestamp) - new Date(b.timestamp);
+                });
+
+                if (sortedPatients.length === 0) {
+                    queueList.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No active patients in the queue.</p></div>';
+                    return;
+                }
+
+                queueList.innerHTML = sortedPatients.map((p, index) => `
+                    <div class="queue-item ${p.priority_score === 1 ? 'critical' : ''}" 
+                         onclick="triageDashboard.viewPatient(${p.id})" 
+                         tabindex="0" 
+                         role="button"
+                         aria-label="Patient ${p.name}, Priority ${p.priority_score}, ${p.injury}"
+                         data-patient-id="${p.id}">
+                        <div class="queue-priority priority-${p.priority_score}" aria-label="Priority ${p.priority_score}">
+                            ${p.priority_score}
+                        </div>
+                        <div class="queue-details">
+                            <div class="queue-name">${p.name}</div>
+                            <div class="queue-info">
+                                <span>${p.injury}</span> • <span>${p.severity}</span> • <span>${p.vitals}</span>
+                            </div>
+                        </div>
+                        <div class="queue-time">
+                            ${getTimeAgo(p.timestamp)}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            function populateCriticalAlerts() {
+                const alertsList = document.getElementById('critical-alerts-list');
+                
+                if (mockAlerts.length === 0) {
+                    alertsList.innerHTML = '<div class="empty-state"><p>No critical alerts at this time.</p></div>';
+                    return;
+                }
+
+                alertsList.innerHTML = mockAlerts.map(alert => `
+                    <div class="alert-item" 
+                         onclick="triageDashboard.viewAlert(${alert.patient.id})" 
+                         tabindex="0" 
+                         role="button"
+                         aria-label="Critical alert for ${alert.patient.name}">
+                        <div class="alert-header">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--color-red);"></i>
+                            <span>${alert.patient.name}</span>
+                            <span style="font-size: 0.7rem; color: var(--text-secondary);">${getTimeAgo(alert.timestamp)}</span>
+                        </div>
+                        <div class="alert-details">${alert.prediction}</div>
+                    </div>
+                `).join('');
+            }
+
+            function getTimeAgo(timestamp) {
+                const now = new Date();
+                const diff = Math.floor((now - timestamp) / 60000); // minutes
+                if (diff < 1) return 'Just now';
+                if (diff < 60) return `${diff}m ago`;
+                const hours = Math.floor(diff / 60);
+                if (hours < 24) return `${hours}h ago`;
+                return `${Math.floor(hours / 24)}d ago`;
+            }
+
+            // Snackbar System
+            function showSnackbar(message, duration = 3000) {
+                const snackbar = document.getElementById('snackbar');
+                snackbar.textContent = message;
+                snackbar.style.display = 'block';
+                
+                setTimeout(() => {
+                    snackbar.style.display = 'none';
+                }, duration);
+            }
+
+            // Patient and Alert Functions
+            triageDashboard.viewPatient = function(patientId) {
+                const patient = mockPatients.find(p => p.id === patientId);
+                if (patient) {
+                    showSnackbar(`Opening detailed view for ${patient.name}`);
+                    // In a real app, this would navigate to patient detail page
+                    console.log('Viewing patient:', patient);
+                }
+            };
+
+            triageDashboard.viewAlert = function(patientId) {
+                const alert = mockAlerts.find(a => a.patient.id === patientId);
+                if (alert) {
+                    showSnackbar(`Reviewing critical alert for ${alert.patient.name}`);
+                    console.log('Viewing alert:', alert);
+                }
+            };
+
+            // Modal Functions
+            triageDashboard.openShiftHandover = function() {
+                document.getElementById('shift-handover-modal').style.display = 'block';
+                showSnackbar('Opening shift handover log...');
+            };
+
+            triageDashboard.openRealTimeChat = function() {
+                document.getElementById('chat-modal').style.display = 'block';
+                // Reset chat notifications
+                chatNotifications = 0;
+                updateChatBadge();
+                // Focus on chat input
+                setTimeout(() => {
+                    document.getElementById('chat-input').focus();
+                }, 100);
+            };
+
+            triageDashboard.closeModal = function(modalId) {
+                document.getElementById(modalId).style.display = 'none';
+            };
+
+            triageDashboard.sendChatMessage = function() {
+                const chatInput = document.getElementById('chat-input');
+                const message = chatInput.value.trim();
+                
+                if (!message) return;
+                
+                // Add message to chat
+                const chatMessages = document.getElementById('chat-messages');
+                const messageHtml = `
+                    <div class="chat-message" style="margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <div class="staff-avatar" style="width: 30px; height: 30px; font-size: 0.8rem; background: var(--color-green);">ME</div>
+                            <strong>You</strong>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);">Just now</span>
+                        </div>
+                        <div style="margin-left: 38px; background: #e3f2fd; padding: 0.75rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            ${message}
+                        </div>
+                    </div>
+                `;
+                
+                chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                chatInput.value = '';
+                showSnackbar('Message sent');
+            };
+
+            function updateChatBadge() {
+                const badge = document.getElementById('chat-badge');
+                if (chatNotifications > 0) {
+                    badge.textContent = chatNotifications;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+
+            // AI Tool Functions
+            triageDashboard.runOfflineAnalysis = function() {
+                const draftInput = document.getElementById('draft-input');
+                const feedbackPanel = document.getElementById('draft-feedback');
+                
+                if (!draftInput.value.trim()) {
+                    feedbackPanel.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter a description to analyze.';
+                    feedbackPanel.style.display = 'block';
+                    return;
+                }
+
+                feedbackPanel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing draft with on-device AI...';
+                feedbackPanel.style.display = 'block';
+                
+                setTimeout(() => {
+                    let feedback = [];
+                    const text = draftInput.value.toLowerCase();
+                    
+                    // AI Analysis Logic
+                    if (text.length > 50) {
+                        feedback.push('✅ Report has good detail level');
+                    } else {
+                        feedback.push('💡 Consider adding more detail');
+                    }
+                    
+                    if (!text.match(/\d+/g)) {
+                        feedback.push('💡 Consider adding numbers (e.g., people involved, vital signs)');
+                    }
+                    
+                    if (!text.includes('location') && !text.includes('address')) {
+                        feedback.push('💡 Location information would be helpful');
+                    }
+                    
+                    if (text.includes('critical') || text.includes('urgent')) {
+                        feedback.push('⚠️ Critical/urgent situation detected - ensure immediate attention');
+                    }
+                    
+                    if (feedback.length === 0) {
+                        feedback.push('✅ Report looks comprehensive');
+                    }
+                    
+                    feedbackPanel.innerHTML = `
+                        <strong><i class="fas fa-brain"></i> AI Feedback:</strong><br>
+                        ${feedback.map(f => `• ${f}`).join('<br>')}
+                    `;
+                }, 1500);
+            };
+
+            triageDashboard.startScenario = function() {
+                const scenario = document.getElementById('scenario-select').value;
+                const stepsPanel = document.getElementById('scenario-steps');
+                
+                if (!scenario) {
+                    stepsPanel.style.display = 'none';
+                    return;
+                }
+
+                const scenarios = {
+                    power_outage: [
+                        'Assess critical equipment on backup power',
+                        'Check generator fuel levels and functionality',
+                        'Prioritize patients on life support',
+                        'Establish communication with utility company',
+                        'Consider patient transfers if prolonged outage'
+                    ],
+                    flooding: [
+                        'Evacuate patients from affected areas',
+                        'Secure medical equipment and records',
+                        'Establish alternative access routes',
+                        'Monitor for contamination risks',
+                        'Document all evacuations and transfers'
+                    ],
+                    earthquake: [
+                        'Conduct immediate safety assessment',
+                        'Check for structural damage',
+                        'Account for all patients and staff',
+                        'Assess medical equipment functionality',
+                        'Prepare for potential aftershocks'
+                    ],
+                    mass_casualty: [
+                        'Activate mass casualty protocol',
+                        'Establish triage areas (Red, Yellow, Green)',
+                        'Assign triage officers to each area',
+                        'Request additional resources',
+                        'Document all patient classifications'
+                    ]
+                };
+
+                const steps = scenarios[scenario] || ['No guidance available for this scenario'];
+                
+                stepsPanel.innerHTML = `
+                    <strong><i class="fas fa-list-check"></i> ${scenario.replace('_', ' ').toUpperCase()} Protocol:</strong>
+                    <ol style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                        ${steps.map(step => `<li style="margin-bottom: 0.5rem;">${step}</li>`).join('')}
+                    </ol>
+                `;
+                stepsPanel.style.display = 'block';
+            };
+
+            triageDashboard.syncNow = function() {
+                showSnackbar('Syncing offline reports with central system...');
+                
+                // Simulate sync process
+                setTimeout(() => {
+                    document.getElementById('last-sync-time').textContent = 'Just now';
+                    showSnackbar('✅ Sync completed successfully');
+                }, 2000);
+            };
+
+            // Keyboard Shortcuts
+            triageDashboard.showShortcuts = function() {
+                document.getElementById('shortcuts-overlay').style.display = 'block';
+            };
+
+            triageDashboard.hideShortcuts = function() {
+                document.getElementById('shortcuts-overlay').style.display = 'none';
+            };
+
+            // Connection Status Simulation
+            function updateConnectionStatus() {
+                const statusElement = document.getElementById('connection-status');
+                const statusText = document.getElementById('status-text');
+                
+                // Simulate occasional offline status
+                const isOnline = Math.random() > 0.1; // 90% online
+                
+                if (isOnline) {
+                    statusElement.className = 'status-item status-online';
+                    statusText.textContent = 'Online';
+                } else {
+                    statusElement.className = 'status-item status-offline';
+                    statusText.textContent = 'Offline';
+                    showSnackbar('⚠️ Connection lost - working in offline mode', 5000);
+                }
+            }
+
+            // Auto-refresh and Real-time Updates
+            function startAutoRefresh() {
+                refreshInterval = setInterval(() => {
+                    updateDashboardStats();
+                    populatePriorityQueue();
+                    populateCriticalAlerts();
+                    
+                    // Simulate new chat messages occasionally
+                    if (Math.random() > 0.8) {
+                        chatNotifications++;
+                        updateChatBadge();
+                    }
+                }, 30000); // Every 30 seconds
+            }
+
+            // Keyboard Event Handlers
+            document.addEventListener('keydown', function(event) {
+                // Don't trigger shortcuts if user is typing in an input
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.tagName === 'SELECT') {
+                    return;
+                }
+
+                switch(event.key.toLowerCase()) {
+                    case 'n':
+                        window.location.href = '/triage-form';
+                        break;
+                    case 'p':
+                        window.location.href = '/patient-list';
+                        break;
+                    case 'c':
+                        triageDashboard.openRealTimeChat();
+                        break;
+                    case 's':
+                        triageDashboard.openShiftHandover();
+                        break;
+                    case 'h':
+                        window.location.href = 'http://localhost:8000/staff-triage-command#';
+                        break;
+                    case '?':
+                        triageDashboard.showShortcuts();
+                        break;
+                    case '/':
+                        event.preventDefault();
+                        showSnackbar('Patient search feature coming soon...');
+                        break;
+                    case 'escape':
+                        triageDashboard.hideShortcuts();
+                        break;
+                }
+            });
+
+            // Queue item keyboard navigation
+            document.addEventListener('keydown', function(event) {
+                const focusedElement = document.activeElement;
+                if (focusedElement && focusedElement.classList.contains('queue-item')) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        focusedElement.click();
+                    }
+                }
+            });
+
+            // Initialize Dashboard
+            document.addEventListener('DOMContentLoaded', function() {
+                updateDashboardStats();
+                populatePriorityQueue();
+                populateCriticalAlerts();
+                updateChatBadge();
+                startAutoRefresh();
+                
+                // Initial connection status check
+                updateConnectionStatus();
+                
+                // Check connection status every minute
+                setInterval(updateConnectionStatus, 60000);
+                
+                // Welcome message
+                setTimeout(() => {
+                    showSnackbar('Welcome to Emergency Triage Dashboard - Press ? for shortcuts');
+                }, 1000);
+                
+                // Expose to global scope
+                window.triageDashboard = triageDashboard;
+            });
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', function() {
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                }
+            });
+
+        })();
+    </script>
+
+    <style>
+        /* Additional animations */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
-        feedbackPanel.textContent = "🧠 Analyzing draft with on-device AI...";
-        feedbackPanel.style.display = 'block';
-        setTimeout(() => {
-            let feedback = "✅ Report looks clear.\n";
-            if (!draftInput.value.match(/\d+/g)) feedback += "💡 Consider adding numbers (e.g., people involved, address).\n";
-            if (!draftInput.value.toLowerCase().includes('street' || 'road' || 'ave')) feedback += "💡 A specific street name would be helpful.\n";
-            feedbackPanel.innerHTML = `<strong>AI Feedback:</strong><br>${feedback.replace(/\n/g, '<br>')}`;
-        }, 1500);
-    };
-
-    triageDashboard.startScenario = function() {
-        const scenario = document.getElementById('scenario-select').value;
-        const stepsPanel = document.getElementById('scenario-steps');
-        if (!scenario) {
-            stepsPanel.style.display = 'none';
-            return;
+        
+        /* Focus styles for accessibility */
+        .queue-item:focus,
+        .alert-item:focus,
+        .btn:focus,
+        .action-button:focus {
+            outline: 2px solid var(--color-blue);
+            outline-offset: 2px;
         }
-        let steps = "<li>No guidance for this scenario.</li>";
-        if (scenario === 'power_outage') steps = `<li>1. Find a flashlight.</li><li>2. Check if neighbors have power.</li><li>3. Report to utility if possible.</li>`;
-        if (scenario === 'flooding') steps = `<li>1. Move to higher ground.</li><li>2. Do not walk or drive through floodwaters.</li>`;
-        if (scenario === 'earthquake') steps = `<li>1. Drop, Cover, and Hold On.</li><li>2. Check for injuries after shaking.</li>`;
-        stepsPanel.innerHTML = `<strong>Guidance for ${scenario.replace('_', ' ')}:</strong><ul class="scenario-checklist">${steps}</ul>`;
-        stepsPanel.style.display = 'block';
-    };
-
-    triageDashboard.syncNow = () => alert("Syncing offline reports...");
-
-    // --- P2P (Placeholder) ---
-    triageDashboard.handleManualSignal = () => alert("Connecting to peer...");
-
-    // --- Initialization ---
-    document.addEventListener('DOMContentLoaded', () => {
-        updateDashboardStats();
-        populatePriorityQueue();
-        populateCriticalAlerts();
-        window.triageDashboard = triageDashboard;
-    });
-})();
-</script>
-{% endblock %}
+        
+        /* Print styles */
+        @media print {
+            .main-header,
+            .help-tooltip,
+            .shortcuts-overlay,
+            .snackbar {
+                display: none !important;
+            }
+            
+            .dashboard-layout {
+                padding: 0;
+            }
+            
+            .dashboard-card {
+                break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+        }
+    </style>
+</body>
+</html>
