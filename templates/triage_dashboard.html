@@ -19,6 +19,8 @@
             --bg-hover: #f3f4f6;
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             --critical-pulse: pulse-red 2s infinite;
+            --ai-purple: #8b5cf6;
+            --ai-purple-light: #f3f0ff;
         }
 
         * {
@@ -486,6 +488,207 @@
             background: #059669;
         }
 
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border: 2px solid var(--border-color);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+            padding: 0.5rem;
+            border-radius: 50%;
+        }
+
+        .close-btn:hover {
+            color: var(--color-red);
+            background: rgba(220, 38, 38, 0.1);
+        }
+
+        /* Chat Styles */
+        .chat-messages {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .send-btn {
+            background: var(--ai-purple);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #7c3aed;
+        }
+
+        /* Handover Styles */
+        .handover-section {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--ai-purple-light);
+            border-radius: 8px;
+            border-left: 4px solid var(--ai-purple);
+        }
+
+        .handover-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--ai-purple);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+            background: white;
+        }
+
+        .critical-item {
+            background: rgba(220, 38, 38, 0.05);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            border-left: 4px solid var(--color-red);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .critical-header {
+            font-weight: bold;
+            color: var(--color-red);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Quick message buttons */
+        .quick-messages {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-msg-btn {
+            background: var(--color-blue);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quick-msg-btn:hover {
+            background: #2563eb;
+        }
+
+        .quick-msg-btn.urgent {
+            background: var(--color-red);
+        }
+
+        .quick-msg-btn.urgent:hover {
+            background: #b91c1c;
+        }
+
         /* Animations */
         @keyframes pulse-red {
             0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
@@ -495,6 +698,11 @@
         @keyframes pulse-glow {
             0%, 100% { box-shadow: 0 0 5px rgba(220, 38, 38, 0.3); }
             50% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.6); }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* Snackbar */
@@ -574,16 +782,48 @@
             font-size: 0.8rem;
         }
 
+        /* Focus styles for accessibility */
+        .queue-item:focus,
+        .alert-item:focus,
+        .btn:focus,
+        .action-button:focus {
+            outline: 2px solid var(--color-blue);
+            outline-offset: 2px;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .operations-grid { grid-template-columns: 1fr; }
             .header-content { flex-direction: column; align-items: stretch; }
             .nav-buttons { justify-content: center; }
+            .form-grid { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 768px) {
             .dashboard-layout { padding: 1rem; }
             .stats-row { grid-template-columns: 1fr; }
+            .modal-content { width: 95%; padding: 1rem; }
+        }
+
+        /* Print styles */
+        @media print {
+            .main-header,
+            .help-tooltip,
+            .shortcuts-overlay,
+            .snackbar,
+            .modal {
+                display: none !important;
+            }
+            
+            .dashboard-layout {
+                padding: 0;
+            }
+            
+            .dashboard-card {
+                break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #000;
+            }
         }
     </style>
 </head>
@@ -714,6 +954,7 @@
                     <div class="tool-header">
                         <i class="fas fa-robot tool-icon"></i>
                         <h3 class="tool-title">Offline Report Assistant</h3>
+
                     </div>
                     <p class="tool-description">Draft a report here to get on-device AI feedback for clarity and completeness.</p>
                     <textarea 
@@ -783,6 +1024,192 @@
                         <i class="fas fa-cloud-upload-alt"></i> Sync Now
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shift Handover Modal -->
+    <div class="modal" id="shift-handover-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Shift Handover Report
+                </div>
+                <button class="close-btn" onclick="triageDashboard.closeModal('shift-handover-modal')">&times;</button>
+            </div>
+            
+            <div class="handover-section">
+                <div class="handover-title">
+                    <i class="fas fa-robot"></i> AI-Generated Shift Summary
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div style="text-align: center; padding: 1rem; background: rgba(220, 38, 38, 0.1); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-red);">2</div>
+                        <div style="font-size: 0.9rem;">Critical Patients</div>
+                    </div>
+                    <div style="text-align: center; padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-yellow);">4</div>
+                        <div style="font-size: 0.9rem;">Total Admissions</div>
+                    </div>
+                    <div style="text-align: center; padding: 1rem; background: rgba(22, 163, 74, 0.1); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--color-green);">2</div>
+                        <div style="font-size: 0.9rem;">Discharges</div>
+                    </div>
+                    <div style="text-align: center; padding: 1rem; background: var(--ai-purple-light); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--ai-purple);">95%</div>
+                        <div style="font-size: 0.9rem;">AI Accuracy</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="handover-section">
+                <div class="handover-title">
+                    <i class="fas fa-exclamation-triangle"></i> Critical Handover Items
+                </div>
+                <div class="critical-item">
+                    <div class="critical-header">
+                        <i class="fas fa-user-injured"></i>
+                        John Smith - Room 203
+                    </div>
+                    <div>Chest trauma with low oxygen saturation. Monitor closely for respiratory distress. Last vitals: O2 88%.</div>
+                    <div style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--ai-purple);">
+                        <i class="fas fa-robot"></i> AI: High priority monitoring - respiratory intervention may be needed
+                    </div>
+                </div>
+                <div class="critical-item">
+                    <div class="critical-header">
+                        <i class="fas fa-heartbeat"></i>
+                        Robert Wilson - Room 201
+                    </div>
+                    <div>Cardiac event in progress. Elevated heart rate detected. Cardiology consult requested.</div>
+                    <div style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--ai-purple);">
+                        <i class="fas fa-robot"></i> AI: Continuous cardiac monitoring recommended
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <div class="form-group">
+                        <label class="form-label">Outgoing Staff</label>
+                        <input type="text" class="form-input" placeholder="Your name" value="Dr. Sarah Chen">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Shift End Time</label>
+                        <input type="time" class="form-input" value="19:00">
+                    </div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label class="form-label">Incoming Staff</label>
+                        <select class="form-select">
+                            <option>Select incoming staff</option>
+                            <option>Dr. Martinez - Night Shift</option>
+                            <option>Dr. Patel - Emergency</option>
+                            <option>Nurse Wilson - ICU</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Shift Start Time</label>
+                        <input type="time" class="form-input" value="19:30">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Additional Handover Notes</label>
+                <textarea class="form-input" rows="3" placeholder="Any additional critical information for the incoming team..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button class="action-button primary" onclick="triageDashboard.generateHandoverReport()" style="flex: 1;">
+                    <i class="fas fa-robot"></i> AI Generate Report
+                </button>
+                <button class="action-button success" onclick="triageDashboard.completeHandover()" style="flex: 1;">
+                    <i class="fas fa-check"></i> Complete Handover
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-Time Chat Modal -->
+    <div class="modal" id="chat-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-comments"></i>
+                    Emergency Team Chat
+                    <span style="background: var(--color-green); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; margin-left: 1rem;">
+                        <i class="fas fa-circle" style="font-size: 0.6rem;"></i> 3 Online
+                    </span>
+                </div>
+                <button class="close-btn" onclick="triageDashboard.closeModal('chat-modal')">&times;</button>
+            </div>
+
+            <!-- Active Users -->
+            <div style="background: var(--bg-hover); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <strong>Active Team:</strong>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="background: var(--color-green); color: white; padding: 0.375rem 0.75rem; border-radius: 16px; font-size: 0.8rem;">
+                            <i class="fas fa-user-md"></i> Dr. Chen (You)
+                        </span>
+                        <span style="background: var(--color-blue); color: white; padding: 0.375rem 0.75rem; border-radius: 16px; font-size: 0.8rem;">
+                            <i class="fas fa-user-nurse"></i> Nurse Garcia
+                        </span>
+                        <span style="background: var(--color-yellow); color: white; padding: 0.375rem 0.75rem; border-radius: 16px; font-size: 0.8rem;">
+                            <i class="fas fa-user-md"></i> Dr. Martinez
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-message">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <div class="staff-avatar" style="width: 30px; height: 30px; font-size: 0.8rem; background: var(--color-blue);">NG</div>
+                        <strong>Nurse Garcia</strong>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">2 min ago</span>
+                    </div>
+                    <div style="margin-left: 38px;">John Smith in Room 203 is asking for pain medication. Current pain level 7/10.</div>
+                </div>
+
+                <div class="chat-message">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <div class="staff-avatar" style="width: 30px; height: 30px; font-size: 0.8rem; background: var(--ai-purple);">AI</div>
+                        <strong style="color: var(--ai-purple);">AI Assistant</strong>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">1 min ago</span>
+                    </div>
+                    <div style="margin-left: 38px; background: var(--ai-purple-light); padding: 0.75rem; border-radius: 8px;">
+                        <i class="fas fa-robot"></i> Patient John Smith: Last pain medication 4h ago. Recommend 2mg morphine IV. Monitor respiratory rate.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Messages -->
+            <div class="quick-messages">
+                <button class="quick-msg-btn urgent" onclick="triageDashboard.sendQuickMessage('🚨 Need immediate assistance')">
+                    🚨 Need Assistance
+                </button>
+                <button class="quick-msg-btn" onclick="triageDashboard.sendQuickMessage('📋 Patient update available')">
+                    📋 Patient Update
+                </button>
+                <button class="quick-msg-btn" onclick="triageDashboard.sendQuickMessage('☕ Taking break')">
+                    ☕ Break Time
+                </button>
+                <button class="quick-msg-btn" onclick="triageDashboard.askAI()">
+                    🤖 Ask AI
+                </button>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Type your message to the team..." onkeypress="triageDashboard.handleChatKeypress(event)">
+                <button class="send-btn" onclick="triageDashboard.sendChatMessage()">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
             </div>
         </div>
     </div>
@@ -1011,7 +1438,6 @@
                 const patient = mockPatients.find(p => p.id === patientId);
                 if (patient) {
                     showSnackbar(`Opening detailed view for ${patient.name}`);
-                    // In a real app, this would navigate to patient detail page
                     console.log('Viewing patient:', patient);
                 }
             };
@@ -1024,10 +1450,10 @@
                 }
             };
 
-            // Modal Functions
+            // NEW MODAL FUNCTIONS
             triageDashboard.openShiftHandover = function() {
                 document.getElementById('shift-handover-modal').style.display = 'block';
-                showSnackbar('Opening shift handover log...');
+                showSnackbar('📋 Opening shift handover interface...');
             };
 
             triageDashboard.openRealTimeChat = function() {
@@ -1037,12 +1463,26 @@
                 updateChatBadge();
                 // Focus on chat input
                 setTimeout(() => {
-                    document.getElementById('chat-input').focus();
+                    const chatInput = document.getElementById('chat-input');
+                    if (chatInput) chatInput.focus();
                 }, 100);
+                showSnackbar('💬 Real-time team chat active');
             };
 
             triageDashboard.closeModal = function(modalId) {
                 document.getElementById(modalId).style.display = 'none';
+            };
+
+            triageDashboard.generateHandoverReport = function() {
+                showSnackbar('🤖 AI generating comprehensive handover report...');
+                setTimeout(() => {
+                    showSnackbar('✅ Handover report generated with AI insights');
+                }, 2000);
+            };
+
+            triageDashboard.completeHandover = function() {
+                showSnackbar('✅ Shift handover completed successfully');
+                triageDashboard.closeModal('shift-handover-modal');
             };
 
             triageDashboard.sendChatMessage = function() {
@@ -1054,13 +1494,13 @@
                 // Add message to chat
                 const chatMessages = document.getElementById('chat-messages');
                 const messageHtml = `
-                    <div class="chat-message" style="margin-bottom: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <div class="chat-message">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <div class="staff-avatar" style="width: 30px; height: 30px; font-size: 0.8rem; background: var(--color-green);">ME</div>
                             <strong>You</strong>
                             <span style="font-size: 0.8rem; color: var(--text-secondary);">Just now</span>
                         </div>
-                        <div style="margin-left: 38px; background: #e3f2fd; padding: 0.75rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <div style="margin-left: 38px; background: #e3f2fd; padding: 0.75rem; border-radius: 8px;">
                             ${message}
                         </div>
                     </div>
@@ -1070,7 +1510,26 @@
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 
                 chatInput.value = '';
-                showSnackbar('Message sent');
+                showSnackbar('💬 Message sent to team');
+            };
+
+            triageDashboard.sendQuickMessage = function(message) {
+                const chatInput = document.getElementById('chat-input');
+                chatInput.value = message;
+                triageDashboard.sendChatMessage();
+            };
+
+            triageDashboard.askAI = function() {
+                const chatInput = document.getElementById('chat-input');
+                chatInput.value = 'AI: ';
+                chatInput.focus();
+                showSnackbar('🤖 AI assistant ready - type your question');
+            };
+
+            triageDashboard.handleChatKeypress = function(event) {
+                if (event.key === 'Enter') {
+                    triageDashboard.sendChatMessage();
+                }
             };
 
             function updateChatBadge() {
@@ -1157,7 +1616,6 @@
                     ],
                     earthquake: [
                         'Conduct immediate safety assessment',
-                        'Check for structural damage',
                         'Account for all patients and staff',
                         'Assess medical equipment functionality',
                         'Prepare for potential aftershocks'
@@ -1266,6 +1724,9 @@
                         break;
                     case 'escape':
                         triageDashboard.hideShortcuts();
+                        // Close any open modals
+                        triageDashboard.closeModal('shift-handover-modal');
+                        triageDashboard.closeModal('chat-modal');
                         break;
                 }
             });
@@ -1278,6 +1739,14 @@
                         event.preventDefault();
                         focusedElement.click();
                     }
+                }
+            });
+
+            // Modal click outside to close
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('modal')) {
+                    const modalId = event.target.id;
+                    triageDashboard.closeModal(modalId);
                 }
             });
 
@@ -1313,42 +1782,5 @@
 
         })();
     </script>
-
-    <style>
-        /* Additional animations */
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Focus styles for accessibility */
-        .queue-item:focus,
-        .alert-item:focus,
-        .btn:focus,
-        .action-button:focus {
-            outline: 2px solid var(--color-blue);
-            outline-offset: 2px;
-        }
-        
-        /* Print styles */
-        @media print {
-            .main-header,
-            .help-tooltip,
-            .shortcuts-overlay,
-            .snackbar {
-                display: none !important;
-            }
-            
-            .dashboard-layout {
-                padding: 0;
-            }
-            
-            .dashboard-card {
-                break-inside: avoid;
-                box-shadow: none;
-                border: 1px solid #000;
-            }
-        }
-    </style>
 </body>
 </html>
