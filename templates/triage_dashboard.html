@@ -1,924 +1,317 @@
 {% extends "base.html" %}
+
 {% block title %}Triage Dashboard - Disaster Response Assistant{% endblock %}
 {% block page_title %}📊 Emergency Triage Dashboard{% endblock %}
 {% block subtitle %}Real-time Patient Management & Critical Alert System{% endblock %}
+
 {% block header_actions %}
-<a href="/" class="btn btn-secondary-outline">
- ⬅️ Back to Home
-</a>
-<a href="/staff-triage-command" class="btn btn-secondary">
- 👩‍⚕️ Staff Command Center
-</a>
-<a href="/triage-form" class="btn btn-primary">
- 📝 New Triage
-</a>
-<a href="/patient-list" class="btn btn-info">
- 👥 Patient List
-</a>
+<a href="/" class="btn btn-secondary-outline">⬅️ Back to Home</a>
+<a href="/triage-form" class="btn btn-primary">📝 New Triage</a>
+<a href="/patient-list" class="btn btn-info">👥 Patient List</a>
+<button onclick="triageDashboard.openShiftHandover()" class="btn btn-info">📋 Shift Handover</button>
+<button onclick="triageDashboard.openRealTimeChat()" class="btn btn-success">💬 Real-Time Chat</button>
 {% endblock %}
 
 {% block extra_css %}
 {{ super() }}
 <style>
-  /* Common CSS Variables (adjust these in your base.html or a global CSS file if preferred) */
-  :root {
-    --color-red: #dc2626;
-    --color-yellow: #f59e0b;
-    --color-green: #16a34a;
-    --color-blue: #3b82f6;
-    --color-black: #374151;
+    /*
+    Enhanced Triage Dashboard Styles
+    ---------------------------------
+    This stylesheet contains all specific styles for the triage_dashboard.html template.
+    It inherits variables from the base styles.css file.
+    */
 
-    --card-bg: white;
-    --shadow-md: 0 8px 25px rgba(0, 0, 0, 0.1);
-    --border-color: #e5e7eb;
-    --text-color-dark: #1f2937;
-    --text-color-light: #6b7280;
-    --text-color-faded: #9ca3af;
-    --header-bg: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-    --bg-light: #f8fafc;
-    --bg-hover: #f3f4f6;
-    --scroll-thumb: #a3a3a3;
-    --scroll-track: #e5e7eb;
-  }
-
-  /* Dark Mode Variables (override light mode defaults) */
-  [data-theme="dark"] {
-    --card-bg: #2d3748;
-    --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.4);
-    --border-color: #4a5568;
-    --text-color-dark: #edf2f7;
-    --text-color-light: #a0aec0;
-    --text-color-faded: #718096;
-    --header-bg: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-    --bg-light: #2c3445;
-    --bg-hover: #3a455c;
-    --scroll-thumb: #6b7280;
-    --scroll-track: #4a5568;
-  }
-
-  /* Darker gradients for triage/severity specific colors in dark mode */
-  [data-theme="dark"] .triage-red { 
-    background: linear-gradient(135deg, #b32020 0%, #8c1616 100%); 
-  }
-  
-  [data-theme="dark"] .triage-yellow { 
-    background: linear-gradient(135deg, #d28c0a 0%, #a66e07 100%); 
-  }
-  
-  [data-theme="dark"] .triage-green { 
-    background: linear-gradient(135deg, #13873f 0%, #106631 100%); 
-  }
-  
-  [data-theme="dark"] .triage-black { 
-    background: linear-gradient(135deg, #2a323c 0%, #181d24 100%); 
-  }
-
-  /* Base Layout */
-  .dashboard-layout {
-    max-width: 1600px;
-    margin: 0 auto;
-    display: grid;
-    gap: 2rem;
-  }
-  
-  /* Top Stats Row */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-  }
-  
-  .stat-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    box-shadow: var(--shadow-md);
-    overflow: hidden;
-    position: relative;
-    border: 1px solid var(--border-color);
-  }
-  
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--accent-color);
-  }
-  
-  .stat-content {
-    padding: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-  }
-  
-  .stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: white;
-    background: var(--accent-color);
-    flex-shrink: 0;
-  }
-  
-  .stat-details h3 {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--text-color-dark);
-  }
-  
-  .stat-details p {
-    margin: 0.25rem 0 0 0;
-    color: var(--text-color-light);
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-  
-  .stat-total { 
-    --accent-color: var(--color-blue); 
-  }
-  
-  .stat-active { 
-    --accent-color: var(--color-yellow); 
-  }
-  
-  .stat-today { 
-    --accent-color: var(--color-green); 
-  }
-  
-  .stat-critical { 
-    --accent-color: var(--color-red); 
-  }
-  
-  /* Main Dashboard Grid */
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 350px;
-    gap: 2rem;
-  }
-  
-  .dashboard-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    box-shadow: var(--shadow-md);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-  }
-  
-  .card-header {
-    background: var(--header-bg);
-    color: white;
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  
-  .card-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-    margin: 0;
-  }
-  
-  .card-content {
-    padding: 1.5rem;
-  }
-  
-  /* Triage Breakdown Chart */
-  .triage-chart {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-  
-  .triage-item {
-    text-align: center;
-    padding: 1.5rem;
-    border-radius: 12px;
-    color: white;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-  }
-  
-  .triage-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s ease-out;
-  }
-  
-  .triage-item:hover::before {
-    left: 100%;
-  }
-  
-  .triage-red { 
-    background: linear-gradient(135deg, var(--color-red) 0%, #b91c1c 100%); 
-  }
-  
-  .triage-yellow { 
-    background: linear-gradient(135deg, var(--color-yellow) 0%, #d97706 100%); 
-  }
-  
-  .triage-green { 
-    background: linear-gradient(135deg, var(--color-green) 0%, #15803d 100%); 
-  }
-  
-  .triage-black { 
-    background: linear-gradient(135deg, var(--color-black) 0%, #1f2937 100%); 
-  }
-  
-  .triage-count {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-  }
-  
-  .triage-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-  }
-  
-  .triage-percentage {
-    font-size: 0.8rem;
-    opacity: 0.8;
-    margin-top: 0.25rem;
-  }
-  
-  /* Severity Breakdown */
-  .severity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .severity-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: var(--bg-light);
-    border-radius: 8px;
-    border-left: 4px solid var(--severity-color);
-    transition: background-color 0.2s ease;
-    cursor: pointer; /* Indicate clickability */
-  }
-
-  .severity-item:hover {
-    background: var(--bg-hover);
-  }
-  
-  .severity-critical { 
-    --severity-color: var(--color-red); 
-  }
-  
-  .severity-severe { 
-    --severity-color: var(--color-yellow); 
-  }
-  
-  .severity-moderate { 
-    --severity-color: var(--color-blue); 
-  }
-  
-  .severity-mild { 
-    --severity-color: var(--color-green); 
-  }
-  
-  .severity-info h4 {
-    margin: 0;
-    font-size: 1rem;
-    color: var(--text-color-dark);
-    text-transform: capitalize;
-  }
-  
-  .severity-count {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--severity-color);
-  }
-  
-  /* Priority Queue */
-  .priority-queue {
-    max-height: 400px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
-  }
-
-  /* Webkit scrollbar styles */
-  .priority-queue::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  .priority-queue::-webkit-scrollbar-track {
-    background: var(--scroll-track);
-    border-radius: 10px;
-  }
-  
-  .priority-queue::-webkit-scrollbar-thumb {
-    background: var(--scroll-thumb);
-    border-radius: 10px;
-  }
-  
-  .queue-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
-    cursor: pointer;
-  }
-  
-  .queue-item:hover {
-    background: var(--bg-hover);
-  }
-  
-  .queue-item:last-child {
-    border-bottom: none;
-  }
-  
-  .queue-priority {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: white;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-  }
-  
-  .priority-1 { 
-    background: var(--color-red); 
-  }
-  
-  .priority-2 { 
-    background: var(--color-yellow); 
-  }
-  
-  .priority-3 { 
-    background: var(--color-green); 
-  }
-  
-  .priority-4 { 
-    background: var(--color-black); 
-  }
-  
-  .queue-details {
-    flex: 1;
-  }
-  
-  .queue-name {
-    font-weight: 600;
-    color: var(--text-color-dark);
-    margin-bottom: 0.25rem;
-  }
-  
-  .queue-info {
-    font-size: 0.8rem;
-    color: var(--text-color-light);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-  
-  .queue-time {
-    font-size: 0.7rem;
-    color: var(--text-color-faded);
-    font-family: 'Courier New', monospace;
-  }
-  
-  /* Critical Alerts */
-  .critical-alerts-section {
-    margin-bottom: 2rem;
-  }
-  
-  .alert-item {
-    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-    border: 1px solid #fecaca;
-    border-left: 4px solid var(--color-red);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    animation: alert-pulse 2s infinite;
-    cursor: pointer;
-  }
-  
-  @keyframes alert-pulse {
-    0%, 100% { 
-      transform: scale(1); 
+    /* Layout */
+    .dashboard-layout {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 1.5rem;
     }
-    50% { 
-      transform: scale(1.01); 
-    }
-  }
-  
-  .alert-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: bold;
-    color: #991b1b;
-    margin-bottom: 0.5rem;
-  }
-  
-  .alert-details {
-    font-size: 0.9rem;
-    color: #7f1d1d;
-  }
-  
-  /* Recent Activity */
-  .activity-list {
-    max-height: 300px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
-  }
-  
-  .activity-list::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  .activity-list::-webkit-scrollbar-track {
-    background: var(--scroll-track);
-    border-radius: 10px;
-  }
-  
-  .activity-list::-webkit-scrollbar-thumb {
-    background: var(--scroll-thumb);
-    border-radius: 10px;
-  }
-  
-  .activity-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border-color);
-    cursor: pointer;
-  }
-  
-  .activity-item:last-child {
-    border-bottom: none;
-  }
-  
-  .activity-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--activity-icon-bg, var(--color-blue)); /* Default to blue */
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    flex-shrink: 0;
-    margin-top: 0.25rem;
-  }
-
-  /* Specific activity icons based on triage color */
-  .activity-icon.red { 
-    background: var(--color-red); 
-  }
-  
-  .activity-icon.yellow { 
-    background: var(--color-yellow); 
-  }
-  
-  .activity-icon.green { 
-    background: var(--color-green); 
-  }
-  
-  .activity-icon.black { 
-    background: var(--color-black); 
-  }
-  
-  .activity-content {
-    flex: 1;
-  }
-  
-  .activity-text {
-    font-size: 0.9rem;
-    color: var(--text-color-dark);
-    margin-bottom: 0.25rem;
-  }
-  
-  .activity-time {
-    font-size: 0.7rem;
-    color: var(--text-color-light);
-    font-family: 'Courier New', monospace;
-  }
-  
-  /* Real-time Updates */
-  .live-indicator {
-    position: fixed;
-    top: 100px; /* Adjust based on your header height */
-    right: 20px;
-    background: var(--color-green);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: var(--shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
-  }
-  
-  .live-dot {
-    width: 8px;
-    height: 8px;
-    background: white;
-    border-radius: 50%;
-    animation: live-pulse 1s infinite;
-  }
-  
-  @keyframes live-pulse {
-    0%, 100% { 
-      opacity: 1; 
-    }
-    50% { 
-      opacity: 0.3; 
-    }
-  }
-  
-  /* Empty States */
-  .empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--text-color-light);
-  }
-  
-  .empty-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-  }
-  
-  .empty-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-  }
-  
-  .empty-text {
-    font-size: 0.9rem;
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 1200px) {
-    .dashboard-grid {
-      grid-template-columns: 1fr;
-    }
-    
     .stats-row {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    }
-    
-    .triage-chart {
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .stats-row {
-      grid-template-columns: 1fr;
-    }
-    
-    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1.5rem;
+        margin-bottom: 2rem;
     }
-    
-    .triage-chart {
-        grid-template-columns: 1fr;
+    .operations-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.5rem;
+        align-items: start;
     }
-    
-    .stat-content {
-      padding: 1.25rem;
-      gap: 0.75rem;
+    .main-column { 
+        grid-column: span 12; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 1.5rem; 
     }
-    
-    .stat-icon {
-      width: 48px;
-      height: 48px;
-      font-size: 1.1rem;
-    }
-    
-    .stat-details h3 {
-      font-size: 1.8rem;
+    .sidebar-column { 
+        grid-column: span 12; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 1.5rem; 
     }
 
+    /* Responsive columns for larger screens */
+    @media (min-width: 1024px) {
+        .main-column { grid-column: span 8; }
+        .sidebar-column { grid-column: span 4; }
+    }
+
+    /* Cards */
+    .dashboard-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+    }
     .card-header {
-        padding: 1rem;
+        background: var(--header-bg, linear-gradient(135deg, #1e40af 0%, #3b82f6 100%));
+        color: white;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-bottom: 1px solid transparent;
     }
-    
-    .card-content {
-        padding: 1rem;
-    }
+    .card-title { font-size: 1.1rem; font-weight: bold; margin: 0; }
+    .card-content { padding: 1.5rem; flex-grow: 1; }
 
-    .live-indicator {
-        top: 80px;
-        right: 10px;
-        padding: 0.4rem 0.8rem;
-        font-size: 0.7rem;
+    /* Stat Cards */
+    .stat-card { background: var(--card-bg); border-radius: 16px; box-shadow: var(--shadow-md); overflow: hidden; border: 1px solid var(--border-color); position: relative; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--accent-color); }
+    .stat-content { padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
+    .stat-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; background: var(--accent-color); flex-shrink: 0; }
+    .stat-details h3 { margin: 0; font-size: 2rem; font-weight: bold; color: var(--text-color-dark, var(--text-primary)); }
+    .stat-details p { margin: 0.25rem 0 0 0; color: var(--text-color-light, var(--text-secondary)); font-size: 0.9rem; }
+    .stat-total { --accent-color: var(--color-blue, #3b82f6); }
+    .stat-active { --accent-color: var(--color-yellow, #f59e0b); }
+    .stat-today { --accent-color: var(--color-green, #16a34a); }
+    .stat-critical { --accent-color: var(--color-red, #dc2626); }
+
+    /* Priority Queue */
+    .priority-queue { max-height: 500px; overflow-y: auto; }
+    .queue-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--border-color); transition: background-color 0.2s ease; cursor: pointer; }
+    .queue-item:hover { background: var(--bg-hover, #f3f4f6); }
+    .queue-priority { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.8rem; flex-shrink: 0; }
+    .priority-1 { background: var(--color-red, #dc2626); }
+    .priority-2 { background: var(--color-yellow, #f59e0b); }
+    .priority-3 { background: var(--color-green, #16a34a); }
+    .priority-4 { background: var(--color-black, #374151); }
+    .queue-details { flex: 1; }
+    .queue-name { font-weight: 600; color: var(--text-color-dark, var(--text-primary)); }
+    .queue-info { font-size: 0.8rem; color: var(--text-color-light, var(--text-secondary)); }
+    .queue-time { font-size: 0.7rem; color: var(--text-color-faded, #9ca3af); }
+
+    /* AI Co-Pilot & Scenario Trainer */
+    .tool-card textarea { width: 100%; min-height: 100px; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; margin-bottom: 1rem; }
+    .tool-card select { width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 1rem; }
+    .ai-feedback { background: rgba(0,0,0,0.05); border-left: 4px solid #16a34a; padding: 1rem; margin-top: 1rem; border-radius: 4px; font-size: 0.9rem; white-space: pre-wrap; }
+    .scenario-checklist { list-style-type: none; padding-left: 0; }
+    .scenario-checklist li { padding: 0.5rem; border-bottom: 1px solid var(--border-color); }
+    
+    /* Modals */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; }
+    .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); border-radius: 20px; padding: 2rem; max-width: 900px; width: 90%; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem; }
+    .modal-close { background: none; border: none; font-size: 2rem; cursor: pointer; }
+
+    @media (max-width: 1024px) {
+        .operations-grid { grid-template-columns: 1fr; }
     }
-  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="live-indicator">
-  <div class="live-dot"></div>
-  LIVE DASHBOARD
+<div class="dashboard-layout">
+    <!-- Stats Row -->
+    <div class="stats-row">
+        <div class="stat-card stat-total"><div class="stat-content"><div class="stat-icon">👥</div><div class="stat-details"><h3 id="total-patients">...</h3><p>Total Patients</p></div></div></div>
+        <div class="stat-card stat-active"><div class="stat-content"><div class="stat-icon">🟡</div><div class="stat-details"><h3 id="active-patients">...</h3><p>Currently Active</p></div></div></div>
+        <div class="stat-card stat-today"><div class="stat-content"><div class="stat-icon">📅</div><div class="stat-details"><h3 id="patients-today">...</h3><p>Admitted Today</p></div></div></div>
+        <div class="stat-card stat-critical"><div class="stat-content"><div class="stat-icon">🚨</div><div class="stat-details"><h3 id="critical-alerts-count">...</h3><p>Critical Alerts</p></div></div></div>
+    </div>
+
+    <!-- Main Operations Grid -->
+    <div class="operations-grid">
+        <!-- Main Column -->
+        <div class="main-column">
+            <!-- Priority Queue -->
+            <div class="dashboard-card">
+                <div class="card-header"><span class="card-icon">📋</span><h3 class="card-title">Priority Queue</h3></div>
+                <div class="card-content priority-queue" id="priority-queue-list">
+                    <!-- Patient items will be dynamically inserted here -->
+                    <div class="empty-state"><div class="empty-icon">📋</div><p>No active patients in the queue.</p></div>
+                </div>
+            </div>
+            <!-- AI Report Assistant -->
+            <div class="tool-card">
+                <span class="tool-icon">🤖</span>
+                <h3 class="tool-title">Offline Report Assistant</h3>
+                <p class="tool-description">Draft a report here to get on-device AI feedback for clarity and completeness.</p>
+                <textarea id="draft-input" placeholder="Describe the emergency..."></textarea>
+                <button class="action-button primary" onclick="triageDashboard.runOfflineAnalysis()">Analyze Draft</button>
+                <div class="ai-feedback" id="draft-feedback" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- Sidebar Column -->
+        <div class="sidebar-column">
+            <!-- Critical AI Alerts -->
+            <div class="dashboard-card">
+                <div class="card-header" style="background: var(--color-red);"><span class="card-icon">🚨</span><h3 class="card-title">Critical AI Alerts</h3></div>
+                <div class="card-content" id="critical-alerts-list">
+                    <div class="empty-state"><p>No critical alerts at this time.</p></div>
+                </div>
+            </div>
+            <!-- Emergency Scenario Trainer -->
+            <div class="tool-card">
+                <span class="tool-icon">📖</span>
+                <h3 class="tool-title">Emergency Scenario Trainer</h3>
+                <p class="tool-description">Get AI-powered guidance for common emergency situations.</p>
+                <select id="scenario-select" class="form-input" onchange="triageDashboard.startScenario()">
+                    <option value="">-- Select a Scenario --</option>
+                    <option value="power_outage">Power Outage</option>
+                    <option value="flooding">Minor Flooding</option>
+                    <option value="earthquake">After an Earthquake</option>
+                </select>
+                <div class="ai-feedback" id="scenario-steps" style="display:none;"></div>
+            </div>
+            <!-- Intelligent Sync Queue -->
+            <div class="tool-card">
+                <span class="tool-icon">📤</span>
+                <h3 class="tool-title">Intelligent Sync Queue</h3>
+                <p class="tool-description">Reports saved offline, analyzed by on-device AI, and ready to sync.</p>
+                <div id="sync-queue-list"><p>Sync queue is empty.</p></div>
+                <button class="action-button success" onclick="triageDashboard.syncNow()" style="margin-top: 1rem;">Sync Now</button>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="dashboard-layout">
-  <div class="stats-row">
-    <div class="stat-card stat-total">
-      <div class="stat-content">
-        <div class="stat-icon">👥</div>
-        <div class="stat-details">
-          <h3>{{ stats.total_patients }}</h3>
-          <p>Total Patients</p>
-        </div>
-      </div>
+<!-- Modals -->
+<div id="shift-handover-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>📋 Shift Handover Log</h2><button class="modal-close" onclick="triageDashboard.closeModal('shift-handover-modal')">&times;</button></div>
+        <!-- Handover content -->
     </div>
-    
-    <div class="stat-card stat-active">
-      <div class="stat-content">
-        <div class="stat-icon">🟡</div>
-        <div class="stat-details">
-          <h3>{{ stats.active_patients }}</h3>
-          <p>Currently Active</p>
-        </div>
-      </div>
+</div>
+<div id="chat-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>💬 Real-Time Staff Chat</h2><button class="modal-close" onclick="triageDashboard.closeModal('chat-modal')">&times;</button></div>
+        <!-- Chat content -->
     </div>
-    
-    <div class="stat-card stat-today">
-      <div class="stat-content">
-        <div class="stat-icon">📅</div>
-        <div class="stat-details">
-          <h3>{{ stats.patients_today }}</h3>
-          <p>Admitted Today</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="stat-card stat-critical">
-      <div class="stat-content">
-        <div class="stat-icon">🚨</div>
-        <div class="stat-details">
-          <h3>{{ stats.critical_alerts }}</h3>
-          <p>Critical Alerts</p>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="dashboard-grid">
-    <div class="dashboard-card">
-      <div class="card-header">
-        <span>🏷️</span>
-        <h3 class="card-title">Triage Color Breakdown</h3>
-      </div>
-      <div class="card-content">
-        <div class="triage-chart">
-          <div class="triage-item triage-red" onclick="window.location.href='/patient-list?triage_color=red'">
-            <div class="triage-count">{{ triage_breakdown.red.count }}</div>
-            <div class="triage-label">🔴 RED</div>
-            <div class="triage-percentage">{{ triage_breakdown.red.percentage }}%</div>
-          </div>
-          
-          <div class="triage-item triage-yellow" onclick="window.location.href='/patient-list?triage_color=yellow'">
-            <div class="triage-count">{{ triage_breakdown.yellow.count }}</div>
-            <div class="triage-label">🟡 YELLOW</div>
-            <div class="triage-percentage">{{ triage_breakdown.yellow.percentage }}%</div>
-          </div>
-          
-          <div class="triage-item triage-green" onclick="window.location.href='/patient-list?triage_color=green'">
-            <div class="triage-count">{{ triage_breakdown.green.count }}</div>
-            <div class="triage-label">🟢 GREEN</div>
-            <div class="triage-percentage">{{ triage_breakdown.green.percentage }}%</div>
-          </div>
-          
-          <div class="triage-item triage-black" onclick="window.location.href='/patient-list?triage_color=black'">
-            <div class="triage-count">{{ triage_breakdown.black.count }}</div>
-            <div class="triage-label">⚫ BLACK</div>
-            <div class="triage-percentage">{{ triage_breakdown.black.percentage }}%</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="dashboard-card">
-      <div class="card-header">
-        <span>⚡</span>
-        <h3 class="card-title">Severity Analysis</h3>
-      </div>
-      <div class="card-content">
-        <div class="severity-list">
-          <div class="severity-item severity-critical" onclick="window.location.href='/patient-list?severity=critical'">
-            <div class="severity-info">
-              <h4>Critical</h4>
-            </div>
-            <div class="severity-count">{{ severity_breakdown.critical }}</div>
-          </div>
-          
-          <div class="severity-item severity-severe" onclick="window.location.href='/patient-list?severity=severe'">
-            <div class="severity-info">
-              <h4>Severe</h4>
-            </div>
-            <div class="severity-count">{{ severity_breakdown.severe }}</div>
-          </div>
-          
-          <div class="severity-item severity-moderate" onclick="window.location.href='/patient-list?severity=moderate'">
-            <div class="severity-info">
-              <h4>Moderate</h4>
-            </div>
-            <div class="severity-count">{{ severity_breakdown.moderate }}</div>
-          </div>
-          
-          <div class="severity-item severity-mild" onclick="window.location.href='/patient-list?severity=mild'">
-            <div class="severity-info">
-              <h4>Mild</h4>
-            </div>
-            <div class="severity-count">{{ severity_breakdown.mild }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-      {% if critical_vitals_patients %}
-      <div class="dashboard-card critical-alerts-section">
-        <div class="card-header" style="background: linear-gradient(135deg, var(--color-red) 0%, #b91c1c 100%);">
-          <span>🚨</span>
-          <h3 class="card-title">Critical Vitals Alert</h3>
-        </div>
-        <div class="card-content">
-          {% for patient in critical_vitals_patients %}
-          <div class="alert-item" onclick="window.location.href='/patients/{{ patient.id }}/view'">
-            <div class="alert-header">
-              <span>⚠️</span>
-              <span>{{ patient.name }}</span>
-            </div>
-            <div class="alert-details">
-              Critical vital signs detected - requires immediate attention. Priority: {{ patient.priority_score }}
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %}
-      
-      <div class="dashboard-card">
-        <div class="card-header">
-          <span>📋</span>
-          <h3 class="card-title">Priority Queue</h3>
-        </div>
-        <div class="card-content">
-          <div class="priority-queue">
-            {% if priority_queue %}
-              {% for patient in priority_queue %}
-              <div class="queue-item" onclick="window.location.href='/patients/{{ patient.id }}/view'">
-                <div class="queue-priority priority-{{ patient.priority_score }}">
-                  {{ patient.priority_score }}
-                </div>
-                <div class="queue-details">
-                  <div class="queue-name">{{ patient.name }}</div>
-                  <div class="queue-info">
-                    <span>{{ patient.injury_type }}</span>
-                    <span>{{ patient.severity|capitalize }}</span>
-                    <span style="color: 
-                        {% if patient.triage_color == 'red' %}var(--color-red)
-                        {% elif patient.triage_color == 'yellow' %}var(--color-yellow)
-                        {% elif patient.triage_color == 'green' %}var(--color-green)
-                        {% else %}var(--color-black){% endif %};">
-                      {{ patient.triage_color.upper() }}
-                    </span>
-                  </div>
-                </div>
-                <div class="queue-time">
-                  {{ patient.created_at.strftime('%H:%M:%S') }}
-                </div>
-              </div>
-              {% endfor %}
-            {% else %}
-              <div class="empty-state">
-                <div class="empty-icon">📋</div>
-                <div class="empty-title">No Active Patients</div>
-                <div class="empty-text">Priority queue is empty. Patients will appear here when triaged.</div>
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="dashboard-card">
-    <div class="card-header">
-      <span>🕒</span>
-      <h3 class="card-title">Recent Activity</h3>
-    </div>
-    <div class="card-content">
-      <div class="activity-list">
-        {% if recent_patients %}
-          {% for patient in recent_patients %}
-          <div class="activity-item" onclick="window.location.href='/patients/{{ patient.id }}/view'">
-            <div class="activity-icon {{ patient.triage_color }}">
-              {% if patient.triage_color == 'red' %}🔴
-              {% elif patient.triage_color == 'yellow' %}🟡
-              {% elif patient.triage_color == 'green' %}🟢
-              {% else %}⚫{% endif %}
-            </div>
-            <div class="activity-content">
-              <div class="activity-text">
-                <strong>{{ patient.name }}</strong> admitted with {{ patient.injury_type }}
-                <span style="color: 
-                  {% if patient.severity == 'critical' %}var(--color-red)
-                  {% elif patient.severity == 'severe' %}var(--color-yellow)
-                  {% elif patient.severity == 'moderate' %}var(--color-blue)
-                  {% else %}var(--color-green){% endif %};">
-                  ({{ patient.severity|capitalize }})
-                </span>
-              </div>
-              <div class="activity-time">
-                {{ patient.created_at.strftime('%m/%d/%Y %H:%M:%S') }}
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-        {% else %}
-          <div class="empty-state">
-            <div class="empty-icon">🕒</div>
-            <div class="empty-title">No Recent Activity</div>
-            <div class="empty-text">No patients admitted recently.</div>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
-  // Auto-refresh dashboard every 15 seconds
-  // Only refresh if the tab is visible to save resources
-  setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      console.log('Dashboard auto-refreshing...');
-      window.location.reload();
+(function() {
+    "use strict";
+
+    const triageDashboard = {};
+
+    // --- Mock Data ---
+    const mockPatients = [
+        { id: 1, name: 'John Smith', injury: 'Chest trauma', severity: 'critical', triage_color: 'red', priority_score: 1, timestamp: new Date(Date.now() - 5 * 60000) },
+        { id: 2, name: 'Robert Wilson', injury: 'Cardiac event', severity: 'urgent', triage_color: 'red', priority_score: 1, timestamp: new Date(Date.now() - 10 * 60000) },
+        { id: 3, name: 'Maria Garcia', injury: 'Arm fracture', severity: 'moderate', triage_color: 'yellow', priority_score: 2, timestamp: new Date(Date.now() - 15 * 60000) },
+        { id: 4, name: 'Sarah Johnson', injury: 'Minor lacerations', severity: 'mild', triage_color: 'green', priority_score: 3, timestamp: new Date(Date.now() - 21 * 60000) },
+    ];
+    const mockAlerts = [
+        { patient: mockPatients[0], prediction: 'Low oxygen saturation, Critical condition' },
+        { patient: mockPatients[1], prediction: 'Elevated heart rate, potential cardiac event' },
+    ];
+
+    // --- UI Update Functions ---
+    function updateDashboardStats() {
+        document.getElementById('total-patients').textContent = mockPatients.length;
+        document.getElementById('active-patients').textContent = mockPatients.filter(p => p.status !== 'discharged').length;
+        document.getElementById('patients-today').textContent = mockPatients.length; // Simplified for demo
+        document.getElementById('critical-alerts-count').textContent = mockAlerts.length;
     }
-  }, 15000); // 15 seconds
 
-  // Real-time clock update in the document title
-  function updateClockInTitle() {
-    const now = new Date();
-    // Format: HH:MM:SS
-    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    document.title = `[${timeString}] Triage Dashboard - Disaster Response Assistant`;
-  }
+    function populatePriorityQueue() {
+        const queueList = document.getElementById('priority-queue-list');
+        queueList.innerHTML = mockPatients.sort((a, b) => a.priority_score - b.priority_score).map(p => `
+            <div class="queue-item" onclick="alert('Viewing patient ${p.id}')">
+                <div class="queue-priority priority-${p.priority_score}">${p.priority_score}</div>
+                <div class="queue-details">
+                    <div class="queue-name">${p.name}</div>
+                    <div class="queue-info">
+                        <span>${p.injury}</span><span>-</span><span>${p.severity}</span>
+                    </div>
+                </div>
+                <div class="queue-time">${new Date(p.timestamp).toLocaleTimeString()}</div>
+            </div>
+        `).join('');
+    }
 
-  // Initial call and set interval for real-time clock
-  updateClockInTitle();
-  setInterval(updateClockInTitle, 1000); // Update every second
+    function populateCriticalAlerts() {
+        const alertsList = document.getElementById('critical-alerts-list');
+        alertsList.innerHTML = mockAlerts.map(alert => `
+            <div class="alert-item" onclick="alert('Viewing alert for ${alert.patient.name}')">
+                <div class="alert-header"><span>⚠️</span><span>${alert.patient.name}</span></div>
+                <div class="alert-details">${alert.prediction}</div>
+            </div>
+        `).join('');
+    }
 
-  // Optional: Add simple click handlers for cards/items if they lead to drill-down views
-  // These are handled directly in the HTML with `onclick="window.location.href='...'"`,
-  // but for more complex interactions, JavaScript listeners are better.
-  // Example for Triage items:
-  // document.querySelectorAll('.triage-item').forEach(item => {
-  //   item.addEventListener('click', () => {
-  //     const triageColor = item.querySelector('.triage-label').textContent.toLowerCase().replace('🔴', '').trim();
-  //     window.location.href = `/patient-list?triage_color=${triageColor}`;
-  //   });
-  // });
+    // --- Modal Functions ---
+    triageDashboard.openShiftHandover = () => document.getElementById('shift-handover-modal').style.display = 'block';
+    triageDashboard.openRealTimeChat = () => document.getElementById('chat-modal').style.display = 'block';
+    triageDashboard.closeModal = (modalId) => document.getElementById(modalId).style.display = 'none';
+
+    // --- AI Tool Functions ---
+    triageDashboard.runOfflineAnalysis = function() {
+        const draftInput = document.getElementById('draft-input');
+        const feedbackPanel = document.getElementById('draft-feedback');
+        if (!draftInput.value.trim()) {
+            feedbackPanel.textContent = "Please enter a description to analyze.";
+            feedbackPanel.style.display = 'block';
+            return;
+        }
+        feedbackPanel.textContent = "🧠 Analyzing draft with on-device AI...";
+        feedbackPanel.style.display = 'block';
+        setTimeout(() => {
+            let feedback = "✅ Report looks clear.\n";
+            if (!draftInput.value.match(/\d+/g)) feedback += "💡 Consider adding numbers (e.g., people involved, address).\n";
+            if (!draftInput.value.toLowerCase().includes('street' || 'road' || 'ave')) feedback += "💡 A specific street name would be helpful.\n";
+            feedbackPanel.innerHTML = `<strong>AI Feedback:</strong><br>${feedback.replace(/\n/g, '<br>')}`;
+        }, 1500);
+    };
+
+    triageDashboard.startScenario = function() {
+        const scenario = document.getElementById('scenario-select').value;
+        const stepsPanel = document.getElementById('scenario-steps');
+        if (!scenario) {
+            stepsPanel.style.display = 'none';
+            return;
+        }
+        let steps = "<li>No guidance for this scenario.</li>";
+        if (scenario === 'power_outage') steps = `<li>1. Find a flashlight.</li><li>2. Check if neighbors have power.</li><li>3. Report to utility if possible.</li>`;
+        if (scenario === 'flooding') steps = `<li>1. Move to higher ground.</li><li>2. Do not walk or drive through floodwaters.</li>`;
+        if (scenario === 'earthquake') steps = `<li>1. Drop, Cover, and Hold On.</li><li>2. Check for injuries after shaking.</li>`;
+        stepsPanel.innerHTML = `<strong>Guidance for ${scenario.replace('_', ' ')}:</strong><ul class="scenario-checklist">${steps}</ul>`;
+        stepsPanel.style.display = 'block';
+    };
+
+    triageDashboard.syncNow = () => alert("Syncing offline reports...");
+
+    // --- P2P (Placeholder) ---
+    triageDashboard.handleManualSignal = () => alert("Connecting to peer...");
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        updateDashboardStats();
+        populatePriorityQueue();
+        populateCriticalAlerts();
+        window.triageDashboard = triageDashboard;
+    });
+})();
 </script>
-{% endblock %}
-
-{% block footer_content %}
-<div style="background: var(--header-bg); color: white; padding: 1rem; border-radius: 8px; margin-top: 2rem; text-align: center;">
-  <div style="font-weight: bold; margin-bottom: 0.5rem;">🏥 Emergency Triage Control Center</div>
-  <div style="font-size: 0.9rem; opacity: 0.9;">
-    Real-time monitoring • Auto-refresh every 15s • Critical alert system active
-  </div>
-</div>
 {% endblock %}

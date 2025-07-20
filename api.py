@@ -2045,6 +2045,54 @@ async def staff_triage_command_center(request: Request, db: Session = Depends(ge
         </html>
         """)
     
+@app.get("/triage-dashboard", response_class=HTMLResponse)
+async def triage_dashboard(request: Request, db: Session = Depends(get_db)):
+    """AI-Enhanced Triage Dashboard - Alternative route to staff command center"""
+    try:
+        # Use the same data preparation as staff-triage-command
+        template_data = prepare_template_data_with_ai(db)
+        
+        return templates.TemplateResponse("triage_dashboard.html", {
+            "request": request,
+            **template_data,
+            "current_time": datetime.utcnow(),
+            "page_title": "AI-Enhanced Triage Dashboard",
+            "ai_enabled": True,
+            "gemma_model_info": {
+                "model": ai_optimizer.current_config.model_variant,
+                "optimization_level": ai_optimizer.current_config.optimization_level,
+                "performance": ai_optimizer.monitor_performance().__dict__
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Triage dashboard error: {e}")
+        return HTMLResponse(f"""
+        <html>
+        <head>
+            <title>Triage Dashboard - Error</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }}
+                .error {{ background: #fef2f2; border: 1px solid #fecaca; padding: 2rem; border-radius: 8px; }}
+                .btn {{ background: #3b82f6; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; margin: 0.5rem; }}
+            </style>
+        </head>
+        <body>
+            <div class="error">
+                <h1>🏥 AI-Enhanced Triage Dashboard</h1>
+                <p><strong>Loading triage dashboard...</strong></p>
+                <p><strong>Error:</strong> {str(e)}</p>
+                <div>
+                    <a href="/staff-triage-command" class="btn">🏥 Staff Command Center</a>
+                    <a href="/admin" class="btn">← Admin Dashboard</a>
+                    <a href="/" class="btn">← Home</a>
+                    <a href="/health" class="btn">🔍 System Health</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+    
 # ================================================================================
 # GEMMA 3N AI INTEGRATION FUNCTIONS
 # ================================================================================
@@ -5907,12 +5955,15 @@ async def not_found_handler(request: Request, exc):
                 "Visit / for the citizen portal",
                 "Check /health for system status",
                 "Use /admin for dashboard access",
-                "Try /voice-emergency-reporter for voice reporting"  # NEW SUGGESTION
+                "Try /triage-dashboard for triage management",
+                "Try /voice-emergency-reporter for voice reporting"
             ],
-            "available_endpoints": {
+           "available_endpoints": {
                 "citizen_portal": "/",
-                "admin_dashboard": "/admin", 
-                "voice_emergency": "/voice-emergency-reporter",  # NEW ENDPOINT
+                "admin_dashboard": "/admin",
+                "triage_dashboard": "/triage-dashboard",
+                "staff_command_center": "/staff-triage-command", 
+                "voice_emergency": "/voice-emergency-reporter",
                 "api_docs": "/api/docs",
                 "health_check": "/health",
                 "websocket_dashboard": "/ws/dashboard"
