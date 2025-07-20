@@ -2049,12 +2049,94 @@ async def staff_triage_command_center(request: Request, db: Session = Depends(ge
 async def triage_dashboard(request: Request, db: Session = Depends(get_db)):
     """AI-Enhanced Triage Dashboard - Alternative route to staff command center"""
     try:
-        # Use the same data preparation as staff-triage-command
-        template_data = prepare_template_data_with_ai(db)
+        # Get basic statistics with fallback for missing tables
+        try:
+            total_patients = db.query(TriagePatient).count()
+            active_patients = db.query(TriagePatient).filter(TriagePatient.status == "active").count()
+            critical_patients = db.query(TriagePatient).filter(
+                or_(TriagePatient.triage_color == "red", TriagePatient.severity == "critical")
+            ).count()
+            
+            # Get patients with fallback
+            patients = db.query(TriagePatient).filter(
+                TriagePatient.status == "active"
+            ).order_by(TriagePatient.created_at.desc()).limit(20).all()
+            
+        except Exception as db_error:
+            logger.warning(f"Database query failed, using fallback data: {db_error}")
+            total_patients = active_patients = critical_patients = 0
+            patients = []
+        
+        # Prepare patient data with AI insights (with fallback)
+        patients_with_ai = []
+        critical_ai_alerts = []
+        
+        for patient in patients:
+            try:
+                # Try to generate AI insights
+                ai_insight = await generate_patient_ai_insights(patient)
+            except Exception as ai_error:
+                logger.warning(f"AI analysis failed for patient {patient.id}: {ai_error}")
+                ai_insight = get_fallback_ai_insights(patient)
+            
+            patient_data = {
+                "id": patient.id,
+                "name": patient.name,
+                "age": patient.age,
+                "gender": getattr(patient, 'gender', 'Unknown'),
+                "injury": patient.injury_type,
+                "severity": patient.severity,
+                "triage_color": patient.triage_color,
+                "priority": get_priority_from_triage_color(patient.triage_color),
+                "consciousness": patient.consciousness,
+                "breathing": patient.breathing,
+                "status": patient.status,
+                "timestamp": patient.created_at,
+                "notes": patient.notes,
+                "vitals": get_patient_vitals(patient),
+                "ai_insight": ai_insight,
+                "time_ago": calculate_time_ago(patient.created_at)
+            }
+            
+            patients_with_ai.append(patient_data)
+            
+            # Add critical alerts
+            if ai_insight["confidence"] > 0.9 or ai_insight["risk_level"] == "critical":
+                critical_ai_alerts.append({
+                    "patient": patient_data,
+                    "alert_type": ai_insight.get("alert_type", "critical"),
+                    "prediction": ai_insight.get("prediction", "Critical condition detected"),
+                    "confidence": ai_insight["confidence"]
+                })
+        
+        # Calculate statistics
+        triage_breakdown = {
+            "red": {"count": len([p for p in patients_with_ai if p["triage_color"] == "red"]), "percentage": 0},
+            "yellow": {"count": len([p for p in patients_with_ai if p["triage_color"] == "yellow"]), "percentage": 0},
+            "green": {"count": len([p for p in patients_with_ai if p["triage_color"] == "green"]), "percentage": 0},
+            "black": {"count": len([p for p in patients_with_ai if p["triage_color"] == "black"]), "percentage": 0}
+        }
+        
+        # Calculate percentages
+        if len(patients_with_ai) > 0:
+            for color in triage_breakdown:
+                triage_breakdown[color]["percentage"] = round(
+                    (triage_breakdown[color]["count"] / len(patients_with_ai)) * 100, 1
+                )
         
         return templates.TemplateResponse("triage_dashboard.html", {
             "request": request,
-            **template_data,
+            "patients_with_ai": patients_with_ai,
+            "triage_breakdown": triage_breakdown,
+            "critical_ai_alerts": critical_ai_alerts,
+            "total_patients": total_patients,
+            "stats": {
+                "total_patients": total_patients,
+                "active_patients": active_patients,
+                "patients_today": len([p for p in patients_with_ai if p["timestamp"].date() == datetime.utcnow().date()]),
+                "critical_alerts": len(critical_ai_alerts),
+                "ai_confidence_avg": calculate_average_confidence(patients_with_ai) if patients_with_ai else 0.8,
+            },
             "current_time": datetime.utcnow(),
             "page_title": "AI-Enhanced Triage Dashboard",
             "ai_enabled": True,
