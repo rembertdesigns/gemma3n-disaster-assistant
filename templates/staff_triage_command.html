@@ -1214,6 +1214,10 @@
                     <span class="material-icons">analytics</span>
                     <span>AI Predictive Analysis</span>
                 </button>
+                <button class="action-btn" onclick="openTriageDashboard()">
+                    <span class="material-icons">dashboard</span>
+                    <span>Triage Dashboard</span>
+                </button>
             </div>
 
             <!-- Enhanced Priority Queue -->
@@ -3078,6 +3082,11 @@
                     input.style.background = '';
                 }, 500);
             }
+        }
+
+        function openTriageDashboard() {
+            window.open('/triage-dashboard', '_blank');
+            aiTriageSystem.showNotification('🏥 Opening Triage Dashboard in new tab', 'ai');
         }
 
         function filterPatients(color) {
