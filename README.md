@@ -368,3 +368,46 @@ pa11y http://localhost:8000
 ---
 
 ## 🚀 **Deployment & Production**
+
+### **Docker Deployment**
+```dockerfile
+FROM python:3.11-slim
+COPY . /app
+WORKDIR /app
+RUN pip install -r requirements.txt
+EXPOSE 8000
+CMD ["gunicorn", "--workers", "4", "--bind", "0.0.0.0:8000", "app:app"]
+```
+
+### **Kubernetes Configuration**
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-triage-system
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ai-triage
+  template:
+    metadata:
+      labels:
+        app: ai-triage
+    spec:
+      containers:
+      - name: ai-triage
+        image: ai-triage:latest
+        ports:
+        - containerPort: 8000
+```
+
+### **Production Monitoring**
+- **Health Checks** - Automated system monitoring
+- **Performance Metrics** - Response time and throughput tracking
+- **Error Logging** - Comprehensive error capture and analysis
+- **Resource Monitoring** - CPU, memory, and storage tracking
+
+---
+
+## 📈 **Performance Optimization**
