@@ -387,52 +387,58 @@ except ImportError:
     
     class TriagePatient(Base):
         __tablename__ = "triage_patients"
-        id = Column(Integer, primary_key=True, index=True)
-        name = Column(String, nullable=False, index=True)
-        age = Column(Integer, nullable=True)
-        gender = Column(String, nullable=True)
-        injury_type = Column(String, nullable=False)
-        consciousness = Column(String, nullable=False)
-        breathing = Column(String, nullable=False)
-        severity = Column(String, nullable=False)
-        triage_color = Column(String, nullable=False, index=True)
-        status = Column(String, default="active", index=True)
-        notes = Column(Text, nullable=True)
-        priority_score = Column(Integer, default=5)
-        created_at = Column(DateTime, default=datetime.utcnow, index=True)
-        updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-        # Patient Demographics & Details
-        gender = Column(String(10), nullable=True)
-        medical_id = Column(String(50), nullable=True, index=True)
-        allergies = Column(Text, nullable=True)
-        medications = Column(Text, nullable=True)
-        medical_history = Column(Text, nullable=True)
     
-        # Vital Signs
-        heart_rate = Column(Integer, nullable=True)
-        bp_systolic = Column(Integer, nullable=True)
-        bp_diastolic = Column(Integer, nullable=True)
-        respiratory_rate = Column(Integer, nullable=True)
-        temperature = Column(Float, nullable=True)
-        oxygen_sat = Column(Integer, nullable=True)
+    # =================== PRIMARY KEY & BASIC INFO ===================
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, index=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String(10), nullable=True)
+    medical_id = Column(String(50), nullable=True, index=True)
     
-        # AI Analysis & Scoring
-        priority_score = Column(Integer, default=5, index=True)
-        ai_confidence = Column(Float, nullable=True)
-        ai_risk_score = Column(Float, nullable=True)
-        ai_recommendations = Column(JSON, nullable=True)
-        ai_analysis_data = Column(JSON, nullable=True)
+    # =================== MEDICAL CONDITION ===================
+    injury_type = Column(String, nullable=False)
+    consciousness = Column(String, nullable=False)
+    breathing = Column(String, nullable=False)
+    severity = Column(String, nullable=False)
+    triage_color = Column(String, nullable=False, index=True)
+    status = Column(String, default="active", index=True)
+    notes = Column(Text, nullable=True)
     
-        # Workflow & Tracking
-        assigned_doctor = Column(String(100), nullable=True)
-        assigned_nurse = Column(String(100), nullable=True)
-        bed_assignment = Column(String(20), nullable=True)
-        estimated_wait_time = Column(Integer, nullable=True)  # minutes
+    # =================== MEDICAL HISTORY ===================
+    allergies = Column(Text, nullable=True)
+    medications = Column(Text, nullable=True)
+    medical_history = Column(Text, nullable=True)
+    special_needs = Column(Text, nullable=True)
     
-        # Timestamps for workflow tracking
-        triage_completed_at = Column(DateTime, nullable=True)
-        treatment_started_at = Column(DateTime, nullable=True)
-        last_assessment_at = Column(DateTime, nullable=True)
+    # =================== VITAL SIGNS ===================
+    heart_rate = Column(Integer, nullable=True)
+    bp_systolic = Column(Integer, nullable=True)
+    bp_diastolic = Column(Integer, nullable=True)
+    respiratory_rate = Column(Integer, nullable=True)
+    temperature = Column(Float, nullable=True)
+    oxygen_sat = Column(Integer, nullable=True)
+    
+    # =================== AI ANALYSIS & SCORING ===================
+    priority_score = Column(Integer, default=5, index=True)
+    ai_confidence = Column(Float, nullable=True)
+    ai_risk_score = Column(Float, nullable=True)
+    ai_recommendations = Column(JSON, nullable=True)
+    ai_analysis_data = Column(JSON, nullable=True)
+    
+    # =================== STAFF ASSIGNMENTS & WORKFLOW ===================
+    assigned_doctor = Column(String(100), nullable=True)
+    assigned_nurse = Column(String(100), nullable=True)
+    assigned_clinician = Column(String(100), nullable=True)  # General clinician field
+    clinician_role = Column(String(50), nullable=True)       # Role of assigned clinician
+    bed_assignment = Column(String(20), nullable=True)
+    estimated_wait_time = Column(Integer, nullable=True)     # minutes
+    
+    # =================== TIMESTAMPS ===================
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    triage_completed_at = Column(DateTime, nullable=True)
+    treatment_started_at = Column(DateTime, nullable=True)
+    last_assessment_at = Column(DateTime, nullable=True)
 
     # New AI-specific models
     class AIAnalysisLog(Base):
@@ -5807,6 +5813,454 @@ async def run_risk_assessment_analysis(patients: list, context: dict) -> dict:
         ],
         "confidence": 0.88
     }
+
+# ================================================================================
+# ADDITIONAL API ROUTES FOR ENHANCED PATIENT LIST
+# ================================================================================
+
+@app.get("/patient-list", response_class=HTMLResponse)
+async def patient_list_page(
+    request: Request,
+    triage_color: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    severity: Optional[str] = Query(None),
+    clinician: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Enhanced patient list page with filtering capabilities"""
+    try:
+        # Build query with filters
+        query = db.query(TriagePatient)
+        
+        # Apply filters
+        filters = {}
+        if triage_color:
+            query = query.filter(TriagePatient.triage_color == triage_color)
+            filters['triage_color'] = triage_color
+        if status:
+            query = query.filter(TriagePatient.status == status)
+            filters['status'] = status
+        if severity:
+            query = query.filter(TriagePatient.severity == severity)
+            filters['severity'] = severity
+        if clinician:
+            # Check if your TriagePatient model has assigned_clinician field
+            if hasattr(TriagePatient, 'assigned_clinician'):
+                query = query.filter(TriagePatient.assigned_clinician == clinician)
+                filters['clinician'] = clinician
+        
+        # Get filtered patients
+        patients = query.order_by(
+            TriagePatient.triage_color.desc(),
+            TriagePatient.created_at.desc()
+        ).all()
+        
+        # Calculate statistics
+        total_patients = len(patients)
+        active_patients = len([p for p in patients if p.status == "active"])
+        critical_patients = len([p for p in patients if p.triage_color == "red"])
+        in_treatment_patients = len([p for p in patients if p.status == "in_treatment"])
+        
+        # Triage color counts
+        color_counts = {
+            "red": len([p for p in patients if p.triage_color == "red"]),
+            "yellow": len([p for p in patients if p.triage_color == "yellow"]),
+            "green": len([p for p in patients if p.triage_color == "green"]),
+            "black": len([p for p in patients if p.triage_color == "black"])
+        }
+        
+        # Enhanced patient data with additional fields your template expects
+        enhanced_patients = []
+        for patient in patients:
+            patient_data = {
+                "id": patient.id,
+                "name": patient.name,
+                "age": patient.age,
+                "injury_type": patient.injury_type,
+                "consciousness": patient.consciousness,
+                "breathing": patient.breathing,
+                "severity": patient.severity,
+                "triage_color": patient.triage_color,
+                "status": patient.status,
+                "notes": patient.notes or "",
+                "created_at": patient.created_at,
+                "priority_score": get_priority_from_triage_color(patient.triage_color),
+                
+                # Additional fields the template expects
+                "assigned_clinician": getattr(patient, 'assigned_clinician', None),
+                "clinician_role": getattr(patient, 'clinician_role', None),
+                "location": getattr(patient, 'bed_assignment', None),
+                "allergies": getattr(patient, 'allergies', None),
+                "special_needs": getattr(patient, 'special_needs', None),
+                "is_critical_vitals": patient.triage_color == "red" or patient.severity == "critical",
+                
+                # Vitals data
+                "vitals": {
+                    "hr": getattr(patient, 'heart_rate', None),
+                    "bp": f"{getattr(patient, 'bp_systolic', '') or '--'}/{getattr(patient, 'bp_diastolic', '') or '--'}" if hasattr(patient, 'bp_systolic') else "--/--",
+                    "o2": getattr(patient, 'oxygen_sat', None),
+                    "temp": getattr(patient, 'temperature', None)
+                }
+            }
+            enhanced_patients.append(patient_data)
+        
+        return templates.TemplateResponse("patient_list.html", {
+            "request": request,
+            "patients": enhanced_patients,
+            "total_patients": total_patients,
+            "active_patients": active_patients,
+            "critical_patients": critical_patients,
+            "in_treatment_patients": in_treatment_patients,
+            "color_counts": color_counts,
+            "filters": filters,
+            "current_time": datetime.utcnow(),
+            "now": lambda: datetime.utcnow()  # Function for template time calculations
+        })
+        
+    except Exception as e:
+        logger.error(f"Patient list page error: {e}")
+        return HTMLResponse(f"""
+        <html>
+        <head><title>Patient List - Error</title></head>
+        <body>
+            <h1>🏥 Patient List</h1>
+            <p><strong>Error loading patient list:</strong> {str(e)}</p>
+            <a href="/admin">← Back to Admin</a>
+        </body>
+        </html>
+        """, status_code=500)
+
+@app.post("/api/bulk-update-patients")
+async def bulk_update_patients(
+    request: Request,
+    patient_ids: str = Form(...),  # Comma-separated patient IDs
+    status: Optional[str] = Form(None),
+    assigned_clinician: Optional[str] = Form(None),
+    location: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Bulk update multiple patients"""
+    try:
+        # Parse patient IDs
+        ids = [int(id.strip()) for id in patient_ids.split(',') if id.strip()]
+        
+        if not ids:
+            return JSONResponse({
+                "success": False,
+                "error": "No patient IDs provided"
+            }, status_code=400)
+        
+        # Get patients
+        patients = db.query(TriagePatient).filter(TriagePatient.id.in_(ids)).all()
+        
+        if not patients:
+            return JSONResponse({
+                "success": False,
+                "error": "No patients found with provided IDs"
+            }, status_code=404)
+        
+        updated_count = 0
+        
+        # Update patients
+        for patient in patients:
+            updated_fields = []
+            
+            if status:
+                patient.status = status
+                updated_fields.append(f"status to {status}")
+            
+            if assigned_clinician and hasattr(patient, 'assigned_clinician'):
+                patient.assigned_clinician = assigned_clinician
+                updated_fields.append(f"clinician to {assigned_clinician}")
+            
+            if location and hasattr(patient, 'bed_assignment'):
+                patient.bed_assignment = location
+                updated_fields.append(f"location to {location}")
+            
+            if hasattr(patient, 'updated_at'):
+                patient.updated_at = datetime.utcnow()
+            
+            if updated_fields:
+                updated_count += 1
+        
+        db.commit()
+        
+        # Broadcast update
+        await broadcast_emergency_update("bulk_patient_update", {
+            "updated_count": updated_count,
+            "total_selected": len(ids),
+            "changes": {
+                "status": status,
+                "clinician": assigned_clinician,
+                "location": location
+            }
+        })
+        
+        logger.info(f"Bulk updated {updated_count} patients")
+        
+        return JSONResponse({
+            "success": True,
+            "updated_count": updated_count,
+            "total_selected": len(ids),
+            "message": f"Successfully updated {updated_count} patients"
+        })
+        
+    except Exception as e:
+        logger.error(f"Bulk update error: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/patient-details/{patient_id}")
+async def get_patient_modal_details(
+    patient_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get detailed patient information for modal display"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        # Enhanced patient details
+        patient_details = {
+            "id": patient.id,
+            "name": patient.name,
+            "age": patient.age,
+            "gender": getattr(patient, 'gender', 'Unknown'),
+            "medical_id": getattr(patient, 'medical_id', ''),
+            "injury_type": patient.injury_type,
+            "consciousness": patient.consciousness,
+            "breathing": patient.breathing,
+            "severity": patient.severity,
+            "triage_color": patient.triage_color,
+            "status": patient.status,
+            "notes": patient.notes or '',
+            "created_at": patient.created_at.isoformat(),
+            "updated_at": getattr(patient, 'updated_at', patient.created_at).isoformat(),
+            
+            # Medical info
+            "allergies": getattr(patient, 'allergies', ''),
+            "medications": getattr(patient, 'medications', ''),
+            "medical_history": getattr(patient, 'medical_history', ''),
+            
+            # Assignments
+            "assigned_clinician": getattr(patient, 'assigned_clinician', ''),
+            "clinician_role": getattr(patient, 'clinician_role', ''),
+            "bed_assignment": getattr(patient, 'bed_assignment', ''),
+            
+            # Vitals
+            "vitals": {
+                "heart_rate": getattr(patient, 'heart_rate', None),
+                "bp_systolic": getattr(patient, 'bp_systolic', None),
+                "bp_diastolic": getattr(patient, 'bp_diastolic', None),
+                "respiratory_rate": getattr(patient, 'respiratory_rate', None),
+                "temperature": getattr(patient, 'temperature', None),
+                "oxygen_sat": getattr(patient, 'oxygen_sat', None)
+            },
+            
+            # AI data
+            "ai_confidence": getattr(patient, 'ai_confidence', 0.8),
+            "ai_risk_score": getattr(patient, 'ai_risk_score', 5.0),
+            "ai_recommendations": getattr(patient, 'ai_recommendations', {}),
+            
+            # Timestamps
+            "triage_completed_at": getattr(patient, 'triage_completed_at', None),
+            "treatment_started_at": getattr(patient, 'treatment_started_at', None),
+            "last_assessment_at": getattr(patient, 'last_assessment_at', None)
+        }
+        
+        return JSONResponse({
+            "success": True,
+            "patient": patient_details
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting patient details for {patient_id}: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/export-patient-csv")
+async def export_patients_csv(
+    request: Request,
+    patient_ids: Optional[str] = Query(None),  # Comma-separated IDs, or None for all
+    triage_color: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Export patients to CSV"""
+    try:
+        import csv
+        import io
+        
+        # Build query
+        query = db.query(TriagePatient)
+        
+        # Apply filters
+        if patient_ids:
+            ids = [int(id.strip()) for id in patient_ids.split(',') if id.strip()]
+            query = query.filter(TriagePatient.id.in_(ids))
+        
+        if triage_color:
+            query = query.filter(TriagePatient.triage_color == triage_color)
+        
+        if status:
+            query = query.filter(TriagePatient.status == status)
+        
+        patients = query.order_by(TriagePatient.created_at.desc()).all()
+        
+        # Create CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Headers
+        headers = [
+            'ID', 'Name', 'Age', 'Gender', 'Injury Type', 'Consciousness', 
+            'Breathing', 'Severity', 'Triage Color', 'Status', 'Created At',
+            'Assigned Clinician', 'Bed Assignment', 'Heart Rate', 'Blood Pressure',
+            'Oxygen Saturation', 'Temperature', 'Notes'
+        ]
+        writer.writerow(headers)
+        
+        # Data rows
+        for patient in patients:
+            row = [
+                patient.id,
+                patient.name,
+                patient.age,
+                getattr(patient, 'gender', ''),
+                patient.injury_type,
+                patient.consciousness,
+                patient.breathing,
+                patient.severity,
+                patient.triage_color,
+                patient.status,
+                patient.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                getattr(patient, 'assigned_clinician', ''),
+                getattr(patient, 'bed_assignment', ''),
+                getattr(patient, 'heart_rate', ''),
+                f"{getattr(patient, 'bp_systolic', '')}/{getattr(patient, 'bp_diastolic', '')}" if hasattr(patient, 'bp_systolic') else '',
+                getattr(patient, 'oxygen_sat', ''),
+                getattr(patient, 'temperature', ''),
+                patient.notes or ''
+            ]
+            writer.writerow(row)
+        
+        # Generate filename
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        filename = f"patients_export_{timestamp}.csv"
+        
+        # Return CSV
+        csv_content = output.getvalue()
+        output.close()
+        
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        logger.error(f"CSV export error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/patient-action")
+async def patient_action(
+    request: Request,
+    action: str = Form(...),  # edit, message, view, discharge
+    patient_id: int = Form(...),
+    clinician: Optional[str] = Form(None),
+    message: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Handle various patient actions from the list"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            return JSONResponse({
+                "success": False,
+                "error": "Patient not found"
+            }, status_code=404)
+        
+        if action == "edit":
+            # Return edit form data
+            return JSONResponse({
+                "success": True,
+                "action": "edit",
+                "redirect_url": f"/triage-form?edit={patient_id}"
+            })
+        
+        elif action == "message":
+            # Handle messaging clinician
+            if not clinician:
+                return JSONResponse({
+                    "success": False,
+                    "error": "Clinician not specified"
+                }, status_code=400)
+            
+            # Log the message (in a real app, you'd send actual messages)
+            logger.info(f"Message to {clinician} about patient {patient.name}: {message or 'No message'}")
+            
+            return JSONResponse({
+                "success": True,
+                "action": "message",
+                "message": f"Message sent to {clinician} about {patient.name}"
+            })
+        
+        elif action == "view":
+            # Return patient details for modal
+            return await get_patient_modal_details(patient_id, db)
+        
+        elif action == "discharge":
+            # Quick discharge
+            patient.status = "discharged"
+            if hasattr(patient, 'updated_at'):
+                patient.updated_at = datetime.utcnow()
+            
+            db.commit()
+            
+            await broadcast_emergency_update("patient_discharged", {
+                "patient_id": patient_id,
+                "name": patient.name,
+                "discharge_time": datetime.utcnow().isoformat()
+            })
+            
+            return JSONResponse({
+                "success": True,
+                "action": "discharge",
+                "message": f"Patient {patient.name} discharged"
+            })
+        
+        else:
+            return JSONResponse({
+                "success": False,
+                "error": f"Unknown action: {action}"
+            }, status_code=400)
+            
+    except Exception as e:
+        logger.error(f"Patient action error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+# Helper function for template
+def get_priority_from_triage_color(triage_color: str) -> int:
+    """Convert triage color to priority number (already exists in your code, but ensuring it's here)"""
+    priority_map = {
+        "red": 1,
+        "yellow": 2,
+        "green": 3,
+        "black": 4
+    }
+    return priority_map.get(triage_color, 3)
     
 # ================================================================================
 # SYSTEM HEALTH & UTILITIES
