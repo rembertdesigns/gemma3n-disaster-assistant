@@ -411,3 +411,158 @@ spec:
 ---
 
 ## 📈 **Performance Optimization**
+
+### **Frontend Optimization**
+- **Code Splitting** - Lazy loading for faster initial loads
+- **Image Optimization** - WebP format and responsive images
+- **Caching Strategy** - Aggressive caching with smart invalidation
+- **Minification** - Compressed CSS and JavaScript
+
+### **Backend Optimization**
+- **Database Indexing** - Optimized queries and indexes
+- **Connection Pooling** - Efficient database connections
+- **Async Processing** - Non-blocking operations
+- **Load Balancing** - Distributed request handling
+
+### **AI Model Optimization**
+- **Model Quantization** - Reduced model size for faster inference
+- **Batch Processing** - Efficient bulk operations
+- **Caching Layer** - Intelligent result caching
+- **Edge Computing** - Distributed AI processing
+
+---
+
+## 🔍 **Troubleshooting Guide**
+
+### **Common Issues**
+
+#### **System Won't Start**
+```bash
+# Check Python version
+python --version  # Should be 3.8+
+
+# Verify dependencies
+pip install -r requirements.txt
+
+# Check database connectivity
+python -c "from app.database import engine; print('DB OK')"
+```
+
+#### **AI Analysis Not Working**
+```bash
+# Verify AI model installation
+python -c "import torch; print('PyTorch OK')"
+
+# Check GPU availability
+python -c "import torch; print(torch.cuda.is_available())"
+
+# Test AI endpoint
+curl -X POST http://localhost:8000/api/ai/test
+```
+
+#### **Browser Compatibility Issues**
+- Ensure JavaScript is enabled
+- Clear browser cache and cookies
+- Try incognito/private browsing mode
+- Update to latest browser version
+
+### **Performance Issues**
+- **Slow Loading** - Check network connection and clear cache
+- **High Memory Usage** - Restart browser or reduce open tabs
+- **Database Timeouts** - Check database server status
+- **AI Processing Delays** - Verify model files and GPU availability
+
+---
+
+## 🤝 **Contributing & Development**
+
+### **Development Setup**
+```bash
+# Clone repository
+git clone https://github.com/your-org/ai-medical-triage-system.git
+cd ai-medical-triage-system
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate     # Windows
+
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run in development mode
+export FLASK_ENV=development
+python app.py
+```
+
+### **Code Standards**
+- **PEP 8** - Python code formatting
+- **ESLint** - JavaScript linting
+- **Prettier** - Code formatting
+- **Type Hints** - Static type checking
+- **Docstrings** - Comprehensive documentation
+
+### **Pull Request Process**
+1. Fork the repository
+2. Create a feature branch
+3. Write tests for new functionality
+4. Ensure all tests pass
+5. Update documentation
+6. Submit pull request with detailed description
+
+---
+
+## 📞 **Support & Resources**
+
+### **Documentation**
+- **API Reference** - Complete endpoint documentation
+- **User Manual** - Step-by-step usage guide
+- **Administrator Guide** - System configuration and maintenance
+- **Developer Documentation** - Code architecture and extension guide
+
+---
+
+## 📋 **Changelog & Roadmap**
+
+### **Current Version: 2.0.0**
+#### ✅ **Completed Features**
+- Complete AI-powered triage system
+- Real-time patient monitoring
+- Staff assignment automation
+- Comprehensive reporting system
+- Multi-language support
+- Accessibility compliance
+- Offline functionality
+- Mobile responsiveness
+
+#### 🔄 **Version 2.1.0 - Q2 2024**
+- [ ] Advanced predictive analytics
+- [ ] Machine learning model improvements
+- [ ] Enhanced voice recognition
+- [ ] Wearable device integration
+- [ ] Telemedicine capabilities
+
+#### 🚀 **Version 3.0.0 - Q4 2024**
+- [ ] AI-powered diagnosis assistance
+- [ ] Blockchain medical records
+- [ ] VR/AR training modules
+- [ ] Advanced interoperability
+- [ ] Global deployment tools
+
+---
+
+## 📄 **Legal & Compliance**
+
+### **Licenses**
+- **MIT License** - Open source software license
+
+### **Disclaimers**
+- This system is designed to assist medical professionals
+- All medical decisions should be validated by qualified personnel
+- System should not replace standard medical protocols
+- Regular updates and maintenance are required for optimal performance
+
+---
+
+*Built with ❤️ for healthcare heroes worldwide*
