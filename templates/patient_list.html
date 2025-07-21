@@ -1,20 +1,6 @@
-<!DOCTYPE html>
-<!-- 
-  File: patient_list.html
-  Type: Standard HTML Template with Jinja2, CSS, and JavaScript
-  Framework: Flask/Jinja2 (NOT React/JSX)
-  Language: HTML
--->
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Patient List - Disaster Response Assistant{% endblock %}</title>
-</head>
-<body>
-
 {% extends "base.html" %}
 
+{% block title %}Patient List - Disaster Response Assistant{% endblock %}
 {% block page_title %}👥 Patient Management Dashboard{% endblock %}
 {% block subtitle %}Real-time Patient Queue & Status Monitoring{% endblock %}
 
@@ -22,7 +8,7 @@
 <a href="/" class="btn-link">
   ⬅️ Back to Home
 </a>
-<a href="/triage" class="btn-link btn-success">
+<a href="/triage-form" class="btn-link btn-success">
   📝 New Triage
 </a>
 <a href="/triage-dashboard" class="btn-link btn-primary">
@@ -916,19 +902,19 @@
       <div class="stats-content">
         <div class="stat-item">
           <span class="stat-label">Total Patients</span>
-          <span class="stat-value stat-info" id="total-count">{{ total_patients }}</span>
+          <span class="stat-value stat-info" id="total-count">{{ total_patients|default(0) }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">Currently Active</span>
-          <span class="stat-value stat-warning" id="active-count">{{ active_patients }}</span>
+          <span class="stat-value stat-warning" id="active-count">{{ active_patients|default(0) }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">Critical Cases</span>
-          <span class="stat-value stat-critical" id="critical-count">{{ critical_patients }}</span>
+          <span class="stat-value stat-critical" id="critical-count">{{ critical_patients|default(0) }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">In Treatment</span>
-          <span class="stat-value stat-info" id="treatment-count">{{ in_treatment_patients }}</span>
+          <span class="stat-value stat-info" id="treatment-count">{{ in_treatment_patients|default(0) }}</span>
         </div>
       </div>
     </div>
@@ -942,19 +928,19 @@
       <div class="stats-content">
         <div class="color-breakdown">
           <div class="color-stat color-red" data-color="red">
-            <div style="font-size: 1.5rem;">{{ color_counts.red }}</div>
+            <div style="font-size: 1.5rem;">{{ color_counts.red|default(0) }}</div>
             <div style="font-size: 0.8rem;">RED</div>
           </div>
           <div class="color-stat color-yellow" data-color="yellow">
-            <div style="font-size: 1.5rem;">{{ color_counts.yellow }}</div>
+            <div style="font-size: 1.5rem;">{{ color_counts.yellow|default(0) }}</div>
             <div style="font-size: 0.8rem;">YELLOW</div>
           </div>
           <div class="color-stat color-green" data-color="green">
-            <div style="font-size: 1.5rem;">{{ color_counts.green }}</div>
+            <div style="font-size: 1.5rem;">{{ color_counts.green|default(0) }}</div>
             <div style="font-size: 0.8rem;">GREEN</div>
           </div>
           <div class="color-stat color-black" data-color="black">
-            <div style="font-size: 1.5rem;">{{ color_counts.black }}</div>
+            <div style="font-size: 1.5rem;">{{ color_counts.black|default(0) }}</div>
             <div style="font-size: 0.8rem;">BLACK</div>
           </div>
         </div>
@@ -985,10 +971,10 @@
               <label class="filter-label">Triage Color</label>
               <select name="triage_color" class="filter-select" id="triage-color-select">
                 <option value="">All Colors</option>
-                <option value="red" {% if filters.triage_color == "red" %}selected{% endif %}>🔴 Red - Critical</option>
-                <option value="yellow" {% if filters.triage_color == "yellow" %}selected{% endif %}>🟡 Yellow - Urgent</option>
-                <option value="green" {% if filters.triage_color == "green" %}selected{% endif %}>🟢 Green - Delayed</option>
-                <option value="black" {% if filters.triage_color == "black" %}selected{% endif %}>⚫ Black - Expectant</option>
+                <option value="red" {% if filters and filters.triage_color == "red" %}selected{% endif %}>🔴 Red - Critical</option>
+                <option value="yellow" {% if filters and filters.triage_color == "yellow" %}selected{% endif %}>🟡 Yellow - Urgent</option>
+                <option value="green" {% if filters and filters.triage_color == "green" %}selected{% endif %}>🟢 Green - Delayed</option>
+                <option value="black" {% if filters and filters.triage_color == "black" %}selected{% endif %}>⚫ Black - Expectant</option>
               </select>
             </div>
             
@@ -996,10 +982,10 @@
               <label class="filter-label">Status</label>
               <select name="status" class="filter-select" id="status-select">
                 <option value="">All Statuses</option>
-                <option value="active" {% if filters.status == "active" %}selected{% endif %}>🟢 Active</option>
-                <option value="in_treatment" {% if filters.status == "in_treatment" %}selected{% endif %}>🔵 In Treatment</option>
-                <option value="treated" {% if filters.status == "treated" %}selected{% endif %}>✅ Treated</option>
-                <option value="discharged" {% if filters.status == "discharged" %}selected{% endif %}>📤 Discharged</option>
+                <option value="active" {% if filters and filters.status == "active" %}selected{% endif %}>🟢 Active</option>
+                <option value="in_treatment" {% if filters and filters.status == "in_treatment" %}selected{% endif %}>🔵 In Treatment</option>
+                <option value="treated" {% if filters and filters.status == "treated" %}selected{% endif %}>✅ Treated</option>
+                <option value="discharged" {% if filters and filters.status == "discharged" %}selected{% endif %}>📤 Discharged</option>
               </select>
             </div>
             
@@ -1007,10 +993,10 @@
               <label class="filter-label">Severity</label>
               <select name="severity" class="filter-select" id="severity-select">
                 <option value="">All Severities</option>
-                <option value="critical" {% if filters.severity == "critical" %}selected{% endif %}>🚨 Critical</option>
-                <option value="severe" {% if filters.severity == "severe" %}selected{% endif %}>⚠️ Severe</option>
-                <option value="moderate" {% if filters.severity == "moderate" %}selected{% endif %}>🟡 Moderate</option>
-                <option value="mild" {% if filters.severity == "mild" %}selected{% endif %}>🟢 Mild</option>
+                <option value="critical" {% if filters and filters.severity == "critical" %}selected{% endif %}>🚨 Critical</option>
+                <option value="severe" {% if filters and filters.severity == "severe" %}selected{% endif %}>⚠️ Severe</option>
+                <option value="moderate" {% if filters and filters.severity == "moderate" %}selected{% endif %}>🟡 Moderate</option>
+                <option value="mild" {% if filters and filters.severity == "mild" %}selected{% endif %}>🟢 Mild</option>
               </select>
             </div>
             
@@ -1039,7 +1025,7 @@
     <div class="patients-header">
       <h2 class="patients-title">👥 Patient Management System</h2>
       <div class="header-actions">
-        <div class="patients-count" id="patients-count">{{ patients|length }} patients</div>
+        <div class="patients-count" id="patients-count">{{ patients|length|default(0) }} patients</div>
         <button class="header-btn" id="refresh-btn">
           <span>🔄</span>
           <span>Refresh</span>
@@ -1078,7 +1064,7 @@
     </div>
     
     <div class="patients-list" id="patients-list">
-      {% if patients %}
+      {% if patients and patients|length > 0 %}
         <table class="patient-table" role="table" aria-label="Patient management table">
           <thead class="patient-header">
             <tr>
@@ -1111,15 +1097,15 @@
                 </td>
                 
                 <td>
-                  <div class="priority-indicator priority-{{ patient.priority_score }}">
-                    {{ patient.priority_score }}
+                  <div class="priority-indicator priority-{{ patient.priority_score|default(3) }}">
+                    {{ patient.priority_score|default(3) }}
                   </div>
                 </td>
                 
                 <td>
                   <div class="patient-info">
                     <div class="patient-name">{{ patient.name }}</div>
-                    <div class="patient-id">ID: P{{ patient.id|string|zfill(4) }}</div>
+                    <div class="patient-id">ID: P{{ "%04d"|format(patient.id) }}</div>
                     {% if patient.age %}<div class="patient-age">Age: {{ patient.age }}</div>{% endif %}
                   </div>
                 </td>
@@ -1139,7 +1125,7 @@
                     <div style="font-weight: 600;">{{ patient.injury_type }}</div>
                     {% if patient.symptoms %}
                       <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">
-                        {{ patient.symptoms|truncate(50) }}
+                        {{ patient.symptoms[:50] }}{% if patient.symptoms|length > 50 %}...{% endif %}
                       </div>
                     {% endif %}
                     <span class="severity-badge severity-{{ patient.severity }}" style="margin-top: 0.25rem; display: inline-block;">
@@ -1169,7 +1155,7 @@
                     {% if patient.vitals %}
                       <div class="vital-item">
                         <span>HR:</span>
-                        <span class="{% if patient.vitals.hr > 100 %}vitals-warning{% else %}vitals-normal{% endif %}">
+                        <span class="{% if patient.vitals.hr and patient.vitals.hr > 100 %}vitals-warning{% else %}vitals-normal{% endif %}">
                           {{ patient.vitals.hr|default("--") }}
                         </span>
                       </div>
@@ -1179,7 +1165,7 @@
                       </div>
                       <div class="vital-item">
                         <span>O₂:</span>
-                        <span class="{% if patient.vitals.o2 < 95 %}vitals-critical{% else %}vitals-normal{% endif %}">
+                        <span class="{% if patient.vitals.o2 and patient.vitals.o2 < 95 %}vitals-critical{% else %}vitals-normal{% endif %}">
                           {{ patient.vitals.o2|default("--") }}%
                         </span>
                       </div>
@@ -1214,7 +1200,8 @@
                     <div>{{ patient.created_at.strftime('%m/%d') }}</div>
                     <div>{{ patient.created_at.strftime('%H:%M') }}</div>
                     <div style="font-size: 0.7rem; color: #6b7280;">
-                      {{ (now() - patient.created_at).total_seconds() // 3600 }}h ago
+                      {% set hours_ago = ((current_time or moment()) - patient.created_at).total_seconds() // 3600 %}
+                      {{ hours_ago|int }}h ago
                     </div>
                   </div>
                 </td>
@@ -1257,7 +1244,7 @@
           <div class="no-patients-icon">👥</div>
           <h3>No Patients Found</h3>
           <p>No patients match your current filters or search criteria.</p>
-          <a href="/triage" style="display: inline-block; margin-top: 1.5rem; padding: 1rem 2rem; background: #16a34a; color: white; text-decoration: none; border-radius: 12px; font-weight: 600;">
+          <a href="/triage-form" style="display: inline-block; margin-top: 1.5rem; padding: 1rem 2rem; background: #16a34a; color: white; text-decoration: none; border-radius: 12px; font-weight: 600;">
             ➕ Add First Patient
           </a>
         </div>
@@ -1338,7 +1325,7 @@
 {% block scripts %}
 <script>
 // ========================================
-// PREVENT LINTER ERRORS - HTML NOT JSX
+// COMPLETE PATIENT MANAGEMENT SYSTEM
 // ========================================
 
 // Global variables
@@ -1578,20 +1565,7 @@ var PatientManager = {
     },
 
     clearAllFilters: function() {
-        var form = document.getElementById('filter-form');
-        if (form) {
-            var selects = form.querySelectorAll('select');
-            selects.forEach(function(select) {
-                select.value = '';
-            });
-        }
-        
-        var searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            searchInput.value = '';
-        }
-        
-        this.applyFilters();
+        window.location.href = '/patient-list';
     },
 
     // Sort functionality
@@ -1620,15 +1594,9 @@ var PatientManager = {
                     aVal = aName ? aName.textContent : '';
                     bVal = bName ? bName.textContent : '';
                     break;
-                case 'time':
-                    aVal = new Date(a.getAttribute('data-timestamp') || 0);
-                    bVal = new Date(b.getAttribute('data-timestamp') || 0);
-                    break;
                 default:
-                    var aElement = a.querySelector('[data-sort="' + column + '"]');
-                    var bElement = b.querySelector('[data-sort="' + column + '"]');
-                    aVal = aElement ? aElement.textContent : '';
-                    bVal = bElement ? bElement.textContent : '';
+                    aVal = a.textContent;
+                    bVal = b.textContent;
             }
             
             if (direction === 'asc') {
@@ -1728,70 +1696,53 @@ var PatientManager = {
     },
 
     generatePatientDetailHTML: function(patientId) {
-        var paddedId = patientId.toString();
-        while (paddedId.length < 4) {
-            paddedId = '0' + paddedId;
-        }
+        var paddedId = ('0000' + patientId).slice(-4);
         
         return '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">' +
             '<div>' +
                 '<h3 style="margin-bottom: 1rem; color: #1f2937;">Basic Information</h3>' +
                 '<div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">' +
                     '<p><strong>Patient ID:</strong> P' + paddedId + '</p>' +
-                    '<p><strong>Name:</strong> John Doe</p>' +
+                    '<p><strong>Name:</strong> Patient ' + patientId + '</p>' +
                     '<p><strong>Age:</strong> 45</p>' +
-                    '<p><strong>Gender:</strong> Male</p>' +
+                    '<p><strong>Gender:</strong> Unknown</p>' +
                     '<p><strong>Admission:</strong> 2h ago</p>' +
                 '</div>' +
                 '<h3 style="margin: 1.5rem 0 1rem; color: #1f2937;">Medical History</h3>' +
                 '<div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">' +
-                    '<p><strong>Allergies:</strong> Penicillin</p>' +
-                    '<p><strong>Medications:</strong> Lisinopril, Metformin</p>' +
-                    '<p><strong>Previous Conditions:</strong> Diabetes, Hypertension</p>' +
+                    '<p><strong>Allergies:</strong> None known</p>' +
+                    '<p><strong>Medications:</strong> None</p>' +
+                    '<p><strong>Previous Conditions:</strong> None</p>' +
                 '</div>' +
             '</div>' +
             '<div>' +
                 '<h3 style="margin-bottom: 1rem; color: #1f2937;">Current Status</h3>' +
                 '<div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">' +
-                    '<p><strong>Triage:</strong> <span class="triage-badge triage-red">🔴 RED</span></p>' +
-                    '<p><strong>Complaint:</strong> Chest pain</p>' +
-                    '<p><strong>Severity:</strong> Critical</p>' +
-                    '<p><strong>Location:</strong> Room 203</p>' +
-                    '<p><strong>Clinician:</strong> Dr. Smith</p>' +
+                    '<p><strong>Triage:</strong> <span class="triage-badge triage-yellow">🟡 YELLOW</span></p>' +
+                    '<p><strong>Complaint:</strong> General assessment</p>' +
+                    '<p><strong>Severity:</strong> Moderate</p>' +
+                    '<p><strong>Location:</strong> Waiting area</p>' +
+                    '<p><strong>Clinician:</strong> Unassigned</p>' +
                 '</div>' +
                 '<h3 style="margin: 1.5rem 0 1rem; color: #1f2937;">Vital Signs</h3>' +
                 '<div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">' +
                     '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">' +
-                        '<p><strong>Heart Rate:</strong> 95 bpm</p>' +
-                        '<p><strong>Blood Pressure:</strong> 140/90</p>' +
-                        '<p><strong>Oxygen:</strong> 92%</p>' +
-                        '<p><strong>Temperature:</strong> 98.6°F</p>' +
+                        '<p><strong>Heart Rate:</strong> -- bpm</p>' +
+                        '<p><strong>Blood Pressure:</strong> --/--</p>' +
+                        '<p><strong>Oxygen:</strong> --%</p>' +
+                        '<p><strong>Temperature:</strong> --°F</p>' +
                     '</div>' +
                 '</div>' +
             '</div>' +
         '</div>' +
-        '<div style="margin-top: 2rem;">' +
-            '<h3 style="margin-bottom: 1rem; color: #1f2937;">Treatment Timeline</h3>' +
-            '<div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">' +
-                '<div style="border-left: 3px solid #3b82f6; padding-left: 1rem; margin-bottom: 1rem;">' +
-                    '<strong>15:30</strong> - Patient admitted with chest pain' +
-                '</div>' +
-                '<div style="border-left: 3px solid #f59e0b; padding-left: 1rem; margin-bottom: 1rem;">' +
-                    '<strong>15:45</strong> - EKG performed, abnormal results' +
-                '</div>' +
-                '<div style="border-left: 3px solid #16a34a; padding-left: 1rem;">' +
-                    '<strong>16:00</strong> - Cardiology consulted' +
-                '</div>' +
-            '</div>' +
-        '</div>' +
         '<div style="display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1rem; border-top: 2px solid #e5e7eb;">' +
-            '<button class="bulk-btn btn-edit" data-patient-edit="' + patientId + '" style="flex: 1;">' +
+            '<button class="bulk-btn btn-edit" onclick="PatientManager.editPatient(' + patientId + ')" style="flex: 1;">' +
                 '✏️ Edit Patient' +
             '</button>' +
-            '<button class="bulk-btn btn-export" data-patient-print="' + patientId + '" style="flex: 1;">' +
+            '<button class="bulk-btn btn-export" onclick="PatientManager.printPatientDetail(' + patientId + ')" style="flex: 1;">' +
                 '🖨️ Print Details' +
             '</button>' +
-            '<button class="bulk-btn btn-message" data-patient-message="' + patientId + '" style="flex: 1;">' +
+            '<button class="bulk-btn btn-message" onclick="PatientManager.messageClinician(\'Staff\', ' + patientId + ')" style="flex: 1;">' +
                 '💬 Message Team' +
             '</button>' +
         '</div>';
@@ -1843,6 +1794,7 @@ var PatientManager = {
             return;
         }
         
+        // Here you would normally send AJAX request to update patients
         this.showNotification('Updated ' + selectedPatients.size + ' patients successfully', 'success');
         this.closeBulkModal();
         
@@ -1864,6 +1816,18 @@ var PatientManager = {
         
         this.showNotification('Exporting ' + patients.length + ' patients to CSV...', 'info');
         
+        // Create CSV export URL
+        var patientIds = patients.join(',');
+        var exportUrl = '/api/export-patient-csv?patient_ids=' + encodeURIComponent(patientIds);
+        
+        // Trigger download
+        var link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = 'patients_export.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
         var self = this;
         setTimeout(function() {
             self.showNotification('Patient data exported successfully', 'success');
@@ -1875,10 +1839,7 @@ var PatientManager = {
     },
 
     printPatientDetail: function(patientId) {
-        var paddedId = patientId.toString();
-        while (paddedId.length < 4) {
-            paddedId = '0' + paddedId;
-        }
+        var paddedId = ('0000' + patientId).slice(-4);
         
         var printWindow = window.open('', '_blank');
         var content = document.getElementById('patient-detail-content');
@@ -1910,11 +1871,12 @@ var PatientManager = {
 
     // Utility functions
     editPatient: function(patientId) {
-        this.showNotification('Opening edit form for patient ' + patientId + '...', 'info');
+        window.location.href = '/triage-form?edit=' + patientId;
     },
 
     messageClinician: function(clinician, patientId) {
         this.showNotification('Opening message to ' + clinician + ' about patient ' + patientId, 'info');
+        // Here you would integrate with your messaging system
     },
 
     refreshPatientList: function() {
@@ -1926,7 +1888,7 @@ var PatientManager = {
     },
 
     openAddPatient: function() {
-        window.location.href = '/triage';
+        window.location.href = '/triage-form';
     },
 
     updatePatientCounts: function(visibleCount) {
@@ -1956,7 +1918,7 @@ var PatientManager = {
         var syncStatus = document.getElementById('sync-status');
         if (!syncStatus) return;
         
-        var isOnline = Math.random() > 0.1;
+        var isOnline = navigator.onLine && Math.random() > 0.1;
         
         if (isOnline) {
             syncStatus.className = 'sync-status';
@@ -2009,6 +1971,92 @@ var PatientManager = {
                     self.closeModal();
                     self.closeBulkModal();
                     break;
+                case 'n':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        self.openAddPatient();
+                    }
+                    break;
+                case 'e':
+                    if (e.ctrlKey && selectedPatients.size > 0) {
+                        e.preventDefault();
+                        self.exportSelected();
+                    }
+                    break;
+                case 'p':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        self.printPatientList();
+                    }
+                    break;
+            }
+        });
+    },
+
+    // Advanced filtering
+    applyAdvancedFilter: function(filterType, value) {
+        var rows = document.querySelectorAll('.patient-row');
+        var visibleCount = 0;
+        
+        rows.forEach(function(row) {
+            var shouldShow = true;
+            
+            switch(filterType) {
+                case 'triage':
+                    shouldShow = row.getAttribute('data-triage') === value;
+                    break;
+                case 'status':
+                    shouldShow = row.getAttribute('data-status') === value;
+                    break;
+                case 'severity':
+                    shouldShow = row.getAttribute('data-severity') === value;
+                    break;
+                case 'critical_vitals':
+                    shouldShow = row.querySelector('.alert-critical') !== null;
+                    break;
+                case 'unassigned':
+                    shouldShow = row.textContent.includes('Unassigned');
+                    break;
+            }
+            
+            row.style.display = shouldShow ? '' : 'none';
+            if (shouldShow) visibleCount++;
+        });
+        
+        this.updatePatientCounts(visibleCount);
+        this.showNotification('Applied ' + filterType + ' filter: ' + value, 'info');
+    },
+
+    // Real-time data updates
+    pollForUpdates: function() {
+        var self = this;
+        fetch('/api/patient-list-updates')
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.updates && data.updates.length > 0) {
+                    self.handleRealTimeUpdates(data.updates);
+                }
+            })
+            .catch(function(error) {
+                console.log('Update polling failed:', error);
+            });
+    },
+
+    handleRealTimeUpdates: function(updates) {
+        var self = this;
+        updates.forEach(function(update) {
+            switch(update.type) {
+                case 'patient_added':
+                    self.showNotification('New patient added: ' + update.patient_name, 'info');
+                    break;
+                case 'patient_updated':
+                    self.showNotification('Patient updated: ' + update.patient_name, 'info');
+                    break;
+                case 'critical_alert':
+                    self.showNotification('🚨 Critical alert: ' + update.message, 'error');
+                    break;
             }
         });
     },
@@ -2035,7 +2083,8 @@ var PatientManager = {
             'z-index: 10000;' +
             'font-weight: 500;' +
             'box-shadow: 0 10px 25px rgba(0,0,0,0.1);' +
-            'animation: slideIn 0.3s ease;';
+            'animation: slideIn 0.3s ease;' +
+            'max-width: 400px;';
         
         notification.textContent = message;
         document.body.appendChild(notification);
@@ -2048,6 +2097,24 @@ var PatientManager = {
                 }
             }, 300);
         }, 3000);
+    },
+
+    // Quick actions
+    quickActions: {
+        dischargeAll: function(patientIds) {
+            PatientManager.showNotification('Discharging ' + patientIds.length + ' patients...', 'info');
+            // Implementation for bulk discharge
+        },
+        
+        assignDoctor: function(patientIds, doctorName) {
+            PatientManager.showNotification('Assigning Dr. ' + doctorName + ' to ' + patientIds.length + ' patients', 'info');
+            // Implementation for bulk doctor assignment
+        },
+        
+        setPriority: function(patientIds, priority) {
+            PatientManager.showNotification('Setting priority to ' + priority + ' for ' + patientIds.length + ' patients', 'info');
+            // Implementation for bulk priority update
+        }
     }
 };
 
@@ -2056,7 +2123,26 @@ document.addEventListener('DOMContentLoaded', function() {
     PatientManager.init();
     console.log('🏥 Enhanced Patient Management System Loaded');
     console.log('Features: Search, Filter, Sort, Bulk Operations, Real-time Updates');
-    console.log('Keyboard Shortcuts: Ctrl+F (Search), Ctrl+A (Select All), Ctrl+R (Refresh), Esc (Close)');
+    console.log('Keyboard Shortcuts:');
+    console.log('  Ctrl+F: Search');
+    console.log('  Ctrl+A: Select All');
+    console.log('  Ctrl+R: Refresh');
+    console.log('  Ctrl+N: New Patient');
+    console.log('  Ctrl+E: Export Selected');
+    console.log('  Ctrl+P: Print');
+    console.log('  Esc: Close Modals');
+});
+
+// Window focus/blur handling
+window.addEventListener('focus', function() {
+    PatientManager.updateSyncStatus();
+});
+
+window.addEventListener('beforeunload', function(e) {
+    if (selectedPatients.size > 0) {
+        e.preventDefault();
+        e.returnValue = 'You have selected patients. Are you sure you want to leave?';
+    }
 });
 
 </script>
@@ -2079,6 +2165,3 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 {% endblock %}
-
-</body>
-</html>
