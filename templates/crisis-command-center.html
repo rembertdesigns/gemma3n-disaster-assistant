@@ -1,1048 +1,2122 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemma 3n Emergency Command Center - AI-Powered Disaster Response</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <style>
+        :root {
+            --primary-color: #1e40af;
+            --primary-dark: #1e3a8a;
+            --secondary-color: #6b7280;
+            --color-critical: #dc2626;
+            --color-warning: #f59e0b;
+            --color-good: #f59e0b;
+            --color-optimal: #16a34a;
+            --bg-color-base: #ffffff;
+            --bg-color-card: #ffffff;
+            --bg-color-light: #f8fafc;
+            --text-color-base: #1f2937;
+            --text-color-light: #6b7280;
+            --text-color-inverted: #ffffff;
+            --border-color: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --gemma-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --ai-accent: #8b5cf6;
+        }
 
-{% block title %}Advanced Crisis Command Center - Multi-Agency Coordination{% endblock %}
+        [data-theme="dark"] {
+            --bg-color-base: #1f2937;
+            --bg-color-card: #374151;
+            --bg-color-light: #4b5563;
+            --text-color-base: #f9fafb;
+            --text-color-light: #d1d5db;
+            --border-color: #4b5563;
+        }
 
-{% block page_title %}🚨 Crisis Command Center{% endblock %}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block subtitle %}Advanced Multi-Agency Emergency Coordination{% endblock %}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-color-base);
+            color: var(--text-color-base);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
 
-{% block header_logo %}🏛️{% endblock %} {# Custom logo for this page in the header #}
+        /* Gemma 3n Status Indicator */
+        .gemma-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
+            background: var(--gemma-gradient);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: gemmaGlow 3s ease-in-out infinite;
+        }
 
-{% block header_actions %}
-  {# Keep default theme/contrast toggles from base.html #}
-  <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Theme</button>
-  <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ Contrast</button>
-  <div class="status-bar">
-    <div class="status-indicator status-offline">
-      <div class="status-dot"></div>
-      Offline
+        @keyframes gemmaGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(102, 126, 234, 0.6); }
+        }
+
+        .gemma-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        .gemma-indicator.loading {
+            background: #f59e0b;
+            animation: blink 1s infinite;
+        }
+
+        .gemma-indicator.error {
+            background: #dc2626;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        /* Header */
+        .main-header {
+            background: linear-gradient(135deg, var(--color-critical) 0%, #991b1b 100%);
+            color: var(--text-color-inverted);
+            padding: 1rem 2rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .header-info h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .header-info p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .alert-level {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-weight: bold;
+            animation: pulse-alert 2s infinite;
+        }
+
+        @keyframes pulse-alert {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .header-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 6px;
+            color: var(--text-color-inverted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Navigation */
+        .main-nav {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 280px;
+            height: calc(100vh - 80px);
+            background: var(--bg-color-card);
+            border-right: 1px solid var(--border-color);
+            z-index: 999;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: var(--text-color-light);
+            margin-bottom: 0.5rem;
+            padding: 0 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-color-light);
+        }
+
+        .nav-item.active {
+            background: var(--primary-color);
+            color: var(--text-color-inverted);
+        }
+
+        .nav-item.ai-powered {
+            background: var(--gemma-gradient);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item.ai-powered::after {
+            content: '🧠 Gemma 3n';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--ai-accent);
+            font-size: 0.6rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0 8px 0 8px;
+            font-weight: bold;
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            margin-top: 80px;
+            padding: 2rem;
+            min-height: calc(100vh - 80px);
+        }
+
+        .dashboard-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .dashboard-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* AI Context Panel */
+        .ai-context-panel {
+            background: var(--gemma-gradient);
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-context-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .context-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .context-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .context-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .context-stat {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .context-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .context-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        /* Context Window Visualization */
+        .context-window {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .context-progress {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            animation: contextPulse 2s infinite;
+        }
+
+        @keyframes contextPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .context-sources {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .context-source {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.7rem;
+        }
+
+        /* Enhanced Panels */
+        .panel {
+            background: var(--bg-color-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .panel.ai-enhanced {
+            border: 2px solid var(--ai-accent);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel.ai-enhanced::before {
+            content: '🧠 AI Enhanced';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--ai-accent);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* AI Insights Panel */
+        .ai-insights {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid var(--ai-accent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .insights-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .insights-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--ai-accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insight-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--ai-accent);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+
+        .insight-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .insight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-title {
+            font-weight: bold;
+            color: var(--text-color-base);
+        }
+
+        .confidence-badge {
+            background: var(--ai-accent);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .insight-description {
+            color: var(--text-color-base);
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .insight-action {
+            background: #e0e7ff;
+            color: var(--ai-accent);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .insight-action:hover {
+            background: var(--ai-accent);
+            color: white;
+        }
+
+        /* Real-time Analysis */
+        .realtime-analysis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .analysis-card {
+            background: var(--bg-color-card);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .analysis-card.processing {
+            border-color: var(--ai-accent);
+            animation: processingPulse 2s infinite;
+        }
+
+        @keyframes processingPulse {
+            0%, 100% { border-color: var(--ai-accent); }
+            50% { border-color: #c084fc; }
+        }
+
+        .analysis-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-optimal);
+        }
+
+        .status-indicator.processing {
+            background: var(--color-warning);
+            animation: blink 1s infinite;
+        }
+
+        /* Command Grid */
+        .command-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-color-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card.ai-enhanced {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-color: var(--ai-accent);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value.ai-value {
+            color: var(--ai-accent);
+        }
+
+        .stat-label {
+            color: var(--text-color-light);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .stat-trend {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            font-weight: bold;
+        }
+
+        .trend-up { color: var(--color-optimal); }
+        .trend-down { color: var(--color-critical); }
+        .trend-stable { color: var(--color-warning); }
+
+        /* Processing Status */
+        .processing-status {
+            background: linear-gradient(135deg, var(--ai-accent) 0%, #7c3aed 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .processing-status::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: scan 2s infinite;
+        }
+
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .processing-text {
+            position: relative;
+            z-index: 1;
+            font-weight: bold;
+        }
+
+        /* Map Styles */
+        .map-container {
+            height: 400px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #mainMap {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--text-color-inverted);
+        }
+
+        .btn-ai {
+            background: var(--ai-accent);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-ai::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-ai:hover::before {
+            left: 100%;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-nav {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .main-nav.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .command-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gemma-status {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .context-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Additional AI-specific styles */
+        .ai-model-status {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--ai-accent);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .model-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .model-indicator .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-optimal);
+        }
+
+        .model-indicator .status-dot.loading {
+            background: var(--color-warning);
+            animation: pulse 1s infinite;
+        }
+
+        .token-usage {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+        }
+
+        .token-bar {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .token-fill {
+            height: 100%;
+            background: var(--ai-accent);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Gemma 3n Status Indicator -->
+    <div class="gemma-status" id="gemmaStatus">
+        <div class="gemma-indicator" id="gemmaIndicator"></div>
+        <span id="gemmaStatusText">Initializing Gemma 3n...</span>
     </div>
-  </div>
-  <a href="/live-generate" class="btn btn-primary btn-small">
-    🧩 Live JSON → PDF Editor
-  </a>
-{% endblock %}
 
-{% block extra_css %}
-{{ super() }} {# Inherits CSS from base.html #}
-<style>
-  /* Crisis Command Center Specific Styling */
-  .command-header {
-    background: linear-gradient(135deg, var(--color-critical) 0%, #991b1b 100%);
-    color: var(--text-color-inverted);
-    padding: 1.5rem 2rem; /* Increased padding */
-    border-radius: 12px; /* More rounded */
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: var(--shadow-md);
-  }
-
-  .command-status {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem; /* Increased gap */
-  }
-
-  .alert-level {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.2rem; /* Adjusted padding */
-    border-radius: 24px; /* More rounded pill shape */
-    font-weight: bold;
-    font-size: 1rem; /* Slightly larger font */
-    color: var(--text-color-inverted); /* Ensure text is white */
-  }
-
-  /* Specific alert level colors - ensure these use global variables if defined */
-  .alert-level-1 { background: var(--color-optimal); } /* Green */
-  .alert-level-2 { background: var(--color-good); }    /* Orange-yellow */
-  .alert-level-3 { background: #ea580c; } /* Darker Orange */
-  .alert-level-4 { background: var(--color-critical); } /* Red */
-  .alert-level-5 { background: #991b1b; animation: pulse-alert 1s infinite; } /* Darker Red */
-
-  /* @keyframes pulse-alert is now in base.html */
-
-  .command-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-  }
-
-  .command-panel {
-    background: var(--bg-color-card);
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-  }
-
-  .command-panel h3 {
-    margin: 0 0 1rem 0;
-    color: var(--text-color-base);
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 0.5rem;
-  }
-
-  .situation-map {
-    height: 400px;
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .incident-list {
-    max-height: 350px;
-    overflow-y: auto;
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    padding: 1rem;
-    border: 1px solid var(--border-color); /* Added border */
-  }
-
-  .incident-item {
-    background: var(--bg-color-card);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    border-left: 4px solid var(--color-critical); /* Red left border for critical */
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
-    cursor: pointer; /* Indicate clickability */
-  }
-
-  .incident-item:hover {
-    transform: translateX(4px);
-    box-shadow: var(--shadow-md);
-  }
-
-  .incident-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .incident-title {
-    font-weight: bold;
-    color: var(--text-color-base);
-    font-size: 0.95rem;
-  }
-
-  .incident-time {
-    color: var(--text-color-light);
-    font-size: 0.8rem;
-  }
-
-  .incident-details {
-    color: var(--text-color-base);
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .incident-status {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .priority-badge {
-    padding: 0.25rem 0.6rem; /* Adjusted padding */
-    border-radius: 16px; /* More rounded */
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: var(--text-color-inverted); /* White text on colored badges */
-  }
-
-  /* Priority badge colors */
-  .priority-low { background: var(--color-optimal); }
-  .priority-medium { background: var(--color-good); }
-  .priority-high { background: var(--color-critical); } /* Changed to primary red */
-  .priority-critical { background: #991b1b; animation: blink 1s infinite; } /* Darker red */
-
-  /* @keyframes blink is now in base.html */
-
-  .response-status {
-    padding: 0.25rem 0.6rem; /* Adjusted padding */
-    border-radius: 16px; /* More rounded */
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: var(--text-color-base); /* Default text color */
-  }
-
-  /* Response status colors */
-  .status-pending { background: var(--border-color); color: var(--text-color-light); }
-  .status-dispatched { background: #dbeafe; color: #1e40af; } /* Blueish */
-  .status-enroute { background: var(--color-good); color: var(--color-warning-text); } /* Orange */
-  .status-onscene { background: var(--color-optimal); color: #166534; } /* Green */
-  .status-resolved { background: var(--secondary-color); color: var(--text-color-inverted); } /* Grey */
-
-  .resource-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem; /* Increased gap */
-    margin-top: 1rem;
-  }
-
-  .resource-card {
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    padding: 1.5rem; /* Increased padding */
-    border: 1px solid var(--border-color);
-    text-align: center;
-    box-shadow: var(--shadow-sm); /* Added subtle shadow */
-    transition: all 0.3s ease;
-  }
-
-  .resource-card:hover {
-    background: var(--bg-hover, #f1f5f9); /* Use hover variable from base if exists */
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-
-  .resource-count {
-    font-size: 2rem; /* Larger count */
-    font-weight: bold;
-    color: var(--primary-dark);
-    margin-bottom: 0.5rem; /* More space */
-  }
-
-  .resource-label {
-    color: var(--text-color-light);
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .resource-status {
-    font-size: 0.8rem;
-    padding: 0.25rem 0.5rem; /* Adjusted padding */
-    border-radius: 16px; /* Pill shape */
-    font-weight: bold;
-    color: var(--text-color-inverted); /* White text on status */
-  }
-
-  /* Resource status colors */
-  .status-available { background: var(--color-optimal); }
-  .status-deployed { background: var(--color-good); }
-  .status-unavailable { background: var(--color-critical); }
-
-  .communications-panel {
-    height: 350px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .comms-tabs {
-    display: flex;
-    border-bottom: 2px solid var(--border-color);
-    margin-bottom: 1rem;
-  }
-
-  .comms-tab {
-    padding: 0.75rem 1.25rem; /* More prominent tabs */
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-color-light);
-    font-weight: 500;
-    border-bottom: 2px solid transparent;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
-  }
-
-  .comms-tab:hover {
-    color: var(--text-color-base);
-  }
-
-  .comms-tab.active {
-    color: var(--primary-dark);
-    border-bottom-color: var(--primary-color);
-    font-weight: bold;
-  }
-
-  .comms-content {
-    flex: 1;
-    overflow-y: auto;
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    padding: 1rem;
-    border: 1px solid var(--border-color); /* Added border */
-  }
-
-  .message-item {
-    background: var(--bg-color-card);
-    border-radius: 8px;
-    padding: 0.75rem;
-    margin-bottom: 0.75rem; /* Increased margin */
-    border-left: 3px solid var(--primary-color);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .message-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.25rem;
-  }
-
-  .message-sender {
-    font-weight: bold;
-    color: var(--text-color-base);
-    font-size: 0.9rem;
-  }
-
-  .message-time {
-    color: var(--text-color-light);
-    font-size: 0.8rem;
-  }
-
-  .message-content {
-    color: var(--text-color-base);
-    font-size: 0.85rem;
-  }
-
-  .agency-coordination {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, #3730a3 100%);
-    color: var(--text-color-inverted);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 2rem;
-    box-shadow: var(--shadow-md);
-  }
-
-  .agency-coordination h3 {
-    margin: 0 0 1rem 0;
-    color: var(--text-color-inverted);
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-    padding-bottom: 0.5rem;
-  }
-
-  .agency-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem; /* Increased gap */
-  }
-
-  .agency-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 1rem;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .agency-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-  }
-
-  .agency-name {
-    font-weight: bold;
-    color: var(--text-color-inverted);
-  }
-
-  .agency-status {
-    padding: 0.25rem 0.6rem; /* Adjusted padding */
-    border-radius: 16px; /* Pill shape */
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: var(--text-color-inverted);
-  }
-
-  /* Agency status colors */
-  .status-active { background: var(--color-optimal); }
-  .status-standby { background: var(--color-good); }
-  .status-offline { background: var(--secondary-color); }
-
-  .agency-details {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.85rem;
-  }
-
-  .action-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .action-button {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-    color: var(--text-color-inverted); /* Ensure white text */
-  }
-
-  .btn-primary { background: var(--primary-dark); }
-  .btn-primary:hover { background: var(--primary-color); transform: translateY(-1px); }
-
-  .btn-warning { background: #ea580c; }
-  .btn-warning:hover { background: var(--color-critical); transform: translateY(-1px); }
-
-  .btn-success { background: var(--color-optimal); }
-  .btn-success:hover { background: #15803d; transform: translateY(-1px); }
-
-  .timeline-panel {
-    background: var(--bg-color-card);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 2rem;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-  }
-
-  .timeline-panel h3 { /* Override h3 color for this panel */
-    color: var(--text-color-base);
-  }
-
-  .timeline {
-    position: relative;
-    padding-left: 2rem;
-  }
-
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 1rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--border-color);
-  }
-
-  .timeline-item {
-    position: relative;
-    margin-bottom: 1.5rem;
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-left: 1rem;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
-  }
-
-  .timeline-item:hover {
-      background: var(--bg-hover, #f1f5f9);
-      transform: translateY(-2px);
-  }
-
-  .timeline-item::before {
-    content: '';
-    position: absolute;
-    left: -1.5rem;
-    top: 1rem;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--primary-color);
-    border: 3px solid var(--bg-color-card); /* Border for dot matches card background */
-    box-shadow: 0 0 0 3px var(--border-color);
-  }
-
-  .timeline-time {
-    color: var(--text-color-light);
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .timeline-title {
-    font-weight: bold;
-    color: var(--text-color-base);
-    margin-bottom: 0.25rem;
-  }
-
-  .timeline-description {
-    color: var(--text-color-base);
-    font-size: 0.9rem;
-  }
-
-  .quick-actions {
-    position: fixed;
-    top: 50%;
-    right: 2rem;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem; /* Slightly larger gap */
-    z-index: 1000;
-  }
-
-  .quick-action {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: none;
-    color: var(--text-color-inverted);
-    font-size: 1.3rem; /* Slightly larger icon */
-    cursor: pointer;
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s ease;
-    display: flex; /* For centering icon */
-    align-items: center;
-    justify-content: center;
-  }
-
-  .quick-action:hover {
-    transform: scale(1.1);
-    box-shadow: var(--shadow-lg);
-  }
-
-  /* Quick action button colors */
-  .qa-emergency { background: var(--color-critical); }
-  .qa-dispatch { background: #ea580c; } /* Use specific orange */
-  .qa-comms { background: var(--primary-color); }
-  .qa-resources { background: var(--color-optimal); }
-
-  /* Dark theme adjustments handled by variables in :root[data-theme="dark"] */
-  /* Specific overrides for command center in dark mode */
-  [data-theme="dark"] .command-header {
-    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%); /* Darker red gradient */
-  }
-  [data-theme="dark"] .alert-level {
-    color: var(--text-color-inverted); /* Ensure text is visible */
-  }
-  [data-theme="dark"] .alert-level-5 { animation: pulse-alert-dark 1s infinite; }
-  @keyframes pulse-alert-dark {
-      0%, 100% { opacity: 1; transform: scale(1); background: #b91c1c; } /* Darker pulse color */
-      50% { opacity: 0.8; transform: scale(1.05); background: #dc2626; }
-  }
-
-
-  [data-theme="dark"] .incident-item {
-    background: var(--bg-color-light); /* Darker shade for incident items */
-    border-left-color: var(--color-critical); /* Maintain red border */
-  }
-  [data-theme="dark"] .incident-item:hover {
-    background: #2c3445; /* Darker hover */
-  }
-
-  [data-theme="dark"] .priority-badge,
-  [data-theme="dark"] .response-status,
-  [data-theme="dark"] .resource-status,
-  [data-theme="dark"] .agency-status {
-    color: var(--text-color-inverted); /* Keep text white on badges */
-  }
-
-  [data-theme="dark"] .priority-high { background: var(--color-critical); } /* Maintain red for high */
-  [data-theme="dark"] .priority-critical { background: #991b1b; } /* Maintain dark red for critical */
-
-
-  [data-theme="dark"] .resource-card {
-    background: var(--bg-color-light);
-  }
-  [data-theme="dark"] .resource-card:hover {
-      background: #2c3445;
-  }
-
-  [data-theme="dark"] .comms-content,
-  [data-theme="dark"] .message-item {
-    background: var(--bg-color-light);
-  }
-  [data-theme="dark"] .comms-tab.active {
-      color: var(--primary-color);
-      border-bottom-color: var(--primary-color);
-  }
-
-  [data-theme="dark"] .agency-card {
-    background: rgba(255, 255, 255, 0.08); /* Slightly less opaque in dark mode */
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  [data-theme="dark"] .agency-coordination {
-    background: linear-gradient(135deg, #111827 0%, #2d3748 100%); /* Darker gradient */
-  }
-
-  [data-theme="dark"] .timeline-item {
-    background: var(--bg-color-light);
-    border: 1px solid var(--border-color); /* Added border */
-  }
-  [data-theme="dark"] .timeline-item:hover {
-    background: #2c3445;
-  }
-  [data-theme="dark"] .timeline-item::before {
-    background: var(--primary-color);
-    border-color: var(--bg-color-card); /* Ensure border matches card */
-    box-shadow: 0 0 0 3px var(--border-color);
-  }
-
-
-  /* Responsive design */
-  @media (max-width: 768px) {
-    .command-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem; /* Reduced gap */
-    }
-    
-    .command-header {
-      flex-direction: column;
-      gap: 1rem;
-      text-align: center;
-      padding: 1rem; /* Smaller padding */
-    }
-    .command-header h2 {
-        font-size: 1.3rem;
-    }
-    .command-header p {
-        font-size: 0.85rem;
-    }
-    
-    .quick-actions {
-      position: relative;
-      right: auto;
-      top: auto;
-      transform: none;
-      flex-direction: row;
-      justify-content: center;
-      margin: 2rem 0;
-      width: 100%; /* Take full width */
-      flex-wrap: wrap; /* Allow wrapping of buttons */
-    }
-    .quick-action {
-        width: 50px; /* Smaller quick action buttons */
-        height: 50px;
-        font-size: 1rem;
-    }
-    
-    .agency-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .resource-grid {
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Slightly smaller min-width */
-    }
-    .command-panel {
-        padding: 1rem; /* Smaller padding for panels */
-    }
-    .command-panel h3 {
-        font-size: 1.1rem;
-    }
-    .situation-map {
-        height: 300px; /* Adjust map height */
-    }
-    .comms-content {
-        height: 250px; /* Adjust comms height */
-    }
-    .incident-list {
-        max-height: 250px; /* Adjust incident list height */
-    }
-  }
-</style>
-{% endblock %}
-
-{% block content %}
-  <div class="command-header">
-    <div>
-      <h2 style="margin: 0; font-size: 1.5rem;">🏛️ Emergency Operations Center</h2>
-      <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Multi-agency coordination and crisis management</p>
-    </div>
-    <div class="command-status">
-      <div class="alert-level alert-level-3" id="alertLevel">
-        <span>⚠️</span>
-        <span>ALERT LEVEL 3</span>
-      </div>
-      <div style="text-align: right;">
-        <div style="font-size: 0.9rem; opacity: 0.9;">Active Incidents</div>
-        <div style="font-size: 1.5rem; font-weight: bold;" id="activeIncidents">7</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="command-grid">
-    <div class="command-panel">
-      <h3>🗺️ Situation Map</h3>
-      <div class="situation-map" id="situationMap">
-        </div>
-      <div class="action-buttons" style="margin-top: 1rem;">
-        <button class="action-button btn-primary" onclick="window.CrisisCommand?.centerMap()">
-          📍 Center Map
-        </button>
-        <button class="action-button btn-primary" onclick="window.CrisisCommand?.toggleLayers()">
-          🔄 Toggle Layers
-        </button>
-        <button class="action-button btn-success" onclick="window.CrisisCommand?.addMarker()">
-          📌 Add Marker
-        </button>
-      </div>
-    </div>
-
-    <div class="command-panel">
-      <h3>🚨 Active Incidents</h3>
-      <div class="incident-list" id="incidentList">
-        <div class="incident-item" onclick="window.location.href='/incident-details/1'">
-          <div class="incident-header">
-            <div class="incident-title">Structure Fire - 425 Oak Street</div>
-            <div class="incident-time">14:32</div>
-          </div>
-          <div class="incident-details">
-            Multi-story residential building. 15 units dispatched. Evacuation in progress.
-          </div>
-          <div class="incident-status">
-            <span class="priority-badge priority-critical">CRITICAL</span>
-            <span class="response-status status-onscene">ON SCENE</span>
-          </div>
-        </div>
-
-        <div class="incident-item" onclick="window.location.href='/incident-details/2'">
-          <div class="incident-header">
-            <div class="incident-title">MVA with Injuries - Highway 101</div>
-            <div class="incident-time">14:28</div>
-          </div>
-          <div class="incident-details">
-            Multi-vehicle accident, northbound lanes blocked. 3 ambulances dispatched.
-          </div>
-          <div class="incident-status">
-            <span class="priority-badge priority-high">HIGH</span>
-            <span class="response-status status-enroute">EN ROUTE</span>
-          </div>
-        </div>
-
-        <div class="incident-item" onclick="window.location.href='/incident-details/3'">
-          <div class="incident-header">
-            <div class="incident-title">Gas Leak - Downtown Commercial</div>
-            <div class="incident-time">14:15</div>
-          </div>
-          <div class="incident-details">
-            Natural gas leak reported. Hazmat team activated. Area evacuation ordered.
-          </div>
-          <div class="incident-status">
-            <span class="priority-badge priority-high">HIGH</span>
-            <span class="response-status status-onscene">ON SCENE</span>
-          </div>
-        </div>
-
-        <div class="incident-item" onclick="window.location.href='/incident-details/4'">
-          <div class="incident-header">
-            <div class="incident-title">Medical Emergency - Senior Center</div>
-            <div class="incident-time">14:05</div>
-          </div>
-          <div class="incident-details">
-            Cardiac event reported. ALS unit dispatched. Patient stable.
-          </div>
-          <div class="incident-status">
-            <span class="priority-badge priority-medium">MEDIUM</span>
-            <span class="response-status status-resolved">RESOLVED</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="command-panel">
-    <h3>🚒 Resource Management</h3>
-    <div class="resource-grid">
-      <div class="resource-card">
-        <div class="resource-count" id="fireUnits">12</div>
-        <div class="resource-label">Fire Units</div>
-        <div class="resource-status status-deployed">8 Deployed</div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-count" id="ambulances">18</div>
-        <div class="resource-label">Ambulances</div>
-        <div class="resource-status status-available">11 Available</div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-count" id="policeUnits">24</div>
-        <div class="resource-label">Police Units</div>
-        <div class="resource-status status-deployed">15 Deployed</div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-count" id="hazmatTeams">4</div>
-        <div class="resource-label">Hazmat Teams</div>
-        <div class="resource-status status-deployed">2 Deployed</div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-count" id="helicopters">3</div>
-        <div class="resource-label">Helicopters</div>
-        <div class="resource-status status-available">3 Available</div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-count" id="searchRescue">6</div>
-        <div class="resource-label">Search & Rescue</div>
-        <div class="resource-status status-available">4 Available</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="command-panel">
-    <h3>📡 Communications</h3>
-    <div class="communications-panel">
-      <div class="comms-tabs">
-        <button class="comms-tab active" onclick="window.CrisisCommand?.switchCommsTab('radio')">
-          📻 Radio Traffic
-        </button>
-        <button class="comms-tab" onclick="window.CrisisCommand?.switchCommsTab('dispatch')">
-          📞 Dispatch
-        </button>
-        <button class="comms-tab" onclick="window.CrisisCommand?.switchCommsTab('inter-agency')">
-          🏢 Inter-Agency
-        </button>
-      </div>
-      
-      <div class="comms-content" id="commsContent">
-        <div class="message-item">
-          <div class="message-header">
-            <div class="message-sender">Engine 15</div>
-            <div class="message-time">14:35:12</div>
-          </div>
-          <div class="message-content">
-            "Command, Engine 15 on scene. Working structure fire, requesting additional engine company and ladder truck."
-          </div>
-        </div>
-        
-        <div class="message-item">
-          <div class="message-header">
-            <div class="message-sender">Dispatch</div>
-            <div class="message-time">14:35:20</div>
-          </div>
-          <div class="message-content">
-            "Engine 7 and Ladder 3 dispatched to your location, ETA 4 minutes."
-          </div>
-        </div>
-        
-        <div class="message-item">
-          <div class="message-header">
-            <div class="message-sender">Battalion Chief 2</div>
-            <div class="message-time">14:33:45</div>
-          </div>
-          <div class="message-content">
-            "Establishing command at Oak Street incident. Requesting Red Cross for displaced residents."
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="agency-coordination">
-    <h3>🏛️ Multi-Agency Coordination</h3>
-    <div class="agency-grid">
-      <div class="agency-card">
-        <div class="agency-header">
-          <div class="agency-name">Fire Department</div>
-          <div class="agency-status status-active">ACTIVE</div>
-        </div>
-        <div class="agency-details">
-          12 units deployed<br>
-          IC: Battalion Chief Johnson<br>
-          Radio: Channel 1
-        </div>
-      </div>
-
-      <div class="agency-card">
-        <div class="agency-header">
-          <div class="agency-name">Police Department</div>
-          <div class="agency-status status-active">ACTIVE</div>
-        </div>
-        <div class="agency-details">
-          15 units deployed<br>
-          IC: Lieutenant Davis<br>
-          Radio: Channel 3
-        </div>
-      </div>
-
-      <div class="agency-card">
-        <div class="agency-header">
-          <div class="agency-name">EMS Services</div>
-          <div class="agency-status status-active">ACTIVE</div>
-        </div>
-        <div class="agency-details">
-          7 ambulances deployed<br>
-          IC: Paramedic Supervisor<br>
-          Radio: Channel 2
-        </div>
-      </div>
-
-      <div class="agency-card">
-        <div class="agency-header">
-          <div class="agency-name">Public Works</div>
-          <div class="agency-status status-standby">STANDBY</div>
-        </div>
-        <div class="agency-details">
-          2 crews available<br>
-          Contact: Operations Center<br>
-          Radio: Channel 5
-        </div>
-      </div>
-
-      <div class="agency-card">
-        <div class="agency-header">
-          <div class="agency-name">Red Cross</div>
-          <div class="agency-status status-active">ACTIVE</div>
-        </div>
-        <div class="agency-details">
-          Shelter operations active<br>
-          Contact: Emergency Coordinator<br>
-          Phone: (555) 123-4567
-        </div>
-      </div>
-
-      <div class="agency-card">
-        <div class="agency-header">
-          <div class="agency-name">Utility Company</div>
-          <div class="agency-status status-active">ACTIVE</div>
-        </div>
-        <div class="agency-details">
-          Gas isolation in progress<br>
-          Contact: Emergency Response<br>
-          Phone: (555) 987-6543
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="timeline-panel">
-    <h3>⏰ Operations Timeline</h3>
-    <div class="timeline" id="operationsTimeline">
-      <div class="timeline-item">
-        <div class="timeline-time">14:35:20</div>
-        <div class="timeline-title">Additional Units Dispatched</div>
-        <div class="timeline-description">Engine 7 and Ladder 3 dispatched to Oak Street fire, ETA 4 minutes</div>
-      </div>
-      
-      <div class="timeline-item">
-        <div class="timeline-time">14:33:45</div>
-        <div class="timeline-title">Incident Command Established</div>
-        <div class="timeline-description">Battalion Chief 2 establishing command at Oak Street incident</div>
-      </div>
-      
-      <div class="timeline-item">
-        <div class="timeline-time">14:32:15</div>
-        <div class="timeline-title">Structure Fire Reported</div>
-        <div class="timeline-description">Working structure fire at 425 Oak Street, Engine 15 first on scene</div>
-      </div>
-      
-      <div class="timeline-item">
-        <div class="timeline-time">14:28:30</div>
-        <div class="timeline-title">MVA Highway 101</div>
-        <div class="timeline-description">Multi-vehicle accident reported, 3 ambulances and police units dispatched</div>
-      </div>
-      
-      <div class="timeline-item">
-        <div class="timeline-time">14:15:10</div>
-        <div class="timeline-title">Gas Leak Downtown</div>
-        <div class="timeline-description">Natural gas leak reported, hazmat team activated, evacuation ordered</div>
-      </div>
-      
-      <div class="timeline-item">
-        <div class="timeline-time">14:05:45</div>
-        <div class="timeline-title">Medical Emergency Resolved</div>
-        <div class="timeline-description">Cardiac event at Senior Center successfully treated, patient transported</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="quick-actions">
-    <button class="quick-action qa-emergency" title="Declare Emergency" onclick="window.CrisisCommand?.declareEmergency()">
-      🚨
-    </button>
-    <button class="quick-action qa-dispatch" title="Quick Dispatch" onclick="window.CrisisCommand?.quickDispatch()">
-      📞
-    </button>
-    <button class="quick-action qa-comms" title="Broadcast Alert" onclick="window.CrisisCommand?.broadcastAlert()">
-      📢
-    </button>
-    <button class="quick-action qa-resources" title="Resource Status" onclick="window.CrisisCommand?.checkResources()">
-      📊
-    </button>
-  </div>
-{% endblock %}
-
-{% block scripts %}
-{{ super() }} {# Inherits scripts from base.html #}
-<script src="/static/js/crisis-command.js"></script>
-{# Leaflet.js is assumed to be in base.html already #}
-{# <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script> #}
-
-<script>
-  // Theme/contrast/SW registration are handled in base.html.
-  // Only page-specific JavaScript here.
-
-  // Initialize Crisis Command Center
-  document.addEventListener('DOMContentLoaded', () => {
-    if (window.CrisisCommand) {
-      window.CrisisCommand.initialize();
-    } else {
-        console.error("window.CrisisCommand is not defined. Ensure crisis-command.js is loaded correctly.");
-    }
-  });
-
-  // Example function for switching comms tabs (if CrisisCommand.js doesn't fully handle it)
-  // This could be part of window.CrisisCommand.js or a separate utility.
-  // Assuming comms tabs logic is simple for direct HTML onclick.
-  window.CrisisCommand = window.CrisisCommand || {}; // Ensure object exists
-  window.CrisisCommand.switchCommsTab = function(tabId) {
-    document.querySelectorAll('.comms-tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelector(`.comms-tab[onclick*="${tabId}"]`).classList.add('active');
-    
-    // In a real app, you'd load content into #commsContent here based on tabId
-    const commsContent = document.getElementById('commsContent');
-    if (tabId === 'radio') {
-      commsContent.innerHTML = `
-        <div class="message-item">
-          <div class="message-header">
-            <div class="message-sender">Engine 15</div>
-            <div class="message-time">14:35:12</div>
-          </div>
-          <div class="message-content">
-            "Command, Engine 15 on scene. Working structure fire, requesting additional engine company and ladder truck."
-          </div>
-        </div>
-        <div class="message-item">
-            <div class="message-header">
-              <div class="message-sender">Dispatch</div>
-              <div class="message-time">14:35:20</div>
+    <!-- Main Header -->
+    <header class="main-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo">🧠</div>
+                <div class="header-info">
+                    <h1>Gemma 3n Emergency Operations Center</h1>
+                    <p>AI-powered disaster response with 128K context awareness</p>
+                </div>
             </div>
-            <div class="message-content">
-              "Engine 7 and Ladder 3 dispatched to your location, ETA 4 minutes."
+            
+            <div class="header-right">
+                <div class="alert-level">
+                    <span>⚠️</span>
+                    <span>ALERT LEVEL 3</span>
+                </div>
+                
+                <div class="header-controls">
+                    <button class="header-btn" onclick="toggleTheme()">🌓</button>
+                    <button class="header-btn" onclick="toggleNav()">☰</button>
+                </div>
             </div>
-          </div>
-      `;
-    } else if (tabId === 'dispatch') {
-      commsContent.innerHTML = `
-        <div class="message-item">
-          <div class="message-header">
-            <div class="message-sender">Dispatch Console</div>
-            <div class="message-time">14:40:00</div>
-          </div>
-          <div class="message-content">
-            "All units, be advised: Road closure on Main St due to gas leak. Use alternate routes."
-          </div>
         </div>
-      `;
-    } else if (tabId === 'inter-agency') {
-      commsContent.innerHTML = `
-        <div class="message-item">
-          <div class="message-header">
-            <div class="message-sender">Red Cross Coordinator</div>
-            <div class="message-time">14:45:00</div>
-          </div>
-          <div class="message-content">
-            "EOC, Red Cross has opened temporary shelter at Community Center. Capacity 200."
-          </div>
-        </div>
-      `;
-    }
-    commsContent.scrollTop = commsContent.scrollHeight; // Scroll to bottom
-  };
-</script>
-{% endblock %}
+    </header>
 
-{% block footer_content %}
-  <footer class="footer">
-    <p>🔒 Secure Communications | ⚡ Real-time Coordination | 🏛️ Multi-Agency</p>
-  </footer>
-{% endblock %}
+    <!-- Navigation -->
+    <nav class="main-nav" id="mainNav">
+        <div class="nav-section">
+            <div class="nav-title">AI Command & Control</div>
+            <div class="nav-item active ai-powered" onclick="showSection('ai-command')">
+                <div class="nav-icon">🧠</div>
+                <div>AI Command Center</div>
+            </div>
+            <div class="nav-item ai-powered" onclick="showSection('context-intelligence')">
+                <div class="nav-icon">🔮</div>
+                <div>Context Intelligence</div>
+            </div>
+            <div class="nav-item ai-powered" onclick="showSection('predictive-analysis')">
+                <div class="nav-icon">📊</div>
+                <div>Predictive Analysis</div>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-title">Operations</div>
+            <div class="nav-item" onclick="showSection('live-map')">
+                <div class="nav-icon">🗺️</div>
+                <div>Live Map</div>
+            </div>
+            <div class="nav-item" onclick="showSection('incidents')">
+                <div class="nav-icon">🚨</div>
+                <div>Active Incidents</div>
+            </div>
+            <div class="nav-item" onclick="showSection('resources')">
+                <div class="nav-icon">🚒</div>
+                <div>Resource Management</div>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-title">Data & Reports</div>
+            <div class="nav-item" onclick="showSection('reports')">
+                <div class="nav-icon">📋</div>
+                <div>Crowd Reports</div>
+            </div>
+            <div class="nav-item" onclick="showSection('analytics')">
+                <div class="nav-icon">📈</div>
+                <div>Analytics</div>
+            </div>
+            <div class="nav-item" onclick="showSection('archive')">
+                <div class="nav-icon">📚</div>
+                <div>Archive</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- AI Command Center Section -->
+        <div id="ai-command" class="dashboard-section active">
+            <!-- Gemma 3n Context Intelligence Panel -->
+            <div class="ai-context-panel">
+                <div class="context-header">
+                    <div class="context-title">
+                        <span>🧠</span>
+                        Gemma 3n Context Intelligence
+                    </div>
+                    <div style="opacity: 0.9;">128K Token Context Window</div>
+                </div>
+                
+                <div class="context-window">
+                    <div class="context-progress">
+                        <span style="font-weight: bold;">Context Usage:</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="contextProgressFill" style="width: 0%"></div>
+                        </div>
+                        <span id="contextUsageText">0% (0/128K tokens)</span>
+                    </div>
+                    
+                    <div class="context-sources">
+                        <div class="context-source">
+                            <div>📊 Reports</div>
+                            <div id="contextReports">0</div>
+                        </div>
+                        <div class="context-source">
+                            <div>🌤️ Weather</div>
+                            <div id="contextWeather">Loading</div>
+                        </div>
+                        <div class="context-source">
+                            <div>🗺️ Location</div>
+                            <div id="contextLocation">GPS</div>
+                        </div>
+                        <div class="context-source">
+                            <div>🏗️ Infrastructure</div>
+                            <div id="contextInfra">Online</div>
+                        </div>
+                        <div class="context-source">
+                            <div>👥 Population</div>
+                            <div id="contextPop">Census</div>
+                        </div>
+                        <div class="context-source">
+                            <div>📱 Social</div>
+                            <div id="contextSocial">Feeds</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="context-stats">
+                    <div class="context-stat">
+                        <div class="context-value" id="aiAccuracy">94.7%</div>
+                        <div class="context-label">AI Accuracy</div>
+                    </div>
+                    <div class="context-stat">
+                        <div class="context-value" id="processingSpeed">1.2s</div>
+                        <div class="context-label">Avg Processing</div>
+                    </div>
+                    <div class="context-stat">
+                        <div class="context-value" id="modelsActive">7</div>
+                        <div class="context-label">Active Models</div>
+                    </div>
+                    <div class="context-stat">
+                        <div class="context-value" id="insights">23</div>
+                        <div class="context-label">AI Insights</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time AI Processing Status -->
+            <div class="processing-status" id="processingStatus" style="display: none;">
+                <div class="processing-text" id="processingText">
+                    🧠 Gemma 3n processing 47 emergency reports with 128K context...
+                </div>
+            </div>
+
+            <!-- AI Model Status -->
+            <div class="ai-model-status">
+                <div class="model-indicator">
+                    <div class="status-dot" id="edgeAiDot"></div>
+                    <strong>Edge AI Engine:</strong>
+                    <span id="edgeAiStatus">Initializing...</span>
+                </div>
+                <div class="token-usage">
+                    <span>Token Usage:</span>
+                    <div class="token-bar">
+                        <div class="token-fill" id="tokenFill" style="width: 0%"></div>
+                    </div>
+                    <span id="tokenCount">0 / 128K</span>
+                </div>
+            </div>
+
+            <!-- Enhanced Stats Grid with AI Metrics -->
+            <div class="stats-grid">
+                <div class="stat-card ai-enhanced">
+                    <div class="stat-value ai-value" id="aiProcessedReports">127</div>
+                    <div class="stat-label">AI Processed Reports</div>
+                    <div class="stat-trend trend-up">↗ +15 this hour</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">7</div>
+                    <div class="stat-label">Active Incidents</div>
+                    <div class="stat-trend trend-down">↘ -2 from yesterday</div>
+                </div>
+                <div class="stat-card ai-enhanced">
+                    <div class="stat-value ai-value" id="riskScore">7.2</div>
+                    <div class="stat-label">AI Risk Score</div>
+                    <div class="stat-trend trend-stable">→ Stable</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">45</div>
+                    <div class="stat-label">Units Deployed</div>
+                    <div class="stat-trend trend-stable">→ Optimal</div>
+                </div>
+            </div>
+
+            <!-- AI-Generated Insights -->
+            <div class="ai-insights">
+                <div class="insights-header">
+                    <div class="insights-title">
+                        <span>🧠</span>
+                        Gemma 3n Real-time Insights
+                    </div>
+                    <button class="btn btn-ai" onclick="refreshAIInsights()">
+                        🔄 Refresh Analysis
+                    </button>
+                </div>
+                
+                <div id="aiInsightsList">
+                    <div class="insight-item">
+                        <div class="insight-header">
+                            <div class="insight-title">🔥 Fire Risk Elevation Detected</div>
+                            <div class="confidence-badge">92% Confidence</div>
+                        </div>
+                        <div class="insight-description">
+                            AI analysis of weather patterns, historical data, and current conditions indicates elevated fire risk in downtown area between 2:00 PM - 6:00 PM today. Wind speed increasing to 25 mph with low humidity (18%).
+                        </div>
+                        <div class="insight-actions">
+                            <span class="insight-action" onclick="implementRecommendation('fire-risk')">🚒 Deploy Units</span>
+                            <span class="insight-action" onclick="viewInsightDetails('fire-risk')">📊 View Analysis</span>
+                            <span class="insight-action" onclick="alertStakeholders('fire-risk')">📢 Alert Agencies</span>
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <div class="insight-header">
+                            <div class="insight-title">🚗 Traffic Incident Prediction</div>
+                            <div class="confidence-badge">85% Confidence</div>
+                        </div>
+                        <div class="insight-description">
+                            Machine learning model predicts 67% higher accident probability on Highway 101 northbound during evening rush (5:00-7:00 PM) due to weather conditions and historical patterns.
+                        </div>
+                        <div class="insight-actions">
+                            <span class="insight-action" onclick="implementRecommendation('traffic')">🚓 Position Units</span>
+                            <span class="insight-action" onclick="alertTraffic('highway-101')">🚦 Traffic Alert</span>
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <div class="insight-header">
+                            <div class="insight-title">🏥 Medical Volume Surge</div>
+                            <div class="confidence-badge">78% Confidence</div>
+                        </div>
+                        <div class="insight-description">
+                            Heat wave correlation analysis shows 34% increase in respiratory emergencies likely over next 3 days. Current air quality index: 127 (Unhealthy for Sensitive Groups).
+                        </div>
+                        <div class="insight-actions">
+                            <span class="insight-action" onclick="prepareResources('medical-surge')">🚑 Prep Resources</span>
+                            <span class="insight-action" onclick="activateCooling()">❄️ Cooling Centers</span>
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <div class="insight-header">
+                            <div class="insight-title">📍 Resource Optimization</div>
+                            <div class="confidence-badge">96% Confidence</div>
+                        </div>
+                        <div class="insight-description">
+                            Geospatial analysis indicates 23% response time improvement possible by relocating Ambulance 7 from Station C to Station 12 during peak hours (3:00-8:00 PM).
+                        </div>
+                        <div class="insight-actions">
+                            <span class="insight-action" onclick="optimizeResources()">🎯 Implement</span>
+                            <span class="insight-action" onclick="viewOptimization()">📈 View Impact</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Analysis Cards -->
+            <div class="realtime-analysis">
+                <div class="analysis-card" id="imageAnalysisCard">
+                    <div class="analysis-status">
+                        <div class="status-indicator" id="imageStatusDot"></div>
+                        <strong>Image Analysis</strong>
+                    </div>
+                    <div>Processing: <span id="imageQueue">0</span> images</div>
+                    <div>Hazards detected: <span id="hazardsDetected">3</span></div>
+                    <div>Accuracy: <span id="imageAccuracy">97.3%</span></div>
+                </div>
+
+                <div class="analysis-card" id="textAnalysisCard">
+                    <div class="analysis-status">
+                        <div class="status-indicator" id="textStatusDot"></div>
+                        <strong>Sentiment Analysis</strong>
+                    </div>
+                    <div>Processing: <span id="textQueue">0</span> reports</div>
+                    <div>Panic level: <span id="panicLevel">Moderate</span></div>
+                    <div>Accuracy: <span id="textAccuracy">94.2%</span></div>
+                </div>
+
+                <div class="analysis-card" id="locationAnalysisCard">
+                    <div class="analysis-status">
+                        <div class="status-indicator" id="locationStatusDot"></div>
+                        <strong>Location Intelligence</strong>
+                    </div>
+                    <div>GPS reports: <span id="gpsReports">47</span></div>
+                    <div>Risk areas: <span id="riskAreas">12</span></div>
+                    <div>Accuracy: <span id="locationAccuracy">89.1%</span></div>
+                </div>
+
+                <div class="analysis-card" id="predictionCard">
+                    <div class="analysis-status">
+                        <div class="status-indicator" id="predictionStatusDot"></div>
+                        <strong>Predictive Models</strong>
+                    </div>
+                    <div>Forecasts: <span id="activeForecast">8</span> active</div>
+                    <div>Next event: <span id="nextEvent">2:15 PM</span></div>
+                    <div>Confidence: <span id="predictionConfidence">87%</span></div>
+                </div>
+            </div>
+
+            <!-- Traditional Command Grid -->
+            <div class="command-grid">
+                <div class="panel ai-enhanced">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span>🗺️</span>
+                            AI-Enhanced Situation Map
+                        </div>
+                        <div>
+                            <button class="btn btn-ai" onclick="runAIMapAnalysis()">🧠 AI Analysis</button>
+                        </div>
+                    </div>
+                    <div class="map-container">
+                        <div id="mainMap"></div>
+                    </div>
+                </div>
+
+                <div class="panel ai-enhanced">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span>🚨</span>
+                            AI-Prioritized Incidents
+                        </div>
+                        <div>
+                            <button class="btn btn-ai" onclick="reprioritizeIncidents()">🎯 Re-prioritize</button>
+                        </div>
+                    </div>
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <div style="background: var(--bg-color-light); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; border-left: 4px solid #dc2626; cursor: pointer;" onclick="viewIncident(1)">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <div style="font-weight: bold;">🔥 Structure Fire - Oak Street</div>
+                                <div style="font-size: 0.8rem; color: var(--text-color-light);">AI Priority: 9.7/10</div>
+                            </div>
+                            <div style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+                                Multi-story residential. AI detected: structural damage, smoke patterns, 15+ people in building via thermal analysis.
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="background: #dc2626; color: white; padding: 0.25rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: bold;">CRITICAL</span>
+                                <span style="background: #16a34a; color: white; padding: 0.25rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: bold;">COMMAND EST.</span>
+                            </div>
+                        </div>
+
+                        <div style="background: var(--bg-color-light); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; border-left: 4px solid #f59e0b; cursor: pointer;" onclick="viewIncident(2)">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <div style="font-weight: bold;">🚗 MVA Highway 101</div>
+                                <div style="font-size: 0.8rem; color: var(--text-color-light);">AI Priority: 7.3/10</div>
+                            </div>
+                            <div style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+                                Multi-vehicle accident. AI analysis: 3 vehicles, likely injuries, traffic backup 2.1 miles.
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="background: #f59e0b; color: white; padding: 0.25rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: bold;">HIGH</span>
+                                <span style="background: #3b82f6; color: white; padding: 0.25rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: bold;">EN ROUTE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Context Intelligence Section -->
+        <div id="context-intelligence" class="dashboard-section">
+            <div class="ai-context-panel">
+                <div class="context-header">
+                    <div class="context-title">
+                        <span>🔮</span>
+                        Deep Context Analysis Engine
+                    </div>
+                    <button class="btn btn-ai" onclick="runDeepContextAnalysis()">
+                        🧠 Analyze All Context
+                    </button>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                    <div>
+                        <h4 style="color: white; margin-bottom: 1rem;">🗂️ Data Sources Loaded</h4>
+                        <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+                            <div style="display: grid; gap: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>📊 Emergency Reports</span>
+                                    <span>2,847 items (12.3 MB)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>🌤️ Weather Data</span>
+                                    <span>1,203 points (4.7 MB)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>🏗️ Infrastructure</span>
+                                    <span>891 facilities (2.1 MB)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>👥 Population Data</span>
+                                    <span>67 districts (8.9 MB)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>📱 Social Media</span>
+                                    <span>15,432 posts (18.2 MB)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>📚 Historical Data</span>
+                                    <span>5 years (156 MB)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: white; margin-bottom: 1rem;">⚡ Processing Statistics</h4>
+                        <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+                            <div style="display: grid; gap: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Tokens Processed</span>
+                                    <span id="tokensProcessed">0 / 128K</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Patterns Found</span>
+                                    <span id="patternsFound">0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Correlations</span>
+                                    <span id="correlationsFound">0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Processing Speed</span>
+                                    <span id="processingSpeedStat">0 tokens/sec</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Context Utilization</span>
+                                    <span id="contextUtilization">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deep Analysis Results -->
+            <div class="panel ai-enhanced">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🔍</span>
+                        Gemma 3n Deep Analysis Results
+                    </div>
+                    <button class="btn btn-ai" onclick="exportContextAnalysis()">📄 Export Report</button>
+                </div>
+                
+                <div id="deepAnalysisResults">
+                    <div style="text-align: center; padding: 3rem; color: var(--text-color-light);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🧠</div>
+                        <div style="font-size: 1.2rem; margin-bottom: 1rem;">Ready for Deep Context Analysis</div>
+                        <div>Click "Analyze All Context" to process all data sources with Gemma 3n's 128K context window</div>
+                        <button class="btn btn-ai" style="margin-top: 1.5rem;" onclick="runDeepContextAnalysis()">
+                            🚀 Start Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Predictive Analysis Section -->
+        <div id="predictive-analysis" class="dashboard-section">
+            <div class="ai-context-panel">
+                <div class="context-header">
+                    <div class="context-title">
+                        <span>📊</span>
+                        Predictive Emergency Intelligence
+                    </div>
+                    <div style="opacity: 0.9;">AI-powered forecasting and risk assessment</div>
+                </div>
+                
+                <div class="context-stats">
+                    <div class="context-stat">
+                        <div class="context-value">94.7%</div>
+                        <div class="context-label">Prediction Accuracy</div>
+                    </div>
+                    <div class="context-stat">
+                        <div class="context-value">7.2</div>
+                        <div class="context-label">Current Risk Score</div>
+                    </div>
+                    <div class="context-stat">
+                        <div class="context-value">23</div>
+                        <div class="context-label">Predicted Incidents (24h)</div>
+                    </div>
+                    <div class="context-stat">
+                        <div class="context-value">87%</div>
+                        <div class="context-label">Model Confidence</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction Timeline -->
+            <div class="panel ai-enhanced">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>⏰</span>
+                        AI Forecast Timeline
+                    </div>
+                    <div>
+                        <button class="btn btn-ai" onclick="updateForecasts()">🔄 Update Forecasts</button>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div style="background: var(--bg-color-light); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer;" onclick="viewForecastDetails('fire-risk')">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔥</div>
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">Today 2:00 PM</div>
+                        <div style="background: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">Fire Risk Peak</div>
+                        <div style="font-size: 0.8rem; color: var(--text-color-light); margin-top: 0.5rem;">92% Confidence</div>
+                    </div>
+                    
+                    <div style="background: var(--bg-color-light); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer;" onclick="viewForecastDetails('traffic-surge')">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚗</div>
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">Today 5:30 PM</div>
+                        <div style="background: #f59e0b; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">Traffic Surge</div>
+                        <div style="font-size: 0.8rem; color: var(--text-color-light); margin-top: 0.5rem;">85% Confidence</div>
+                    </div>
+                    
+                    <div style="background: var(--bg-color-light); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer;" onclick="viewForecastDetails('medical-volume')">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏥</div>
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">Tomorrow 10:00 AM</div>
+                        <div style="background: #16a34a; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">Medical +20%</div>
+                        <div style="font-size: 0.8rem; color: var(--text-color-light); margin-top: 0.5rem;">78% Confidence</div>
+                    </div>
+                    
+                    <div style="background: var(--bg-color-light); padding: 1rem; border-radius: 8px; text-align: center; cursor: pointer;" onclick="viewForecastDetails('low-activity')">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📉</div>
+                        <div style="font-weight: bold; margin-bottom: 0.25rem;">Tomorrow 8:00 PM</div>
+                        <div style="background: #6b7280; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">Low Activity</div>
+                        <div style="font-size: 0.8rem; color: var(--text-color-light); margin-top: 0.5rem;">89% Confidence</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Map Section -->
+        <div id="live-map" class="dashboard-section">
+            <div class="panel ai-enhanced">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🗺️</span>
+                        AI-Enhanced Live Emergency Map
+                    </div>
+                    <div>
+                        <button class="btn btn-ai" onclick="runMapAI()">🧠 AI Analysis</button>
+                        <button class="btn btn-primary" onclick="exportMapData()">📊 Export Data</button>
+                    </div>
+                </div>
+                <div style="height: 600px; background: var(--bg-color-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-color);">
+                    <div style="text-align: center; color: var(--text-color-light);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🗺️</div>
+                        <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">AI-Enhanced Interactive Emergency Map</div>
+                        <div>Real-time analysis, predictive hotspots, and intelligent clustering</div>
+                        <button class="btn btn-ai" style="margin-top: 1rem;" onclick="initializeAIMap()">
+                            🚀 Load AI Map
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resources Section -->
+        <div id="resources" class="dashboard-section">
+            <div class="stats-grid">
+                <div class="stat-card ai-enhanced">
+                    <div class="stat-value ai-value">96%</div>
+                    <div class="stat-label">AI Optimization Score</div>
+                    <div class="stat-trend trend-up">↗ +3% this week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">87</div>
+                    <div class="stat-label">Total Units</div>
+                    <div class="stat-trend trend-stable">→ Full Fleet</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">54</div>
+                    <div class="stat-label">Currently Deployed</div>
+                    <div class="stat-trend trend-up">↗ High Activity</div>
+                </div>
+                <div class="stat-card ai-enhanced">
+                    <div class="stat-value ai-value">4.2min</div>
+                    <div class="stat-label">AI-Optimized Response</div>
+                    <div class="stat-trend trend-down">↘ -1.3min improvement</div>
+                </div>
+            </div>
+
+            <div class="panel ai-enhanced">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🚒</span>
+                        AI-Optimized Resource Management
+                    </div>
+                    <div>
+                        <button class="btn btn-ai" onclick="optimizeAllResources()">🎯 AI Optimize</button>
+                        <button class="btn btn-primary" onclick="requestMutualAid()">📞 Mutual Aid</button>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <div style="background: var(--bg-color-light); border-radius: 8px; padding: 1rem; text-align: center; transition: all 0.3s ease; cursor: pointer;" onclick="viewResourceDetails('fire')">
+                        <div style="font-size: 2rem; font-weight: bold; color: var(--primary-color); margin-bottom: 0.5rem;">12</div>
+                        <div style="color: var(--text-color-light); font-size: 0.9rem; margin-bottom: 0.5rem;">Fire Engines</div>
+                        <div style="background: #f59e0b; color: white; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">8 Deployed</div>
+                        <div style="font-size: 0.7rem; color: var(--ai-accent); margin-top: 0.5rem;">🧠 AI: 92% optimal</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other sections (reports, analytics, etc.) would follow similar pattern... -->
+        <div id="reports" class="dashboard-section">
+            <div style="text-align: center; padding: 4rem; color: var(--text-color-light);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                <div style="font-size: 1.5rem;">Crowd Reports Section</div>
+                <div>AI-enhanced report processing and analysis</div>
+            </div>
+        </div>
+
+        <div id="analytics" class="dashboard-section">
+            <div style="text-align: center; padding: 4rem; color: var(--text-color-light);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📈</div>
+                <div style="font-size: 1.5rem;">Analytics Dashboard</div>
+                <div>Advanced AI-powered analytics and insights</div>
+            </div>
+        </div>
+
+        <div id="incidents" class="dashboard-section">
+            <div style="text-align: center; padding: 4rem; color: var(--text-color-light);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🚨</div>
+                <div style="font-size: 1.5rem;">Incident Management</div>
+                <div>AI-prioritized incident response and coordination</div>
+            </div>
+        </div>
+
+        <div id="archive" class="dashboard-section">
+            <div style="text-align: center; padding: 4rem; color: var(--text-color-light);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📚</div>
+                <div style="font-size: 1.5rem;">Historical Archive</div>
+                <div>AI-powered search and pattern analysis</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
+    <!-- Edge AI Engine -->
+    <script>
+        // Enhanced EdgeAI integration for Gemma 3n
+        class GemmaEnhancedAI {
+            constructor() {
+                this.isGemmaReady = false;
+                this.contextTokens = 0;
+                this.maxTokens = 128000;
+                this.processingQueue = [];
+                this.insights = [];
+                this.models = {
+                    emergency: null,
+                    prediction: null,
+                    context: null
+                };
+                
+                // Performance tracking
+                this.performance = {
+                    totalProcessed: 0,
+                    averageLatency: 0,
+                    accuracy: 94.7,
+                    contextUtilization: 0
+                };
+                
+                // Real-time data streams
+                this.dataStreams = {
+                    reports: [],
+                    weather: null,
+                    location: null,
+                    infrastructure: null,
+                    population: null,
+                    social: []
+                };
+                
+                console.log('🧠 Gemma 3n Enhanced AI initializing...');
+            }
+
+            async initialize() {
+                try {
+                    this.updateGemmaStatus('loading', 'Initializing Gemma 3n models...');
+                    
+                    // Initialize Edge AI first
+                    if (window.EdgeAI) {
+                        await window.EdgeAI.initialize();
+                        console.log('✅ Edge AI base models loaded');
+                    }
+                    
+                    // Simulate Gemma 3n model loading
+                    await this.loadGemmaModels();
+                    
+                    // Initialize data streams
+                    await this.initializeDataStreams();
+                    
+                    // Start real-time processing
+                    this.startRealTimeProcessing();
+                    
+                    this.isGemmaReady = true;
+                    this.updateGemmaStatus('ready', 'Gemma 3n operational - 128K context ready');
+                    
+                    // Generate initial insights
+                    await this.generateInitialInsights();
+                    
+                    console.log('🚀 Gemma 3n Enhanced AI fully operational');
+                    
+                } catch (error) {
+                    console.error('❌ Gemma 3n initialization failed:', error);
+                    this.updateGemmaStatus('error', 'Gemma 3n initialization failed');
+                }
+            }
+
+            async loadGemmaModels() {
+                // Simulate loading time for different model components
+                const models = [
+                    { name: 'Emergency Classification', delay: 1000 },
+                    { name: 'Predictive Analytics', delay: 1500 },
+                    { name: 'Context Understanding', delay: 2000 },
+                    { name: 'Multi-modal Processing', delay: 1200 },
+                    { name: 'Location Intelligence', delay: 800 }
+                ];
+                
+                for (const model of models) {
+                    this.updateGemmaStatus('loading', `Loading ${model.name}...`);
+                    await this.delay(model.delay);
+                    console.log(`✅ ${model.name} loaded`);
+                }
+            }
+
+            async initializeDataStreams() {
+                // Simulate loading various data sources
+                this.dataStreams.reports = await this.loadEmergencyReports();
+                this.dataStreams.weather = await this.loadWeatherData();
+                this.dataStreams.infrastructure = await this.loadInfrastructureData();
+                this.dataStreams.population = await this.loadPopulationData();
+                this.dataStreams.social = await this.loadSocialMediaFeeds();
+                
+                // Calculate initial context usage
+                this.updateContextUsage();
+                
+                console.log('📊 Data streams initialized:', this.dataStreams);
+            }
+
+            async loadEmergencyReports() {
+                // Simulate loading emergency reports
+                const reports = [];
+                for (let i = 0; i < 127; i++) {
+                    reports.push({
+                        id: i + 1,
+                        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
+                        type: ['fire', 'medical', 'traffic', 'weather', 'infrastructure'][Math.floor(Math.random() * 5)],
+                        severity: Math.floor(Math.random() * 10) + 1,
+                        location: [34.05 + (Math.random() - 0.5) * 0.1, -118.25 + (Math.random() - 0.5) * 0.1],
+                        description: `Emergency incident ${i + 1}`,
+                        tokens: Math.floor(Math.random() * 200) + 50
+                    });
+                }
+                return reports;
+            }
+
+            async loadWeatherData() {
+                return {
+                    current: {
+                        temperature: 85,
+                        humidity: 18,
+                        windSpeed: 25,
+                        airQuality: 127
+                    },
+                    forecast: {
+                        fireRisk: 'high',
+                        precipitation: 0,
+                        alerts: ['Heat Advisory', 'Wind Advisory']
+                    },
+                    tokens: 1500
+                };
+            }
+
+            async loadInfrastructureData() {
+                return {
+                    facilities: 891,
+                    powerGrid: 'stable',
+                    communications: 'operational',
+                    transportation: 'congested',
+                    tokens: 2100
+                };
+            }
+
+            async loadPopulationData() {
+                return {
+                    districts: 67,
+                    totalPopulation: 1250000,
+                    densityMap: 'loaded',
+                    vulnerablePopulations: 45000,
+                    tokens: 8900
+                };
+            }
+
+            async loadSocialMediaFeeds() {
+                return {
+                    posts: 15432,
+                    emergencyMentions: 234,
+                    sentiment: 'concerned',
+                    trendingTopics: ['fire', 'evacuation', 'traffic'],
+                    tokens: 18200
+                };
+            }
+
+            updateContextUsage() {
+                let totalTokens = 0;
+                
+                // Calculate tokens from each data stream
+                totalTokens += this.dataStreams.reports.reduce((sum, report) => sum + report.tokens, 0);
+                totalTokens += this.dataStreams.weather?.tokens || 0;
+                totalTokens += this.dataStreams.infrastructure?.tokens || 0;
+                totalTokens += this.dataStreams.population?.tokens || 0;
+                totalTokens += this.dataStreams.social?.tokens || 0;
+                
+                this.contextTokens = totalTokens;
+                const percentage = Math.min(100, (totalTokens / this.maxTokens) * 100);
+                
+                // Update UI
+                this.updateElement('contextProgressFill', null, `width: ${percentage}%`);
+                this.updateElement('contextUsageText', `${percentage.toFixed(1)}% (${this.formatNumber(totalTokens)}/128K tokens)`);
+                this.updateElement('tokensProcessed', `${this.formatNumber(totalTokens)} / 128K`);
+                this.updateElement('contextUtilization', `${percentage.toFixed(1)}%`);
+                
+                // Update individual source counts
+                this.updateElement('contextReports', this.dataStreams.reports.length);
+                this.updateElement('contextWeather', 'Active');
+                this.updateElement('contextLocation', 'GPS Active');
+                this.updateElement('contextInfra', '891 facilities');
+                this.updateElement('contextPop', '67 districts');
+                this.updateElement('contextSocial', '15.4K posts');
+            }
+
+            async generateInitialInsights() {
+                this.showProcessingStatus('🧠 Generating AI insights from 128K context...');
+                
+                await this.delay(3000);
+                
+                // Simulate AI-generated insights
+                this.insights = [
+                    {
+                        id: 1,
+                        type: 'fire_risk',
+                        title: 'Fire Risk Elevation Detected',
+                        confidence: 92,
+                        description: 'AI analysis of weather patterns, historical data, and current conditions indicates elevated fire risk in downtown area between 2:00 PM - 6:00 PM today.',
+                        recommendations: ['Deploy fire units', 'Issue public alert', 'Monitor weather'],
+                        priority: 'critical'
+                    },
+                    {
+                        id: 2,
+                        type: 'traffic_prediction',
+                        title: 'Traffic Incident Prediction',
+                        confidence: 85,
+                        description: 'Machine learning model predicts 67% higher accident probability on Highway 101 during evening rush hour.',
+                        recommendations: ['Position traffic units', 'Issue traffic alert'],
+                        priority: 'high'
+                    },
+                    {
+                        id: 3,
+                        type: 'medical_surge',
+                        title: 'Medical Volume Surge',
+                        confidence: 78,
+                        description: 'Heat wave correlation analysis shows 34% increase in respiratory emergencies likely over next 3 days.',
+                        recommendations: ['Prepare resources', 'Activate cooling centers'],
+                        priority: 'medium'
+                    }
+                ];
+                
+                this.hideProcessingStatus();
+                this.updateInsightsDisplay();
+                
+                // Update performance metrics
+                this.performance.totalProcessed += this.dataStreams.reports.length;
+                this.updatePerformanceDisplay();
+            }
+
+            startRealTimeProcessing() {
+                // Simulate real-time data processing
+                setInterval(() => {
+                    this.processRealTimeData();
+                }, 5000);
+                
+                // Update processing indicators
+                setInterval(() => {
+                    this.updateProcessingIndicators();
+                }, 2000);
+            }
+
+            async processRealTimeData() {
+                // Simulate processing new emergency reports
+                const newReports = Math.floor(Math.random() * 3);
+                if (newReports > 0) {
+                    for (let i = 0; i < newReports; i++) {
+                        const report = {
+                            id: this.dataStreams.reports.length + 1,
+                            timestamp: new Date(),
+                            type: ['fire', 'medical', 'traffic'][Math.floor(Math.random() * 3)],
+                            severity: Math.floor(Math.random() * 10) + 1,
+                            location: [34.05 + (Math.random() - 0.5) * 0.1, -118.25 + (Math.random() - 0.5) * 0.1],
+                            description: `New emergency incident`,
+                            tokens: Math.floor(Math.random() * 200) + 50
+                        };
+                        
+                        this.dataStreams.reports.push(report);
+                        
+                        // Process with AI if significant
+                        if (report.severity >= 7) {
+                            await this.processHighSeverityReport(report);
+                        }
+                    }
+                    
+                    this.updateContextUsage();
+                    this.performance.totalProcessed += newReports;
+                    this.updatePerformanceDisplay();
+                }
+            }
+
+            async processHighSeverityReport(report) {
+                // Simulate AI processing of high-severity report
+                this.showProcessingStatus(`🧠 Processing high-severity ${report.type} report...`);
+                
+                await this.delay(1500);
+                
+                // Generate new insight
+                const insight = {
+                    id: Date.now(),
+                    type: report.type,
+                    title: `High-Severity ${report.type.charAt(0).toUpperCase() + report.type.slice(1)} Alert`,
+                    confidence: 85 + Math.floor(Math.random() * 10),
+                    description: `AI detected high-severity ${report.type} incident requiring immediate attention.`,
+                    recommendations: ['Dispatch emergency units', 'Establish command', 'Monitor situation'],
+                    priority: 'critical',
+                    fresh: true
+                };
+                
+                this.insights.unshift(insight);
+                this.updateInsightsDisplay();
+                this.hideProcessingStatus();
+            }
+
+            updateProcessingIndicators() {
+                // Update real-time analysis cards
+                this.updateAnalysisCard('imageAnalysisCard', {
+                    queue: Math.floor(Math.random() * 5),
+                    hazards: 3 + Math.floor(Math.random() * 3),
+                    accuracy: 97.3 + (Math.random() - 0.5) * 0.4
+                });
+                
+                this.updateAnalysisCard('textAnalysisCard', {
+                    queue: Math.floor(Math.random() * 8),
+                    panicLevel: ['Calm', 'Concerned', 'Elevated', 'Critical'][Math.floor(Math.random() * 4)],
+                    accuracy: 94.2 + (Math.random() - 0.5) * 0.6
+                });
+                
+                this.updateAnalysisCard('locationAnalysisCard', {
+                    gpsReports: this.dataStreams.reports.length,
+                    riskAreas: 12 + Math.floor(Math.random() * 3),
+                    accuracy: 89.1 + (Math.random() - 0.5) * 0.8
+                });
+                
+                this.updateAnalysisCard('predictionCard', {
+                    forecasts: 8,
+                    nextEvent: '2:15 PM',
+                    confidence: 87 + Math.floor(Math.random() * 8)
+                });
+            }
+
+            updateAnalysisCard(cardId, data) {
+                const card = document.getElementById(cardId);
+                if (!card) return;
+                
+                const statusDot = card.querySelector('.status-indicator');
+                if (statusDot) {
+                    statusDot.className = 'status-indicator';
+                    if (Math.random() > 0.8) {
+                        statusDot.classList.add('processing');
+                    }
+                }
+                
+                // Update specific data based on card type
+                if (data.queue !== undefined) {
+                    this.updateElement(cardId === 'imageAnalysisCard' ? 'imageQueue' : 'textQueue', data.queue);
+                }
+                if (data.hazards) this.updateElement('hazardsDetected', data.hazards);
+                if (data.accuracy) {
+                    const accuracyId = cardId === 'imageAnalysisCard' ? 'imageAccuracy' : 
+                                     cardId === 'textAnalysisCard' ? 'textAccuracy' : 'locationAccuracy';
+                    this.updateElement(accuracyId, `${data.accuracy.toFixed(1)}%`);
+                }
+                if (data.panicLevel) this.updateElement('panicLevel', data.panicLevel);
+                if (data.gpsReports) this.updateElement('gpsReports', data.gpsReports);
+                if (data.riskAreas) this.updateElement('riskAreas', data.riskAreas);
+                if (data.forecasts) this.updateElement('activeForecast', data.forecasts);
+                if (data.nextEvent) this.updateElement('nextEvent', data.nextEvent);
+                if (data.confidence) this.updateElement('predictionConfidence', `${data.confidence}%`);
+            }
+
+            updateInsightsDisplay() {
+                const container = document.getElementById('aiInsightsList');
+                if (!container) return;
+                
+                container.innerHTML = this.insights.slice(0, 4).map(insight => `
+                    <div class="insight-item ${insight.fresh ? 'processing' : ''}">
+                        <div class="insight-header">
+                            <div class="insight-title">${this.getInsightIcon(insight.type)} ${insight.title}</div>
+                            <div class="confidence-badge">${insight.confidence}% Confidence</div>
+                        </div>
+                        <div class="insight-description">${insight.description}</div>
+                        <div class="insight-actions">
+                            ${insight.recommendations.map(rec => 
+                                `<span class="insight-action" onclick="implementRecommendation('${insight.id}-${rec.replace(/\s+/g, '-').toLowerCase()}')">${rec}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Remove fresh flag after display
+                this.insights.forEach(insight => delete insight.fresh);
+            }
+
+            updatePerformanceDisplay() {
+                this.updateElement('aiProcessedReports', this.performance.totalProcessed);
+                this.updateElement('aiAccuracy', `${this.performance.accuracy.toFixed(1)}%`);
+                this.updateElement('processingSpeed', `${(1.2 + Math.random() * 0.6).toFixed(1)}s`);
+                this.updateElement('modelsActive', '7');
+                this.updateElement('insights', this.insights.length);
+            }
+
+            getInsightIcon(type) {
+                const icons = {
+                    fire_risk: '🔥',
+                    traffic_prediction: '🚗',
+                    medical_surge: '🏥',
+                    weather_alert: '🌩️',
+                    infrastructure: '🏗️',
+                    security: '🔒'
+                };
+                return icons[type] || '⚠️';
+            }
+
+            showProcessingStatus(message) {
+                const status = document.getElementById('processingStatus');
+                const text = document.getElementById('processingText');
+                if (status && text) {
+                    text.textContent = message;
+                    status.style.display = 'block';
+                }
+            }
+
+            hideProcessingStatus() {
+                const status = document.getElementById('processingStatus');
+                if (status) {
+                    status.style.display = 'none';
+                }
+            }
+
+            updateGemmaStatus(status, message) {
+                const indicator = document.getElementById('gemmaIndicator');
+                const text = document.getElementById('gemmaStatusText');
+                
+                if (indicator) {
+                    indicator.className = 'gemma-indicator';
+                    if (status === 'loading') indicator.classList.add('loading');
+                    if (status === 'error') indicator.classList.add('error');
+                }
+                
+                if (text) {
+                    text.textContent = message;
+                }
+                
+                // Update Edge AI status if available
+                if (window.EdgeAIMonitor) {
+                    window.EdgeAIMonitor.updateAIStatus(status, message);
+                }
+            }
+
+            updateElement(id, content, style) {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (content !== null) element.textContent = content;
+                    if (style) element.style.cssText += style;
+                }
+            }
+
+            formatNumber(num) {
+                if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+                if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+                return num.toString();
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // Public methods for UI interactions
+            async runDeepContextAnalysis() {
+                this.showProcessingStatus('🧠 Running deep context analysis with 128K tokens...');
+                
+                await this.delay(5000);
+                
+                const results = {
+                    patterns: 23,
+                    correlations: 15,
+                    predictions: 8,
+                    anomalies: 3,
+                    recommendations: 12
+                };
+                
+                document.getElementById('patternsFound').textContent = results.patterns;
+                document.getElementById('correlationsFound').textContent = results.correlations;
+                
+                const resultsContainer = document.getElementById('deepAnalysisResults');
+                resultsContainer.innerHTML = `
+                    <div style="padding: 2rem;">
+                        <h3 style="color: var(--ai-accent); margin-bottom: 1rem;">🧠 Deep Analysis Complete</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                            <div style="background: var(--bg-color-light); padding: 1rem; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--ai-accent);">${results.patterns}</div>
+                                <div>Patterns Identified</div>
+                            </div>
+                            <div style="background: var(--bg-color-light); padding: 1rem; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--ai-accent);">${results.correlations}</div>
+                                <div>Cross-Correlations</div>
+                            </div>
+                            <div style="background: var(--bg-color-light); padding: 1rem; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--ai-accent);">${results.predictions}</div>
+                                <div>Predictions Generated</div>
+                            </div>
+                            <div style="background: var(--bg-color-light); padding: 1rem; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 2rem; font-weight: bold; color: var(--color-critical);">${results.anomalies}</div>
+                                <div>Anomalies Detected</div>
+                            </div>
+                        </div>
+                        <div style="background: var(--bg-color-light); padding: 1.5rem; border-radius: 8px;">
+                            <h4>Key Findings:</h4>
+                            <ul style="margin-top: 0.5rem;">
+                                <li>🔥 Fire risk correlation with wind patterns: 94% accuracy</li>
+                                <li>🚗 Traffic incident prediction improved by 23% with weather data</li>
+                                <li>🏥 Medical emergency volume correlates with air quality (r=0.78)</li>
+                                <li>📍 Geographic clustering reveals 3 high-risk zones</li>
+                                <li>⏰ Temporal patterns show peak incident times: 2-4 PM, 6-8 PM</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                this.hideProcessingStatus();
+            }
+
+            async refreshAIInsights() {
+                this.showProcessingStatus('🔄 Refreshing AI insights...');
+                await this.delay(2000);
+                await this.generateInitialInsights();
+            }
+        }
+
+        // Global dashboard state
+        const Dashboard = {
+            currentSection: 'ai-command',
+            gemmaAI: null,
+            
+            async initialize() {
+                // Initialize Gemma Enhanced AI
+                this.gemmaAI = new GemmaEnhancedAI();
+                await this.gemmaAI.initialize();
+                
+                // Initialize Edge AI Monitor if available
+                if (window.EdgeAIMonitor) {
+                    await window.EdgeAIMonitor.initialize();
+                }
+                
+                console.log('🚀 Dashboard fully initialized with Gemma 3n');
+            }
+        };
+
+        // Navigation functions
+        function showSection(sectionId) {
+            document.querySelectorAll('.dashboard-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.getElementById(sectionId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item').classList.add('active');
+            
+            Dashboard.currentSection = sectionId;
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function toggleNav() {
+            const nav = document.getElementById('mainNav');
+            nav.classList.toggle('open');
+        }
+
+        // AI interaction functions
+        async function runDeepContextAnalysis() {
+            if (Dashboard.gemmaAI) {
+                await Dashboard.gemmaAI.runDeepContextAnalysis();
+            }
+        }
+
+        async function refreshAIInsights() {
+            if (Dashboard.gemmaAI) {
+                await Dashboard.gemmaAI.refreshAIInsights();
+            }
+        }
+
+        function implementRecommendation(recommendationId) {
+            console.log('Implementing recommendation:', recommendationId);
+            alert(`🎯 Implementing recommendation: ${recommendationId}\n\nThis would trigger the appropriate emergency response protocols.`);
+        }
+
+        function viewInsightDetails(insightId) {
+            console.log('Viewing insight details:', insightId);
+            alert(`📊 Detailed analysis for: ${insightId}\n\nThis would open a comprehensive analysis report with supporting data, confidence intervals, and historical comparisons.`);
+        }
+
+        // Initialize dashboard when DOM is ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            // Initialize dashboard
+            await Dashboard.initialize();
+            
+            console.log('🧠 Gemma 3n Enhanced Emergency Operations Center fully operational');
+        });
+
+        // Handle responsive navigation
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 1024) {
+                document.getElementById('mainNav').classList.remove('open');
+            }
+        });
+
+        // Export functions for global access
+        window.showSection = showSection;
+        window.toggleTheme = toggleTheme;
+        window.toggleNav = toggleNav;
+        window.runDeepContextAnalysis = runDeepContextAnalysis;
+        window.refreshAIInsights = refreshAIInsights;
+        window.implementRecommendation = implementRecommendation;
+        window.viewInsightDetails = viewInsightDetails;
+    </script>
+</body>
+</html>
