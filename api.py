@@ -5017,6 +5017,59 @@ async def implement_recommendation(
             "error": str(e)
         }, status_code=500)
     
+@app.get("/api/navigation-items")
+async def get_navigation_items():
+    """Get all navigation items including crisis command center"""
+    return JSONResponse({
+        "success": True,
+        "navigation_sections": [
+            {
+                "title": "🧠 AI Command Centers",
+                "items": [
+                    {
+                        "id": "crisis-command-center",
+                        "title": "Crisis Command Center",
+                        "url": "/crisis-command-center",
+                        "icon": "🧠",
+                        "description": "Gemma 3n AI-powered emergency operations center",
+                        "ai_powered": True,
+                        "access_level": "admin"
+                    },
+                    {
+                        "id": "staff-triage-command",
+                        "title": "Medical Triage Command",
+                        "url": "/staff-triage-command",
+                        "icon": "🏥",
+                        "description": "AI-enhanced medical triage management",
+                        "ai_powered": True,
+                        "access_level": "staff"
+                    }
+                ]
+            },
+            {
+                "title": "🚨 Emergency Management",
+                "items": [
+                    {
+                        "id": "admin-dashboard",
+                        "title": "Admin Dashboard",
+                        "url": "/admin",
+                        "icon": "📊",
+                        "description": "Main administrative dashboard",
+                        "access_level": "admin"
+                    },
+                    {
+                        "id": "voice-emergency",
+                        "title": "Voice Emergency Reporter",
+                        "url": "/voice-emergency-reporter",
+                        "icon": "🎤",
+                        "description": "Public voice emergency reporting",
+                        "access_level": "public"
+                    }
+                ]
+            }
+        ]
+    })
+    
 # ================================================================================
 # ENHANCED TRIAGE MANAGEMENT API ROUTES
 # Add these routes to your existing api.py file
