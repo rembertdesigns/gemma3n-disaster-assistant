@@ -7502,8 +7502,36 @@ async def startup_event():
     except Exception as e:
         logger.error(f"❌ AI initialization error: {e}")
     
+    # Initialize Crisis Command Center
+    try:
+        logger.info("🧠 Crisis Command Center Integration:")
+        logger.info("     • Gemma 3n AI Processing Engine")
+        logger.info("     • 128K Context Window Analysis") 
+        logger.info("     • Real-time Predictive Intelligence")
+        logger.info("     • AI-Enhanced Emergency Operations")
+        logger.info(f"     🌐 Access at: http://localhost:8000/crisis-command-center")
+        
+        # Test crisis command center endpoints
+        try:
+            # Test AI context utilization calculation
+            db = next(get_db())
+            context_util = calculate_ai_context_utilization(db)
+            logger.info(f"     • Current AI context utilization: {context_util}%")
+            
+            # Test processing queue simulation
+            queue_status = await simulate_ai_processing_queue()
+            logger.info(f"     • Processing queues initialized: {sum(queue_status.values())} items")
+            
+            logger.info("✅ Crisis Command Center endpoints ready")
+        except Exception as e:
+            logger.warning(f"⚠️ Crisis Command Center setup issue: {e}")
+            
+    except Exception as e:
+        logger.error(f"❌ Crisis Command Center initialization error: {e}")
+    
     # Log available features
     logger.info("🎯 Available features:")
+    logger.info("     • 🧠 Crisis Command Center (AI-powered emergency operations)")
     logger.info("     • 🌐 Citizen Emergency Portal (main interface)")
     logger.info("     • 🎤 PUBLIC Voice Emergency Reporter (NO LOGIN REQUIRED)")
     logger.info("     • 🤖 Multimodal AI Analysis (text + image + audio)")
@@ -7523,6 +7551,7 @@ async def startup_event():
     logger.info("     • 📊 Voice analytics and reporting")
     
     logger.info("✅ Enhanced Emergency Response Assistant ready!")
+    logger.info(f"     🧠 Crisis Command Center: http://localhost:8000/crisis-command-center")
     logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
     logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")
     logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
