@@ -6864,6 +6864,39 @@ def get_priority_from_triage_color(triage_color: str) -> int:
     }
     return priority_map.get(triage_color, 3)
     
+def calculate_ai_context_utilization(db: Session) -> float:
+    """Calculate current AI context window utilization"""
+    try:
+        # Get data counts from your database
+        reports_count = db.query(EmergencyReport).count()
+        patients_count = db.query(TriagePatient).count()
+        crowd_reports_count = db.query(CrowdReport).count()
+        
+        # Estimate token usage (simplified calculation)
+        estimated_tokens = (reports_count * 150) + (patients_count * 100) + (crowd_reports_count * 75)
+        
+        # Add base context for system data
+        estimated_tokens += 5000  # Base system context
+        
+        # Calculate utilization percentage
+        max_tokens = 128000
+        utilization = min(100.0, (estimated_tokens / max_tokens) * 100)
+        
+        return round(utilization, 1)
+        
+    except Exception as e:
+        logger.error(f"Context utilization calculation error: {e}")
+        return 0.0
+
+async def simulate_ai_processing_queue():
+    """Simulate AI processing queue for demonstration"""
+    return {
+        "image_analysis": random.randint(0, 5),
+        "text_analysis": random.randint(0, 8),
+        "predictive_models": random.randint(0, 3),
+        "context_analysis": random.randint(0, 2)
+    }
+
 # ================================================================================
 # SYSTEM HEALTH & UTILITIES
 # ================================================================================
