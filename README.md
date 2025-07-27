@@ -1,31 +1,46 @@
-# 🆘 Complete Enhanced AI Medical Triage System
+# 🆘 Complete Enhanced AI Emergency Response System
 
-A comprehensive, **offline-first AI-powered medical triage dashboard** designed to support emergency medical staff, first responders, and healthcare professionals in **high-stakes, low-connectivity environments**.
+A comprehensive, **offline-first AI-powered emergency response platform** designed to support medical staff, first responders, emergency coordinators, and healthcare professionals in **high-stakes, low-connectivity environments**.
 
 ---
 
-## ✨ **Key Features Overview**
+## ✨ Key Features Overview
 
-### 🤖 **AI-Powered Intelligence**
-- **Gemma 3n Integration** - Advanced AI analysis with 95% accuracy
-- **Real-time Patient Assessment** - Live AI analysis as data is entered
-- **Predictive Analytics** - Surge prediction and capacity planning
-- **Voice Command Interface** - Hands-free operation with natural language
-- **Risk Assessment Engine** - Deterioration and mortality risk analysis
+### 🤖 AI-Powered Intelligence
+- **Gemma 3n Integration** – Advanced AI analysis with 95% accuracy  
+- **Real-time Patient Assessment** – Live AI analysis as data is entered  
+- **Emergency Operations Intelligence** – 128K context situational awareness  
+- **Predictive Analytics** – Surge prediction and capacity planning  
+- **Voice Command Interface** – Hands-free operation with natural language  
+- **Risk Assessment Engine** – Deterioration and mortality risk analysis  
 
-### 🏥 **Medical Triage Capabilities**
-- **Complete Patient Management** - Intake, tracking, and discharge workflows
-- **Priority Queue System** - AI-enhanced patient prioritization
-- **Staff Assignment Tools** - Intelligent resource allocation
-- **Real-time Vital Monitoring** - Live patient status updates
-- **Critical Alert System** - Automated escalation for urgent cases
+---
 
-### 📱 **User Interface Excellence**
-- **Modern Responsive Design** - Works on all devices and screen sizes
-- **Accessibility First** - Full WCAG 2.1 AA compliance with screen reader support
-- **Dark Mode Support** - Reduces eye strain during long shifts
-- **Keyboard Navigation** - Complete system control without mouse
-- **Multi-language Support** - International emergency response ready
+### 🏥 Medical Triage Capabilities
+- **Complete Patient Management** – Intake, tracking, and discharge workflows  
+- **Priority Queue System** – AI-enhanced patient prioritization  
+- **Staff Assignment Tools** – Intelligent resource allocation  
+- **Real-time Vital Monitoring** – Live patient status updates  
+- **Critical Alert System** – Automated escalation for urgent cases  
+
+---
+
+### 🚨 Crisis Command & Emergency Operations
+- **Emergency Operations Center** – Unified command and control dashboard  
+- **Real-time Incident Management** – Live emergency tracking and prioritization  
+- **Multi-Agency Coordination** – Seamless emergency service integration  
+- **Resource Optimization** – AI-driven emergency resource allocation  
+- **Predictive Emergency Analytics** – Surge forecasting and response planning  
+- **Situational Awareness** – Comprehensive context intelligence  
+
+---
+
+### 📱 User Interface Excellence
+- **Modern Responsive Design** – Works on all devices and screen sizes  
+- **Accessibility First** – Full WCAG 2.1 AA compliance with screen reader support  
+- **Dark Mode Support** – Reduces eye strain during long shifts  
+- **Keyboard Navigation** – Complete system control without mouse  
+- **Multi-language Support** – International emergency response ready  
 
 ---
 
