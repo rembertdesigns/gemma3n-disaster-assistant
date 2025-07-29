@@ -26,7 +26,6 @@
             --transition-fast: 0.2s ease;
             --transition-smooth: 0.3s ease;
         }
-
         /* Dark theme support */
         [data-theme="dark"] {
             --bg-color-base: #1f2937;
@@ -36,13 +35,11 @@
             --text-color-light: #d1d5db;
             --border-color: #4b5563;
         }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: var(--bg-color-base);
@@ -50,18 +47,15 @@
             line-height: 1.6;
             overflow-x: hidden;
         }
-
         /* Smooth scrolling */
         html {
             scroll-behavior: smooth;
         }
-
         /* Focus outline for accessibility */
         :focus {
             outline: 2px solid var(--primary-color);
             outline-offset: 2px;
         }
-
         /* Selection styling */
         ::selection {
             background: var(--primary-color);
@@ -83,7 +77,6 @@
             height: 60px;
             backdrop-filter: blur(10px);
         }
-
         .header-content {
             display: flex;
             justify-content: space-between;
@@ -92,13 +85,11 @@
             margin: 0 auto;
             height: 100%;
         }
-
         .header-left {
             display: flex;
             align-items: center;
             gap: 1.5rem;
         }
-
         .logo {
             display: flex;
             align-items: center;
@@ -110,22 +101,18 @@
             text-decoration: none;
             color: inherit;
         }
-
         .logo:hover {
             transform: scale(1.02);
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
-
         .logo-icon {
             font-size: 1.8rem;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
-
         .logo-text {
             font-size: 1.2rem;
             letter-spacing: -0.02em;
         }
-
         /* Compact Horizontal Navigation */
         .main-nav {
             display: flex;
@@ -136,7 +123,6 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
         .nav-item {
             padding: 0.6rem 1.2rem;
             border-radius: 6px;
@@ -153,7 +139,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .nav-item::before {
             content: '';
             position: absolute;
@@ -164,25 +149,21 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.3s ease;
         }
-
         .nav-item:hover::before {
             left: 100%;
         }
-
         .nav-item:hover,
         .nav-item:focus {
             background: rgba(255, 255, 255, 0.2);
             transform: translateY(-1px);
             color: white;
         }
-
         .nav-item.active {
             background: rgba(255, 255, 255, 0.25);
             color: white;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
             font-weight: 700;
         }
-
         /* Mobile hamburger menu */
         .mobile-menu-btn {
             display: none;
@@ -195,7 +176,6 @@
             color: white;
             font-size: 1.2rem;
         }
-
         .mobile-menu-btn:hover {
             background: rgba(255, 255, 255, 0.3);
         }
@@ -207,7 +187,6 @@
             align-items: center;
             gap: 1rem;
         }
-
         .status-pill {
             display: flex;
             align-items: center;
@@ -221,12 +200,10 @@
             backdrop-filter: blur(10px);
             transition: var(--transition-fast);
         }
-
         .status-pill:hover {
             background: rgba(255, 255, 255, 0.2);
             transform: translateY(-1px);
         }
-
         .status-dot {
             width: 8px;
             height: 8px;
@@ -235,13 +212,11 @@
             animation: pulse 2s infinite;
             box-shadow: 0 0 8px rgba(22, 163, 74, 0.5);
         }
-
         .status-dot.offline {
             background: var(--color-critical);
             box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
             animation: blink 1s infinite;
         }
-
         /* Notification Bell */
         .notification-bell {
             position: relative;
@@ -253,17 +228,14 @@
             transition: var(--transition-fast);
             backdrop-filter: blur(10px);
         }
-
         .notification-bell:hover {
             background: rgba(255, 255, 255, 0.25);
             transform: translateY(-1px);
         }
-
         .notification-icon {
             font-size: 1.1rem;
             filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
         }
-
         .notification-count {
             position: absolute;
             top: -6px;
@@ -281,12 +253,10 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             animation: bounce 2s infinite;
         }
-
         /* More Menu Dropdown */
         .more-menu {
             position: relative;
         }
-
         .more-btn {
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.25);
@@ -298,12 +268,10 @@
             font-size: 1.1rem;
             backdrop-filter: blur(10px);
         }
-
         .more-btn:hover {
             background: rgba(255, 255, 255, 0.25);
             transform: translateY(-1px);
         }
-
         .more-dropdown {
             position: absolute;
             top: calc(100% + 0.5rem);
@@ -320,13 +288,11 @@
             border: 1px solid var(--border-color);
             backdrop-filter: blur(20px);
         }
-
         .more-dropdown.open {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
         }
-
         .dropdown-item {
             padding: 0.9rem 1.2rem;
             cursor: pointer;
@@ -340,21 +306,17 @@
             border-bottom: 1px solid var(--border-color);
             text-decoration: none;
         }
-
         .dropdown-item:hover {
             background: var(--bg-color-light);
             color: var(--primary-color);
         }
-
         .dropdown-item:last-child {
             border-bottom: none;
             border-radius: 0 0 12px 12px;
         }
-
         .dropdown-item:first-child {
             border-radius: 12px 12px 0 0;
         }
-
         .dropdown-icon {
             font-size: 1rem;
             width: 16px;
@@ -375,7 +337,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .alert-banner::before {
             content: '';
             position: absolute;
@@ -386,34 +347,28 @@
             background: var(--color-critical);
             animation: pulse 2s infinite;
         }
-
         .alert-banner.hidden {
             display: none;
         }
-
         .alert-content {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
-
         .alert-icon {
             font-size: 1.3rem;
             animation: bounce 1s infinite;
             filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
         }
-
         .alert-text {
             font-weight: 700;
             color: var(--color-critical);
             font-size: 0.95rem;
         }
-
         .alert-actions {
             display: flex;
             gap: 0.5rem;
         }
-
         .alert-time {
             font-size: 0.8rem;
             color: var(--text-color-light);
@@ -421,7 +376,6 @@
             align-items: center;
             gap: 0.25rem;
         }
-
         .alert-close {
             background: none;
             border: none;
@@ -431,19 +385,16 @@
             padding: 0.25rem;
             transition: var(--transition-fast);
         }
-
         .alert-close:hover {
             color: var(--color-critical);
             transform: scale(1.1);
         }
-
         /* Clean KPI Cards Row */
         .kpi-row {
             padding: 1.5rem;
             background: var(--bg-color-light);
             border-bottom: 1px solid var(--border-color);
         }
-
         .kpi-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -451,7 +402,6 @@
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 1.5rem;
         }
-
         .kpi-card {
             background: var(--bg-color-card);
             border-radius: 12px;
@@ -464,7 +414,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .kpi-card::before {
             content: '';
             position: absolute;
@@ -475,34 +424,28 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
             transition: left 0.5s ease;
         }
-
         .kpi-card:hover::before {
             left: 100%;
         }
-
         .kpi-card:hover {
             transform: translateY(-3px);
             box-shadow: var(--shadow-lg);
         }
-
         .kpi-card.ai-enhanced {
             background: linear-gradient(135deg, #f3e8ff 0%, #ffffff 100%);
             border-color: var(--ai-accent);
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
         }
-
         .kpi-card.critical {
             background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
             border-color: var(--color-critical);
             box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
         }
-
         .kpi-card.warning {
             background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
             border-color: var(--color-warning);
             box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
         }
-
         .kpi-value {
             font-size: 2.5rem;
             font-weight: 900;
@@ -512,19 +455,15 @@
             position: relative;
             z-index: 1;
         }
-
         .kpi-value.ai-value {
             color: var(--ai-accent);
         }
-
         .kpi-value.critical-value {
             color: var(--color-critical);
         }
-
         .kpi-value.warning-value {
             color: var(--color-warning);
         }
-
         .kpi-label {
             font-size: 0.9rem;
             font-weight: 600;
@@ -533,7 +472,6 @@
             position: relative;
             z-index: 1;
         }
-
         .kpi-trend {
             font-size: 0.8rem;
             font-weight: 600;
@@ -544,19 +482,15 @@
             position: relative;
             z-index: 1;
         }
-
         .trend-up { 
             color: var(--color-optimal);
         }
-
         .trend-down { 
             color: var(--color-critical);
         }
-
         .trend-stable {
             color: var(--text-color-light);
         }
-
         .kpi-update-time {
             font-size: 0.7rem;
             color: var(--text-color-light);
@@ -566,7 +500,6 @@
             justify-content: center;
             gap: 0.25rem;
         }
-
         .update-dot {
             width: 4px;
             height: 4px;
@@ -583,17 +516,14 @@
             margin: 0 auto;
             min-height: calc(100vh - 300px);
         }
-
         /* Section Content Management */
         .section-content {
             display: none;
             animation: fadeIn 0.3s ease;
         }
-
         .section-content.active {
             display: block;
         }
-
         /* Content Grid */
         .content-grid {
             display: grid;
@@ -601,7 +531,6 @@
             gap: 2rem;
             margin-bottom: 2rem;
         }
-
         /* Enhanced Panels */
         .panel {
             background: var(--bg-color-card);
@@ -613,17 +542,14 @@
             position: relative;
             overflow: hidden;
         }
-
         .panel:hover {
             box-shadow: var(--shadow-md);
         }
-
         .panel.ai-enhanced {
             border-color: var(--ai-accent);
             background: linear-gradient(135deg, #faf8ff 0%, #ffffff 100%);
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
         }
-
         .panel.ai-enhanced::after {
             content: '🧠 AI Enhanced';
             position: absolute;
@@ -637,13 +563,11 @@
             font-weight: 700;
             z-index: 10;
         }
-
         .panel.critical {
             border-color: var(--color-critical);
             background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
             box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
         }
-
         .panel-header {
             display: flex;
             justify-content: space-between;
@@ -652,7 +576,6 @@
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--border-color);
         }
-
         .panel-title {
             font-size: 1.1rem;
             font-weight: 700;
@@ -661,22 +584,18 @@
             align-items: center;
             gap: 0.5rem;
         }
-
         .panel-title-icon {
             font-size: 1.2rem;
         }
-
         .panel-actions {
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
         }
-
         .panel-content {
             position: relative;
             z-index: 1;
         }
-
         /* Enhanced Buttons */
         .btn {
             padding: 0.6rem 1.2rem;
@@ -693,7 +612,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .btn::before {
             content: '';
             position: absolute;
@@ -704,77 +622,63 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
             transition: left 0.3s ease;
         }
-
         .btn:hover::before {
             left: 100%;
         }
-
         .btn:hover {
             transform: translateY(-1px);
             box-shadow: var(--shadow-sm);
         }
-
         .btn-primary {
             background: var(--primary-color);
             color: white;
             border: 1px solid var(--primary-dark);
         }
-
         .btn-primary:hover {
             background: var(--primary-dark);
             box-shadow: var(--shadow-md);
         }
-
         .btn-ai {
             background: var(--ai-accent);
             color: white;
             border: 1px solid #7c3aed;
         }
-
         .btn-ai:hover {
             background: #7c3aed;
             box-shadow: var(--shadow-md);
         }
-
         .btn-critical {
             background: var(--color-critical);
             color: white;
             border: 1px solid #991b1b;
         }
-
         .btn-critical:hover {
             background: #991b1b;
             box-shadow: var(--shadow-md);
         }
-
         .btn-outline {
             background: transparent;
             color: var(--text-color-base);
             border: 1px solid var(--border-color);
         }
-
         .btn-outline:hover {
             background: var(--bg-color-light);
             border-color: var(--primary-color);
             color: var(--primary-color);
         }
-
         .btn-sm {
             padding: 0.4rem 0.8rem;
             font-size: 0.75rem;
         }
-
         .btn-icon {
             padding: 0.6rem;
             min-width: auto;
         }
-
         /* Loading states */
         .btn.loading {
             opacity: 0.7;
             cursor: not-allowed;
         }
-
         .btn.loading::after {
             content: '';
             width: 12px;
@@ -794,24 +698,19 @@
             scrollbar-width: thin;
             scrollbar-color: var(--border-color) transparent;
         }
-
         .incident-list::-webkit-scrollbar {
             width: 6px;
         }
-
         .incident-list::-webkit-scrollbar-track {
             background: transparent;
         }
-
         .incident-list::-webkit-scrollbar-thumb {
             background: var(--border-color);
             border-radius: 3px;
         }
-
         .incident-list::-webkit-scrollbar-thumb:hover {
             background: var(--text-color-light);
         }
-
         .incident-item {
             padding: 1rem;
             border-bottom: 1px solid var(--border-color);
@@ -821,39 +720,32 @@
             margin-bottom: 0.5rem;
             position: relative;
         }
-
         .incident-item:hover {
             background: var(--bg-color-light);
             transform: translateX(4px);
         }
-
         .incident-item:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
-
         .incident-item.critical {
             border-left: 4px solid var(--color-critical);
             background: linear-gradient(135deg, #fef2f2 0%, transparent 100%);
         }
-
         .incident-item.high {
             border-left: 4px solid var(--color-warning);
             background: linear-gradient(135deg, #fffbeb 0%, transparent 100%);
         }
-
         .incident-item.normal {
             border-left: 4px solid var(--primary-color);
             background: linear-gradient(135deg, #eff6ff 0%, transparent 100%);
         }
-
         .incident-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0.75rem;
         }
-
         .incident-title {
             font-weight: 700;
             color: var(--text-color-base);
@@ -862,11 +754,9 @@
             align-items: center;
             gap: 0.5rem;
         }
-
         .incident-icon {
             font-size: 1.1rem;
         }
-
         .incident-priority {
             padding: 0.3rem 0.8rem;
             border-radius: 16px;
@@ -875,32 +765,27 @@
             text-transform: uppercase;
             letter-spacing: 0.02em;
         }
-
         .priority-critical {
             background: var(--color-critical);
             color: white;
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
         }
-
         .priority-high {
             background: var(--color-warning);
             color: white;
             box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
         }
-
         .priority-normal {
             background: var(--primary-color);
             color: white;
             box-shadow: 0 2px 4px rgba(30, 64, 175, 0.3);
         }
-
         .incident-description {
             font-size: 0.9rem;
             color: var(--text-color-light);
             margin-bottom: 0.75rem;
             line-height: 1.5;
         }
-
         .incident-meta {
             display: flex;
             justify-content: space-between;
@@ -908,18 +793,15 @@
             font-size: 0.8rem;
             color: var(--text-color-light);
         }
-
         .incident-priority-score {
             font-weight: 600;
             color: var(--text-color-base);
         }
-
         .incident-time {
             display: flex;
             align-items: center;
             gap: 0.25rem;
         }
-
         .time-dot {
             width: 4px;
             height: 4px;
@@ -927,7 +809,6 @@
             background: var(--color-optimal);
             animation: pulse 2s infinite;
         }
-
         /* Map placeholder */
         .map-placeholder {
             height: 300px;
@@ -944,14 +825,13 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
+            text-decoration: none;
         }
-
         .map-placeholder:hover {
             border-color: var(--primary-color);
             background: linear-gradient(135deg, var(--bg-color-light) 0%, #eff6ff 100%);
             color: var(--primary-color);
         }
-
         .map-placeholder::before {
             content: '';
             position: absolute;
@@ -962,27 +842,22 @@
             background: linear-gradient(90deg, transparent, rgba(30, 64, 175, 0.1), transparent);
             transition: left 0.5s ease;
         }
-
         .map-placeholder:hover::before {
             left: 100%;
         }
-
         .map-icon {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }
-
         .map-title {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-
         .map-subtitle {
             font-size: 0.8rem;
             opacity: 0.8;
         }
-
         /* Status indicators */
         .status-indicator {
             display: inline-flex;
@@ -995,32 +870,27 @@
             font-weight: 600;
             border: 1px solid var(--border-color);
         }
-
         .status-indicator.online {
             background: rgba(22, 163, 74, 0.1);
             border-color: rgba(22, 163, 74, 0.3);
             color: var(--color-optimal);
         }
-
         .status-indicator.processing {
             background: rgba(245, 158, 11, 0.1);
             border-color: rgba(245, 158, 11, 0.3);
             color: var(--color-warning);
         }
-
         .status-indicator.error {
             background: rgba(220, 38, 38, 0.1);
             border-color: rgba(220, 38, 38, 0.3);
             color: var(--color-critical);
         }
-
         .status-dot-inline {
             width: 6px;
             height: 6px;
             border-radius: 50%;
             background: currentColor;
         }
-
         .status-dot-inline.animated {
             animation: pulse 2s infinite;
         }
@@ -1047,22 +917,18 @@
             justify-content: center;
             text-decoration: none;
         }
-
         .fab:hover {
             transform: scale(1.1);
             box-shadow: var(--shadow-xl);
             background: #991b1b;
         }
-
         .fab:active {
             transform: scale(0.95);
         }
-
         .fab-icon {
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
             animation: bounce 2s infinite;
         }
-
         /* AI Insights Grid */
         .insights-grid {
             display: grid;
@@ -1070,7 +936,6 @@
             gap: 1rem;
             margin-top: 1rem;
         }
-
         .insight-card {
             padding: 1rem;
             border-radius: 8px;
@@ -1079,40 +944,33 @@
             transition: var(--transition-fast);
             cursor: pointer;
         }
-
         .insight-card:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-sm);
         }
-
         .insight-card.critical {
             background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
             border-left-color: var(--color-critical);
         }
-
         .insight-card.warning {
             background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
             border-left-color: var(--color-warning);
         }
-
         .insight-card.info {
             background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
             border-left-color: var(--primary-color);
         }
-
         .insight-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0.75rem;
         }
-
         .insight-title {
             font-weight: 700;
             font-size: 0.95rem;
             color: var(--text-color-base);
         }
-
         .confidence-badge {
             padding: 0.3rem 0.8rem;
             border-radius: 12px;
@@ -1120,32 +978,26 @@
             font-weight: 700;
             color: white;
         }
-
         .confidence-badge.high {
             background: var(--color-critical);
         }
-
         .confidence-badge.medium {
             background: var(--color-warning);
         }
-
         .confidence-badge.low {
             background: var(--ai-accent);
         }
-
         .insight-description {
             font-size: 0.9rem;
             color: var(--text-color-light);
             line-height: 1.5;
             margin-bottom: 1rem;
         }
-
         .insight-actions {
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
         }
-
         /* Notification Dropdown */
         .notification-dropdown {
             position: fixed;
@@ -1164,13 +1016,11 @@
             border: 1px solid var(--border-color);
             overflow: hidden;
         }
-
         .notification-dropdown.open {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
         }
-
         .notification-header {
             padding: 1rem;
             border-bottom: 1px solid var(--border-color);
@@ -1179,68 +1029,55 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .notification-title {
             font-weight: 700;
             color: var(--text-color-base);
         }
-
         .notification-list {
             max-height: 400px;
             overflow-y: auto;
         }
-
         .notification-item {
             padding: 1rem;
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
             transition: var(--transition-fast);
         }
-
         .notification-item:hover {
             background: var(--bg-color-light);
         }
-
         .notification-item:last-child {
             border-bottom: none;
         }
-
         .notification-item.unread {
             background: rgba(30, 64, 175, 0.05);
             border-left: 3px solid var(--primary-color);
         }
-
         .notification-item.critical {
             background: rgba(220, 38, 38, 0.05);
             border-left: 3px solid var(--color-critical);
         }
-
         .notification-content {
             display: flex;
             gap: 0.75rem;
         }
-
         .notification-icon {
             font-size: 1.2rem;
             flex-shrink: 0;
         }
-
         .notification-text {
             flex: 1;
         }
-
         .notification-subject {
             font-weight: 600;
             color: var(--text-color-base);
             margin-bottom: 0.25rem;
         }
-
         .notification-message {
             font-size: 0.9rem;
             color: var(--text-color-light);
             margin-bottom: 0.5rem;
         }
-
         .notification-time {
             font-size: 0.8rem;
             color: var(--text-color-light);
@@ -1253,91 +1090,72 @@
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
             }
-
             .kpi-container {
                 grid-template-columns: repeat(2, 1fr);
             }
-
             .insights-grid {
                 grid-template-columns: 1fr;
             }
-
             .notification-dropdown {
                 width: calc(100vw - 2rem);
                 right: 1rem;
             }
         }
-
         @media (max-width: 768px) {
             .main-nav {
                 display: none;
             }
-
             .mobile-menu-btn {
                 display: block;
             }
-
             .header-content {
                 gap: 1rem;
             }
-
             .header-left {
                 gap: 1rem;
             }
-
             .logo-text {
                 display: none;
             }
-
             .status-pill {
                 padding: 0.4rem 0.8rem;
                 font-size: 0.75rem;
             }
-
             .alert-banner {
                 flex-direction: column;
                 gap: 0.75rem;
                 text-align: center;
                 padding: 1rem;
             }
-
             .alert-content {
                 flex-direction: column;
                 gap: 0.5rem;
             }
-
             .kpi-container {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1rem;
             }
-
             .kpi-card {
                 padding: 1rem;
             }
-
             .kpi-value {
                 font-size: 2rem;
             }
-
             .main-content {
                 padding: 1.5rem 1rem;
             }
-
             .panel {
                 padding: 1rem;
             }
-
             .panel-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 1rem;
             }
-
             .panel-actions {
                 width: 100%;
                 justify-content: flex-start;
             }
-
             .fab {
                 bottom: 1rem;
                 right: 1rem;
@@ -1345,64 +1163,51 @@
                 height: 50px;
                 font-size: 1.3rem;
             }
-
             .insight-actions {
                 flex-direction: column;
             }
-
             .insight-actions .btn {
                 width: 100%;
                 justify-content: center;
             }
         }
-
         @media (max-width: 480px) {
             .header-content {
                 padding: 0 1rem;
             }
-
             .logo {
                 font-size: 1.2rem;
             }
-
             .logo-icon {
                 font-size: 1.5rem;
             }
-
             .status-pill span {
                 display: none;
             }
-
             .more-dropdown {
                 width: calc(100vw - 2rem);
                 right: 1rem;
             }
-
             .kpi-container {
                 grid-template-columns: 1fr;
             }
-
             .kpi-value {
                 font-size: 2.5rem;
             }
-
             .incident-item {
                 padding: 0.75rem;
             }
-
             .incident-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 0.5rem;
             }
-
             .incident-meta {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 0.25rem;
             }
         }
-
         /* Animations */
         @keyframes pulse {
             0%, 100% { 
@@ -1414,12 +1219,10 @@
                 transform: scale(1.05); 
             }
         }
-
         @keyframes blink {
             0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0.4; }
         }
-
         @keyframes bounce {
             0%, 20%, 50%, 80%, 100% { 
                 transform: translateY(0); 
@@ -1431,12 +1234,10 @@
                 transform: translateY(-2px); 
             }
         }
-
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-
         @keyframes slideIn {
             from { 
                 opacity: 0; 
@@ -1447,7 +1248,6 @@
                 transform: translateX(0); 
             }
         }
-
         @keyframes slideOut {
             from { 
                 opacity: 1; 
@@ -1458,7 +1258,6 @@
                 transform: translateX(100%); 
             }
         }
-
         @keyframes fadeIn {
             from { 
                 opacity: 0; 
@@ -1469,7 +1268,6 @@
                 transform: translateY(0); 
             }
         }
-
         @keyframes fadeOut {
             from { 
                 opacity: 1; 
@@ -1480,7 +1278,6 @@
                 transform: translateY(-20px); 
             }
         }
-
         /* Reduced motion preferences */
         @media (prefers-reduced-motion: reduce) {
             *,
@@ -1492,7 +1289,6 @@
                 scroll-behavior: auto !important;
             }
         }
-
         /* High contrast mode */
         @media (prefers-contrast: high) {
             :root {
@@ -1503,16 +1299,13 @@
                 --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
                 --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
             }
-
             .btn {
                 border: 2px solid #000000 !important;
             }
-
             .panel {
                 border: 2px solid #000000 !important;
             }
         }
-
         /* Print styles */
         @media print {
             .main-header,
@@ -1522,29 +1315,24 @@
             .more-dropdown {
                 display: none !important;
             }
-
             .kpi-row {
                 margin-top: 0;
             }
-
             .main-content {
                 padding: 1rem 0;
             }
-
             .panel {
                 break-inside: avoid;
                 margin-bottom: 1rem;
                 box-shadow: none !important;
                 border: 1px solid #000 !important;
             }
-
             .btn {
                 border: 1px solid #000 !important;
                 background: transparent !important;
                 color: #000 !important;
             }
         }
-
         /* Loading states */
         .loading-overlay {
             position: fixed;
@@ -1561,12 +1349,10 @@
             visibility: hidden;
             transition: var(--transition-smooth);
         }
-
         .loading-overlay.active {
             opacity: 1;
             visibility: visible;
         }
-
         .loading-spinner {
             width: 40px;
             height: 40px;
@@ -1575,12 +1361,10 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
         /* Utility classes */
         .hidden {
             display: none !important;
         }
-
         .sr-only {
             position: absolute;
             width: 1px;
@@ -1592,25 +1376,20 @@
             white-space: nowrap;
             border: 0;
         }
-
         .text-center {
             text-align: center;
         }
-
         .text-left {
             text-align: left;
         }
-
         .text-right {
             text-align: right;
         }
-
         .mb-0 { margin-bottom: 0; }
         .mb-1 { margin-bottom: 0.5rem; }
         .mb-2 { margin-bottom: 1rem; }
         .mb-3 { margin-bottom: 1.5rem; }
         .mb-4 { margin-bottom: 2rem; }
-
         .mt-0 { margin-top: 0; }
         .mt-1 { margin-top: 0.5rem; }
         .mt-2 { margin-top: 1rem; }
@@ -1623,537 +1402,566 @@
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
     </div>
-
-    <!-- Clean Compact Header -->
-    <header class="main-header">
-        <div class="header-content">
-            <div class="header-left">
-                <div class="logo" onclick="resetToDashboard()" role="button" tabindex="0" aria-label="Crisis Command Center - Return to dashboard">
-                    <span class="logo-icon">🧠</span>
-                    <span class="logo-text">Crisis Command</span>
-                </div>
-                
-                <nav class="main-nav" role="navigation" aria-label="Main navigation">
-                    <button class="nav-item active" onclick="showSection('command')" aria-label="Command center">Command</button>
-                    <button class="nav-item" onclick="showSection('intelligence')" aria-label="Intelligence dashboard">Intelligence</button>
-                    <button class="nav-item" onclick="showSection('analysis')" aria-label="Analysis tools">Analysis</button>
-                    <button class="nav-item" onclick="showSection('map')" aria-label="Live map view">Map</button>
-                </nav>
-
-                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle mobile menu">
-                    <span>☰</span>
-                </button>
+<!-- Clean Compact Header -->
+<header class="main-header">
+    <div class="header-content">
+        <div class="header-left">
+            <a href="crisis-command-center.html" class="logo" role="button" tabindex="0" aria-label="Crisis Command Center - Return to main dashboard">
+                <span class="logo-icon">🧠</span>
+                <span class="logo-text">Crisis Command</span>
+            </a>
+            
+            <nav class="main-nav" role="navigation" aria-label="Main navigation">
+                <a href="ai-command-center.html" class="nav-item active" aria-label="AI Command Center - AI command and incident creation">Command</a>
+                <a href="context-intelligence-dashboard.html" class="nav-item" aria-label="Context Intelligence Dashboard - Deep analytics/tracing">Intelligence</a>
+                <a href="predictive-analytics-dashboard.html" class="nav-item" aria-label="Predictive Analysis - Forecasts, risk modeling, surge planning">Analysis</a>
+                <a href="map_reports.html" class="nav-item" aria-label="Live Emergency Map - Geospatial resource/incident view">Map</a>
+            </nav>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle mobile menu">
+                <span>☰</span>
+            </button>
+        </div>
+        
+        <div class="header-right">
+            <div class="status-pill" role="status" aria-label="System status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Online</span>
             </div>
             
-            <div class="header-right">
-                <div class="status-pill" role="status" aria-label="System status">
-                    <div class="status-dot" id="statusDot"></div>
-                    <span id="statusText">Online</span>
-                </div>
-                
-                <div class="notification-bell" onclick="toggleNotifications()" role="button" tabindex="0" aria-label="Notifications - 3 unread">
-                    <span class="notification-icon">🔔</span>
-                    <div class="notification-count" id="notificationCount">3</div>
-                </div>
-                
-                <div class="more-menu">
-                    <button class="more-btn" onclick="toggleMoreMenu()" aria-label="More options menu">⋯</button>
-                    <div class="more-dropdown" id="moreDropdown" role="menu">
-                        <a href="#" class="dropdown-item" onclick="showTemplates()" role="menuitem">
-                            <span class="dropdown-icon">📋</span>
-                            Templates
-                        </a>
-                        <a href="#" class="dropdown-item" onclick="exportReport()" role="menuitem">
-                            <span class="dropdown-icon">📊</span>
-                            Export Report
-                        </a>
-                        <a href="#" class="dropdown-item" onclick="toggleChat()" role="menuitem">
-                            <span class="dropdown-icon">💬</span>
-                            Team Chat
-                        </a>
-                        <a href="#" class="dropdown-item" onclick="showSettings()" role="menuitem">
-                            <span class="dropdown-icon">⚙️</span>
-                            Settings
-                        </a>
-                        <a href="#" class="dropdown-item" onclick="showHelp()" role="menuitem">
-                            <span class="dropdown-icon">❓</span>
-                            Help
-                        </a>
-                    </div>
+            <div class="notification-bell" onclick="openNotificationLog()" role="button" tabindex="0" aria-label="Notifications - View/acknowledge alerts">
+                <span class="notification-icon">🔔</span>
+                <div class="notification-count" id="notificationCount">3</div>
+            </div>
+            
+            <div class="more-menu">
+                <button class="more-btn" onclick="toggleMoreMenu()" aria-label="More options menu">⋯</button>
+                <div class="more-dropdown" id="moreDropdown" role="menu">
+                    <a href="triage_dashboard.html" class="dropdown-item" role="menuitem">
+                        <span class="dropdown-icon">🚨</span>
+                        Active Incidents
+                    </a>
+                    <a href="real-time-resource-optimizer.html" class="dropdown-item" role="menuitem">
+                        <span class="dropdown-icon">🚒</span>
+                        Resource Management
+                    </a>
+                    <a href="analytics_dashboard.html" class="dropdown-item" role="menuitem">
+                        <span class="dropdown-icon">📊</span>
+                        Analytics
+                    </a>
+                    <a href="report_archive.html" class="dropdown-item" role="menuitem">
+                        <span class="dropdown-icon">📚</span>
+                        Archive
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="openNotificationLog()" role="menuitem">
+                        <span class="dropdown-icon">🔔</span>
+                        Notification Log
+                    </a>
+                    <a href="patient_tracker.html" class="dropdown-item" role="menuitem">
+                        <span class="dropdown-icon">📋</span>
+                        Patient Tracker
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="showTemplates()" role="menuitem">
+                        <span class="dropdown-icon">📋</span>
+                        Templates
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="exportReport()" role="menuitem">
+                        <span class="dropdown-icon">📄</span>
+                        Export Report
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="toggleChat()" role="menuitem">
+                        <span class="dropdown-icon">💬</span>
+                        Team Chat
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="showSettings()" role="menuitem">
+                        <span class="dropdown-icon">⚙️</span>
+                        Settings
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="showHelp()" role="menuitem">
+                        <span class="dropdown-icon">❓</span>
+                        Help
+                    </a>
                 </div>
             </div>
         </div>
-    </header>
-
-    <!-- Notification Dropdown -->
-    <div class="notification-dropdown" id="notificationDropdown" role="dialog" aria-labelledby="notificationTitle">
-        <div class="notification-header">
-            <h3 class="notification-title" id="notificationTitle">🔔 Alerts & Notifications</h3>
+    </div>
+</header>
+<!-- Notification Dropdown -->
+<div class="notification-dropdown" id="notificationDropdown" role="dialog" aria-labelledby="notificationTitle">
+    <div class="notification-header">
+        <h3 class="notification-title" id="notificationTitle">🔔 Recent Alerts</h3>
+        <div style="display: flex; gap: 0.5rem;">
+            <button onclick="openNotificationLog()" aria-label="View all notifications" style="background: var(--primary-color); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">View All</button>
             <button onclick="toggleNotifications()" aria-label="Close notifications" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">✕</button>
         </div>
-        <div class="notification-list" id="notificationList">
-            <div class="notification-item critical unread" onclick="viewNotification(1)">
-                <div class="notification-content">
-                    <span class="notification-icon">⚠️</span>
-                    <div class="notification-text">
-                        <div class="notification-subject">Structure Fire Escalation</div>
-                        <div class="notification-message">Oak Street fire spreading to adjacent buildings. Immediate response required.</div>
-                        <div class="notification-time">2 minutes ago</div>
-                    </div>
+    </div>
+    <div class="notification-list" id="notificationList">
+        <div class="notification-item critical unread" onclick="openIncidentDetails(1)">
+            <div class="notification-content">
+                <span class="notification-icon">⚠️</span>
+                <div class="notification-text">
+                    <div class="notification-subject">Structure Fire Escalation</div>
+                    <div class="notification-message">Oak Street fire spreading to adjacent buildings. Immediate response required.</div>
+                    <div class="notification-time">2 minutes ago</div>
                 </div>
             </div>
-            
-            <div class="notification-item unread" onclick="viewNotification(2)">
-                <div class="notification-content">
-                    <span class="notification-icon">🚗</span>
-                    <div class="notification-text">
-                        <div class="notification-subject">Traffic Incident Alert</div>
-                        <div class="notification-message">Multi-vehicle accident on Highway 101. Traffic backup extending 2+ miles.</div>
-                        <div class="notification-time">5 minutes ago</div>
-                    </div>
+        </div>
+        
+        <div class="notification-item unread" onclick="openIncidentDetails(2)">
+            <div class="notification-content">
+                <span class="notification-icon">🚗</span>
+                <div class="notification-text">
+                    <div class="notification-subject">Traffic Incident Alert</div>
+                    <div class="notification-message">Multi-vehicle accident on Highway 101. Traffic backup extending 2+ miles.</div>
+                    <div class="notification-time">5 minutes ago</div>
                 </div>
             </div>
-            
-            <div class="notification-item" onclick="viewNotification(3)">
-                <div class="notification-content">
-                    <span class="notification-icon">🧠</span>
-                    <div class="notification-text">
-                        <div class="notification-subject">AI Analysis Complete</div>
-                        <div class="notification-message">Risk assessment updated. New fire risk zones identified in downtown area.</div>
-                        <div class="notification-time">8 minutes ago</div>
-                    </div>
+        </div>
+        
+        <div class="notification-item" onclick="viewNotification(3)">
+            <div class="notification-content">
+                <span class="notification-icon">🧠</span>
+                <div class="notification-text">
+                    <div class="notification-subject">AI Analysis Complete</div>
+                    <div class="notification-message">Risk assessment updated. New fire risk zones identified in downtown area.</div>
+                    <div class="notification-time">8 minutes ago</div>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Critical Alert Banner (only when active) -->
-    <div class="alert-banner" id="alertBanner" role="alert" aria-live="assertive">
-        <div class="alert-content">
-            <span class="alert-icon">⚠️</span>
-            <span class="alert-text" id="alertText">ALERT LEVEL 3 - Structure fire expanding to adjacent buildings</span>
+</div>
+
+<!-- Critical Alert Banner (only when active) -->
+<div class="alert-banner" id="alertBanner" role="alert" aria-live="assertive">
+    <div class="alert-content">
+        <span class="alert-icon">⚠️</span>
+        <span class="alert-text" id="alertText">ALERT LEVEL 3 - Structure fire expanding to adjacent buildings</span>
+    </div>
+    <div class="alert-actions">
+        <div class="alert-time" id="alertTime">Updated 23s ago</div>
+        <button class="alert-close" onclick="dismissAlert()" aria-label="Dismiss alert">✕</button>
+    </div>
+</div>
+<!-- Clean KPI Cards Row -->
+<div class="kpi-row">
+    <div class="kpi-container">
+        <div class="kpi-card ai-enhanced" onclick="showDetails('reports')" role="button" tabindex="0" aria-label="AI Processed Reports: 127, up 15 this hour">
+            <div class="kpi-value ai-value" id="kpiReports">127</div>
+            <div class="kpi-label">AI Processed</div>
+            <div class="kpi-trend trend-up">↗ +15 this hour</div>
+            <div class="kpi-update-time">
+                <div class="update-dot"></div>
+                <span>Updated 12s ago</span>
+            </div>
         </div>
-        <div class="alert-actions">
-            <div class="alert-time" id="alertTime">Updated 23s ago</div>
-            <button class="alert-close" onclick="dismissAlert()" aria-label="Dismiss alert">✕</button>
+        
+        <div class="kpi-card critical" onclick="showDetails('incidents')" role="button" tabindex="0" aria-label="Active Incidents: 7, down 2 today">
+            <div class="kpi-value critical-value" id="kpiIncidents">7</div>
+            <div class="kpi-label">Active Incidents</div>
+            <div class="kpi-trend trend-down">↘ -2 today</div>
+            <div class="kpi-update-time">
+                <div class="update-dot"></div>
+                <span>Updated 5s ago</span>
+            </div>
+        </div>
+        
+        <div class="kpi-card ai-enhanced" onclick="showDetails('risk')" role="button" tabindex="0" aria-label="AI Risk Score: 7.2 out of 10, stable">
+            <div class="kpi-value ai-value" id="kpiRisk">7.2</div>
+            <div class="kpi-label">AI Risk Score</div>
+            <div class="kpi-trend trend-stable">→ Stable</div>
+            <div class="kpi-update-time">
+                <div class="update-dot"></div>
+                <span>Updated 3s ago</span>
+            </div>
+        </div>
+        
+        <div class="kpi-card" onclick="showDetails('resources')" role="button" tabindex="0" aria-label="Units Deployed: 45, optimal level">
+            <div class="kpi-value" id="kpiResources">45</div>
+            <div class="kpi-label">Units Deployed</div>
+            <div class="kpi-trend trend-stable">→ Optimal</div>
+            <div class="kpi-update-time">
+                <div class="update-dot"></div>
+                <span>Updated 18s ago</span>
+            </div>
         </div>
     </div>
-
-    <!-- Clean KPI Cards Row -->
-    <div class="kpi-row">
-        <div class="kpi-container">
-            <div class="kpi-card ai-enhanced" onclick="showDetails('reports')" role="button" tabindex="0" aria-label="AI Processed Reports: 127, up 15 this hour">
-                <div class="kpi-value ai-value" id="kpiReports">127</div>
-                <div class="kpi-label">AI Processed</div>
-                <div class="kpi-trend trend-up">↗ +15 this hour</div>
-                <div class="kpi-update-time">
-                    <div class="update-dot"></div>
-                    <span>Updated 12s ago</span>
-                </div>
-            </div>
-            
-            <div class="kpi-card critical" onclick="showDetails('incidents')" role="button" tabindex="0" aria-label="Active Incidents: 7, down 2 today">
-                <div class="kpi-value critical-value" id="kpiIncidents">7</div>
-                <div class="kpi-label">Active Incidents</div>
-                <div class="kpi-trend trend-down">↘ -2 today</div>
-                <div class="kpi-update-time">
-                    <div class="update-dot"></div>
-                    <span>Updated 5s ago</span>
-                </div>
-            </div>
-            
-            <div class="kpi-card ai-enhanced" onclick="showDetails('risk')" role="button" tabindex="0" aria-label="AI Risk Score: 7.2 out of 10, stable">
-                <div class="kpi-value ai-value" id="kpiRisk">7.2</div>
-                <div class="kpi-label">AI Risk Score</div>
-                <div class="kpi-trend trend-stable">→ Stable</div>
-                <div class="kpi-update-time">
-                    <div class="update-dot"></div>
-                    <span>Updated 3s ago</span>
-                </div>
-            </div>
-            
-            <div class="kpi-card" onclick="showDetails('resources')" role="button" tabindex="0" aria-label="Units Deployed: 45, optimal level">
-                <div class="kpi-value" id="kpiResources">45</div>
-                <div class="kpi-label">Units Deployed</div>
-                <div class="kpi-trend trend-stable">→ Optimal</div>
-                <div class="kpi-update-time">
-                    <div class="update-dot"></div>
-                    <span>Updated 18s ago</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Main Content -->
-    <main class="main-content" role="main">
-        <!-- Command Section -->
-        <div id="command-section" class="section-content active">
-            <div class="content-grid">
-                <!-- AI-Enhanced Situation Map -->
-                <div class="panel ai-enhanced">
-                    <div class="panel-header">
-                        <div class="panel-title">
-                            <span class="panel-title-icon">🗺️</span>
-                            AI-Enhanced Situation Map
-                        </div>
-                        <div class="panel-actions">
-                            <button class="btn btn-ai" onclick="runAIAnalysis()" aria-label="Run AI map analysis">
-                                🧠 AI Analysis
-                            </button>
-                            <button class="btn btn-primary" onclick="viewFullMap()" aria-label="View full interactive map">
-                                Full Map
-                            </button>
-                        </div>
-                    </div>
-                    <div class="panel-content">
-                        <div class="map-placeholder" onclick="viewFullMap()" role="button" tabindex="0" aria-label="Interactive AI-Enhanced Map - Click to open full view">
-                            <div class="map-icon">🗺️</div>
-                            <div class="map-title">Interactive AI-Enhanced Map</div>
-                            <div class="map-subtitle">Real-time incidents & predictive zones</div>
-                            <div style="margin-top: 1rem;">
-                                <div class="status-indicator online">
-                                    <div class="status-dot-inline animated"></div>
-                                    Live Data Active
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI-Prioritized Incidents -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <div class="panel-title">
-                            <span class="panel-title-icon">🚨</span>
-                            Priority Incidents
-                        </div>
-                        <div class="panel-actions">
-                            <button class="btn btn-ai" onclick="reprioritize()" aria-label="Re-prioritize incidents using AI">
-                                🎯 Re-prioritize
-                            </button>
-                        </div>
-                    </div>
-                    <div class="panel-content">
-                        <div class="incident-list" role="list" aria-label="Priority incidents">
-                            <div class="incident-item critical" onclick="viewIncident(1)" role="listitem" tabindex="0" aria-label="Critical incident: Structure Fire on Oak Street">
-                                <div class="incident-header">
-                                    <div class="incident-title">
-                                        <span class="incident-icon">🔥</span>
-                                        Structure Fire - Oak Street
-                                    </div>
-                                    <div class="incident-priority priority-critical">Critical</div>
-                                </div>
-                                <div class="incident-description">
-                                    Multi-story residential. AI detected structural damage, 15+ occupants.
-                                </div>
-                                <div class="incident-meta">
-                                    <span class="incident-priority-score">AI Priority: 9.7/10</span>
-                                    <div class="incident-time">
-                                        <div class="time-dot"></div>
-                                        <span>Updated 8s ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="incident-item high" onclick="viewIncident(2)" role="listitem" tabindex="0" aria-label="High priority incident: Vehicle accident on Highway 101">
-                                <div class="incident-header">
-                                    <div class="incident-title">
-                                        <span class="incident-icon">🚗</span>
-                                        MVA Highway 101
-                                    </div>
-                                    <div class="incident-priority priority-high">High</div>
-                                </div>
-                                <div class="incident-description">
-                                    Multi-vehicle accident. 3 vehicles, likely injuries, 2.1mi backup.
-                                </div>
-                                <div class="incident-meta">
-                                    <span class="incident-priority-score">AI Priority: 7.3/10</span>
-                                    <div class="incident-time">
-                                        <div class="time-dot"></div>
-                                        <span>Updated 32s ago</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="incident-item normal" onclick="viewIncident(3)" role="listitem" tabindex="0" aria-label="Normal priority incident: Medical emergency on Main Street">
-                                <div class="incident-header">
-                                    <div class="incident-title">
-                                        <span class="incident-icon">🚑</span>
-                                        Medical Emergency - Main St
-                                    </div>
-                                    <div class="incident-priority priority-normal">Normal</div>
-                                </div>
-                                <div class="incident-description">
-                                    Elderly patient with chest pain. Stable vitals, no immediate danger.
-                                </div>
-                                <div class="incident-meta">
-                                    <span class="incident-priority-score">AI Priority: 4.2/10</span>
-                                    <div class="incident-time">
-                                        <div class="time-dot"></div>
-                                        <span>Updated 2m ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 1rem; text-align: center;">
-                            <button class="btn btn-outline" onclick="viewAllIncidents()" aria-label="View all active incidents">
-                                📋 View All Incidents
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Intelligence Section -->
-        <div id="intelligence-section" class="section-content">
-            <div class="panel ai-enhanced">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span class="panel-title-icon">🔮</span>
-                        Intelligence Dashboard
-                    </div>
-                    <div class="panel-actions">
-                        <button class="btn btn-ai" onclick="runDeepAnalysis()" aria-label="Run deep intelligence analysis">
-                            🧠 Deep Analysis
-                        </button>
-                    </div>
-                </div>
-                <div class="panel-content">
-                    <div style="text-align: center; padding: 3rem;">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔮</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">AI Intelligence Center</div>
-                        <div style="color: var(--text-color-light); margin-bottom: 2rem;">Advanced pattern recognition and threat analysis</div>
-                        <div class="insights-grid">
-                            <div class="insight-card info">
-                                <div class="insight-header">
-                                    <div class="insight-title">📊 Pattern Analysis</div>
-                                    <div class="confidence-badge medium">87% Complete</div>
-                                </div>
-                                <div class="insight-description">
-                                    Analyzing historical incident patterns to predict future hotspots.
-                                </div>
-                            </div>
-                            <div class="insight-card warning">
-                                <div class="insight-header">
-                                    <div class="insight-title">🌡️ Environmental Monitoring</div>
-                                    <div class="confidence-badge high">Real-time</div>
-                                </div>
-                                <div class="insight-description">
-                                    Weather conditions indicate increased fire risk in zones 3-7.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Analysis Section -->
-        <div id="analysis-section" class="section-content">
-            <div class="panel ai-enhanced">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span class="panel-title-icon">📊</span>
-                        Predictive Analysis
-                    </div>
-                    <div class="panel-actions">
-                        <button class="btn btn-ai" onclick="generateForecast()" aria-label="Generate predictive forecast">
-                            🔮 Generate Forecast
-                        </button>
-                    </div>
-                </div>
-                <div class="panel-content">
-                    <div style="text-align: center; padding: 3rem;">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">Predictive Analytics Engine</div>
-                        <div style="color: var(--text-color-light); margin-bottom: 2rem;">Machine learning models for incident forecasting</div>
-                        <div class="content-grid">
-                            <div class="panel">
-                                <div class="panel-header">
-                                    <div class="panel-title">🔥 Fire Risk Model</div>
-                                </div>
-                                <div style="padding: 1rem; text-align: center;">
-                                    <div style="font-size: 2rem; color: var(--color-warning); margin-bottom: 0.5rem;">High</div>
-                                    <div style="font-size: 0.9rem; color: var(--text-color-light);">Next 6 hours</div>
-                                </div>
-                            </div>
-                            <div class="panel">
-                                <div class="panel-header">
-                                    <div class="panel-title">🚗 Traffic Incidents</div>
-                                </div>
-                                <div style="padding: 1rem; text-align: center;">
-                                    <div style="font-size: 2rem; color: var(--color-optimal); margin-bottom: 0.5rem;">Low</div>
-                                    <div style="font-size: 0.9rem; color: var(--text-color-light);">Next 4 hours</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Map Section -->
-        <div id="map-section" class="section-content">
+</div>
+<!-- Main Content -->
+<main class="main-content" role="main">
+    <!-- Command Section -->
+    <div id="command-section" class="section-content active">
+        <div class="content-grid">
+            <!-- AI-Enhanced Situation Map -->
             <div class="panel ai-enhanced">
                 <div class="panel-header">
                     <div class="panel-title">
                         <span class="panel-title-icon">🗺️</span>
-                        Live Emergency Map
+                        AI-Enhanced Situation Map
                     </div>
                     <div class="panel-actions">
                         <button class="btn btn-ai" onclick="runAIAnalysis()" aria-label="Run AI map analysis">
                             🧠 AI Analysis
                         </button>
-                        <button class="btn btn-primary" onclick="toggleMapLayers()" aria-label="Toggle map layers">
-                            🔄 Layers
+                        <a href="map_reports.html" class="btn btn-primary" aria-label="View full interactive map">
+                            Full Map
+                        </a>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <a href="map_reports.html" class="map-placeholder" role="button" tabindex="0" aria-label="Interactive AI-Enhanced Map - Click to open full view">
+                        <div class="map-icon">🗺️</div>
+                        <div class="map-title">Interactive AI-Enhanced Map</div>
+                        <div class="map-subtitle">Real-time incidents & predictive zones</div>
+                        <div style="margin-top: 1rem;">
+                            <div class="status-indicator online">
+                                <div class="status-dot-inline animated"></div>
+                                Live Data Active
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- AI-Prioritized Incidents -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-title-icon">🚨</span>
+                        Priority Incidents
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-ai" onclick="reprioritize()" aria-label="Re-prioritize incidents using AI">
+                            🎯 Re-prioritize
                         </button>
                     </div>
                 </div>
                 <div class="panel-content">
-                    <div style="height: 500px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid var(--primary-color);">
-                        <div style="font-size: 4rem; margin-bottom: 1rem;">🗺️</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Interactive Emergency Map</div>
-                        <div style="color: var(--text-color-light); margin-bottom: 2rem; text-align: center;">
-                            Real-time incident tracking, resource positioning, and AI-powered predictive zones
+                    <div class="incident-list" role="list" aria-label="Priority incidents">
+                        <a href="patient_tracker.html?incident=fire-001" class="incident-item critical" role="listitem" tabindex="0" aria-label="Critical incident: Structure Fire on Oak Street">
+                            <div class="incident-header">
+                                <div class="incident-title">
+                                    <span class="incident-icon">🔥</span>
+                                    Structure Fire - Oak Street
+                                </div>
+                                <div class="incident-priority priority-critical">Critical</div>
+                            </div>
+                            <div class="incident-description">
+                                Multi-story residential. AI detected structural damage, 15+ occupants.
+                            </div>
+                            <div class="incident-meta">
+                                <span class="incident-priority-score">AI Priority: 9.7/10</span>
+                                <div class="incident-time">
+                                    <div class="time-dot"></div>
+                                    <span>Updated 8s ago</span>
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <a href="patient_tracker.html?incident=mva-002" class="incident-item high" role="listitem" tabindex="0" aria-label="High priority incident: Vehicle accident on Highway 101">
+                            <div class="incident-header">
+                                <div class="incident-title">
+                                    <span class="incident-icon">🚗</span>
+                                    MVA Highway 101
+                                </div>
+                                <div class="incident-priority priority-high">High</div>
+                            </div>
+                            <div class="incident-description">
+                                Multi-vehicle accident. 3 vehicles, likely injuries, 2.1mi backup.
+                            </div>
+                            <div class="incident-meta">
+                                <span class="incident-priority-score">AI Priority: 7.3/10</span>
+                                <div class="incident-time">
+                                    <div class="time-dot"></div>
+                                    <span>Updated 32s ago</span>
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <a href="patient_tracker.html?incident=med-003" class="incident-item normal" role="listitem" tabindex="0" aria-label="Normal priority incident: Medical emergency on Main Street">
+                            <div class="incident-header">
+                                <div class="incident-title">
+                                    <span class="incident-icon">🚑</span>
+                                    Medical Emergency - Main St
+                                </div>
+                                <div class="incident-priority priority-normal">Normal</div>
+                            </div>
+                            <div class="incident-description">
+                                Elderly patient with chest pain. Stable vitals, no immediate danger.
+                            </div>
+                            <div class="incident-meta">
+                                <span class="incident-priority-score">AI Priority: 4.2/10</span>
+                                <div class="incident-time">
+                                    <div class="time-dot"></div>
+                                    <span>Updated 2m ago</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div style="margin-top: 1rem; text-align: center;">
+                        <a href="triage_dashboard.html" class="btn btn-outline" aria-label="View all active incidents">
+                            📋 View All Incidents
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Intelligence Section -->
+    <div id="intelligence-section" class="section-content">
+        <div class="panel ai-enhanced">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">🔮</span>
+                    Intelligence Dashboard
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-ai" onclick="runDeepAnalysis()" aria-label="Run deep intelligence analysis">
+                        🧠 Deep Analysis
+                    </button>
+                    <a href="context-intelligence-dashboard.html" class="btn btn-primary" aria-label="Open full intelligence dashboard">
+                        Full Dashboard
+                    </a>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div style="text-align: center; padding: 3rem;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🔮</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">AI Intelligence Center</div>
+                    <div style="color: var(--text-color-light); margin-bottom: 2rem;">Advanced pattern recognition and threat analysis</div>
+                    <div class="insights-grid">
+                        <div class="insight-card info">
+                            <div class="insight-header">
+                                <div class="insight-title">📊 Pattern Analysis</div>
+                                <div class="confidence-badge medium">87% Complete</div>
+                            </div>
+                            <div class="insight-description">
+                                Analyzing historical incident patterns to predict future hotspots.
+                            </div>
                         </div>
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-                            <div class="status-indicator online">
-                                <div class="status-dot-inline animated"></div>
-                                7 Active Incidents
+                        <div class="insight-card warning">
+                            <div class="insight-header">
+                                <div class="insight-title">🌡️ Environmental Monitoring</div>
+                                <div class="confidence-badge high">Real-time</div>
                             </div>
-                            <div class="status-indicator processing">
-                                <div class="status-dot-inline animated"></div>
-                                45 Resources Deployed
-                            </div>
-                            <div class="status-indicator online">
-                                <div class="status-dot-inline animated"></div>
-                                AI Predictions Active
+                            <div class="insight-description">
+                                Weather conditions indicate increased fire risk in zones 3-7.
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+    <!-- Analysis Section -->
+    <div id="analysis-section" class="section-content">
+        <div class="panel ai-enhanced">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">📊</span>
+                    Predictive Analysis
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-ai" onclick="generateForecast()" aria-label="Generate predictive forecast">
+                        🔮 Generate Forecast
+                    </button>
+                    <a href="predictive-analytics-dashboard.html" class="btn btn-primary" aria-label="Open full analytics dashboard">
+                        Full Analytics
+                    </a>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div style="text-align: center; padding: 3rem;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">Predictive Analytics Engine</div>
+                    <div style="color: var(--text-color-light); margin-bottom: 2rem;">Machine learning models for incident forecasting</div>
+                    <div class="content-grid">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <div class="panel-title">🔥 Fire Risk Model</div>
+                            </div>
+                            <div style="padding: 1rem; text-align: center;">
+                                <div style="font-size: 2rem; color: var(--color-warning); margin-bottom: 0.5rem;">High</div>
+                                <div style="font-size: 0.9rem; color: var(--text-color-light);">Next 6 hours</div>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header">
+                                <div class="panel-title">🚗 Traffic Incidents</div>
+                            </div>
+                            <div style="padding: 1rem; text-align: center;">
+                                <div style="font-size: 2rem; color: var(--color-optimal); margin-bottom: 0.5rem;">Low</div>
+                                <div style="font-size: 0.9rem; color: var(--text-color-light);">Next 4 hours</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Map Section -->
+    <div id="map-section" class="section-content">
+        <div class="panel ai-enhanced">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span class="panel-title-icon">🗺️</span>
+                    Live Emergency Map
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-ai" onclick="runAIAnalysis()" aria-label="Run AI map analysis">
+                        🧠 AI Analysis
+                    </button>
+                    <button class="btn btn-primary" onclick="toggleMapLayers()" aria-label="Toggle map layers">
+                        🔄 Layers
+                    </button>
+                    <a href="map_reports.html" class="btn btn-primary" aria-label="Open full map interface">
+                        Full Interface
+                    </a>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div style="height: 500px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid var(--primary-color); cursor: pointer;" onclick="window.location.href='map_reports.html'">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🗺️</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Interactive Emergency Map</div>
+                    <div style="color: var(--text-color-light); margin-bottom: 2rem; text-align: center;">
+                        Real-time incident tracking, resource positioning, and AI-powered predictive zones
+                    </div>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                        <div class="status-indicator online">
+                            <div class="status-dot-inline animated"></div>
+                            7 Active Incidents
+                        </div>
+                        <div class="status-indicator processing">
+                            <div class="status-dot-inline animated"></div>
+                            45 Resources Deployed
+                        </div>
+                        <div class="status-indicator online">
+                            <div class="status-dot-inline animated"></div>
+                            AI Predictions Active
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
 
-    <!-- Floating Action Button -->
-    <a href="#" class="fab" onclick="quickAction()" role="button" tabindex="0" aria-label="Quick action - Create new incident">
-        <span class="fab-icon">🚨</span>
-    </a>
-    <script>
-        // Clean Crisis Command Center JavaScript
-        class CleanCrisisCommand {
-            constructor() {
-                this.currentSection = 'command';
-                this.moreMenuOpen = false;
-                this.notificationsOpen = false;
-                this.mobileMenuOpen = false;
-                this.isOnline = navigator.onLine;
-                this.notifications = [];
-                
-                this.initialize();
-            }
-
-            initialize() {
-                this.setupEventListeners();
-                this.initializeNotifications();
-                this.startRealTimeUpdates();
-                this.hideLoading();
-                console.log('🚀 Clean Crisis Command Center initialized');
-            }
-
-            setupEventListeners() {
-                // Keyboard shortcuts
-                document.addEventListener('keydown', (e) => {
-                    if (e.altKey && e.key >= '1' && e.key <= '4') {
-                        e.preventDefault();
-                        const sections = ['command', 'intelligence', 'analysis', 'map'];
-                        const sectionIndex = parseInt(e.key) - 1;
-                        if (sections[sectionIndex]) {
-                            this.showSection(sections[sectionIndex]);
-                        }
+<!-- Floating Action Button -->
+<a href="#" class="fab" onclick="quickAction()" role="button" tabindex="0" aria-label="Quick action - Create new incident">
+    <span class="fab-icon">🚨</span>
+</a>
+<script>
+    // Clean Crisis Command Center JavaScript
+    class CleanCrisisCommand {
+        constructor() {
+            this.currentSection = 'command';
+            this.moreMenuOpen = false;
+            this.notificationsOpen = false;
+            this.mobileMenuOpen = false;
+            this.isOnline = navigator.onLine;
+            this.notifications = [];
+            
+            this.initialize();
+        }
+        
+        initialize() {
+            this.setupEventListeners();
+            this.initializeNotifications();
+            this.startRealTimeUpdates();
+            this.hideLoading();
+            console.log('🚀 Clean Crisis Command Center initialized');
+        }
+        
+        setupEventListeners() {
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.altKey && e.key >= '1' && e.key <= '4') {
+                    e.preventDefault();
+                    const sections = ['command', 'intelligence', 'analysis', 'map'];
+                    const sectionIndex = parseInt(e.key) - 1;
+                    if (sections[sectionIndex]) {
+                        this.showSection(sections[sectionIndex]);
                     }
-                    if (e.key === 'Escape') {
-                        this.closeAllDropdowns();
-                    }
-                    if (e.ctrlKey && e.key === 'n') {
-                        e.preventDefault();
-                        this.quickAction();
-                    }
-                });
-
-                // Close dropdowns when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('.more-menu') && this.moreMenuOpen) {
-                        this.toggleMoreMenu();
-                    }
-                    if (!e.target.closest('.notification-bell') && 
-                        !e.target.closest('.notification-dropdown') && 
-                        this.notificationsOpen) {
-                        this.toggleNotifications();
-                    }
-                });
-
-                // Connection monitoring
-                window.addEventListener('online', () => this.updateConnectionStatus(true));
-                window.addEventListener('offline', () => this.updateConnectionStatus(false));
-            }
-
-            initializeNotifications() {
-                this.notifications = [
-                    {
-                        id: 1,
-                        type: 'critical',
-                        icon: '⚠️',
-                        subject: 'Structure Fire Escalation',
-                        message: 'Oak Street fire spreading to adjacent buildings. Immediate response required.',
-                        timestamp: Date.now() - 120000,
-                        read: false
-                    },
-                    {
-                        id: 2,
-                        type: 'warning',
-                        icon: '🚗',
-                        subject: 'Traffic Incident Alert',
-                        message: 'Multi-vehicle accident on Highway 101. Traffic backup extending 2+ miles.',
-                        timestamp: Date.now() - 300000,
-                        read: false
-                    },
-                    {
-                        id: 3,
-                        type: 'info',
-                        icon: '🧠',
-                        subject: 'AI Analysis Complete',
-                        message: 'Risk assessment updated. New fire risk zones identified in downtown area.',
-                        timestamp: Date.now() - 480000,
-                        read: true
-                    }
-                ];
-                
-                this.updateNotificationCount();
-            }
-
-            startRealTimeUpdates() {
-                // Update timestamps every 5 seconds
-                setInterval(() => {
-                    this.updateTimestamps();
-                }, 5000);
-
-                // Simulate new notifications occasionally
-                setInterval(() => {
-                    if (Math.random() > 0.95) {
-                        this.addRandomNotification();
-                    }
-                }, 30000);
-
-                // Update KPI values
-                setInterval(() => {
-                    this.updateKPIValues();
-                }, 10000);
-            }
-
-            // Navigation Methods
-            showSection(sectionId) {
+                }
+                if (e.key === 'Escape') {
+                    this.closeAllDropdowns();
+                }
+                if (e.ctrlKey && e.key === 'n') {
+                    e.preventDefault();
+                    this.quickAction();
+                }
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.more-menu') && this.moreMenuOpen) {
+                    this.toggleMoreMenu();
+                }
+                if (!e.target.closest('.notification-bell') && 
+                    !e.target.closest('.notification-dropdown') && 
+                    this.notificationsOpen) {
+                    this.toggleNotifications();
+                }
+            });
+            
+            // Connection monitoring
+            window.addEventListener('online', () => this.updateConnectionStatus(true));
+            window.addEventListener('offline', () => this.updateConnectionStatus(false));
+        }
+        
+        initializeNotifications() {
+            this.notifications = [
+                {
+                    id: 1,
+                    type: 'critical',
+                    icon: '⚠️',
+                    subject: 'Structure Fire Escalation',
+                    message: 'Oak Street fire spreading to adjacent buildings. Immediate response required.',
+                    timestamp: Date.now() - 120000,
+                    read: false
+                },
+                {
+                    id: 2,
+                    type: 'warning',
+                    icon: '🚗',
+                    subject: 'Traffic Incident Alert',
+                    message: 'Multi-vehicle accident on Highway 101. Traffic backup extending 2+ miles.',
+                    timestamp: Date.now() - 300000,
+                    read: false
+                },
+                {
+                    id: 3,
+                    type: 'info',
+                    icon: '🧠',
+                    subject: 'AI Analysis Complete',
+                    message: 'Risk assessment updated. New fire risk zones identified in downtown area.',
+                    timestamp: Date.now() - 480000,
+                    read: true
+                }
+            ];
+            
+            this.updateNotificationCount();
+        }
+        
+        startRealTimeUpdates() {
+            // Update timestamps every 5 seconds
+            setInterval(() => {
+                this.updateTimestamps();
+            }, 5000);
+            
+            // Simulate new notifications occasionally
+            setInterval(() => {
+                if (Math.random() > 0.95) {
+                    this.addRandomNotification();
+                }
+            }, 30000);
+            
+            // Update KPI values
+            setInterval(() => {
+                this.updateKPIValues();
+            }, 10000);
+        }
+        // Navigation Methods
+        showSection(sectionId) {
                 this.currentSection = sectionId;
                 
                 // Hide all sections
@@ -2179,11 +1987,10 @@
                 if (activeItem) {
                     activeItem.classList.add('active');
                 }
-
                 console.log(`Navigated to ${sectionId} section`);
                 this.showNotification(`Switched to ${this.getSectionTitle(sectionId)}`, 'info');
             }
-
+            
             getSectionTitle(sectionId) {
                 const titles = {
                     command: 'Command Center',
@@ -2193,34 +2000,33 @@
                 };
                 return titles[sectionId] || sectionId;
             }
-
+            
             resetToDashboard() {
                 this.showSection('command');
             }
-
+            
             // Dropdown Management
             toggleMoreMenu() {
                 this.moreMenuOpen = !this.moreMenuOpen;
                 const dropdown = document.getElementById('moreDropdown');
                 dropdown.classList.toggle('open', this.moreMenuOpen);
             }
-
+            
             toggleNotifications() {
                 this.notificationsOpen = !this.notificationsOpen;
                 const dropdown = document.getElementById('notificationDropdown');
                 dropdown.classList.toggle('open', this.notificationsOpen);
             }
-
+            
             toggleMobileMenu() {
                 this.mobileMenuOpen = !this.mobileMenuOpen;
                 console.log('Mobile menu toggled:', this.mobileMenuOpen);
             }
-
+            
             closeAllDropdowns() {
                 if (this.moreMenuOpen) this.toggleMoreMenu();
                 if (this.notificationsOpen) this.toggleNotifications();
             }
-
             // Utility Methods
             updateConnectionStatus(online) {
                 this.isOnline = online;
@@ -2235,7 +2041,7 @@
                     statusText.textContent = 'Offline';
                 }
             }
-
+            
             updateNotificationCount() {
                 const unreadCount = this.notifications.filter(n => !n.read).length;
                 const countElement = document.getElementById('notificationCount');
@@ -2247,7 +2053,7 @@
                     countElement.style.display = 'none';
                 }
             }
-
+            
             updateTimestamps() {
                 // Update alert time
                 const alertTime = document.getElementById('alertTime');
@@ -2255,7 +2061,7 @@
                     const seconds = Math.floor(Math.random() * 60) + 1;
                     alertTime.textContent = `Updated ${seconds}s ago`;
                 }
-
+                
                 // Update KPI timestamps
                 document.querySelectorAll('.kpi-update-time span').forEach(span => {
                     const currentText = span.textContent;
@@ -2268,19 +2074,19 @@
                     }
                 });
             }
-
+            
             updateKPIValues() {
                 // Simulate KPI value changes
                 const reports = document.getElementById('kpiReports');
                 const incidents = document.getElementById('kpiIncidents');
                 const risk = document.getElementById('kpiRisk');
                 const resources = document.getElementById('kpiResources');
-
+                
                 if (reports) {
                     const currentValue = parseInt(reports.textContent);
                     reports.textContent = currentValue + Math.floor(Math.random() * 3);
                 }
-
+                
                 if (risk) {
                     const currentValue = parseFloat(risk.textContent);
                     const change = (Math.random() - 0.5) * 0.2;
@@ -2288,7 +2094,7 @@
                     risk.textContent = newValue.toFixed(1);
                 }
             }
-
+            
             addRandomNotification() {
                 const randomNotifications = [
                     {
@@ -2310,17 +2116,17 @@
                         message: 'Pattern analysis complete. No new threats detected.',
                     }
                 ];
-
+                
                 const notification = randomNotifications[Math.floor(Math.random() * randomNotifications.length)];
                 notification.id = Date.now();
                 notification.timestamp = Date.now();
                 notification.read = false;
-
+                
                 this.notifications.unshift(notification);
                 this.updateNotificationCount();
                 this.showNotification(`New ${notification.subject}`, 'info');
             }
-
+            
             showNotification(message, type = 'info') {
                 const notification = document.createElement('div');
                 const colors = {
@@ -2355,7 +2161,7 @@
                     setTimeout(() => notification.remove(), 300);
                 }, 3000);
             }
-
+            
             hideLoading() {
                 const loader = document.getElementById('loadingOverlay');
                 if (loader) {
@@ -2364,7 +2170,7 @@
                     }, 1000);
                 }
             }
-
+            
             formatTimeAgo(timestamp) {
                 const diff = Date.now() - timestamp;
                 const minutes = Math.floor(diff / 60000);
@@ -2376,43 +2182,74 @@
                 return 'Yesterday';
             }
         }
-
+        
         // Initialize the system
         let crisisCommand;
-
         // Global function implementations
         function showSection(sectionId) {
             crisisCommand.showSection(sectionId);
         }
-
+        
         function resetToDashboard() {
             crisisCommand.resetToDashboard();
         }
-
+        
         function toggleMoreMenu() {
             crisisCommand.toggleMoreMenu();
         }
-
+        
         function toggleNotifications() {
             crisisCommand.toggleNotifications();
         }
-
+        
         function toggleMobileMenu() {
             crisisCommand.toggleMobileMenu();
         }
-
+        
         function dismissAlert() {
             const banner = document.getElementById('alertBanner');
             banner.classList.add('hidden');
             crisisCommand.showNotification('Alert dismissed', 'info');
         }
-
+        
+        // New function to handle notification log
+        function openNotificationLog() {
+            // If notification dropdown is open, close it first
+            if (crisisCommand.notificationsOpen) {
+                crisisCommand.toggleNotifications();
+            }
+            
+            // Navigate to notification log page or show modal
+            crisisCommand.showNotification('🔔 Opening notification log...', 'info');
+            
+            // In a real implementation, this would open a dedicated notification log page
+            // For now, we'll simulate opening a modal or new page
+            setTimeout(() => {
+                // You can replace this with actual navigation to notification log page
+                window.open('notification-log.html', '_blank');
+            }, 500);
+        }
+        
+        function openIncidentDetails(incidentId) {
+            crisisCommand.showNotification(`📋 Opening incident details for ID: ${incidentId}...`, 'info');
+            // Navigate to patient tracker with specific incident
+            window.location.href = `patient_tracker.html?incident=${incidentId}`;
+        }
+        
         // Action handlers
         function showDetails(type) {
             crisisCommand.showNotification(`Opening ${type} details...`, 'info');
             console.log(`Showing details for: ${type}`);
         }
-
+        
+        function quickAction() {
+            // Navigate to AI command center for incident creation
+            crisisCommand.showNotification('🚨 Opening AI Command Center for new incident...', 'info');
+            setTimeout(() => {
+                window.location.href = 'ai-command-center.html?action=create-incident';
+            }, 500);
+        }
+        
         function runAIAnalysis() {
             const btn = event.target;
             btn.classList.add('loading');
@@ -2424,12 +2261,12 @@
                 crisisCommand.showNotification('🧠 AI analysis complete', 'success');
             }, 2000);
         }
-
+        
         function viewFullMap() {
             crisisCommand.showNotification('🗺️ Opening full interactive map...', 'info');
             crisisCommand.showSection('map');
         }
-
+        
         function reprioritize() {
             const btn = event.target;
             btn.classList.add('loading');
@@ -2439,17 +2276,16 @@
                 crisisCommand.showNotification('🎯 Incidents re-prioritized by AI', 'success');
             }, 1500);
         }
-
+        
         function viewIncident(id) {
             crisisCommand.showNotification(`Opening incident #${id} details...`, 'info');
             console.log(`Viewing incident: ${id}`);
         }
-
+        
         function viewAllIncidents() {
             crisisCommand.showNotification('📋 Loading all incidents...', 'info');
             crisisCommand.showSection('incidents');
         }
-
         function refreshInsights() {
             const btn = event.target;
             btn.classList.add('loading');
@@ -2459,47 +2295,42 @@
                 crisisCommand.showNotification('🔄 AI insights refreshed', 'success');
             }, 1500);
         }
-
+        
         function viewMoreInsights() {
             crisisCommand.showNotification('🔮 Opening detailed insights...', 'info');
             crisisCommand.showSection('intelligence');
         }
-
+        
         function viewInsightDetails(type) {
             crisisCommand.showNotification(`Opening ${type} analysis...`, 'info');
             console.log(`Viewing insight details: ${type}`);
         }
-
+        
         function deployUnits(type) {
             event.stopPropagation();
             crisisCommand.showNotification(`🚒 Units deployed for ${type}`, 'success');
         }
-
+        
         function sendAlert(type) {
             event.stopPropagation();
             crisisCommand.showNotification(`📢 Alert sent for ${type}`, 'success');
         }
-
+        
         function positionUnits(type) {
             event.stopPropagation();
             crisisCommand.showNotification(`🚓 Units positioned for ${type}`, 'success');
         }
-
+        
         function optimizeResources() {
             event.stopPropagation();
             crisisCommand.showNotification('⚡ Resource optimization applied', 'success');
         }
-
+        
         function viewAnalysis(type) {
             event.stopPropagation();
             crisisCommand.showNotification(`📊 Opening ${type} analysis...`, 'info');
         }
-
-        function quickAction() {
-            crisisCommand.showNotification('🚨 Quick incident creation...', 'info');
-            console.log('Quick action triggered');
-        }
-
+        
         function viewNotification(id) {
             const notification = crisisCommand.notifications.find(n => n.id === id);
             if (notification) {
@@ -2508,7 +2339,7 @@
                 crisisCommand.showNotification(`Viewing: ${notification.subject}`, 'info');
             }
         }
-
+        
         // New section-specific handlers
         function runDeepAnalysis() {
             const btn = event.target;
@@ -2519,7 +2350,7 @@
                 crisisCommand.showNotification('🔮 Deep intelligence analysis complete', 'success');
             }, 3000);
         }
-
+        
         function generateForecast() {
             const btn = event.target;
             btn.classList.add('loading');
@@ -2529,17 +2360,17 @@
                 crisisCommand.showNotification('🔮 Predictive forecast generated', 'success');
             }, 2500);
         }
-
+        
         function toggleMapLayers() {
             crisisCommand.showNotification('🔄 Map layers toggled', 'info');
         }
-
+        
         // Secondary action handlers
         function showTemplates() {
             crisisCommand.toggleMoreMenu();
             crisisCommand.showNotification('📋 Opening response templates...', 'info');
         }
-
+        
         function exportReport() {
             crisisCommand.toggleMoreMenu();
             crisisCommand.showNotification('📊 Generating report...', 'info');
@@ -2547,34 +2378,116 @@
                 crisisCommand.showNotification('✅ Report exported successfully', 'success');
             }, 2000);
         }
-
+        
         function toggleChat() {
             crisisCommand.toggleMoreMenu();
             crisisCommand.showNotification('💬 Team chat opened', 'info');
         }
-
+        
         function showSettings() {
             crisisCommand.toggleMoreMenu();
             crisisCommand.showNotification('⚙️ Opening settings...', 'info');
         }
-
         function showHelp() {
             crisisCommand.toggleMoreMenu();
-            const helpMessage = `
-🎯 Keyboard Shortcuts:
-• Alt+1-4: Navigate sections
-• Ctrl+N: New incident  
-• Escape: Close menus
-
-📊 Features:
-• Real-time AI insights
-• Priority incident management
-• Resource optimization
-• Predictive analytics
+            
+            // Create help overlay/floating window
+            const helpOverlay = document.createElement('div');
+            helpOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: fadeIn 0.3s ease;
             `;
-            alert(helpMessage);
+            
+            const helpWindow = document.createElement('div');
+            helpWindow.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 2rem;
+                max-width: 600px;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: var(--shadow-xl);
+                position: relative;
+            `;
+            
+            helpWindow.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <h2 style="margin: 0; color: var(--primary-color);">❓ Help & Shortcuts</h2>
+                    <button onclick="closeHelp()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">✕</button>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--text-color-base); margin-bottom: 1rem;">🎯 Navigation</h3>
+                    <ul style="margin-left: 1rem;">
+                        <li><strong>Home/Logo:</strong> crisis-command-center.html - Global dashboard reset/refresh</li>
+                        <li><strong>Command:</strong> ai-command-center.html - AI command and incident creation</li>
+                        <li><strong>Intelligence:</strong> context-intelligence-dashboard.html - Deep analytics/tracing</li>
+                        <li><strong>Analysis:</strong> predictive-analytics-dashboard.html - Forecasts, risk modeling, surge planning</li>
+                        <li><strong>Map:</strong> map_reports.html - Geospatial resource/incident view</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--text-color-base); margin-bottom: 1rem;">🚨 Quick Access</h3>
+                    <ul style="margin-left: 1rem;">
+                        <li><strong>Active Incidents:</strong> triage_dashboard.html - Detailed incident workflow</li>
+                        <li><strong>Resource Management:</strong> real-time-resource-optimizer.html - Asset/personnel deployment</li>
+                        <li><strong>Analytics:</strong> analytics_dashboard.html - KPI and performance tracking</li>
+                        <li><strong>Archive:</strong> report_archive.html - Full incident/report history</li>
+                        <li><strong>Patient Tracker:</strong> patient_tracker.html - Triage/patient details, edit/view/update</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--text-color-base); margin-bottom: 1rem;">⌨️ Keyboard Shortcuts</h3>
+                    <ul style="margin-left: 1rem;">
+                        <li><strong>Alt+1-4:</strong> Navigate between main sections</li>
+                        <li><strong>Ctrl+N:</strong> Create new incident (opens AI Command Center)</li>
+                        <li><strong>Escape:</strong> Close open menus and dropdowns</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 style="color: var(--text-color-base); margin-bottom: 1rem;">🔔 Notifications</h3>
+                    <p style="margin-left: 1rem;">Click the notification bell to view/acknowledge alerts and access the notification log for full alert history.</p>
+                </div>
+            `;
+            
+            helpOverlay.appendChild(helpWindow);
+            document.body.appendChild(helpOverlay);
+            
+            // Close help when clicking outside
+            helpOverlay.addEventListener('click', (e) => {
+                if (e.target === helpOverlay) {
+                    closeHelp();
+                }
+            });
+            
+            // Store reference for cleanup
+            window.currentHelpOverlay = helpOverlay;
         }
-
+        
+        function closeHelp() {
+            if (window.currentHelpOverlay) {
+                window.currentHelpOverlay.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    if (window.currentHelpOverlay && window.currentHelpOverlay.parentNode) {
+                        window.currentHelpOverlay.parentNode.removeChild(window.currentHelpOverlay);
+                    }
+                    window.currentHelpOverlay = null;
+                }, 300);
+            }
+        }
+        
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             // Show loading initially
@@ -2586,7 +2499,7 @@
                 crisisCommand = new CleanCrisisCommand();
             }, 500);
         });
-
+        
         console.log('🚀 Clean Crisis Command Center JavaScript loaded');
     </script>
     </body>
