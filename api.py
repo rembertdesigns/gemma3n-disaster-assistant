@@ -2262,6 +2262,108 @@ async def context_intelligence_dashboard(request: Request):
         </body></html>
         """, status_code=500)
 
+@app.get("/predictive-analytics-dashboard", response_class=HTMLResponse)
+async def predictive_analytics_dashboard(request: Request):
+    """Predictive Analytics Dashboard - AI-Powered Emergency Intelligence & Forecasting"""
+    try:
+        dashboard_path = TEMPLATES_DIR / "predictive-analytics-dashboard.html"
+        
+        if dashboard_path.exists():
+            with open(dashboard_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            return HTMLResponse(content=html_content)
+        else:
+            return HTMLResponse("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Predictive Analytics Dashboard</title>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 2rem; background: #1f2937; color: white; text-align: center; }
+                    .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+                    .btn { background: #3b82f6; color: white; padding: 1rem 2rem; border: none; border-radius: 8px; margin: 1rem; text-decoration: none; display: inline-block; }
+                    .setup-info { background: #374151; padding: 2rem; border-radius: 12px; margin: 2rem 0; text-align: left; }
+                    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 2rem 0; }
+                    .feature-card { background: #4b5563; padding: 1.5rem; border-radius: 8px; }
+                    .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-right: 8px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🔮 Predictive Analytics Dashboard</h1>
+                    <p>AI-powered emergency intelligence and forecasting system using advanced ML models</p>
+                    
+                    <div class="setup-info">
+                        <h3>🚀 System Status</h3>
+                        <p><span class="status-indicator"></span> Predictive Engine: <strong>Ready</strong></p>
+                        <p><span class="status-indicator"></span> AI Models: <strong>Active</strong></p>
+                        <p><span class="status-indicator"></span> Data Sources: <strong>Connected</strong></p>
+                        <p><span class="status-indicator"></span> Real-time Forecasting: <strong>Operational</strong></p>
+                    </div>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h4>📊 Surge Prediction</h4>
+                            <p>AI-powered forecasting of emergency volume surges with confidence metrics</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🎯 Resource Forecasting</h4>
+                            <p>Predict resource needs and capacity requirements across time horizons</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🤖 AI Recommendations</h4>
+                            <p>Machine learning-driven suggestions for proactive emergency management</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🔍 Anomaly Detection</h4>
+                            <p>Identify unusual patterns and statistical outliers in emergency data</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 2rem 0;">
+                        <h3>Quick Actions</h3>
+                        <a href="/crisis-command-center" class="btn">🧠 Crisis Command Center</a>
+                        <a href="/admin" class="btn">📊 Admin Dashboard</a>
+                        <a href="/api/docs" class="btn">📚 API Documentation</a>
+                    </div>
+                    
+                    <div style="background: #065f46; padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
+                        <h4>🛠️ Custom Template Setup</h4>
+                        <p>To use the enhanced HTML template, save your file as:</p>
+                        <code style="background: #064e3b; padding: 0.5rem; border-radius: 4px;">templates/predictive-analytics-dashboard.html</code>
+                    </div>
+                </div>
+                
+                <script>
+                    // Add basic interactivity
+                    document.addEventListener('DOMContentLoaded', function() {
+                        console.log('Predictive Analytics Dashboard loaded');
+                        
+                        // Simulate real-time status updates
+                        setInterval(() => {
+                            const indicators = document.querySelectorAll('.status-indicator');
+                            indicators.forEach(indicator => {
+                                indicator.style.backgroundColor = Math.random() > 0.1 ? '#10b981' : '#f59e0b';
+                            });
+                        }, 3000);
+                    });
+                </script>
+            </body>
+            </html>
+            """)
+            
+    except Exception as e:
+        logger.error(f"Predictive analytics dashboard error: {e}")
+        return HTMLResponse(f"""
+        <html><body style="font-family: Arial; margin: 2rem; background: #1f2937; color: white;">
+        <h1>🔮 Predictive Analytics Dashboard - Error</h1>
+        <p>Error loading dashboard: {str(e)}</p>
+        <a href="/crisis-command-center" style="color: #3b82f6;">← Back to Crisis Command</a>
+        </body></html>
+        """, status_code=500)
+
 @app.get("/api/context-data-sources")
 async def get_context_data_sources(db: Session = Depends(get_db)):
     """Get available data sources for context analysis"""
@@ -5470,7 +5572,7 @@ async def implement_recommendation(
     
 @app.get("/api/navigation-items")
 async def get_navigation_items():
-    """Get all navigation items including context intelligence dashboard"""
+    """Get all navigation items including predictive analytics dashboard"""
     return JSONResponse({
         "success": True,
         "navigation_sections": [
@@ -5492,6 +5594,15 @@ async def get_navigation_items():
                         "url": "/context-intelligence-dashboard",
                         "icon": "🔍",
                         "description": "Deep situation analysis with 128K context",
+                        "ai_powered": True,
+                        "access_level": "admin"
+                    },
+                    {
+                        "id": "predictive-analytics-dashboard",  # ADD THIS BLOCK
+                        "title": "Predictive Analytics Dashboard",
+                        "url": "/predictive-analytics-dashboard",
+                        "icon": "🔮",
+                        "description": "AI-powered emergency intelligence & forecasting",
                         "ai_powered": True,
                         "access_level": "admin",
                         "new": True
@@ -8013,7 +8124,8 @@ async def not_found_handler(request: Request, exc):
                 "Use /admin for dashboard access",
                 "Try /triage-dashboard for triage management",
                 "Try /voice-emergency-reporter for voice reporting",
-                "Try /context-intelligence-dashboard for AI analysis"  # ADD THIS LINE
+                "Try /context-intelligence-dashboard for AI analysis",
+                "Try /predictive-analytics-dashboard for forecasting"  # ADD THIS LINE
             ],
            "available_endpoints": {
                 "citizen_portal": "/",
@@ -8021,7 +8133,8 @@ async def not_found_handler(request: Request, exc):
                 "triage_dashboard": "/triage-dashboard",
                 "staff_command_center": "/staff-triage-command", 
                 "voice_emergency": "/voice-emergency-reporter",
-                "context_intelligence": "/context-intelligence-dashboard",  # ADD THIS LINE
+                "context_intelligence": "/context-intelligence-dashboard",
+                "predictive_analytics": "/predictive-analytics-dashboard",  # ADD THIS LINE
                 "api_docs": "/api/docs",
                 "health_check": "/health",
                 "websocket_dashboard": "/ws/dashboard"
@@ -8377,6 +8490,7 @@ async def startup_event():
     logger.info("     • 📊 Performance monitoring and metrics")
     logger.info("     • 🔧 RESTful API with comprehensive documentation")
     logger.info("     • 📊 Voice analytics and reporting")
+    logger.info("     🔮 Predictive Analytics Dashboard (AI forecasting & intelligence)")
     
     logger.info("✅ Enhanced Emergency Response Assistant ready!")
     logger.info(f"     🧠 Crisis Command Center: http://localhost:8000/crisis-command-center")
@@ -8385,6 +8499,7 @@ async def startup_event():
     logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
     logger.info(f"     📚 API Documentation: http://localhost:8000/api/docs")
     logger.info(f"     🏥 Health Check: http://localhost:8000/health")
+    logger.info(f"     🔮 Predictive Analytics: http://localhost:8000/predictive-analytics-dashboard")
 
 @app.on_event("shutdown")
 async def shutdown_event():

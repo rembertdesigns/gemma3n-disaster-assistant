@@ -1,1098 +1,1384 @@
-{% extends "base.html" %}
-
-{% block title %}Predictive Analytics Dashboard - AI-Powered Emergency Intelligence{% endblock %}
-
-{% block page_title %}🔮 Predictive Analytics{% endblock %}
-
-{% block subtitle %}AI-Powered Emergency Intelligence & Forecasting{% endblock %}
-
-{% block header_logo %}📈{% endblock %} {# Custom logo for this page in the header #}
-
-{% block header_actions %}
-  {# Keep default theme/contrast toggles from base.html #}
-  <button id="toggleThemeBtn" aria-label="Toggle dark/light theme">🌓 Theme</button>
-  <button id="contrastToggleBtn" aria-label="Toggle high contrast mode">♿ Contrast</button>
-  <div class="status-bar">
-    <div class="status-indicator status-offline">
-      <div class="status-dot"></div>
-      Offline
-    </div>
-  </div>
-  <a href="/live-generate" class="btn btn-primary btn-small">
-    🧩 Live JSON → PDF Editor
-  </a>
-{% endblock %}
-
-{% block extra_css %}
-{{ super() }} {# Inherits CSS from base.html #}
-<style>
-  /* Predictive Analytics Specific Styling */
-  .analytics-header {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Purple gradient */
-    color: var(--text-color-inverted);
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow-md);
-  }
-
-  .analytics-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem; /* Increased gap */
-    margin-top: 1.5rem; /* Increased margin */
-  }
-
-  .stat-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 1.2rem; /* Adjusted padding */
-    text-align: center;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18); /* Added subtle border */
-    box-shadow: var(--shadow-sm); /* Added shadow */
-    transition: all 0.3s ease;
-  }
-
-  .stat-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-  }
-
-  .stat-value {
-    font-size: 2.2rem; /* Slightly larger */
-    font-weight: bold;
-    margin-bottom: 0.25rem;
-    color: var(--text-color-inverted); /* Ensure text is visible on gradient */
-  }
-
-  .stat-label {
-    opacity: 0.9;
-    font-size: 0.9rem;
-    color: var(--text-color-inverted); /* Ensure text is visible on gradient */
-  }
-
-  .stat-trend {
-    font-size: 0.8rem;
-    margin-top: 0.5rem; /* More space */
-    font-weight: bold; /* Make trend stand out */
-  }
-
-  .trend-up { color: var(--color-optimal); }
-  .trend-down { color: var(--color-critical); }
-  .trend-stable { color: var(--color-good); }
-
-  .analytics-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-  }
-
-  .analytics-panel {
-    background: var(--bg-color-card);
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-  }
-
-  .analytics-panel h3 {
-    margin: 0 0 1rem 0;
-    color: var(--text-color-base);
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 0.5rem;
-  }
-
-  .chart-container {
-    height: 300px;
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 1rem;
-  }
-
-  .chart-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-
-  .prediction-card {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: var(--text-color-inverted);
-    border-radius: 8px;
-    padding: 1.2rem; /* Adjusted padding */
-    margin-bottom: 1rem;
-    position: relative;
-    overflow: hidden;
-    box-shadow: var(--shadow-sm); /* Added subtle shadow */
-    cursor: pointer; /* Indicate clickability */
-    transition: all 0.3s ease;
-  }
-
-  .prediction-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-  }
-
-  .prediction-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-    animation: shimmer 3s infinite;
-  }
-
-  /* @keyframes shimmer is now in base.html */
-
-  .prediction-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .prediction-title {
-    font-weight: bold;
-    font-size: 1rem; /* Slightly larger */
-  }
-
-  .confidence-score {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.25rem 0.6rem; /* Adjusted padding */
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: bold;
-  }
-
-  .prediction-details {
-    font-size: 0.85rem;
-    opacity: 0.9;
-    margin-bottom: 0.5rem;
-  }
-
-  .prediction-timeline {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-  }
-
-  .risk-assessment {
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    padding: 1.5rem; /* Increased padding */
-    margin-top: 1rem;
-    border: 1px solid var(--border-color); /* Added border */
-    box-shadow: var(--shadow-sm);
-  }
-
-  .risk-assessment h4 {
-    color: var(--text-color-base);
-  }
-
-  .risk-matrix {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5x5 matrix assumed */
-    gap: 0.25rem;
-    margin-top: 1rem;
-  }
-
-  .risk-cell {
-    aspect-ratio: 1; /* Make cells square */
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: bold;
-    color: var(--text-color-inverted);
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .risk-cell:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  /* Risk level colors */
-  .risk-low { background: var(--color-optimal); }
-  .risk-moderate { background: var(--color-good); }
-  .risk-high { background: #ea580c; } /* Specific orange-red */
-  .risk-critical { background: var(--color-critical); }
-  .risk-extreme { background: #991b1b; animation: pulse-risk 1s infinite; } /* Darker red */
-
-  /* @keyframes pulse-risk is now in base.html */
-
-  .insights-list {
-    max-height: 400px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scroll-thumb, #a3a3a3) var(--scroll-track, #e5e7eb);
-  }
-  .insights-list::-webkit-scrollbar {
-    width: 8px;
-  }
-  .insights-list::-webkit-scrollbar-track {
-    background: var(--scroll-track, #e5e7eb);
-    border-radius: 10px;
-  }
-  .insights-list::-webkit-scrollbar-thumb {
-    background: var(--scroll-thumb, #a3a3a3);
-    border-radius: 10px;
-  }
-
-  .insight-item {
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    border-left: 4px solid #8b5cf6; /* Purple border */
-    box-shadow: var(--shadow-sm); /* Subtle shadow */
-    transition: all 0.3s ease;
-    cursor: pointer; /* Indicate clickability */
-  }
-
-  .insight-item:hover {
-    background: var(--bg-hover, #f3f4f6);
-    transform: translateX(4px);
-  }
-
-  .insight-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .insight-title {
-    font-weight: bold;
-    color: var(--text-color-base);
-    font-size: 0.95rem;
-  }
-
-  .insight-score {
-    background: #8b5cf6; /* Purple background */
-    color: var(--text-color-inverted);
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: bold;
-  }
-
-  .insight-description {
-    color: var(--text-color-base);
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .insight-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .insight-action {
-    background: #e0e7ff; /* Light blue background */
-    color: #3730a3; /* Darker blue text */
-    padding: 0.25rem 0.6rem; /* Adjusted padding */
-    border-radius: 16px; /* Pill shape */
-    font-size: 0.75rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .insight-action:hover {
-    background: #c7d2fe;
-    transform: translateY(-1px);
-  }
-
-  .forecast-timeline {
-    background: var(--bg-color-card);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 2rem;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-  }
-
-  .timeline-header {
-    display: flex;
-    justify-content: space-between; /* Adjusted to use space-between */
-    align-items: center;
-    margin-bottom: 1rem;
-    border-bottom: 2px solid var(--border-color); /* Added border */
-    padding-bottom: 0.5rem;
-  }
-
-  .timeline-controls {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .timeline-button {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color-card); /* Use card background */
-    color: var(--text-color-base);
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.3s ease;
-  }
-
-  .timeline-button.active {
-    background: #8b5cf6; /* Purple active state */
-    color: var(--text-color-inverted);
-    border-color: #8b5cf6;
-  }
-
-  .timeline-button:hover:not(.active) {
-    background: var(--bg-color-light);
-  }
-
-  .forecast-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem; /* Increased gap */
-    margin-top: 1.5rem; /* Increased margin */
-  }
-
-  .forecast-card {
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    padding: 1.2rem; /* Adjusted padding */
-    border: 1px solid var(--border-color);
-    text-align: center;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
-    cursor: pointer; /* Indicate clickability */
-  }
-  .forecast-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-  }
-
-  .forecast-date {
-    color: var(--text-color-light);
-    font-size: 0.8rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .forecast-prediction {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: var(--primary-dark);
-    margin-bottom: 0.5rem;
-  }
-
-  .forecast-confidence {
-    background: var(--color-optimal);
-    color: var(--text-color-inverted);
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    display: inline-block;
-  }
-
-  .ml-model-status {
-    background: linear-gradient(135deg, var(--color-optimal) 0%, #059669 100%);
-    color: var(--text-color-inverted);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 2rem;
-    box-shadow: var(--shadow-md);
-  }
-  .ml-model-status h3 {
-      color: var(--text-color-inverted);
-  }
-
-  .model-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem; /* Increased gap */
-    margin-top: 1rem;
-  }
-
-  .model-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 1rem;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18); /* Added border */
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
-  }
-  .model-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-  }
-
-  .model-name {
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    color: var(--text-color-inverted);
-  }
-
-  .model-accuracy {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-bottom: 0.25rem;
-    color: var(--text-color-inverted);
-  }
-
-  .model-status {
-    opacity: 0.9;
-    font-size: 0.8rem;
-    color: var(--text-color-inverted);
-  }
-
-  .alert-recommendations {
-    background: var(--bg-color-light); /* Using theme variable */
-    border: 1px solid var(--color-good); /* Orange border */
-    border-radius: 8px;
-    padding: 1.5rem; /* Increased padding */
-    margin-top: 1rem;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .alert-recommendations h4 {
-    color: var(--color-good); /* Orange text */
-    margin: 0 0 0.5rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-  }
-
-  .recommendation-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .recommendation-item {
-    padding: 0.6rem 0; /* Adjusted padding */
-    border-bottom: 1px solid #fbbf24; /* Lighter orange border */
-    color: var(--text-color-base); /* Base text color */
-    font-size: 0.9rem;
-  }
-
-  .recommendation-item:last-child {
-    border-bottom: none;
-  }
-
-  .scenario-modeling {
-    background: var(--bg-color-card);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 2rem;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-  }
-
-  .scenario-modeling h3 {
-      color: var(--text-color-base);
-  }
-
-  .scenario-tabs {
-    display: flex;
-    border-bottom: 2px solid var(--border-color);
-    margin-bottom: 1rem;
-  }
-
-  .scenario-tab {
-    padding: 0.75rem 1.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-color-light);
-    font-weight: 500;
-    border-bottom: 2px solid transparent;
-    transition: all 0.3s ease;
-  }
-
-  .scenario-tab.active {
-    color: #8b5cf6; /* Purple active state */
-    border-bottom-color: #8b5cf6;
-  }
-
-  .scenario-tab:hover:not(.active) {
-      color: var(--text-color-base);
-  }
-
-  .scenario-content {
-    min-height: 200px;
-    background: var(--bg-color-light); /* Default content background */
-    border-radius: 8px;
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-  }
-
-  .scenario-result {
-    background: var(--bg-color-card); /* Card background for results */
-    border-radius: 8px;
-    padding: 1.5rem; /* Increased padding */
-    margin-bottom: 1rem;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
-    cursor: pointer; /* Indicate clickability */
-  }
-  .scenario-result:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-  }
-
-  .scenario-result h5 {
-    margin: 0 0 0.5rem 0;
-    color: var(--text-color-base);
-  }
-
-  .impact-meter {
-    width: 100%;
-    height: 20px;
-    background: var(--border-color); /* Lighter background */
-    border-radius: 10px;
-    overflow: hidden;
-    margin: 0.5rem 0;
-  }
-
-  .impact-fill {
-    height: 100%;
-    border-radius: 10px;
-    transition: width 0.3s ease;
-  }
-
-  .impact-low { background: linear-gradient(90deg, var(--color-optimal), #22c55e); }
-  .impact-medium { background: linear-gradient(90deg, var(--color-good), #fbbf24); }
-  .impact-high { background: linear-gradient(90deg, #ea580c, #f97316); } /* Specific orange-red */
-  .impact-critical { background: linear-gradient(90deg, var(--color-critical), #ef4444); }
-
-  /* Generic styles for the text below impact bars */
-  .scenario-result .info-text { /* Renamed class to be more generic */
-    font-size: 0.85rem;
-    color: var(--text-color-light);
-  }
-
-  .scenario-result .recommended-preps {
-    margin-top: 1.5rem; /* Increased margin */
-    padding: 1rem;
-    background: var(--bg-color-light);
-    border-radius: 6px;
-    border: 1px solid var(--border-color); /* Added border */
-  }
-
-  .scenario-result .recommended-preps h6 {
-    margin: 0 0 0.5rem 0;
-    color: var(--text-color-dark);
-  }
-
-  .scenario-result .recommended-preps ul {
-    margin: 0;
-    padding-left: 1.2rem;
-    font-size: 0.9rem;
-    color: var(--text-color-base);
-  }
-
-  /* Responsive design */
-  @media (max-width: 768px) {
-    .analytics-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem; /* Reduced gap */
-    }
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictive Analytics Dashboard - AI-Powered Emergency Intelligence</title>
     
-    .analytics-stats {
-      grid-template-columns: repeat(2, 1fr); /* Min 2 columns for stats */
-      gap: 1rem;
-    }
-    
-    .analytics-panel {
-        padding: 1rem;
-    }
-    .analytics-panel h3 {
-        font-size: 1.1rem;
-    }
-    .chart-container {
-        height: 250px;
-    }
-    
-    .forecast-grid {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-    
-    .model-grid {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-    .scenario-tabs {
-        flex-wrap: wrap; /* Allow tabs to wrap */
-        border-bottom: none; /* Remove bottom border if wrapping */
-    }
-    .scenario-tab {
-        border-bottom: 2px solid transparent; /* Keep individual tab borders */
-        margin-bottom: 0.5rem; /* Space between wrapped tabs */
-    }
-    .scenario-result .recommended-preps {
-        padding: 0.75rem;
-    }
-  }
+    <!-- Enhanced CSS Variables and Base Styles -->
+    <style>
+        :root {
+            /* Light theme variables */
+            --primary-color: #8b5cf6;
+            --primary-dark: #7c3aed;
+            --bg-color-main: #ffffff;
+            --bg-color-card: #f8fafc;
+            --bg-color-light: #f1f5f9;
+            --text-color-base: #1f2937;
+            --text-color-light: #6b7280;
+            --text-color-dark: #111827;
+            --text-color-inverted: #ffffff;
+            --border-color: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            
+            /* Status colors */
+            --color-optimal: #10b981;
+            --color-good: #f59e0b;
+            --color-warning: #ef4444;
+            --color-critical: #dc2626;
+            
+            /* Prediction confidence colors */
+            --confidence-high: #10b981;
+            --confidence-medium: #f59e0b;
+            --confidence-low: #ef4444;
+        }
 
-  /* Dark theme adjustments handled by variables in :root[data-theme="dark"] */
-  /* Specific overrides for analytics dashboard in dark mode */
-  [data-theme="dark"] .analytics-header {
-    background: linear-gradient(135deg, #4b308e 0%, #7c3aed 100%); /* Darker purple gradient */
-  }
-  [data-theme="dark"] .stat-card {
-    background: rgba(255, 255, 255, 0.08); /* Darker transparent bg */
-    border-color: rgba(255, 255, 255, 0.15);
-  }
+        [data-theme="dark"] {
+            --bg-color-main: #111827;
+            --bg-color-card: #1f2937;
+            --bg-color-light: #374151;
+            --text-color-base: #f9fafb;
+            --text-color-light: #d1d5db;
+            --text-color-dark: #ffffff;
+            --border-color: #4b5563;
+        }
 
-  [data-theme="dark"] .prediction-card {
-    background: linear-gradient(135deg, #1f2937 0%, #2d3748 100%); /* Darker gradient for predictions */
-    border: 1px solid var(--border-color); /* Added border */
-  }
-  [data-theme="dark"] .prediction-card:hover {
-      background: linear-gradient(135deg, #2d3748 0%, #3a455c 100%);
-  }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  [data-theme="dark"] .risk-assessment {
-    background: var(--bg-color-light);
-  }
-  [data-theme="dark"] .insights-list {
-    background: var(--bg-color-light);
-    border: 1px solid var(--border-color);
-  }
-  [data-theme="dark"] .insight-item {
-    background: var(--bg-color-card);
-    border-color: var(--border-color);
-    border-left-color: #8b5cf6; /* Keep purple border */
-  }
-  [data-theme="dark"] .insight-item:hover {
-      background: var(--bg-hover);
-  }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-color-main);
+            color: var(--text-color-base);
+            line-height: 1.6;
+        }
 
-  [data-theme="dark"] .forecast-timeline {
-    background: var(--bg-color-card);
-  }
-  [data-theme="dark"] .forecast-card {
-    background: var(--bg-color-light);
-    border-color: var(--border-color);
-  }
-  [data-theme="dark"] .timeline-button {
-      background: var(--bg-color-card);
-      color: var(--text-color-base);
-      border-color: var(--border-color);
-  }
-  [data-theme="dark"] .timeline-button.active {
-      background: #8b5cf6;
-      border-color: #8b5cf6;
-      color: var(--text-color-inverted);
-  }
-  [data-theme="dark"] .timeline-button:hover:not(.active) {
-      background: var(--bg-hover);
-  }
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+        }
 
-  [data-theme="dark"] .ml-model-status {
-    background: linear-gradient(135deg, #065f46 0%, #16a34a 100%); /* Darker green gradient */
-  }
-  [data-theme="dark"] .model-card {
-    background: rgba(255, 255, 255, 0.08); /* Darker transparent bg */
-    border-color: rgba(255, 255, 255, 0.15);
-  }
+        .dashboard-header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: var(--text-color-inverted);
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
 
-  [data-theme="dark"] .alert-recommendations {
-    background: var(--bg-color-light);
-    border-color: var(--color-good);
-  }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
 
-  [data-theme="dark"] .scenario-modeling {
-    background: var(--bg-color-card);
-  }
-  [data-theme="dark"] .scenario-content {
-      background: var(--bg-color-light);
-      border-color: var(--border-color);
-  }
-  [data-theme="dark"] .scenario-result {
-      background: var(--bg-color-card);
-      border-color: var(--border-color);
-  }
-  [data-theme="dark"] .scenario-result .recommended-preps {
-      background: var(--bg-color-light);
-      border-color: var(--border-color);
-  }
-</style>
-{% endblock %}
+        .header-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0;
+        }
 
-{% block content %}
-  <div class="analytics-header">
-    <h2 style="margin: 0; font-size: 1.6rem;">🧠 Predictive Emergency Intelligence</h2>
-    <p style="margin: 0.5rem 0 1rem 0; opacity: 0.9;">AI-powered analytics for proactive emergency management and risk assessment</p>
-    
-    <div class="analytics-stats">
-      <div class="stat-card">
-        <div class="stat-value" id="predictionAccuracy">94.7%</div>
-        <div class="stat-label">Prediction Accuracy</div>
-        <div class="stat-trend trend-up">↗ +2.3% this month</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="riskScore">7.2</div>
-        <div class="stat-label">Current Risk Score</div>
-        <div class="stat-trend trend-stable">→ Stable</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="predictedIncidents">23</div>
-        <div class="stat-label">Predicted Incidents (24h)</div>
-        <div class="stat-trend trend-down">↘ -15% vs yesterday</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="modelConfidence">87%</div>
-        <div class="stat-label">Model Confidence</div>
-        <div class="stat-trend trend-up">↗ +5% this week</div>
-      </div>
-    </div>
-  </div>
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
 
-  <div class="analytics-grid">
-    <div class="analytics-panel">
-      <h3>📈 Emergency Trends Analysis</h3>
-      <div class="chart-container">
-        <canvas class="chart-canvas" id="trendsChart"></canvas>
-      </div>
-      <div class="risk-assessment">
-        <h4 style="margin: 0 0 0.5rem 0; color: var(--text-color-base);">Risk Matrix</h4>
-        <div class="risk-matrix" id="riskMatrix">
-          <div class="risk-cell risk-extreme">5x5</div>
-          <div class="risk-cell risk-critical"></div>
-          <div class="risk-cell risk-high"></div>
-          <div class="risk-cell risk-moderate"></div>
-          <div class="risk-cell risk-low"></div>
-          </div>
-      </div>
-    </div>
+        .control-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: var(--text-color-inverted);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
 
-    <div class="analytics-panel">
-      <h3>🤖 AI Predictions</h3>
-      <div class="insights-list" id="predictionsList">
-        <div class="prediction-card" onclick="window.PredictiveAnalytics?.viewPredictionDetails('fire-risk')">
-          <div class="prediction-header">
-            <div class="prediction-title">🔥 Fire Risk Elevation</div>
-            <div class="confidence-score">92% confidence</div>
-          </div>
-          <div class="prediction-details">
-            High fire risk predicted for downtown area due to weather conditions and historical patterns.
-          </div>
-          <div class="prediction-timeline">
-            <span>⏰</span>
-            <span>Peak risk: 2:00 PM - 6:00 PM today</span>
-          </div>
-        </div>
+        .control-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
 
-        <div class="prediction-card" onclick="window.PredictiveAnalytics?.viewPredictionDetails('traffic-incident')">
-          <div class="prediction-header">
-            <div class="prediction-title">🚗 Traffic Incident Spike</div>
-            <div class="confidence-score">85% confidence</div>
-          </div>
-          <div class="prediction-details">
-            Increased MVA probability on Highway 101 during evening rush hour.
-          </div>
-          <div class="prediction-timeline">
-            <span>⏰</span>
-            <span>Expected: 5:00 PM - 7:00 PM</span>
-          </div>
-        </div>
+        .forecast-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
 
-        <div class="prediction-card" onclick="window.PredictiveAnalytics?.viewPredictionDetails('medical-volume')">
-          <div class="prediction-header">
-            <div class="prediction-title">🏥 Medical Call Volume</div>
-            <div class="confidence-score">78% confidence</div>
-          </div>
-          <div class="prediction-details">
-            Elevated medical emergency calls predicted due to heat wave conditions.
-          </div>
-          <div class="prediction-timeline">
-            <span>⏰</span>
-            <span>Duration: Next 3 days</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+        .summary-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
 
-  <div class="analytics-panel">
-    <h3>💡 AI-Generated Insights</h3>
-    <div class="insights-list" id="insightsList">
-      <div class="insight-item" onclick="window.PredictiveAnalytics?.viewInsightDetails('resource-optimization')">
-        <div class="insight-header">
-          <div class="insight-title">Resource Optimization Opportunity</div>
-          <div class="insight-score">High Impact</div>
-        </div>
-        <div class="insight-description">
-          Analysis shows 23% improvement in response times possible by relocating Ambulance 7 to Station 12 during peak hours.
-        </div>
-        <div class="insight-actions">
-          <span class="insight-action" onclick="window.PredictiveAnalytics?.implementRecommendation('resource-optimization'); event.stopPropagation();">Implement</span>
-          <span class="insight-action" onclick="window.PredictiveAnalytics?.analyzeImpact('resource-optimization'); event.stopPropagation();">Analyze Impact</span>
-        </div>
-      </div>
+        .summary-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
 
-      <div class="insight-item" onclick="window.PredictiveAnalytics?.viewInsightDetails('weather-related-risk')">
-        <div class="insight-header">
-          <div class="insight-title">Weather-Related Risk Pattern</div>
-          <div class="insight-score">Medium Impact</div>
-        </div>
-        <div class="insight-description">
-          Correlation detected between humidity levels >85% and 34% increase in respiratory emergency calls.
-        </div>
-        <div class="insight-actions">
-          <span class="insight-action" onclick="window.PredictiveAnalytics?.prepareResources('respiratory-surge'); event.stopPropagation();">Prepare Resources</span>
-          <span class="insight-action" onclick="window.PredictiveAnalytics?.viewDetails('weather-correlation'); event.stopPropagation();">View Details</span>
-        </div>
-      </div>
+        .summary-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
 
-      <div class="insight-item" onclick="window.PredictiveAnalytics?.viewInsightDetails('seasonal-incident')">
-        <div class="insight-header">
-          <div class="insight-title">Seasonal Incident Prediction</div>
-          <div class="insight-score">Planning Value</div>
-        </div>
-        <div class="insight-description">
-          Historical data predicts 18% increase in water rescue incidents during next month due to seasonal patterns.
-        </div>
-        <div class="insight-actions">
-          <span class="insight-action" onclick="window.PredictiveAnalytics?.scheduleTraining('water-rescue'); event.stopPropagation();">Schedule Training</span>
-          <span class="insight-action" onclick="window.PredictiveAnalytics?.alertAgencies('seasonal-prep'); event.stopPropagation();">Alert Agencies</span>
-        </div>
-      </div>
-    </div>
+        .summary-label {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
 
-    <div class="alert-recommendations">
-      <h4>⚠️ Immediate Recommendations</h4>
-      <ul class="recommendation-list">
-        <li class="recommendation-item">Deploy additional fire units to high-risk areas before 2:00 PM</li>
-        <li class="recommendation-item">Increase EMS staffing for evening shift due to predicted call volume</li>
-        <li class="recommendation-item">Pre-position traffic control units on Highway 101 by 4:30 PM</li>
-        <li class="recommendation-item">Activate cooling centers due to heat-related medical risk</li>
-      </ul>
-    </div>
-  </div>
+        .summary-trend {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            font-weight: bold;
+        }
 
-  <div class="forecast-timeline">
-    <div class="timeline-header">
-      <h3>📅 Emergency Forecast Timeline</h3>
-      <div class="timeline-controls">
-        <button class="timeline-button active" onclick="window.PredictiveAnalytics?.setTimeframe('24h')">24 Hours</button>
-        <button class="timeline-button" onclick="window.PredictiveAnalytics?.setTimeframe('7d')">7 Days</button>
-        <button class="timeline-button" onclick="window.PredictiveAnalytics?.setTimeframe('30d')">30 Days</button>
-      </div>
-    </div>
-    
-    <div class="forecast-grid" id="forecastGrid">
-      <div class="forecast-card" onclick="window.PredictiveAnalytics?.viewForecastDetails('today-fire')">
-        <div class="forecast-date">Today 2:00 PM</div>
-        <div class="forecast-prediction">Fire Risk Peak</div>
-        <div class="forecast-confidence">92% Confidence</div>
-      </div>
-      <div class="forecast-card" onclick="window.PredictiveAnalytics?.viewForecastDetails('today-traffic')">
-        <div class="forecast-date">Today 5:30 PM</div>
-        <div class="forecast-prediction">Traffic Surge</div>
-        <div class="forecast-confidence">85% Confidence</div>
-      </div>
-      <div class="forecast-card" onclick="window.PredictiveAnalytics?.viewForecastDetails('tomorrow-medical')">
-        <div class="forecast-date">Tomorrow 10:00 AM</div>
-        <div class="forecast-prediction">Medical Volume +20%</div>
-        <div class="forecast-confidence">78% Confidence</div>
-      </div>
-      <div class="forecast-card" onclick="window.PredictiveAnalytics?.viewForecastDetails('tomorrow-low-activity')">
-        <div class="forecast-date">Tomorrow 8:00 PM</div>
-        <div class="forecast-prediction">Low Activity Period</div>
-        <div class="forecast-confidence">89% Confidence</div>
-      </div>
-    </div>
-  </div>
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
 
-  <div class="ml-model-status">
-    <h3>🧠 Machine Learning Models Status</h3>
-    <div class="model-grid">
-      <div class="model-card">
-        <div class="model-name">Fire Risk Predictor</div>
-        <div class="model-accuracy">94.7%</div>
-        <div class="model-status">Last updated: 2 hours ago</div>
-      </div>
-      <div class="model-card">
-        <div class="model-name">Traffic Incident Forecaster</div>
-        <div class="model-accuracy">91.3%</div>
-        <div class="model-status">Training in progress</div>
-      </div>
-      <div class="model-card">
-        <div class="model-name">Medical Demand Predictor</div>
-        <div class="model-accuracy">88.9%</div>
-        <div class="model-status">Active and learning</div>
-      </div>
-      <div class="model-card">
-        <div class="model-name">Weather Impact Analyzer</div>
-        <div class="model-accuracy">96.2%</div>
-        <div class="model-status">Real-time processing</div>
-      </div>
-      <div class="model-card">
-        <div class="model-name">Resource Optimizer</div>
-        <div class="model-accuracy">89.5%</div>
-        <div class="model-status">Optimization cycle complete</div>
-      </div>
-      <div class="model-card">
-        <div class="model-name">Seasonal Trend Analyzer</div>
-        <div class="model-accuracy">93.1%</div>
-        <div class="model-status">Processing monthly data</div>
-      </div>
-    </div>
-  </div>
+        .panel {
+            background: var(--bg-color-card);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
 
-  <div class="scenario-modeling">
-    <h3>🎯 Scenario Modeling & Simulation</h3>
-    <div class="scenario-tabs">
-      <button class="scenario-tab active" onclick="window.PredictiveAnalytics?.switchScenario('natural-disaster')">
-        Natural Disaster
-      </button>
-      <button class="scenario-tab" onclick="window.PredictiveAnalytics?.switchScenario('mass-casualty')">
-        Mass Casualty
-      </button>
-      <button class="scenario-tab" onclick="window.PredictiveAnalytics?.switchScenario('infrastructure')">
-        Infrastructure Failure
-      </button>
-      <button class="scenario-tab" onclick="window.PredictiveAnalytics?.switchScenario('weather-event')">
-        Severe Weather
-      </button>
-    </div>
-    
-    <div class="scenario-content" id="scenarioContent">
-      <div class="scenario-result" onclick="window.PredictiveAnalytics?.viewScenarioImpact('earthquake')">
-        <h5>7.2 Earthquake Scenario Impact Assessment</h5>
-        <p class="info-text">
-          Predicted impact based on geological data, building codes, and population density
-        </p>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-          <div>
-            <div style="font-weight: bold; margin-bottom: 0.5rem;">Expected Casualties</div>
-            <div class="impact-meter">
-              <div class="impact-fill impact-high" style="width: 75%;"></div>
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-color-base);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .filter-button {
+            background: var(--bg-color-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-color-base);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .filter-button.active {
+            background: var(--primary-color);
+            color: var(--text-color-inverted);
+            border-color: var(--primary-color);
+        }
+
+        .filter-button:hover:not(.active) {
+            background: var(--bg-color-main);
+        }
+
+        .chart-container {
+            height: 400px;
+            background: var(--bg-color-light);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .surge-prediction {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .surge-item {
+            background: var(--bg-color-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .surge-item:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .surge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .surge-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--text-color-base);
+        }
+
+        .confidence-badge {
+            background: var(--confidence-high);
+            color: var(--text-color-inverted);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .confidence-medium { background: var(--confidence-medium); }
+        .confidence-low { background: var(--confidence-low); }
+
+        .surge-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .detail-metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+        }
+
+        .scenario-tools {
+            grid-column: 1 / -1;
+            background: var(--bg-color-card);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .scenario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .scenario-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .scenario-input {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color-main);
+            color: var(--text-color-base);
+            font-size: 0.9rem;
+        }
+
+        .scenario-button {
+            background: var(--primary-color);
+            color: var(--text-color-inverted);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .scenario-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .scenario-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .result-card {
+            background: var(--bg-color-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .alerts-panel {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            color: #92400e;
+            margin-bottom: 2rem;
+        }
+
+        .alert-item {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alert-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .alert-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .alert-action {
+            background: #92400e;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .alert-action:hover {
+            background: #78350f;
+        }
+
+        .navigation-bar {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-color-card);
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .nav-button {
+            background: var(--bg-color-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-color-base);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background: var(--primary-color);
+            color: var(--text-color-inverted);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .export-panel {
+            grid-column: 1 / -1;
+            background: var(--bg-color-card);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .export-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .export-button {
+            background: var(--color-optimal);
+            color: var(--text-color-inverted);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .export-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            gap: 2px;
+            margin: 1rem 0;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: var(--text-color-inverted);
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            box-shadow: var(--shadow-md);
+        }
+
+        .heat-level-0 { background: #e5e7eb; color: var(--text-color-base); }
+        .heat-level-1 { background: #fef3c7; color: #92400e; }
+        .heat-level-2 { background: #fed7aa; color: #9a3412; }
+        .heat-level-3 { background: #fca5a5; color: #991b1b; }
+        .heat-level-4 { background: #f87171; }
+        .heat-level-5 { background: #dc2626; }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 1rem;
+            }
+            
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .forecast-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .scenario-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .navigation-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        @keyframes pulse-alert {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .critical-alert {
+            animation: pulse-alert 2s infinite;
+        }
+
+        .trend-up { color: var(--color-optimal); }
+        .trend-down { color: var(--color-critical); }
+        .trend-stable { color: var(--color-good); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Dashboard Header with Forecast Summary -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <h1 class="header-title">🔮 Predictive Analytics Command Center</h1>
+                <div class="header-controls">
+                    <button class="control-button" onclick="toggleTheme()">🌓 Theme</button>
+                    <button class="control-button" onclick="refreshData()">🔄 Refresh</button>
+                    <button class="control-button" onclick="exportReport()">📊 Export</button>
+                </div>
             </div>
-            <div class="info-text">Critical impact - Major damage expected</div>
-          </div>
-          
-          <div>
-            <div style="font-weight: bold; margin-bottom: 0.5rem;">Infrastructure Damage</div>
-            <div class="impact-meter">
-              <div class="impact-fill impact-critical" style="width: 85%;"></div>
+            
+            <div class="forecast-summary" id="forecastSummary">
+                <div class="summary-card">
+                    <div class="summary-value" id="nextSurgeTime">4.2h</div>
+                    <div class="summary-label">Next Predicted Surge</div>
+                    <div class="summary-trend trend-up">↗ High Confidence</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value" id="resourceShortfall">3</div>
+                    <div class="summary-label">Resource Shortfalls (24h)</div>
+                    <div class="summary-trend trend-down">↘ Manageable</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value" id="hotspotCount">7</div>
+                    <div class="summary-label">Active Hotspots</div>
+                    <div class="summary-trend trend-stable">→ Monitoring</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value" id="confidenceScore">94%</div>
+                    <div class="summary-label">Model Confidence</div>
+                    <div class="summary-trend trend-up">↗ +2% vs yesterday</div>
+                </div>
             </div>
-            <div class="info-text">Severe - 70%+ buildings affected, widespread infrastructure failure</div>
-          </div>
-          
-          <div>
-            <div style="font-weight: bold; margin-bottom: 0.5rem;">Response Capacity</div>
-            <div class="impact-meter">
-              <div class="impact-fill impact-medium" style="width: 60%;"></div>
-            </div>
-            <div class="info-text">Moderate - Additional resources needed</div>
-          </div>
-          
-          <div>
-            <div style="font-weight: bold; margin-bottom: 0.5rem;">Recovery Timeline</div>
-            <div class="impact-meter">
-              <div class="impact-fill impact-high" style="width: 80%;"></div>
-            </div>
-            <div class="info-text">Long-term - 6-18 months estimated</div>
-          </div>
         </div>
-        
-        <div class="recommended-preps">
-          <h6 style="margin: 0 0 0.5rem 0; color: var(--text-color-base);">Recommended Preparations:</h6>
-          <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.9rem; color: var(--text-color-base);">
-            <li>Pre-deploy 15 additional fire units to high-risk zones</li>
-            <li>Activate emergency operations center 2 hours before predicted event</li>
-            <li>Coordinate with neighboring jurisdictions for mutual aid</li>
-            <li>Prepare mass casualty incident protocols and triage areas</li>
-          </ul>
+
+        <!-- Main Dashboard Grid -->
+        <div class="main-grid">
+            <!-- Surge Prediction & Trends Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">📈 Surge Predictions & Trends</h2>
+                    <div class="panel-controls">
+                        <button class="filter-button active" onclick="setTimeHorizon('1h')">1H</button>
+                        <button class="filter-button" onclick="setTimeHorizon('4h')">4H</button>
+                        <button class="filter-button" onclick="setTimeHorizon('24h')">24H</button>
+                        <button class="filter-button" onclick="setTimeHorizon('72h')">72H</button>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas class="chart-canvas" id="surgeChart"></canvas>
+                </div>
+                
+                <!-- 24-Hour Heatmap -->
+                <h3 style="margin: 1rem 0 0.5rem 0;">24-Hour Activity Heatmap</h3>
+                <div class="heatmap-grid" id="activityHeatmap"></div>
+            </div>
+
+            <!-- Resource Demand & Alerts Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">⚠️ Resource Demands & Alerts</h2>
+                </div>
+                
+                <div class="surge-prediction" id="resourceAlerts">
+                    <div class="surge-item critical-alert">
+                        <div class="surge-header">
+                            <div class="surge-title">🚨 ER Bed Shortage</div>
+                            <div class="confidence-badge confidence-high">96%</div>
+                        </div>
+                        <p>Critical shortage predicted in 6 hours</p>
+                        <div class="surge-details">
+                            <div class="detail-metric">
+                                <div class="metric-value">15</div>
+                                <div class="metric-label">Beds Short</div>
+                            </div>
+                            <div class="detail-metric">
+                                <div class="metric-value">18:00</div>
+                                <div class="metric-label">Peak Time</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="surge-item">
+                        <div class="surge-header">
+                            <div class="surge-title">🚑 EMS Surge - North Sector</div>
+                            <div class="confidence-badge confidence-medium">84%</div>
+                        </div>
+                        <p>Traffic incident cluster expected during rush hour</p>
+                        <div class="surge-details">
+                            <div class="detail-metric">
+                                <div class="metric-value">+40%</div>
+                                <div class="metric-label">Call Volume</div>
+                            </div>
+                            <div class="detail-metric">
+                                <div class="metric-value">17:30</div>
+                                <div class="metric-label">Start Time</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="surge-item">
+                        <div class="surge-header">
+                            <div class="surge-title">🔥 Fire Risk Elevation</div>
+                            <div class="confidence-badge confidence-high">92%</div>
+                        </div>
+                        <p>Weather conditions increase fire probability</p>
+                        <div class="surge-details">
+                            <div class="detail-metric">
+                                <div class="metric-value">High</div>
+                                <div class="metric-label">Risk Level</div>
+                            </div>
+                            <div class="detail-metric">
+                                <div class="metric-value">14:00</div>
+                                <div class="metric-label">Peak Risk</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Scenario Simulation Tools -->
+        <div class="scenario-tools">
+            <div class="scenario-header">
+                <h2 class="panel-title">🎯 Scenario Simulation & What-If Analysis</h2>
+                <div class="scenario-controls">
+                    <select class="scenario-input" id="scenarioType">
+                        <option value="surge">Patient Surge</option>
+                        <option value="disaster">Natural Disaster</option>
+                        <option value="pandemic">Pandemic Wave</option>
+                        <option value="staffing">Staff Shortage</option>
+                    </select>
+                    <input type="number" class="scenario-input" id="scenarioMagnitude" placeholder="Magnitude %" value="150">
+                    <button class="scenario-button" onclick="runScenario()">🔄 Run Simulation</button>
+                    <button class="scenario-button" onclick="resetScenario()">↺ Reset</button>
+                </div>
+            </div>
+
+            <div class="scenario-results" id="scenarioResults">
+                <div class="result-card">
+                    <h3>📊 Impact Assessment</h3>
+                    <div class="detail-metric">
+                        <div class="metric-value" id="impactBeds">+25</div>
+                        <div class="metric-label">Additional Beds Needed</div>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <h3>⏱️ Timeline</h3>
+                    <div class="detail-metric">
+                        <div class="metric-value" id="impactDuration">4-6h</div>
+                        <div class="metric-label">Expected Duration</div>
+                    </div>
+                </div>
+                <div class="result-card">
+                    <h3>👥 Staffing Impact</h3>
+                    <div class="detail-metric">
+                        <div class="metric-value" id="impactStaff">+12</div>
+                        <div class="metric-label">Additional Staff Needed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Recommendations & Alerts -->
+        <div class="alerts-panel">
+            <h2 style="margin-bottom: 1rem; color: #92400e;">🤖 AI Recommendations & Critical Alerts</h2>
+            
+            <div class="alert-item">
+                <div class="alert-content">
+                    <div class="alert-title">Immediate: Reassign Ambulance Units</div>
+                    <div class="alert-description">Deploy 2 additional ambulances to North Sector by 17:00 to prevent response delays</div>
+                </div>
+                <div class="alert-actions">
+                    <button class="alert-action" onclick="implementRecommendation('ambulance-deploy')">Deploy</button>
+                    <button class="alert-action" onclick="viewDetails('ambulance-analysis')">Details</button>
+                </div>
+            </div>
+
+            <div class="alert-item">
+                <div class="alert-content">
+                    <div class="alert-title">Planning: Night Shift Reinforcement</div>
+                    <div class="alert-description">Medical surge predicted - request 4 additional nurses for tonight's shift</div>
+                </div>
+                <div class="alert-actions">
+                    <button class="alert-action" onclick="implementRecommendation('staff-request')">Request</button>
+                    <button class="alert-action" onclick="scheduleAlert('night-shift')">Schedule</button>
+                </div>
+            </div>
+
+            <div class="alert-item">
+                <div class="alert-content">
+                    <div class="alert-title">Anomaly: Unusual Pediatric Pattern</div>
+                    <div class="alert-description">Statistical outlier detected in District 3 - investigate potential cause</div>
+                </div>
+                <div class="alert-actions">
+                    <button class="alert-action" onclick="investigate('pediatric-anomaly')">Investigate</button>
+                    <button class="alert-action" onclick="alertStaff('district-3')">Alert Staff</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Export & Sharing -->
+        <div class="export-panel">
+            <h2>📄 Data Export & Executive Briefing</h2>
+            <p>Generate reports and summaries for stakeholders and decision makers</p>
+            <div class="export-buttons">
+                <button class="export-button" onclick="generateExecutiveBrief()">
+                    📋 Executive Brief
+                </button>
+                <button class="export-button" onclick="exportData('csv')">
+                    📊 Export CSV Data
+                </button>
+                <button class="export-button" onclick="exportData('pdf')">
+                    📄 PDF Report
+                </button>
+                <button class="export-button" onclick="shareAnalysis()">
+                    📤 Share Analysis
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Shortcuts -->
+        <div class="navigation-bar">
+            <a href="/crisis-command-center" class="nav-button">
+                🎯 Command Center
+            </a>
+            <a href="/map-reports" class="nav-button">
+                🗺️ Map Reports
+            </a>
+            <a href="/resource-optimizer" class="nav-button">
+                ⚙️ Resource Optimizer
+            </a>
+            <a href="/report-archive" class="nav-button">
+                📚 Historical Archive
+            </a>
+            <a href="/scenario-settings" class="nav-button">
+                🔧 Scenario Settings
+            </a>
+        </div>
     </div>
-  </div>
-{% endblock %}
 
-{% block scripts %}
-{{ super() }} {# Inherits scripts from base.html #}
-<script src="/static/js/predictive-analytics.js"></script>
-{# Leaflet.js and edge-ai.js are assumed to be in base.html already or loaded globally #}
-{# <script src="/static/js/edge-ai.js"></script> #}
-{# <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script> #}
+    <script>
+        // Enhanced Predictive Analytics Engine
+        class EnhancedPredictiveAnalytics {
+            constructor() {
+                this.currentTimeHorizon = '4h';
+                this.lastUpdate = new Date();
+                this.updateInterval = null;
+                this.chartContext = null;
+                
+                // Enhanced data structures
+                this.forecastData = {
+                    '1h': this.generateHourlyData(1),
+                    '4h': this.generateHourlyData(4),
+                    '24h': this.generateHourlyData(24),
+                    '72h': this.generateHourlyData(72)
+                };
+                
+                this.surgeMetrics = {
+                    nextSurgeTime: 4.2,
+                    resourceShortfall: 3,
+                    hotspotCount: 7,
+                    confidenceScore: 94
+                };
+                
+                this.scenarios = {
+                    surge: { baseImpact: 1.5, duration: '4-6h', staffMultiplier: 1.3 },
+                    disaster: { baseImpact: 3.0, duration: '12-48h', staffMultiplier: 2.5 },
+                    pandemic: { baseImpact: 2.2, duration: '2-8w', staffMultiplier: 1.8 },
+                    staffing: { baseImpact: 0.8, duration: '1-3d', staffMultiplier: 0.7 }
+                };
+                
+                this.init();
+            }
 
-<script>
-  // Theme/contrast/SW registration are handled in base.html.
-  // Only page-specific JavaScript here.
+            init() {
+                this.initializeCharts();
+                this.generateHeatmap();
+                this.updateDashboard();
+                this.startRealTimeUpdates();
+                console.log('🔮 Enhanced Predictive Analytics initialized');
+            }
 
-  // Initialize Predictive Analytics
-  document.addEventListener('DOMContentLoaded', () => {
-    if (window.PredictiveAnalytics) {
-      window.PredictiveAnalytics.initialize();
-    } else {
-      console.error("window.PredictiveAnalytics is not defined. Ensure predictive-analytics.js is loaded correctly.");
-    }
-  });
+            generateHourlyData(hours) {
+                const data = [];
+                const now = new Date();
+                for (let i = 0; i < hours; i++) {
+                    const time = new Date(now.getTime() + i * 60 * 60 * 1000);
+                    const baseLoad = 50 + Math.sin(i * 0.5) * 20;
+                    const surge = Math.random() > 0.7 ? Math.random() * 40 : 0;
+                    data.push({
+                        time: time,
+                        predicted: Math.max(0, baseLoad + surge + (Math.random() - 0.5) * 10),
+                        confidence: 85 + Math.random() * 15,
+                        capacity: 100
+                    });
+                }
+                return data;
+            }
 
-  // Example functions for tab switching and detail viewing (if not fully in predictive-analytics.js)
-  // window.PredictiveAnalytics = window.PredictiveAnalytics || {}; // Ensure object exists
-  // window.PredictiveAnalytics.setTimeframe = function(timeframe) {
-  //   document.querySelectorAll('.timeline-button').forEach(btn => btn.classList.remove('active'));
-  //   document.querySelector(`.timeline-button[onclick*="'${timeframe}'"]`).classList.add('active');
-  //   console.log(`Setting forecast timeframe to ${timeframe}`);
-  //   // You would fetch new data here and update #forecastGrid
-  // };
+            initializeCharts() {
+                const canvas = document.getElementById('surgeChart');
+                if (!canvas) return;
+                
+                this.chartContext = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                this.drawSurgeChart();
+            }
 
-  // window.PredictiveAnalytics.switchScenario = function(scenarioId) {
-  //   document.querySelectorAll('.scenario-tab').forEach(tab => tab.classList.remove('active'));
-  //   document.querySelector(`.scenario-tab[onclick*="'${scenarioId}'"]`).classList.add('active');
-  //   console.log(`Switching to scenario: ${scenarioId}`);
-  //   // You would load/generate scenario data into #scenarioContent here
-  // };
+            drawSurgeChart() {
+                if (!this.chartContext) return;
+                
+                const ctx = this.chartContext;
+                const canvas = ctx.canvas;
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw background
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Draw grid
+                this.drawGrid(ctx, width, height);
+                
+                // Draw capacity line
+                this.drawCapacityLine(ctx, width, height);
+                
+                // Draw prediction data
+                this.drawPredictionLine(ctx, width, height);
+                
+                // Draw surge indicators
+                this.drawSurgeIndicators(ctx, width, height);
+                
+                // Draw legend
+                this.drawLegend(ctx, width, height);
+            }
 
-  // window.PredictiveAnalytics.viewPredictionDetails = function(predictionId) {
-  //   console.log(`Viewing prediction details for: ${predictionId}`);
-  //   // Redirect to a specific detail page or open a modal
-  //   // window.location.href = `/predictions/${predictionId}`;
-  // };
+            drawGrid(ctx, width, height) {
+                ctx.strokeStyle = '#e5e7eb';
+                ctx.lineWidth = 1;
+                
+                // Vertical lines (time intervals)
+                const data = this.forecastData[this.currentTimeHorizon];
+                const timeStep = width / Math.max(data.length - 1, 1);
+                
+                for (let i = 0; i < data.length; i++) {
+                    const x = i * timeStep;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                    
+                    // Time labels
+                    if (i % Math.ceil(data.length / 6) === 0) {
+                        ctx.fillStyle = '#6b7280';
+                        ctx.font = '10px sans-serif';
+                        const timeLabel = this.formatTimeLabel(data[i].time);
+                        ctx.fillText(timeLabel, x + 2, height - 5);
+                    }
+                }
+                
+                // Horizontal lines (capacity levels)
+                for (let i = 0; i <= 5; i++) {
+                    const y = (height / 5) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                    
+                    // Capacity labels
+                    ctx.fillStyle = '#6b7280';
+                    ctx.font = '10px sans-serif';
+                    const capacity = Math.round(120 - (i * 24));
+                    ctx.fillText(`${capacity}%`, 5, y + 12);
+                }
+            }
 
-  // window.PredictiveAnalytics.viewInsightDetails = function(insightId) {
-  //   console.log(`Viewing insight details for: ${insightId}`);
-  // };
+            drawCapacityLine(ctx, width, height) {
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                
+                const capacityY = height * 0.2; // 100% capacity line
+                ctx.beginPath();
+                ctx.moveTo(0, capacityY);
+                ctx.lineTo(width, capacityY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Capacity label
+                ctx.fillStyle = '#dc2626';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText('100% Capacity', width - 100, capacityY - 5);
+            }
 
-  // window.PredictiveAnalytics.viewForecastDetails = function(forecastId) {
-  //   console.log(`Viewing forecast details for: ${forecastId}`);
-  // };
+            drawPredictionLine(ctx, width, height) {
+                const data = this.forecastData[this.currentTimeHorizon];
+                const timeStep = width / Math.max(data.length - 1, 1);
+                
+                // Confidence area
+                ctx.fillStyle = 'rgba(139, 92, 246, 0.1)';
+                ctx.beginPath();
+                data.forEach((point, i) => {
+                    const x = i * timeStep;
+                    const y = height - (point.predicted / 120) * height;
+                    const confidenceMargin = (100 - point.confidence) / 100 * 30;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y - confidenceMargin);
+                    } else {
+                        ctx.lineTo(x, y - confidenceMargin);
+                    }
+                });
+                
+                for (let i = data.length - 1; i >= 0; i--) {
+                    const x = i * timeStep;
+                    const y = height - (data[i].predicted / 120) * height;
+                    const confidenceMargin = (100 - data[i].confidence) / 100 * 30;
+                    ctx.lineTo(x, y + confidenceMargin);
+                }
+                ctx.closePath();
+                ctx.fill();
+                
+                // Main prediction line
+                ctx.strokeStyle = '#8b5cf6';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                data.forEach((point, i) => {
+                    const x = i * timeStep;
+                    const y = height - (point.predicted / 120) * height;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                ctx.stroke();
+                
+                // Data points
+                ctx.fillStyle = '#8b5cf6';
+                data.forEach((point, i) => {
+                    const x = i * timeStep;
+                    const y = height - (point.predicted / 120) * height;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            }
 
-  // window.PredictiveAnalytics.viewScenarioImpact = function(scenarioId) {
-  //   console.log(`Viewing scenario impact for: ${scenarioId}`);
-  // };
+            drawSurgeIndicators(ctx, width, height) {
+                const data = this.forecastData[this.currentTimeHorizon];
+                const timeStep = width / Math.max(data.length - 1, 1);
+                
+                data.forEach((point, i) => {
+                    if (point.predicted > 100) { // Surge indicator
+                        const x = i * timeStep;
+                        const y = height - (point.predicted / 120) * height;
+                        
+                        // Surge warning triangle
+                        ctx.fillStyle = '#ef4444';
+                        ctx.beginPath();
+                        ctx.moveTo(x, y - 10);
+                        ctx.lineTo(x - 6, y + 2);
+                        ctx.lineTo(x + 6, y + 2);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Warning symbol
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 8px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('!', x, y - 2);
+                        ctx.textAlign = 'left';
+                    }
+                });
+            }
 
-  // Add more specific event handlers or data loading functions as needed.
-</script>
-{% endblock %}
+            drawLegend(ctx, width, height) {
+                const legendItems = [
+                    { color: '#8b5cf6', label: 'Predicted Demand', type: 'line' },
+                    { color: '#dc2626', label: '100% Capacity', type: 'dashed' },
+                    { color: '#ef4444', label: 'Surge Alert', type: 'triangle' },
+                    { color: 'rgba(139, 92, 246, 0.1)', label: 'Confidence Range', type: 'area' }
+                ];
+                
+                const legendX = 20;
+                let legendY = 30;
+                
+                legendItems.forEach((item, i) => {
+                    const y = legendY + (i * 20);
+                    
+                    if (item.type === 'line') {
+                        ctx.strokeStyle = item.color;
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(legendX, y);
+                        ctx.lineTo(legendX + 15, y);
+                        ctx.stroke();
+                    } else if (item.type === 'dashed') {
+                        ctx.strokeStyle = item.color;
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([3, 3]);
+                        ctx.beginPath();
+                        ctx.moveTo(legendX, y);
+                        ctx.lineTo(legendX + 15, y);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    } else if (item.type === 'triangle') {
+                        ctx.fillStyle = item.color;
+                        ctx.beginPath();
+                        ctx.moveTo(legendX + 7, y - 5);
+                        ctx.lineTo(legendX + 2, y + 3);
+                        ctx.lineTo(legendX + 12, y + 3);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else if (item.type === 'area') {
+                        ctx.fillStyle = item.color;
+                        ctx.fillRect(legendX, y - 3, 15, 6);
+                    }
+                    
+                    ctx.fillStyle = '#374151';
+                    ctx.font = '11px sans-serif';
+                    ctx.fillText(item.label, legendX + 20, y + 3);
+                });
+            }
 
-{% block footer_content %}
-  <footer class="footer">
-    <p>🔮 Predictive Intelligence | 🧠 AI-Powered | 📊 Data-Driven Decisions</p>
-  </footer>
-{% endblock %}
+            generateHeatmap() {
+                const heatmapContainer = document.getElementById('activityHeatmap');
+                if (!heatmapContainer) return;
+                
+                heatmapContainer.innerHTML = '';
+                
+                for (let hour = 0; hour < 24; hour++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'heatmap-cell';
+                    
+                    // Generate activity level (0-5)
+                    let activityLevel = 0;
+                    if (hour >= 6 && hour <= 9) activityLevel = 3; // Morning rush
+                    else if (hour >= 17 && hour <= 20) activityLevel = 4; // Evening rush
+                    else if (hour >= 10 && hour <= 16) activityLevel = 2; // Day activity
+                    else if (hour >= 21 && hour <= 23) activityLevel = 1; // Evening
+                    else activityLevel = 0; // Night
+                    
+                    // Add some randomness
+                    activityLevel += Math.floor(Math.random() * 2);
+                    activityLevel = Math.min(5, Math.max(0, activityLevel));
+                    
+                    cell.classList.add(`heat-level-${activityLevel}`);
+                    cell.textContent = hour.toString().padStart(2, '0');
+                    cell.title = `${hour}:00 - Activity Level: ${activityLevel}/5`;
+                    
+                    cell.addEventListener('click', () => {
+                        this.showHourDetails(hour, activityLevel);
+                    });
+                    
+                    heatmapContainer.appendChild(cell);
+                }
+            }
+
+            updateDashboard() {
+                // Update forecast summary
+                document.getElementById('nextSurgeTime').textContent = `${this.surgeMetrics.nextSurgeTime.toFixed(1)}h`;
+                document.getElementById('resourceShortfall').textContent = this.surgeMetrics.resourceShortfall;
+                document.getElementById('hotspotCount').textContent = this.surgeMetrics.hotspotCount;
+                document.getElementById('confidenceScore').textContent = `${this.surgeMetrics.confidenceScore.toFixed(0)}%`;
+                
+                // Simulate some data updates
+                this.surgeMetrics.nextSurgeTime += (Math.random() - 0.5) * 0.2;
+                this.surgeMetrics.resourceShortfall += Math.floor((Math.random() - 0.5) * 2);
+                this.surgeMetrics.hotspotCount += Math.floor((Math.random() - 0.5) * 2);
+                this.surgeMetrics.confidenceScore += (Math.random() - 0.5) * 2;
+                
+                // Keep values in reasonable ranges
+                this.surgeMetrics.nextSurgeTime = Math.max(0.5, Math.min(72, this.surgeMetrics.nextSurgeTime));
+                this.surgeMetrics.resourceShortfall = Math.max(0, Math.min(10, this.surgeMetrics.resourceShortfall));
+                this.surgeMetrics.hotspotCount = Math.max(0, Math.min(15, this.surgeMetrics.hotspotCount));
+                this.surgeMetrics.confidenceScore = Math.max(75, Math.min(99, this.surgeMetrics.confidenceScore));
+            }
+
+            startRealTimeUpdates() {
+                this.updateInterval = setInterval(() => {
+                    this.updateDashboard();
+                    this.updateForecastData();
+                    this.drawSurgeChart();
+                }, 15000); // Update every 15 seconds
+            }
+
+            updateForecastData() {
+                // Shift data and add new predictions
+                Object.keys(this.forecastData).forEach(timeHorizon => {
+                    const data = this.forecastData[timeHorizon];
+                    const hours = parseInt(timeHorizon);
+                    
+                    // Remove first element and add new one at the end
+                    data.shift();
+                    const lastTime = data[data.length - 1].time;
+                    const newTime = new Date(lastTime.getTime() + 60 * 60 * 1000);
+                    
+                    const baseLoad = 50 + Math.sin(data.length * 0.5) * 20;
+                    const surge = Math.random() > 0.8 ? Math.random() * 40 : 0;
+                    
+                    data.push({
+                        time: newTime,
+                        predicted: Math.max(0, baseLoad + surge + (Math.random() - 0.5) * 10),
+                        confidence: 85 + Math.random() * 15,
+                        capacity: 100
+                    });
+                });
+            }
+
+            formatTimeLabel(date) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            showHourDetails(hour, activityLevel) {
+                const activityTypes = ['Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Critical'];
+                alert(`Hour ${hour}:00 Activity Details\n\nActivity Level: ${activityTypes[activityLevel]}\nPredicted Incidents: ${3 + activityLevel * 2}\nResource Utilization: ${20 + activityLevel * 15}%\nRecommendation: ${activityLevel > 3 ? 'Increase staffing' : 'Standard operations'}`);
+            }
+        }
+
+        // Global functions for UI interactions
+        function setTimeHorizon(horizon) {
+            analytics.currentTimeHorizon = horizon;
+            
+            // Update active button
+            document.querySelectorAll('.filter-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            analytics.drawSurgeChart();
+            console.log(`Time horizon set to: ${horizon}`);
+        }
+
+        function runScenario() {
+            const scenarioType = document.getElementById('scenarioType').value;
+            const magnitude = document.getElementById('scenarioMagnitude').value;
+            
+            const scenario = analytics.scenarios[scenarioType];
+            const impactMultiplier = (magnitude / 100) * scenario.baseImpact;
+            
+            // Calculate impacts
+            const bedsNeeded = Math.round(25 * impactMultiplier);
+            const staffNeeded = Math.round(12 * scenario.staffMultiplier * impactMultiplier);
+            
+            // Update results
+            document.getElementById('impactBeds').textContent = `+${bedsNeeded}`;
+            document.getElementById('impactDuration').textContent = scenario.duration;
+            document.getElementById('impactStaff').textContent = `+${staffNeeded}`;
+            
+            console.log(`Scenario simulation: ${scenarioType} at ${magnitude}% magnitude`);
+        }
+
+        function resetScenario() {
+            document.getElementById('scenarioMagnitude').value = '150';
+            document.getElementById('impactBeds').textContent = '+25';
+            document.getElementById('impactDuration').textContent = '4-6h';
+            document.getElementById('impactStaff').textContent = '+12';
+        }
+
+        function implementRecommendation(type) {
+            const recommendations = {
+                'ambulance-deploy': 'Ambulance deployment order sent to dispatch. ETA to North Sector: 15 minutes.',
+                'staff-request': 'Staff request submitted to HR. Additional nurses will be contacted for night shift.',
+            };
+            
+            alert(`Action Implemented\n\n${recommendations[type] || 'Recommendation has been processed.'}`);
+        }
+
+        function investigate(type) {
+            const investigations = {
+                'pediatric-anomaly': 'Investigation initiated. Alerts sent to District 3 supervisors and epidemiology team.'
+            };
+            
+            alert(`Investigation Started\n\n${investigations[type] || 'Investigation team has been notified.'}`);
+        }
+
+        function alertStaff(location) {
+            alert(`Staff Alert Sent\n\nAll relevant personnel in ${location} have been notified of the anomaly and asked to monitor for unusual patterns.`);
+        }
+
+        function scheduleAlert(type) {
+            alert(`Alert Scheduled\n\nAutomatic reminder set for ${type}. Relevant staff will be notified 2 hours before shift change.`);
+        }
+
+        function viewDetails(type) {
+            alert(`Detailed Analysis\n\nOpening detailed analysis view for ${type}. This would typically open a specialized dashboard with comprehensive data.`);
+        }
+
+        function generateExecutiveBrief() {
+            const briefContent = `EXECUTIVE BRIEF - PREDICTIVE ANALYTICS SUMMARY
+Generated: ${new Date().toLocaleString()}
+
+KEY METRICS:
+• Next Predicted Surge: ${analytics.surgeMetrics.nextSurgeTime.toFixed(1)} hours
+• Resource Shortfalls (24h): ${analytics.surgeMetrics.resourceShortfall}
+• Active Hotspots: ${analytics.surgeMetrics.hotspotCount}
+• Model Confidence: ${analytics.surgeMetrics.confidenceScore.toFixed(0)}%
+
+CRITICAL ALERTS:
+• ER bed shortage predicted in 6 hours (96% confidence)
+• EMS surge expected in North Sector during rush hour (84% confidence)
+• Fire risk elevation due to weather conditions (92% confidence)
+
+IMMEDIATE ACTIONS REQUIRED:
+• Deploy 2 additional ambulances to North Sector by 17:00
+• Request 4 additional nurses for night shift
+• Investigate pediatric anomaly in District 3
+
+RESOURCE RECOMMENDATIONS:
+• Increase ER capacity preparation
+• Pre-position fire units in high-risk areas
+• Activate backup staffing protocols
+
+This brief provides decision-makers with essential information for proactive emergency management.`;
+
+            // Create downloadable file
+            const blob = new Blob([briefContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `executive-brief-${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('Executive brief generated and downloaded');
+        }
+
+        function exportData(format) {
+            if (format === 'csv') {
+                const csvData = `Time,Predicted_Demand,Confidence,Capacity\n` +
+                    analytics.forecastData[analytics.currentTimeHorizon]
+                        .map(d => `${d.time.toISOString()},${d.predicted.toFixed(1)},${d.confidence.toFixed(1)},${d.capacity}`)
+                        .join('\n');
+                
+                const blob = new Blob([csvData], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `predictive-data-${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else if (format === 'pdf') {
+                alert('PDF Export\n\nPDF generation would be implemented here using a library like jsPDF to create comprehensive reports with charts and analysis.');
+            }
+        }
+
+        function shareAnalysis() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Predictive Analytics Report',
+                    text: `Current surge prediction: ${analytics.surgeMetrics.nextSurgeTime.toFixed(1)}h, Confidence: ${analytics.surgeMetrics.confidenceScore.toFixed(0)}%`,
+                    url: window.location.href
+                });
+            } else {
+                // Fallback - copy to clipboard
+                const shareText = `Predictive Analytics Summary:\nNext surge: ${analytics.surgeMetrics.nextSurgeTime.toFixed(1)}h\nConfidence: ${analytics.surgeMetrics.confidenceScore.toFixed(0)}%\nActive hotspots: ${analytics.surgeMetrics.hotspotCount}`;
+                navigator.clipboard.writeText(shareText).then(() => {
+                    alert('Analysis summary copied to clipboard!');
+                });
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            
+            // Redraw charts with new theme
+            if (analytics && analytics.chartContext) {
+                analytics.drawSurgeChart();
+            }
+        }
+
+        function refreshData() {
+            if (analytics) {
+                analytics.updateForecastData();
+                analytics.updateDashboard();
+                analytics.drawSurgeChart();
+                analytics.generateHeatmap();
+            }
+            console.log('Data refreshed');
+        }
+
+        function exportReport() {
+            generateExecutiveBrief();
+        }
+
+        // Initialize the enhanced analytics system
+        let analytics;
+        document.addEventListener('DOMContentLoaded', () => {
+            analytics = new EnhancedPredictiveAnalytics();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (analytics && analytics.updateInterval) {
+                clearInterval(analytics.updateInterval);
+            }
+        });
+    </script>
+</body>
+</html>
