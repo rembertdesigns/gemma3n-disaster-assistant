@@ -1,762 +1,941 @@
-{% extends "base.html" %}
-
-{% block title %}Context Intelligence Dashboard - Disaster Response Assistant{% endblock %}
-{% block page_title %}🧠 Context Intelligence Dashboard{% endblock %}
-{% block subtitle %}Deep situation analysis using Gemma 3n's 128K token context window{% endblock %}
-
-{% block extra_css %}
-{{ super() }}
-<style>
-.context-intelligence-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 20px;
-    height: calc(100vh - 200px);
-}
-
-.data-sources-panel {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    border: 2px solid #e2e8f0;
-    overflow-y: auto;
-}
-
-.data-source-item {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 10px;
-    border: 1px solid #e2e8f0;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.data-source-item:hover {
-    border-color: #3b82f6;
-    transform: translateY(-1px);
-}
-
-.data-source-item.active {
-    border-color: #3b82f6;
-    background: #eff6ff;
-}
-
-.data-source-item.loading {
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.source-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-}
-
-.source-title {
-    font-weight: 600;
-    color: #1f2937;
-    font-size: 0.9rem;
-}
-
-.source-count {
-    background: #3b82f6;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-}
-
-.source-meta {
-    font-size: 0.8rem;
-    color: #6b7280;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.context-window-indicator {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-.context-usage {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-}
-
-.context-bar {
-    flex: 1;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.context-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
-    transition: width 0.5s ease;
-}
-
-.analysis-workspace {
-    background: white;
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.workspace-header {
-    background: #f8fafc;
-    padding: 15px 20px;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: between;
-}
-
-.analysis-tabs {
-    display: flex;
-    gap: 5px;
-}
-
-.analysis-tab {
-    padding: 8px 16px;
-    background: white;
-    border: 1px solid #d1d5db;
-    border-radius: 6px 6px 0 0;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-.analysis-tab.active {
-    background: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-}
-
-.context-controls {
-    margin-left: auto;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.model-indicator {
-    background: #10b981;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.analysis-content {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-.analysis-pane {
-    display: none;
-}
-
-.analysis-pane.active {
-    display: block;
-}
-
-.insight-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.insight-card {
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 20px;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-
-.insight-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.insight-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.insight-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-}
-
-.insight-icon.trend { background: #dbeafe; color: #1d4ed8; }
-.insight-icon.correlation { background: #dcfce7; color: #166534; }
-.insight-icon.prediction { background: #fef3c7; color: #92400e; }
-.insight-icon.anomaly { background: #fecaca; color: #991b1b; }
-
-.insight-title {
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.insight-confidence {
-    background: #3b82f6;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    margin-left: auto;
-}
-
-.insight-content {
-    color: #374151;
-    line-height: 1.5;
-}
-
-.insight-metrics {
-    display: flex;
-    gap: 15px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #e2e8f0;
-}
-
-.metric {
-    text-align: center;
-}
-
-.metric-value {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.metric-label {
-    font-size: 0.8rem;
-    color: #6b7280;
-}
-
-.timeline-view {
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.timeline-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 15px;
-}
-
-.timeline-controls {
-    display: flex;
-    gap: 10px;
-}
-
-.timeline-btn {
-    padding: 6px 12px;
-    background: white;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
-}
-
-.timeline-btn.active {
-    background: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-}
-
-.timeline-content {
-    position: relative;
-    height: 200px;
-    overflow-x: auto;
-}
-
-.timeline-track {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: #e5e7eb;
-    border-radius: 2px;
-}
-
-.timeline-events {
-    position: relative;
-    height: 100%;
-}
-
-.timeline-event {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid white;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.timeline-event:hover {
-    transform: translateY(-50%) scale(1.5);
-}
-
-.timeline-event.low { background: #10b981; }
-.timeline-event.medium { background: #f59e0b; }
-.timeline-event.high { background: #ef4444; }
-.timeline-event.critical { background: #991b1b; }
-
-.correlation-matrix {
-    background: white;
-    border-radius: 8px;
-    padding: 15px;
-    overflow-x: auto;
-}
-
-.matrix-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 2px;
-    min-width: 400px;
-}
-
-.matrix-cell {
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.matrix-cell:hover {
-    transform: scale(1.1);
-    z-index: 10;
-}
-
-.processing-intelligence {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.processing-status {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-}
-
-.processing-details {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 15px;
-}
-
-.processing-metric {
-    text-align: center;
-}
-
-.processing-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.processing-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-}
-
-.synthesis-panel {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    border: 2px solid #10b981;
-    margin-top: 20px;
-}
-
-.synthesis-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.synthesis-content {
-    color: #374151;
-    line-height: 1.6;
-}
-
-.key-findings {
-    background: #f0fdf4;
-    border-left: 4px solid #10b981;
-    padding: 15px;
-    border-radius: 0 8px 8px 0;
-    margin: 15px 0;
-}
-
-.findings-list {
-    list-style: none;
-    padding: 0;
-}
-
-.finding-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin: 8px 0;
-    padding: 8px;
-    background: rgba(16, 185, 129, 0.1);
-    border-radius: 6px;
-}
-
-.finding-priority {
-    background: #dc2626;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.finding-priority.medium { background: #f59e0b; }
-.finding-priority.low { background: #6b7280; }
-
-.context-actions {
-    display: flex;
-    gap: 15px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-}
-
-.context-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.context-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.btn-analyze {
-    background: #3b82f6;
-    color: white;
-}
-
-.btn-analyze:hover:not(:disabled) {
-    background: #2563eb;
-    transform: translateY(-2px);
-}
-
-.btn-export {
-    background: #10b981;
-    color: white;
-}
-
-.btn-export:hover:not(:disabled) {
-    background: #059669;
-    transform: translateY(-2px);
-}
-
-.btn-clear {
-    background: #6b7280;
-    color: white;
-}
-
-.btn-clear:hover:not(:disabled) {
-    background: #4b5563;
-    transform: translateY(-2px);
-}
-
-@media (max-width: 1024px) {
-    .context-intelligence-layout {
-        grid-template-columns: 1fr;
-        height: auto;
-    }
-    
-    .data-sources-panel {
-        height: 300px;
-    }
-    
-    .insight-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .workspace-header {
-        flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
-    }
-    
-    .context-controls {
-        margin-left: 0;
-        justify-content: center;
-    }
-    
-    .context-actions {
-        flex-direction: column;
-    }
-}
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="context-intelligence-layout">
-    <!-- Data Sources Panel -->
-    <div class="data-sources-panel">
-        <div class="context-window-indicator">
-            <h4 style="margin: 0 0 8px 0;">🧠 Gemma 3n Context Window</h4>
-            <div class="context-usage">
-                <span>128K Tokens</span>
-                <div class="context-bar">
-                    <div class="context-fill" id="contextFill" style="width: 0%"></div>
-                </div>
-                <span id="contextUsage">0%</span>
-            </div>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Intelligence Dashboard - Disaster Response Assistant</title>
+    <style>
+        :root {
+            --primary-color: #1e40af;
+            --primary-dark: #1e3a8a;
+            --color-critical: #dc2626;
+            --color-warning: #f59e0b;
+            --color-optimal: #16a34a;
+            --bg-color-base: #ffffff;
+            --bg-color-card: #ffffff;
+            --bg-color-light: #f8fafc;
+            --text-color-base: #1f2937;
+            --text-color-light: #6b7280;
+            --text-color-inverted: #ffffff;
+            --border-color: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --ai-accent: #8b5cf6;
+            --transition-fast: 0.2s ease;
+            --transition-smooth: 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-color-light);
+            color: var(--text-color-base);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, var(--ai-accent) 0%, #667eea 100%);
+            color: white;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .page-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .context-intelligence-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: calc(100vh - 200px);
+        }
+
+        .data-sources-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            overflow-y: auto;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .data-source-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .data-source-item:hover {
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .data-source-item.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .data-source-item.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .source-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .source-title {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 0.9rem;
+        }
+
+        .source-count {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+
+        .source-meta {
+            font-size: 0.8rem;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-window-indicator {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .context-usage {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .context-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .context-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
+            transition: width 0.5s ease;
+        }
+
+        .analysis-workspace {
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .workspace-header {
+            background: #f8fafc;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .analysis-tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .analysis-tab {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .analysis-tab.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .context-controls {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .model-indicator {
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .analysis-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .analysis-pane {
+            display: none;
+        }
+
+        .analysis-pane.active {
+            display: block;
+        }
+
+        .insight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .insight-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .insight-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .insight-icon.trend { 
+            background: #dbeafe; 
+            color: #1d4ed8; 
+        }
         
-        <h3 style="margin-bottom: 15px; color: #1f2937;">📊 Data Sources</h3>
+        .insight-icon.correlation { 
+            background: #dcfce7; 
+            color: #166534; 
+        }
         
-        <div class="data-source-item active" data-source="emergency-reports">
-            <div class="source-header">
-                <span class="source-title">🚨 Emergency Reports</span>
-                <span class="source-count" id="emergencyCount">0</span>
-            </div>
-            <div class="source-meta">
-                <span>📅 Last 30 days</span>
-                <span>•</span>
-                <span id="emergencySize">0 KB</span>
-            </div>
-        </div>
+        .insight-icon.prediction { 
+            background: #fef3c7; 
+            color: #92400e; 
+        }
         
-        <div class="data-source-item" data-source="weather-data">
-            <div class="source-header">
-                <span class="source-title">🌤️ Weather Data</span>
-                <span class="source-count" id="weatherCount">0</span>
-            </div>
-            <div class="source-meta">
-                <span>📅 Historical & Forecast</span>
-                <span>•</span>
-                <span id="weatherSize">0 KB</span>
-            </div>
-        </div>
-        
-        <div class="data-source-item" data-source="infrastructure">
-            <div class="source-header">
-                <span class="source-title">🏗️ Infrastructure Data</span>
-                <span class="source-count" id="infrastructureCount">0</span>
-            </div>
-            <div class="source-meta">
-                <span>📅 Current status</span>
-                <span>•</span>
-                <span id="infrastructureSize">0 KB</span>
-            </div>
-        </div>
-        
-        <div class="data-source-item" data-source="population">
-            <div class="source-header">
-                <span class="source-title">👥 Population Data</span>
-                <span class="source-count" id="populationCount">0</span>
-            </div>
-            <div class="source-meta">
-                <span>📅 Demographics</span>
-                <span>•</span>
-                <span id="populationSize">0 KB</span>
-            </div>
-        </div>
-        
-        <div class="data-source-item" data-source="resources">
-            <div class="source-header">
-                <span class="source-title">📦 Resource Inventory</span>
-                <span class="source-count" id="resourceCount">0</span>
-            </div>
-            <div class="source-meta">
-                <span>📅 Real-time</span>
-                <span>•</span>
-                <span id="resourceSize">0 KB</span>
-            </div>
-        </div>
-        
-        <div class="data-source-item" data-source="social-media">
-            <div class="source-header">
-                <span class="source-title">📱 Social Intelligence</span>
-                <span class="source-count" id="socialCount">0</span>
-            </div>
-            <div class="source-meta">
-                <span>📅 Last 24 hours</span>
-                <span>•</span>
-                <span id="socialSize">0 KB</span>
-            </div>
-        </div>
-        
-        <div class="data-source-item" data-source="historical">
-            <div class="source-header">
-                <span class="source-title">📚 Historical Patterns</span>
-                <span class="source-count" id="historicalCount">0</span>
-            </div>
-            <div class="source-meta">
-                <span>📅 5 year archive</span>
-                <span>•</span>
-                <span id="historicalSize">0 KB</span>
-            </div>
-        </div>
+        .insight-icon.anomaly { 
+            background: #fecaca; 
+            color: #991b1b; 
+        }
+
+        .insight-title {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .insight-confidence {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: auto;
+        }
+
+        .insight-content {
+            color: #374151;
+            line-height: 1.5;
+        }
+
+        .insight-metrics {
+            display: flex;
+            gap: 15px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .timeline-view {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .timeline-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .timeline-btn {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .timeline-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .timeline-content {
+            position: relative;
+            height: 200px;
+            overflow-x: auto;
+        }
+
+        .timeline-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+        }
+
+        .timeline-events {
+            position: relative;
+            height: 100%;
+        }
+
+        .timeline-event {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid white;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .timeline-event:hover {
+            transform: translateY(-50%) scale(1.5);
+        }
+
+        .timeline-event.low { background: #10b981; }
+        .timeline-event.medium { background: #f59e0b; }
+        .timeline-event.high { background: #ef4444; }
+        .timeline-event.critical { background: #991b1b; }
+
+        .correlation-matrix {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 2px;
+            min-width: 400px;
+        }
+
+        .matrix-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .matrix-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .processing-intelligence {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .processing-status {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .processing-details {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+
+        .processing-metric {
+            text-align: center;
+        }
+
+        .processing-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .processing-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .synthesis-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #10b981;
+            margin-top: 20px;
+        }
+
+        .synthesis-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .synthesis-content {
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        .key-findings {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin: 15px 0;
+        }
+
+        .findings-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .finding-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 8px 0;
+            padding: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 6px;
+        }
+
+        .finding-priority {
+            background: #dc2626;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .finding-priority.medium { background: #f59e0b; }
+        .finding-priority.low { background: #6b7280; }
+
+        .context-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .context-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .context-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-analyze {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-analyze:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-export {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-export:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .btn-clear {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-clear:hover:not(:disabled) {
+            background: #4b5563;
+            transform: translateY(-2px);
+        }
+
+        /* Navigation buttons */
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            padding: 0.75rem 1.5rem;
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        @media (max-width: 1024px) {
+            .context-intelligence-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .data-sources-panel {
+                height: 300px;
+            }
+            
+            .insight-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workspace-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .context-controls {
+                margin-left: 0;
+                justify-content: center;
+            }
+            
+            .context-actions {
+                flex-direction: column;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .main-container {
+                padding: 1rem;
+            }
+
+            .analysis-tabs {
+                flex-wrap: wrap;
+            }
+
+            .analysis-tab {
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-header {
+                padding: 1.5rem 1rem;
+            }
+
+            .page-title {
+                font-size: 1.75rem;
+            }
+
+            .page-subtitle {
+                font-size: 1rem;
+            }
+
+            .processing-details {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .timeline-controls {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">🧠 Context Intelligence Dashboard</h1>
+        <p class="page-subtitle">Deep situation analysis using Gemma 3n's 128K token context window</p>
     </div>
-    
-    <!-- Analysis Workspace -->
-    <div class="analysis-workspace">
-        <div class="workspace-header">
-            <div class="analysis-tabs">
-                <div class="analysis-tab active" data-tab="insights">🔍 Deep Insights</div>
-                <div class="analysis-tab" data-tab="timeline">⏰ Timeline Analysis</div>
-                <div class="analysis-tab" data-tab="correlations">🔗 Correlations</div>
-                <div class="analysis-tab" data-tab="synthesis">🧠 AI Synthesis</div>
-            </div>
-            
-            <div class="context-controls">
-                <div class="model-indicator">Gemma 3n 4B</div>
-                <button class="context-btn btn-analyze" id="analyzeContextBtn">
-                    🔍 Analyze Context
-                </button>
-            </div>
+
+    <!-- Navigation Buttons -->
+    <div class="main-container">
+        <div class="nav-buttons">
+            <a href="crisis-command-center.html" class="nav-btn">
+                🏠 Command Center
+            </a>
+            <a href="ai-command-center.html" class="nav-btn">
+                🤖 AI Command
+            </a>
+            <a href="predictive-analytics-dashboard.html" class="nav-btn">
+                📊 Analytics
+            </a>
+            <a href="map_reports.html" class="nav-btn">
+                🗺️ Live Map
+            </a>
         </div>
-        
-        <div class="analysis-content">
-            <!-- Processing Status (shown during analysis) -->
-            <div class="processing-intelligence" id="processingIntelligence" style="display: none;">
-                <div class="processing-status" id="processingStatus">
-                    🧠 Processing 128K context with Gemma 3n...
-                </div>
-                <div class="processing-details">
-                    <div class="processing-metric">
-                        <div class="processing-value" id="tokensProcessed">0</div>
-                        <div class="processing-label">Tokens Processed</div>
-                    </div>
-                    <div class="processing-metric">
-                        <div class="processing-value" id="patternsFound">0</div>
-                        <div class="processing-label">Patterns Found</div>
-                    </div>
-                    <div class="processing-metric">
-                        <div class="processing-value" id="correlationsDetected">0</div>
-                        <div class="processing-label">Correlations</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Deep Insights Tab -->
-            <div class="analysis-pane active" id="insights-pane">
-                <div class="insight-grid" id="insightGrid">
-                    <!-- Insights will be populated here -->
-                </div>
-            </div>
-            
-            <!-- Timeline Analysis Tab -->
-            <div class="analysis-pane" id="timeline-pane">
-                <div class="timeline-view">
-                    <div class="timeline-header">
-                        <h4>📅 Temporal Pattern Analysis</h4>
-                        <div class="timeline-controls">
-                            <button class="timeline-btn active" data-period="24h">24H</button>
-                            <button class="timeline-btn" data-period="7d">7D</button>
-                            <button class="timeline-btn" data-period="30d">30D</button>
-                            <button class="timeline-btn" data-period="1y">1Y</button>
+        <div class="context-intelligence-layout">
+            <!-- Data Sources Panel -->
+            <div class="data-sources-panel">
+                <div class="context-window-indicator">
+                    <h4 style="margin: 0 0 8px 0;">🧠 Gemma 3n Context Window</h4>
+                    <div class="context-usage">
+                        <span>128K Tokens</span>
+                        <div class="context-bar">
+                            <div class="context-fill" id="contextFill" style="width: 0%"></div>
                         </div>
-                    </div>
-                    <div class="timeline-content">
-                        <div class="timeline-track"></div>
-                        <div class="timeline-events" id="timelineEvents">
-                            <!-- Timeline events will be populated here -->
-                        </div>
+                        <span id="contextUsage">0%</span>
                     </div>
                 </div>
                 
-                <div class="insight-grid" id="temporalInsights">
-                    <!-- Temporal insights will be populated here -->
-                </div>
-            </div>
-            
-            <!-- Correlations Tab -->
-            <div class="analysis-pane" id="correlations-pane">
-                <h4 style="margin-bottom: 15px;">🔗 Cross-Data Correlations</h4>
-                <div class="correlation-matrix" id="correlationMatrix">
-                    <!-- Correlation matrix will be populated here -->
+                <h3 style="margin-bottom: 15px; color: #1f2937;">📊 Data Sources</h3>
+                
+                <div class="data-source-item active" data-source="emergency-reports">
+                    <div class="source-header">
+                        <span class="source-title">🚨 Emergency Reports</span>
+                        <span class="source-count" id="emergencyCount">0</span>
+                    </div>
+                    <div class="source-meta">
+                        <span>📅 Last 30 days</span>
+                        <span>•</span>
+                        <span id="emergencySize">0 KB</span>
+                    </div>
                 </div>
                 
-                <div class="insight-grid" id="correlationInsights">
-                    <!-- Correlation insights will be populated here -->
+                <div class="data-source-item" data-source="weather-data">
+                    <div class="source-header">
+                        <span class="source-title">🌤️ Weather Data</span>
+                        <span class="source-count" id="weatherCount">0</span>
+                    </div>
+                    <div class="source-meta">
+                        <span>📅 Historical & Forecast</span>
+                        <span>•</span>
+                        <span id="weatherSize">0 KB</span>
+                    </div>
+                </div>
+                
+                <div class="data-source-item" data-source="infrastructure">
+                    <div class="source-header">
+                        <span class="source-title">🏗️ Infrastructure Data</span>
+                        <span class="source-count" id="infrastructureCount">0</span>
+                    </div>
+                    <div class="source-meta">
+                        <span>📅 Current status</span>
+                        <span>•</span>
+                        <span id="infrastructureSize">0 KB</span>
+                    </div>
+                </div>
+                
+                <div class="data-source-item" data-source="population">
+                    <div class="source-header">
+                        <span class="source-title">👥 Population Data</span>
+                        <span class="source-count" id="populationCount">0</span>
+                    </div>
+                    <div class="source-meta">
+                        <span>📅 Demographics</span>
+                        <span>•</span>
+                        <span id="populationSize">0 KB</span>
+                    </div>
+                </div>
+                
+                <div class="data-source-item" data-source="resources">
+                    <div class="source-header">
+                        <span class="source-title">📦 Resource Inventory</span>
+                        <span class="source-count" id="resourceCount">0</span>
+                    </div>
+                    <div class="source-meta">
+                        <span>📅 Real-time</span>
+                        <span>•</span>
+                        <span id="resourceSize">0 KB</span>
+                    </div>
+                </div>
+                
+                <div class="data-source-item" data-source="social-media">
+                    <div class="source-header">
+                        <span class="source-title">📱 Social Intelligence</span>
+                        <span class="source-count" id="socialCount">0</span>
+                    </div>
+                    <div class="source-meta">
+                        <span>📅 Last 24 hours</span>
+                        <span>•</span>
+                        <span id="socialSize">0 KB</span>
+                    </div>
+                </div>
+                
+                <div class="data-source-item" data-source="historical">
+                    <div class="source-header">
+
+                        <span class="source-title">📚 Historical Patterns</span>
+                        <span class="source-count" id="historicalCount">0</span>
+                    </div>
+                    <div class="source-meta">
+                        <span>📅 5 year archive</span>
+                        <span>•</span>
+                        <span id="historicalSize">0 KB</span>
+                    </div>
                 </div>
             </div>
             
-            <!-- AI Synthesis Tab -->
-            <div class="analysis-pane" id="synthesis-pane">
-                <div class="synthesis-panel">
-                    <div class="synthesis-header">
-                        <h3>🧠 Comprehensive Situation Analysis</h3>
-                        <div class="model-indicator">Powered by Gemma 3n 128K Context</div>
+            <!-- Analysis Workspace -->
+            <div class="analysis-workspace">
+                <div class="workspace-header">
+                    <div class="analysis-tabs">
+                        <div class="analysis-tab active" data-tab="insights">🔍 Deep Insights</div>
+                        <div class="analysis-tab" data-tab="timeline">⏰ Timeline Analysis</div>
+                        <div class="analysis-tab" data-tab="correlations">🔗 Correlations</div>
+                        <div class="analysis-tab" data-tab="synthesis">🧠 AI Synthesis</div>
                     </div>
                     
-                    <div class="synthesis-content" id="synthesisContent">
-                        <p>Click "Analyze Context" to generate comprehensive situation analysis using all available data sources...</p>
-                    </div>
-                    
-                    <div class="key-findings" id="keyFindings" style="display: none;">
-                        <h4>🎯 Key Findings</h4>
-                        <ul class="findings-list" id="findingsList">
-                            <!-- Key findings will be populated here -->
-                        </ul>
+                    <div class="context-controls">
+                        <div class="model-indicator">Gemma 3n 4B</div>
+                        <button class="context-btn btn-analyze" id="analyzeContextBtn">
+                            🔍 Analyze Context
+                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
+                
+                <div class="analysis-content">
+                    <!-- Processing Status (shown during analysis) -->
+                    <div class="processing-intelligence" id="processingIntelligence" style="display: none;">
+                        <div class="processing-status" id="processingStatus">
+                            🧠 Processing 128K context with Gemma 3n...
+                        </div>
+                        <div class="processing-details">
+                            <div class="processing-metric">
+                                <div class="processing-value" id="tokensProcessed">0</div>
+                                <div class="processing-label">Tokens Processed</div>
+                            </div>
+                            <div class="processing-metric">
+                                <div class="processing-value" id="patternsFound">0</div>
+                                <div class="processing-label">Patterns Found</div>
+                            </div>
+                            <div class="processing-metric">
+                                <div class="processing-value" id="correlationsDetected">0</div>
+                                <div class="processing-label">Correlations</div>
+                            </div>
+                        </div>
+                    </div>
+<!-- Deep Insights Tab -->
+<div class="analysis-pane active" id="insights-pane">
+    <div class="insight-grid" id="insightGrid">
+        <p style="text-align: center; color: #6b7280; padding: 2rem;">
+            Select data sources and click "Analyze Context" to generate AI-powered insights...
+        </p>
     </div>
 </div>
 
+<!-- Timeline Analysis Tab -->
+<div class="analysis-pane" id="timeline-pane">
+    <div class="timeline-view">
+        <div class="timeline-header">
+            <h4>📅 Temporal Pattern Analysis</h4>
+            <div class="timeline-controls">
+                <button class="timeline-btn active" data-period="24h">24H</button>
+                <button class="timeline-btn" data-period="7d">7D</button>
+                <button class="timeline-btn" data-period="30d">30D</button>
+                <button class="timeline-btn" data-period="1y">1Y</button>
+            </div>
+        </div>
+        <div class="timeline-content">
+            <div class="timeline-track"></div>
+            <div class="timeline-events" id="timelineEvents">
+                <!-- Timeline events will be populated here -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="insight-grid" id="temporalInsights">
+        <p style="text-align: center; color: #6b7280; padding: 2rem;">
+            Run context analysis to view temporal patterns and trends...
+        </p>
+    </div>
+</div>
+<!-- Correlations Tab -->
+<div class="analysis-pane" id="correlations-pane">
+    <h4 style="margin-bottom: 15px;">🔗 Cross-Data Correlations</h4>
+    <div class="correlation-matrix" id="correlationMatrix">
+        <p style="text-align: center; color: #6b7280; padding: 2rem;">
+            No correlations analyzed yet. Run context analysis to identify patterns...
+        </p>
+    </div>
+    
+    <div class="insight-grid" id="correlationInsights">
+        <!-- Correlation insights will be populated here -->
+    </div>
+</div>
+
+<!-- AI Synthesis Tab -->
+<div class="analysis-pane" id="synthesis-pane">
+    <div class="synthesis-panel">
+        <div class="synthesis-header">
+            <h3>🧠 Comprehensive Situation Analysis</h3>
+            <div class="model-indicator">Powered by Gemma 3n 128K Context</div>
+        </div>
+        
+        <div class="synthesis-content" id="synthesisContent">
+            <p>Click "Analyze Context" to generate comprehensive situation analysis using all available data sources...</p>
+        </div>
+        
+        <div class="key-findings" id="keyFindings" style="display: none;">
+            <h4>🎯 Key Findings</h4>
+            <ul class="findings-list" id="findingsList">
+                <!-- Key findings will be populated here -->
+            </ul>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+</div>
 <!-- Action Buttons -->
 <div class="context-actions">
     <button class="context-btn btn-analyze" id="deepAnalysisBtn" disabled>
@@ -772,57 +951,714 @@
         🗑️ Clear Context
     </button>
 </div>
-{% endblock %}
+</div>
 
-{% block scripts %}
-<script src="/static/js/context-intelligence-dashboard.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const contextDashboard = new ContextIntelligenceDashboard();
-    
-    // Update AI status for context processing
-    const aiStatusDot = document.getElementById('aiStatusDot');
-    const aiStatusText = document.getElementById('aiStatusText');
-    
-    if (window.EdgeAI && window.EdgeAI.isReady) {
-        aiStatusDot.className = 'ai-status-dot';
-        aiStatusText.textContent = '🧠 Gemma 3n 128K Context Ready';
-    } else {
-        aiStatusDot.className = 'ai-status-dot loading';
-        aiStatusText.textContent = '🧠 Loading 128K Context Model...';
+/**
+ * Context Intelligence Dashboard - Gemma 3n 128K Context Processing
+ * Handles deep situation analysis and comprehensive data synthesis
+ */
+class ContextIntelligenceDashboard {
+    constructor() {
+        this.selectedDataSources = new Set(['emergency-reports']);
+        this.contextUsage = 0;
+        this.maxContextTokens = 128000;
+        this.currentAnalysis = null;
+        this.selectedModel = 'gemma-3n-4b';
+        this.activeTab = 'insights';
+        this.timelinePeriod = '24h';
+        
+        this.initializeElements();
+        this.setupEventListeners();
+        this.loadInitialData();
+        this.initializeGemma3n();
     }
-    
-    // Tab switching
-    document.querySelectorAll('.analysis-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
+
+    initializeElements() {
+                // Context elements
+                this.contextFill = document.getElementById('contextFill');
+                this.contextUsageElement = document.getElementById('contextUsage');
+                this.analyzeContextBtn = document.getElementById('analyzeContextBtn');
+                
+                // Analysis elements
+                this.insightGrid = document.getElementById('insightGrid');
+                this.timelineEvents = document.getElementById('timelineEvents');
+                this.correlationMatrix = document.getElementById('correlationMatrix');
+                this.synthesisContent = document.getElementById('synthesisContent');
+                this.keyFindings = document.getElementById('keyFindings');
+                this.findingsList = document.getElementById('findingsList');
+                
+                // Action buttons
+                this.deepAnalysisBtn = document.getElementById('deepAnalysisBtn');
+                this.exportInsightsBtn = document.getElementById('exportInsightsBtn');
+                this.shareInsightsBtn = document.getElementById('shareInsightsBtn');
+                this.clearContextBtn = document.getElementById('clearContextBtn');
+                
+                // Processing elements
+                this.processingIntelligence = document.getElementById('processingIntelligence');
+                this.processingStatus = document.getElementById('processingStatus');
+                this.tokensProcessed = document.getElementById('tokensProcessed');
+                this.patternsFound = document.getElementById('patternsFound');
+                this.correlationsDetected = document.getElementById('correlationsDetected');
+                
+                // Data source counters
+                this.dataSourceCounters = {
+                    'emergency-reports': document.getElementById('emergencyCount'),
+                    'weather-data': document.getElementById('weatherCount'),
+                    'infrastructure': document.getElementById('infrastructureCount'),
+                    'population': document.getElementById('populationCount'),
+                    'resources': document.getElementById('resourceCount'),
+                    'social-media': document.getElementById('socialCount'),
+                    'historical': document.getElementById('historicalCount')
+                };
+                
+                this.dataSourceSizes = {
+                    'emergency-reports': document.getElementById('emergencySize'),
+                    'weather-data': document.getElementById('weatherSize'),
+                    'infrastructure': document.getElementById('infrastructureSize'),
+                    'population': document.getElementById('populationSize'),
+                    'resources': document.getElementById('resourceSize'),
+                    'social-media': document.getElementById('socialSize'),
+                    'historical': document.getElementById('historicalSize')
+                };
+            }
+
+            async initializeGemma3n() {
+                try {
+                    if (window.EdgeAI) {
+                        await window.EdgeAI.loadContextModel(this.selectedModel);
+                        console.log('✅ Gemma 3n context model loaded');
+                        this.updateAIStatus('ready');
+                    } else {
+                        console.warn('⚠️ EdgeAI not available, using fallback processing');
+                        this.updateAIStatus('fallback');
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to initialize Gemma 3n:', error);
+                    this.updateAIStatus('error');
+                }
+            }
             
-            // Update active tab
-            document.querySelectorAll('.analysis-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.analysis-pane').forEach(p => p.classList.remove('active'));
+            updateAIStatus(status) {
+                // In a standalone version, we'll just log the status
+                console.log(`AI Status: ${status}`);
+            }
             
-            this.classList.add('active');
-            document.getElementById(`${tabName}-pane`).classList.add('active');
+            setupEventListeners() {
+                // Main analysis button
+                this.analyzeContextBtn.addEventListener('click', () => {
+                    this.performContextAnalysis();
+                });
+                
+                // Action buttons
+                this.deepAnalysisBtn.addEventListener('click', () => {
+                    this.performDeepAnalysis();
+                });
+                
+                this.exportInsightsBtn.addEventListener('click', () => {
+                    this.exportInsights();
+                });
+                
+                this.shareInsightsBtn.addEventListener('click', () => {
+                    this.shareInsights();
+                });
+                
+                this.clearContextBtn.addEventListener('click', () => {
+                    this.clearContext();
+                });
+                
+                // Data source selection
+                document.querySelectorAll('.data-source-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        this.selectDataSource(e.currentTarget.dataset.source);
+                    });
+                });
+            }
+            
+            async loadInitialData() {
+                try {
+                    // Load data source counts and sizes with fallback data
+                    const dataSources = [
+                        { id: 'emergency-reports', count: 42, size: '8 KB' },
+                        { id: 'weather-data', count: 24, size: '15 KB' },
+                        { id: 'infrastructure', count: 156, size: '8 KB' },
+                        { id: 'population', count: 12, size: '22 KB' },
+                        { id: 'resources', count: 89, size: '12 KB' },
+                        { id: 'social-media', count: 342, size: '45 KB' },
+                        { id: 'historical', count: 1247, size: '156 KB' }
+                    ];
+                    
+                    for (const source of dataSources) {
+                        this.updateDataSourceDisplay(source.id, source.count, source.size);
+                    }
+                    
+                    this.updateContextUsage();
+                    
+                } catch (error) {
+                    console.error('❌ Error loading initial data:', error);
+                }
+            }
+
+            updateDataSourceDisplay(sourceId, count, size) {
+                if (this.dataSourceCounters[sourceId]) {
+                    this.dataSourceCounters[sourceId].textContent = count;
+                }
+                if (this.dataSourceSizes[sourceId]) {
+                    this.dataSourceSizes[sourceId].textContent = size;
+                }
+            }
+            
+            selectDataSource(sourceId) {
+                if (this.selectedDataSources.has(sourceId)) {
+                    this.selectedDataSources.delete(sourceId);
+                } else {
+                    this.selectedDataSources.add(sourceId);
+                }
+                
+                // Update UI
+                document.querySelectorAll('.data-source-item').forEach(item => {
+                    const isSelected = this.selectedDataSources.has(item.dataset.source);
+                    item.classList.toggle('active', isSelected);
+                });
+                
+                this.updateContextUsage();
+            }
+            
+            updateContextUsage() {
+                // Calculate estimated token usage based on selected data sources
+                const tokenEstimates = {
+                    'emergency-reports': 15000,
+                    'weather-data': 8000,
+                    'infrastructure': 12000,
+                    'population': 6000,
+                    'resources': 4000,
+                    'social-media': 25000,
+                    'historical': 45000
+                };
+                
+                let totalTokens = 0;
+                this.selectedDataSources.forEach(sourceId => {
+                    totalTokens += tokenEstimates[sourceId] || 0;
+                });
+                
+                const usagePercent = Math.min((totalTokens / this.maxContextTokens) * 100, 100);
+                
+                this.contextFill.style.width = `${usagePercent}%`;
+                this.contextUsageElement.textContent = `${Math.round(usagePercent)}%`;
+                
+                // Update context fill color based on usage
+                if (usagePercent > 90) {
+                    this.contextFill.style.background = '#ef4444';
+                } else if (usagePercent > 70) {
+                    this.contextFill.style.background = '#f59e0b';
+                } else {
+                    this.contextFill.style.background = '#10b981';
+                }
+                
+                this.currentTokenCount = totalTokens;
+            }
+
+            async performContextAnalysis() {
+                if (this.selectedDataSources.size === 0) {
+                    alert('Please select at least one data source for analysis.');
+                    return;
+                }
+                
+                this.showProcessingIntelligence();
+                
+                try {
+                    // Prepare analysis data
+                    const analysisData = {
+                        dataSources: Array.from(this.selectedDataSources),
+                        contextTokens: this.currentTokenCount,
+                        model: this.selectedModel,
+                        analysisType: 'comprehensive',
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Perform Gemma 3n context analysis
+                    const analysis = await this.analyzeWithGemma3n(analysisData);
+                    
+                    // Display results
+                    this.displayContextResults(analysis);
+                    this.enableActionButtons();
+                    
+                } catch (error) {
+                    console.error('Error during context analysis:', error);
+                    alert('Analysis failed. Please try again.');
+                } finally {
+                    this.hideProcessingIntelligence();
+                }
+            }
+            
+            showProcessingIntelligence() {
+                this.processingIntelligence.style.display = 'block';
+                
+                // Simulate processing steps
+                const steps = [
+                    'Loading data sources...',
+                    'Processing emergency reports...',
+                    'Analyzing weather patterns...',
+                    'Cross-referencing infrastructure data...',
+                    'Identifying correlations...',
+                    'Generating insights...',
+                    'Synthesizing findings...'
+                ];
+                
+                let stepIndex = 0;
+                let tokenCount = 0;
+                let patternCount = 0;
+                let correlationCount = 0;
+                
+                const processingInterval = setInterval(() => {
+                    if (stepIndex < steps.length) {
+                        this.processingStatus.textContent = steps[stepIndex];
+                        stepIndex++;
+                        
+                        // Update counters
+                        tokenCount += Math.floor(Math.random() * 5000) + 1000;
+                        this.tokensProcessed.textContent = tokenCount.toLocaleString();
+                        
+                        if (stepIndex > 3) {
+                            patternCount += Math.floor(Math.random() * 3) + 1;
+                            this.patternsFound.textContent = patternCount;
+                        }
+                        
+                        if (stepIndex > 4) {
+                            correlationCount += Math.floor(Math.random() * 2) + 1;
+                            this.correlationsDetected.textContent = correlationCount;
+                        }
+                    } else {
+                        clearInterval(processingInterval);
+                        this.processingStatus.textContent = 'Analysis complete';
+                    }
+                }, 1000);
+                
+                // Store interval reference for cleanup
+                this.processingInterval = processingInterval;
+            }
+            
+            hideProcessingIntelligence() {
+                if (this.processingInterval) {
+                    clearInterval(this.processingInterval);
+                }
+                this.processingIntelligence.style.display = 'none';
+            }
+
+            async analyzeWithGemma3n(analysisData) {
+                // Simulate Gemma 3n context analysis with 128K token processing
+                await new Promise(resolve => setTimeout(resolve, 8000));
+                
+                // Generate comprehensive analysis
+                return this.simulateContextAnalysis(analysisData);
+            }
+            
+            simulateContextAnalysis(analysisData) {
+                const insights = [];
+                const correlations = [];
+                const timelineEvents = [];
+                
+                // Generate insights based on selected data sources
+                if (analysisData.dataSources.includes('emergency-reports')) {
+                    insights.push({
+                        type: 'trend',
+                        title: 'Emergency Report Volume Spike',
+                        content: 'Emergency reports have increased by 34% in the past 48 hours, particularly concentrated in downtown areas.',
+                        confidence: 0.92,
+                        priority: 'high',
+                        metrics: { change: '+34%', timeframe: '48h', locations: 'Downtown' }
+                    });
+                }
+                
+                if (analysisData.dataSources.includes('weather-data')) {
+                    insights.push({
+                        type: 'correlation',
+                        title: 'Weather-Emergency Correlation',
+                        content: 'Strong correlation (r=0.78) between precipitation levels and infrastructure-related emergency reports.',
+                        confidence: 0.87,
+                        priority: 'medium',
+                        metrics: { correlation: '0.78', factor: 'Precipitation', impact: 'Infrastructure' }
+                    });
+                }
+                
+                if (analysisData.dataSources.includes('historical')) {
+                    insights.push({
+                        type: 'prediction',
+                        title: 'Historical Pattern Recognition',
+                        content: 'Current conditions match historical patterns preceding major flooding events (87% similarity).',
+                        confidence: 0.89,
+                        priority: 'critical',
+                        metrics: { similarity: '87%', event_type: 'Flooding', timeframe: 'Next 72h' }
+                    });
+                }
+                
+                if (analysisData.dataSources.includes('social-media')) {
+                    insights.push({
+                        type: 'anomaly',
+                        title: 'Social Media Sentiment Shift',
+                        content: 'Unusual spike in anxiety-related social media posts, 245% above baseline in affected areas.',
+                        confidence: 0.83,
+                        priority: 'medium',
+                        metrics: { change: '+245%', sentiment: 'Anxiety', baseline: 'Normal' }
+                    });
+                }
+                
+                // Generate correlations
+                correlations.push(
+                    { source1: 'Weather', source2: 'Emergency Reports', strength: 0.78, type: 'positive' },
+                    { source1: 'Infrastructure', source2: 'Population Density', strength: 0.65, type: 'positive' },
+                    { source1: 'Social Media', source2: 'Emergency Reports', strength: 0.71, type: 'positive' },
+                    { source1: 'Historical Patterns', source2: 'Current Events', strength: 0.87, type: 'positive' }
+                );
+                
+                // Generate timeline events
+                const now = new Date();
+                for (let i = 0; i < 10; i++) {
+                    const eventTime = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000)); // Every 2 hours
+                    timelineEvents.push({
+                        time: eventTime,
+                        severity: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)],
+                        description: `Event ${i + 1}: ${['Infrastructure alert', 'Weather warning', 'Emergency report', 'Resource update'][Math.floor(Math.random() * 4)]}`,
+                        position: (i / 9) * 100 // Position percentage
+                    });
+                }
+                
+                // Generate synthesis
+                const synthesis = {
+                    summary: `Comprehensive analysis of ${analysisData.dataSources.length} data sources reveals heightened emergency activity with strong weather correlations. Historical pattern matching suggests elevated risk for flooding events. Recommend increased monitoring and resource pre-positioning.`,
+                    keyFindings: [
+                        { priority: 'critical', text: 'Historical pattern match for flooding (87% similarity) - recommend immediate preparation' },
+                        { priority: 'high', text: 'Emergency reports up 34% in downtown areas - deploy additional resources' },
+                        { priority: 'medium', text: 'Strong weather-infrastructure correlation detected - monitor vulnerable areas' },
+                        { priority: 'low', text: 'Social media sentiment monitoring effective for early warning detection' }
+                    ],
+                    recommendations: [
+                        'Increase emergency response team readiness',
+                        'Pre-position flood response equipment',
+                        'Issue public preparedness advisories',
+                        'Monitor infrastructure in high-risk areas'
+                    ]
+                };
+                
+                return {
+                    insights,
+                    correlations,
+                    timelineEvents,
+                    synthesis,
+                    metadata: {
+                        tokensProcessed: analysisData.contextTokens,
+                        dataSources: analysisData.dataSources,
+                        analysisTime: new Date().toISOString(),
+                        model: analysisData.model
+                    }
+                };
+            }
+
+            displayContextResults(analysis) {
+                this.currentAnalysis = analysis;
+                
+                // Display insights
+                this.displayInsights(analysis.insights);
+                
+                // Display timeline
+                this.displayTimeline(analysis.timelineEvents);
+                
+                // Display correlations
+                this.displayCorrelations(analysis.correlations);
+                
+                // Display synthesis
+                this.displaySynthesis(analysis.synthesis);
+            }
+            
+            displayInsights(insights) {
+                this.insightGrid.innerHTML = '';
+                
+                insights.forEach(insight => {
+                    const card = document.createElement('div');
+                    card.className = 'insight-card';
+                    
+                    card.innerHTML = `
+                        <div class="insight-header">
+                            <div class="insight-icon ${insight.type}">
+                                ${this.getInsightIcon(insight.type)}
+                            </div>
+                            <div class="insight-title">${insight.title}</div>
+                            <div class="insight-confidence">${Math.round(insight.confidence * 100)}%</div>
+                        </div>
+                        <div class="insight-content">${insight.content}</div>
+                        <div class="insight-metrics">
+                            ${Object.entries(insight.metrics).map(([key, value]) => `
+                                <div class="metric">
+                                    <div class="metric-value">${value}</div>
+                                    <div class="metric-label">${key.replace(/_/g, ' ')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    this.insightGrid.appendChild(card);
+                });
+            }
+            
+            getInsightIcon(type) {
+                const icons = {
+                    trend: '📈',
+                    correlation: '🔗',
+                    prediction: '🔮',
+                    anomaly: '⚠️'
+                };
+                return icons[type] || '💡';
+            }
+            
+            displayTimeline(events) {
+                this.timelineEvents.innerHTML = '';
+                
+                events.forEach(event => {
+                    const eventElement = document.createElement('div');
+                    eventElement.className = `timeline-event ${event.severity}`;
+                    eventElement.style.left = `${event.position}%`;
+                    eventElement.title = `${event.description} - ${event.time.toLocaleString()}`;
+                    
+                    this.timelineEvents.appendChild(eventElement);
+                });
+            }
+            
+            displayCorrelations(correlations) {
+                this.correlationMatrix.innerHTML = '';
+                
+                const matrixGrid = document.createElement('div');
+                matrixGrid.className = 'matrix-grid';
+                
+                correlations.forEach(correlation => {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell';
+                    
+                    const strength = Math.round(correlation.strength * 100);
+                    cell.textContent = `${strength}%`;
+                    cell.title = `${correlation.source1} ↔ ${correlation.source2}: ${strength}% correlation`;
+                    
+                    // Color based on strength
+                    if (strength > 80) {
+                        cell.style.background = '#dc2626';
+                    } else if (strength > 60) {
+                        cell.style.background = '#f59e0b';
+                    } else if (strength > 40) {
+                        cell.style.background = '#10b981';
+                    } else {
+                        cell.style.background = '#6b7280';
+                    }
+                    
+                    matrixGrid.appendChild(cell);
+                });
+                
+                this.correlationMatrix.appendChild(matrixGrid);
+            }
+            
+            displaySynthesis(synthesis) {
+                this.synthesisContent.textContent = synthesis.summary;
+                
+                // Display key findings
+                this.keyFindings.style.display = 'block';
+                this.findingsList.innerHTML = '';
+                
+                synthesis.keyFindings.forEach(finding => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'finding-item';
+                    
+                    listItem.innerHTML = `
+                        <div class="finding-priority ${finding.priority}">${finding.priority.toUpperCase()}</div>
+                        <div>${finding.text}</div>
+                    `;
+                    
+                    this.findingsList.appendChild(listItem);
+                });
+            }
+            
+            enableActionButtons() {
+                this.deepAnalysisBtn.disabled = false;
+                this.exportInsightsBtn.disabled = false;
+                this.shareInsightsBtn.disabled = false;
+            }
+            
+            updateTimelinePeriod(period) {
+                this.timelinePeriod = period;
+                // In a real implementation, this would reload timeline data
+                console.log(`Timeline period changed to: ${period}`);
+            }
+
+            async performDeepAnalysis() {
+                if (!this.currentAnalysis) {
+                    alert('Please run context analysis first.');
+                    return;
+                }
+                
+                try {
+                    // Simulate deep analysis
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    alert('✅ Deep analysis completed and saved!');
+                    console.log('Deep analysis completed for:', this.currentAnalysis);
+                } catch (error) {
+                    console.error('Error performing deep analysis:', error);
+                    alert('❌ Deep analysis failed. Please try again.');
+                }
+            }
+            
+            exportInsights() {
+                if (!this.currentAnalysis) {
+                    alert('No analysis available to export.');
+                    return;
+                }
+                
+                const exportData = {
+                    title: 'Context Intelligence Analysis Report',
+                    timestamp: new Date().toISOString(),
+                    metadata: this.currentAnalysis.metadata,
+                    insights: this.currentAnalysis.insights,
+                    correlations: this.currentAnalysis.correlations,
+                    synthesis: this.currentAnalysis.synthesis,
+                    dataSources: Array.from(this.selectedDataSources)
+                };
+                
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `context-analysis-${new Date().toISOString().slice(0, 19)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            shareInsights() {
+                if (!this.currentAnalysis) {
+                    alert('No analysis available to share.');
+                    return;
+                }
+                
+                const shareText = `Context Intelligence Analysis Report
+
+Key Insights: ${this.currentAnalysis.insights.length} patterns identified
+Data Sources: ${Array.from(this.selectedDataSources).join(', ')}
+Tokens Processed: ${this.currentAnalysis.metadata.tokensProcessed.toLocaleString()}
+
+Summary: ${this.currentAnalysis.synthesis.summary}
+
+Generated by Gemma 3n Context Intelligence Dashboard`;
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Context Intelligence Analysis',
+                        text: shareText,
+                        url: window.location.href
+                    });
+                } else {
+                    navigator.clipboard.writeText(shareText)
+                        .then(() => alert('Analysis summary copied to clipboard!'))
+                        .catch(() => alert('Unable to share. Please copy manually.'));
+                }
+            }
+            
+            clearContext() {
+                if (confirm('Are you sure you want to clear the current context analysis?')) {
+                    this.currentAnalysis = null;
+                    this.selectedDataSources.clear();
+                    this.selectedDataSources.add('emergency-reports'); // Keep default selection
+                    
+                    // Update UI
+                    document.querySelectorAll('.data-source-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    document.querySelector('[data-source="emergency-reports"]').classList.add('active');
+                    
+                    // Clear results
+                    this.insightGrid.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">Run context analysis to generate insights...</p>';
+                    this.timelineEvents.innerHTML = '';
+                    this.correlationMatrix.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No correlations analyzed yet.</p>';
+                    this.synthesisContent.textContent = 'Click "Analyze Context" to generate comprehensive situation analysis using all available data sources...';
+                    this.keyFindings.style.display = 'none';
+                    
+                    // Reset buttons
+                    this.deepAnalysisBtn.disabled = true;
+                    this.exportInsightsBtn.disabled = true;
+                    this.shareInsightsBtn.disabled = true;
+                    
+                    this.updateContextUsage();
+                }
+            }
+        }
+
+        // Initialize the dashboard when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const contextDashboard = new ContextIntelligenceDashboard();
+            
+            // Tab switching
+            document.querySelectorAll('.analysis-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+                    
+                    // Update active tab
+                    document.querySelectorAll('.analysis-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.analysis-pane').forEach(p => p.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(`${tabName}-pane`).classList.add('active');
+                });
+            });
+            
+            // Timeline controls
+            document.querySelectorAll('.timeline-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.timeline-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    contextDashboard.updateTimelinePeriod(this.dataset.period);
+                });
+            });
+            
+            // Data source selection
+            document.querySelectorAll('.data-source-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    contextDashboard.selectDataSource(this.dataset.source);
+                });
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'a':
+                            e.preventDefault();
+                            contextDashboard.performContextAnalysis();
+                            break;
+                        case 's':
+                            e.preventDefault();
+                            contextDashboard.exportInsights();
+                            break;
+                        case 'r':
+                            e.preventDefault();
+                            contextDashboard.clearContext();
+                            break;
+                    }
+                }
+                
+                // Tab navigation with Alt + number
+                if (e.altKey && e.key >= '1' && e.key <= '4') {
+                    e.preventDefault();
+                    const tabs = ['insights', 'timeline', 'correlations', 'synthesis'];
+                    const tabIndex = parseInt(e.key) - 1;
+                    if (tabs[tabIndex]) {
+                        const tabElement = document.querySelector(`[data-tab="${tabs[tabIndex]}"]`);
+                        if (tabElement) {
+                            tabElement.click();
+                        }
+                    }
+                }
+            });
+            
+            console.log('🧠 Context Intelligence Dashboard initialized');
         });
-    });
-    
-    // Timeline controls
-    document.querySelectorAll('.timeline-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.timeline-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            contextDashboard.updateTimelinePeriod(this.dataset.period);
-        });
-    });
-    
-    // Data source selection
-    document.querySelectorAll('.data-source-item').forEach(item => {
-        item.addEventListener('click', function() {
-            document.querySelectorAll('.data-source-item').forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-            contextDashboard.selectDataSource(this.dataset.source);
-        });
-    });
-});
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>
