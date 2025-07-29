@@ -558,6 +558,270 @@ except ImportError:
     
     DATABASE_AVAILABLE = True
 
+def calculate_incident_ai_priority(incident: EmergencyReport) -> float:
+    """Calculate AI-enhanced priority score for incident"""
+    base_priority = {"critical": 10, "high": 7, "medium": 5, "low": 3}.get(incident.priority, 5)
+    
+    # Add factors for AI scoring
+    ai_factors = 0
+    description_lower = incident.description.lower()
+    
+    if "fire" in description_lower:
+        ai_factors += 2
+    if any(word in description_lower for word in ["medical", "injured", "hurt"]):
+        ai_factors += 1.5
+    if any(word in description_lower for word in ["multiple", "several", "many"]):
+        ai_factors += 1
+    if incident.latitude and incident.longitude:
+        ai_factors += 0.5
+    if incident.evidence_file:
+        ai_factors += 0.5
+    
+    # Time factor (recent incidents get slight priority boost)
+    time_diff = datetime.utcnow() - incident.timestamp
+    if time_diff.total_seconds() < 3600:  # Less than 1 hour
+        ai_factors += 0.5
+    
+    return min(10.0, base_priority + ai_factors + random.uniform(-0.3, 0.3))
+
+def map_priority_to_urgency(priority: str) -> str:
+    """Map priority level to urgency level"""
+    mapping = {
+        "critical": "critical",
+        "high": "urgent", 
+        "medium": "moderate",
+        "low": "low"
+    }
+    return mapping.get(priority, "moderate")
+
+def extract_resource_requirements(incident: EmergencyReport) -> list:
+    """Extract resource requirements from incident"""
+    requirements = []
+    
+    description = incident.description.lower()
+    incident_type = incident.type.lower()
+    
+    # Fire-related requirements
+    if "fire" in description or "fire" in incident_type:
+        requirements.extend(["Fire Engine", "Fire Department", "Ambulance"])
+    
+    # Medical requirements
+    if any(word in description for word in ["medical", "injured", "hurt", "ambulance"]):
+        requirements.extend(["Ambulance", "Paramedics"])
+    
+    # Police requirements
+    if any(word in description for word in ["crime", "theft", "assault", "security"]):
+        requirements.extend(["Police", "Security"])
+    
+    # Traffic requirements
+    if any(word in description for word in ["traffic", "accident", "collision", "vehicle"]):
+        requirements.extend(["Traffic Control", "Tow Truck"])
+    
+    # Hazmat requirements
+    if any(word in description for word in ["chemical", "spill", "gas", "hazmat"]):
+        requirements.extend(["Hazmat Team", "Environmental Response"])
+    
+    # Default requirement
+    if not requirements:
+        requirements.append("Emergency Response")
+    
+    return list(set(requirements))  # Remove duplicates
+
+def generate_emergency_resources() -> list:
+    """Generate simulated emergency resources for map display"""
+    resources = []
+    
+    # Fire Department resources
+    fire_resources = [
+        {"id": "FD-001", "type": "Fire Engine", "unit": "Engine 1", "crew": 4},
+        {"id": "FD-002", "type": "Fire Engine", "unit": "Engine 2", "crew": 4},
+        {"id": "FD-003", "type": "Ladder Truck", "unit": "Ladder 1", "crew": 3},
+        {"id": "FD-004", "type": "Rescue Unit", "unit": "Rescue 1", "crew": 2},
+        {"id": "FD-005", "type": "Hazmat Unit", "unit": "Hazmat 1", "crew": 3}
+    ]
+    
+    # EMS resources
+    ems_resources = [
+        {"id": "EMS-001", "type": "Ambulance", "unit": "Medic 1", "crew": 2},
+        {"id": "EMS-002", "type": "Ambulance", "unit": "Medic 2", "crew": 2},
+        {"id": "EMS-003", "type": "Ambulance", "unit": "Medic 3", "crew": 2},
+        {"id": "EMS-004", "type": "Supervisor", "unit": "EMS Supervisor", "crew": 1},
+        {"id": "EMS-005", "type": "Mobile ICU", "unit": "MICU 1", "crew": 3}
+    ]
+    
+    # Police resources
+    police_resources = [
+        {"id": "PD-001", "type": "Patrol Unit", "unit": "Unit 101", "crew": 2},
+        {"id": "PD-002", "type": "Patrol Unit", "unit": "Unit 102", "crew": 1},
+        {"id": "PD-003", "type": "Patrol Unit", "unit": "Unit 103", "crew": 2},
+        {"id": "PD-004", "type": "K-9 Unit", "unit": "K-9 Alpha", "crew": 2},
+        {"id": "PD-005", "type": "Traffic Unit", "unit": "Traffic 1", "crew": 1}
+    ]
+    
+    # Utility resources
+    utility_resources = [
+        {"id": "UT-001", "type": "Utility Truck", "unit": "Electric 1", "crew": 2},
+        {"id": "UT-002", "type": "Water Dept", "unit": "Water 1", "crew": 3},
+        {"id": "UT-003", "type": "Gas Company", "unit": "Gas 1", "crew": 2}
+    ]
+    
+    all_resources = fire_resources + ems_resources + police_resources + utility_resources
+    
+    # San Francisco Bay Area coordinates for realistic positioning
+    base_coordinates = [
+        (37.7749, -122.4194),  # San Francisco
+        (37.7849, -122.4094),  # North SF
+        (37.7649, -122.4294),  # South SF
+        (37.7549, -122.4394),  # West SF
+        (37.7949, -122.3994),  # East SF
+        (37.7449, -122.4494),  # Southwest SF
+        (37.8049, -122.4094),  # Northeast SF
+        (37.7349, -122.4594),  # Far West SF
+    ]
+    
+    statuses = ["available", "deployed", "en_route", "standby", "maintenance"]
+    
+    for i, resource in enumerate(all_resources):
+        # Assign coordinates
+        base_lat, base_lon = base_coordinates[i % len(base_coordinates)]
+        lat = base_lat + random.uniform(-0.02, 0.02)
+        lon = base_lon + random.uniform(-0.02, 0.02)
+        
+        # Assign status with realistic distribution
+        status_weights = [0.4, 0.3, 0.15, 0.1, 0.05]  # available, deployed, en_route, standby, maintenance
+        status = random.choices(statuses, weights=status_weights)[0]
+        
+        # Determine if assigned to incident
+        assigned_incident = None
+        if status in ["deployed", "en_route"]:
+            assigned_incident = f"INC-{random.randint(100, 999)}"
+        
+        resource_data = {
+            **resource,
+            "latitude": lat,
+            "longitude": lon,
+            "status": status,
+            "assigned_incident": assigned_incident,
+            "last_updated": datetime.utcnow().isoformat(),
+            "estimated_arrival": random.randint(5, 25) if status == "en_route" else None,
+            "fuel_level": random.randint(40, 100),
+            "maintenance_due": random.choice([True, False]) if status != "maintenance" else True,
+            "communication_status": "online",
+            "gps_accuracy": random.uniform(1.0, 5.0)
+        }
+        
+        resources.append(resource_data)
+    
+    return resources
+
+def generate_hazard_zones() -> list:
+    """Generate simulated hazard zones for map display"""
+    hazard_zones = []
+    
+    # Define hazard types and their characteristics
+    hazard_types = [
+        {
+            "type": "chemical", 
+            "severity": "high",
+            "description": "Chemical plant leak - avoid area",
+            "radius": 800,
+            "color": "#dc2626"
+        },
+        {
+            "type": "flood", 
+            "severity": "medium",
+            "description": "Flood risk area - monitor water levels",
+            "radius": 1200,
+            "color": "#2563eb"
+        },
+        {
+            "type": "fire", 
+            "severity": "critical",
+            "description": "Wildfire risk zone - evacuation recommended",
+            "radius": 2000,
+            "color": "#ea580c"
+        },
+        {
+            "type": "earthquake", 
+            "severity": "low",
+            "description": "Seismic monitoring zone",
+            "radius": 500,
+            "color": "#7c2d12"
+        },
+        {
+            "type": "gas_leak", 
+            "severity": "high",
+            "description": "Natural gas leak - emergency crews on scene",
+            "radius": 300,
+            "color": "#facc15"
+        },
+        {
+            "type": "structural", 
+            "severity": "medium",
+            "description": "Building damage assessment area",
+            "radius": 200,
+            "color": "#6b7280"
+        }
+    ]
+    
+    # San Francisco coordinates for hazard zones
+    hazard_coordinates = [
+        (37.7849, -122.4094),  # Financial District
+        (37.7749, -122.4594),  # Richmond District
+        (37.7449, -122.4194),  # Mission District
+        (37.8049, -122.4294),  # Marina District
+        (37.7649, -122.3894),  # SOMA
+        (37.7349, -122.4394)   # Sunset District
+    ]
+    
+    for i, hazard_type in enumerate(hazard_types):
+        if i < len(hazard_coordinates):
+            lat, lon = hazard_coordinates[i]
+            
+            zone = {
+                "zone_id": f"HAZ-{i+1:03d}",
+                "name": f"{hazard_type['type'].title()} Zone {i+1}",
+                "type": hazard_type["type"],
+                "severity": hazard_type["severity"],
+                "status": "active" if random.random() > 0.2 else "monitoring",
+                "description": hazard_type["description"],
+                "center_latitude": lat,
+                "center_longitude": lon,
+                "radius": hazard_type["radius"],
+                "color": hazard_type["color"],
+                "affected_population": random.randint(50, 500),
+                "evacuation_recommended": hazard_type["severity"] in ["high", "critical"],
+                "created_at": (datetime.utcnow() - timedelta(hours=random.randint(1, 48))).isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+                "monitoring_level": hazard_type["severity"],
+                "response_agencies": get_response_agencies_for_hazard(hazard_type["type"])
+            }
+            
+            hazard_zones.append(zone)
+    
+    return hazard_zones
+
+def get_response_agencies_for_hazard(hazard_type: str) -> list:
+    """Get appropriate response agencies for hazard type"""
+    agency_mapping = {
+        "chemical": ["Fire Department", "Hazmat Team", "Environmental Agency"],
+        "flood": ["Emergency Management", "Public Works", "Coast Guard"],
+        "fire": ["Fire Department", "Cal Fire", "Emergency Management"],
+        "earthquake": ["Search & Rescue", "Emergency Management", "Building Inspection"],
+        "gas_leak": ["Fire Department", "Gas Company", "Police"],
+        "structural": ["Building Inspection", "Fire Department", "Public Works"]
+    }
+    
+    return agency_mapping.get(hazard_type, ["Emergency Management", "Fire Department"])
+
+def generate_assignment_id() -> str:
+    """Generate unique assignment ID"""
+    return f"ASSIGN-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(2)}"
+
+def generate_zone_id() -> str:
+    """Generate unique zone ID"""
+    return f"ZONE-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(2)}"
+
 # ================================================================================
 # DATABASE MIGRATION HELPER FUNCTIONS
 # ================================================================================
@@ -7833,6 +8097,1702 @@ async def simulate_ai_processing_queue():
         "predictive_models": random.randint(0, 3),
         "context_analysis": random.randint(0, 2)
     }
+
+# ================================================================================
+# ENHANCED MAP REPORTS API ROUTES
+# Add these routes to your existing api.py file after the existing routes
+# ================================================================================
+
+@app.get("/map-reports", response_class=HTMLResponse)
+async def map_reports_page(request: Request):
+    """Enhanced Crisis Command Map Interface - Main Route"""
+    try:
+        map_reports_path = TEMPLATES_DIR / "map_reports.html"
+        
+        if map_reports_path.exists():
+            with open(map_reports_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            return HTMLResponse(content=html_content)
+        else:
+            return HTMLResponse("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Crisis Command Map - Setup Required</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 2rem; background: #1f2937; color: white; text-align: center; }
+                    .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+                    .btn { background: #3b82f6; color: white; padding: 1rem 2rem; border: none; border-radius: 8px; margin: 1rem; text-decoration: none; display: inline-block; }
+                    .setup-info { background: #374151; padding: 2rem; border-radius: 12px; margin: 2rem 0; text-align: left; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🗺️ Crisis Command Map Interface</h1>
+                    <p>Advanced geospatial dashboard for emergency management</p>
+                    
+                    <div class="setup-info">
+                        <h3>🚀 Template Setup Required</h3>
+                        <p>To use the enhanced map interface, save your map_reports.html file to:</p>
+                        <code style="background: #065f46; padding: 0.5rem; border-radius: 4px;">templates/map_reports.html</code>
+                        
+                        <h4>Key Features Available:</h4>
+                        <ul style="text-align: left;">
+                            <li>🎯 Real-time incident mapping with severity-based icons</li>
+                            <li>🚑 Live resource tracking and deployment</li>
+                            <li>📊 Interactive filtering and timeline playback</li>
+                            <li>🔥 Heatmap visualization for incident density</li>
+                            <li>📋 Bulk operations and resource assignment</li>
+                            <li>📤 CSV/JSON export capabilities</li>
+                            <li>⚠️ Hazard zone overlays and alerts</li>
+                            <li>📍 User location services</li>
+                        </ul>
+                    </div>
+                    
+                    <a href="/crisis-command-center" class="btn">🧠 Crisis Command Center</a>
+                    <a href="/admin" class="btn">📊 Admin Dashboard</a>
+                    <a href="/api/docs" class="btn">📚 API Documentation</a>
+                </div>
+            </body>
+            </html>
+            """)
+            
+    except Exception as e:
+        logger.error(f"Map reports page error: {e}")
+        return HTMLResponse(f"""
+        <html><body style="font-family: Arial; margin: 2rem; background: #1f2937; color: white;">
+        <h1>🗺️ Crisis Command Map - Error</h1>
+        <p>Error loading map interface: {str(e)}</p>
+        <a href="/crisis-command-center" style="color: #3b82f6;">← Back to Crisis Command</a>
+        </body></html>
+        """, status_code=500)
+
+@app.get("/api/crowd-report-locations")
+async def get_crowd_report_locations(
+    tone: Optional[str] = Query(None, description="Filter by tone"),
+    escalation: Optional[str] = Query(None, description="Filter by escalation level"),
+    timeRange: Optional[str] = Query(None, description="Time range filter: 1h, 24h, 7d"),
+    db: Session = Depends(get_db)
+):
+    """Get crowd reports with location data for map visualization"""
+    try:
+        # Build base query
+        query = db.query(CrowdReport).filter(
+            CrowdReport.latitude.isnot(None),
+            CrowdReport.longitude.isnot(None)
+        )
+        
+        # Apply filters
+        if tone:
+            query = query.filter(CrowdReport.tone == tone)
+        if escalation:
+            query = query.filter(CrowdReport.escalation == escalation)
+        
+        # Apply time range filter
+        if timeRange:
+            now = datetime.utcnow()
+            if timeRange == "1h":
+                start_time = now - timedelta(hours=1)
+            elif timeRange == "24h":
+                start_time = now - timedelta(hours=24)
+            elif timeRange == "7d":
+                start_time = now - timedelta(days=7)
+            else:
+                start_time = None
+            
+            if start_time:
+                query = query.filter(CrowdReport.timestamp >= start_time)
+        
+        # Execute query
+        reports = query.order_by(CrowdReport.timestamp.desc()).limit(500).all()
+        
+        # Format reports for map
+        formatted_reports = []
+        for report in reports:
+            formatted_report = {
+                "id": report.id,
+                "message": report.message or "No message provided",
+                "tone": report.tone or "neutral",
+                "escalation": report.escalation or "low",
+                "user": report.user or "Anonymous",
+                "location": report.location or "Location not specified",
+                "latitude": float(report.latitude),
+                "longitude": float(report.longitude),
+                "timestamp": report.timestamp.isoformat(),
+                "severity": getattr(report, 'severity', 3) or 3,
+                "confidence_score": getattr(report, 'confidence_score', 0.8) or 0.8,
+                "verified": getattr(report, 'verified', False) or False,
+                "response_dispatched": getattr(report, 'response_dispatched', False) or False,
+                "source": getattr(report, 'source', 'manual') or 'manual',
+                "time_ago": calculate_time_ago(report.timestamp)
+            }
+            formatted_reports.append(formatted_report)
+        
+        # Calculate statistics
+        total_reports = len(formatted_reports)
+        escalation_stats = {
+            "critical": len([r for r in formatted_reports if r["escalation"] == "critical"]),
+            "high": len([r for r in formatted_reports if r["escalation"] == "high"]),
+            "moderate": len([r for r in formatted_reports if r["escalation"] == "moderate"]),
+            "low": len([r for r in formatted_reports if r["escalation"] == "low"])
+        }
+        
+        return JSONResponse({
+            "success": True,
+            "reports": formatted_reports,
+            "statistics": {
+                "total": total_reports,
+                "escalation_breakdown": escalation_stats,
+                "verified_count": len([r for r in formatted_reports if r["verified"]]),
+                "dispatched_count": len([r for r in formatted_reports if r["response_dispatched"]]),
+                "avg_confidence": sum(r["confidence_score"] for r in formatted_reports) / max(total_reports, 1)
+            },
+            "filters_applied": {
+                "tone": tone,
+                "escalation": escalation,
+                "timeRange": timeRange
+            },
+            "last_updated": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting crowd report locations: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "reports": []
+        }, status_code=500)
+
+@app.get("/api/incident-locations")
+async def get_incident_locations(
+    status: Optional[str] = Query(None, description="Filter by status"),
+    priority: Optional[str] = Query(None, description="Filter by priority"),
+    incident_type: Optional[str] = Query(None, description="Filter by incident type"),
+    timeRange: Optional[str] = Query(None, description="Time range filter"),
+    db: Session = Depends(get_db)
+):
+    """Get emergency incidents with location data for map visualization"""
+    try:
+        # Build query for emergency reports with coordinates
+        query = db.query(EmergencyReport).filter(
+            EmergencyReport.latitude.isnot(None),
+            EmergencyReport.longitude.isnot(None)
+        )
+        
+        # Apply filters
+        if status:
+            query = query.filter(EmergencyReport.status == status)
+        if priority:
+            query = query.filter(EmergencyReport.priority == priority)
+        if incident_type:
+            query = query.filter(EmergencyReport.type == incident_type)
+        
+        # Apply time range filter
+        if timeRange:
+            now = datetime.utcnow()
+            if timeRange == "1h":
+                start_time = now - timedelta(hours=1)
+            elif timeRange == "24h":
+                start_time = now - timedelta(hours=24)
+            elif timeRange == "7d":
+                start_time = now - timedelta(days=7)
+            else:
+                start_time = None
+            
+            if start_time:
+                query = query.filter(EmergencyReport.timestamp >= start_time)
+        
+        incidents = query.order_by(EmergencyReport.timestamp.desc()).limit(200).all()
+        
+        # Format incidents for map
+        formatted_incidents = []
+        for incident in incidents:
+            # Generate AI priority score for mapping
+            ai_priority_score = calculate_incident_ai_priority(incident)
+            
+            formatted_incident = {
+                "id": incident.id,
+                "report_id": incident.report_id,
+                "type": incident.type,
+                "title": f"{incident.type} - {incident.location}",
+                "description": incident.description,
+                "location": incident.location,
+                "latitude": float(incident.latitude),
+                "longitude": float(incident.longitude),
+                "priority": incident.priority,
+                "status": incident.status,
+                "method": incident.method,
+                "reporter": incident.reporter or "Unknown",
+                "timestamp": incident.timestamp.isoformat(),
+                "ai_priority_score": ai_priority_score,
+                "has_evidence": incident.evidence_file is not None,
+                "ai_analysis": incident.ai_analysis or {},
+                "time_ago": calculate_time_ago(incident.timestamp),
+                "urgency_level": map_priority_to_urgency(incident.priority),
+                "resource_requirements": extract_resource_requirements(incident)
+            }
+            formatted_incidents.append(formatted_incident)
+        
+        # Calculate statistics
+        total_incidents = len(formatted_incidents)
+        priority_stats = {
+            "critical": len([i for i in formatted_incidents if i["priority"] == "critical"]),
+            "high": len([i for i in formatted_incidents if i["priority"] == "high"]),
+            "medium": len([i for i in formatted_incidents if i["priority"] == "medium"]),
+            "low": len([i for i in formatted_incidents if i["priority"] == "low"])
+        }
+        
+        status_stats = {
+            "pending": len([i for i in formatted_incidents if i["status"] == "pending"]),
+            "active": len([i for i in formatted_incidents if i["status"] == "active"]),
+            "resolved": len([i for i in formatted_incidents if i["status"] == "resolved"]),
+            "investigating": len([i for i in formatted_incidents if i["status"] == "investigating"])
+        }
+        
+        return JSONResponse({
+            "success": True,
+            "incidents": formatted_incidents,
+            "statistics": {
+                "total": total_incidents,
+                "priority_breakdown": priority_stats,
+                "status_breakdown": status_stats,
+                "with_evidence": len([i for i in formatted_incidents if i["has_evidence"]]),
+                "avg_ai_priority": sum(i["ai_priority_score"] for i in formatted_incidents) / max(total_incidents, 1)
+            },
+            "filters_applied": {
+                "status": status,
+                "priority": priority,
+                "incident_type": incident_type,
+                "timeRange": timeRange
+            },
+            "last_updated": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting incident locations: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "incidents": []
+        }, status_code=500)
+
+@app.get("/api/resource-locations")
+async def get_resource_locations(
+    resource_type: Optional[str] = Query(None, description="Filter by resource type"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    availability: Optional[str] = Query(None, description="Filter by availability"),
+    db: Session = Depends(get_db)
+):
+    """Get emergency resources with location data for map visualization"""
+    try:
+        # Generate simulated resource data (in production, this would come from a resources table)
+        resources = generate_emergency_resources()
+        
+        # Apply filters
+        filtered_resources = resources
+        
+        if resource_type:
+            filtered_resources = [r for r in filtered_resources if r["type"].lower().replace(" ", "_") == resource_type]
+        
+        if status:
+            filtered_resources = [r for r in filtered_resources if r["status"] == status]
+        
+        if availability:
+            if availability == "available":
+                filtered_resources = [r for r in filtered_resources if r["status"] in ["available", "standby"]]
+            elif availability == "deployed":
+                filtered_resources = [r for r in filtered_resources if r["status"] == "deployed"]
+            elif availability == "unavailable":
+                filtered_resources = [r for r in filtered_resources if r["status"] in ["maintenance", "offline"]]
+        
+        # Calculate statistics
+        total_resources = len(filtered_resources)
+        type_stats = {}
+        status_stats = {}
+        
+        for resource in filtered_resources:
+            res_type = resource["type"]
+            res_status = resource["status"]
+            
+            type_stats[res_type] = type_stats.get(res_type, 0) + 1
+            status_stats[res_status] = status_stats.get(res_status, 0) + 1
+        
+        return JSONResponse({
+            "success": True,
+            "resources": filtered_resources,
+            "statistics": {
+                "total": total_resources,
+                "type_breakdown": type_stats,
+                "status_breakdown": status_stats,
+                "available_count": len([r for r in filtered_resources if r["status"] in ["available", "standby"]]),
+                "deployed_count": len([r for r in filtered_resources if r["status"] == "deployed"])
+            },
+            "filters_applied": {
+                "resource_type": resource_type,
+                "status": status,
+                "availability": availability
+            },
+            "last_updated": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting resource locations: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "resources": []
+        }, status_code=500)
+
+@app.get("/api/hazard-zones")
+async def get_hazard_zones(
+    hazard_type: Optional[str] = Query(None, description="Filter by hazard type"),
+    severity: Optional[str] = Query(None, description="Filter by severity"),
+    active_only: bool = Query(True, description="Show only active hazards"),
+    db: Session = Depends(get_db)
+):
+    """Get hazard zones for map overlay"""
+    try:
+        # Generate hazard zones (in production, this would come from a hazards table)
+        hazard_zones = generate_hazard_zones()
+        
+        # Apply filters
+        filtered_zones = hazard_zones
+        
+        if hazard_type:
+            filtered_zones = [z for z in filtered_zones if z["type"] == hazard_type]
+        
+        if severity:
+            filtered_zones = [z for z in filtered_zones if z["severity"] == severity]
+        
+        if active_only:
+            filtered_zones = [z for z in filtered_zones if z["status"] == "active"]
+        
+        # Calculate statistics
+        total_zones = len(filtered_zones)
+        type_stats = {}
+        severity_stats = {}
+        
+        for zone in filtered_zones:
+            zone_type = zone["type"]
+            zone_severity = zone["severity"]
+            
+            type_stats[zone_type] = type_stats.get(zone_type, 0) + 1
+            severity_stats[zone_severity] = severity_stats.get(zone_severity, 0) + 1
+        
+        return JSONResponse({
+            "success": True,
+            "hazard_zones": filtered_zones,
+            "statistics": {
+                "total": total_zones,
+                "type_breakdown": type_stats,
+                "severity_breakdown": severity_stats,
+                "active_count": len([z for z in filtered_zones if z["status"] == "active"]),
+                "high_severity_count": len([z for z in filtered_zones if z["severity"] in ["high", "critical"]])
+            },
+            "filters_applied": {
+                "hazard_type": hazard_type,
+                "severity": severity,
+                "active_only": active_only
+            },
+            "last_updated": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting hazard zones: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "hazard_zones": []
+        }, status_code=500)
+
+@app.post("/api/assign-resource-to-incident")
+async def assign_resource_to_incident(
+    request: Request,
+    resource_id: str = Form(...),
+    incident_id: str = Form(...),
+    priority: Optional[str] = Form("normal"),
+    estimated_arrival: Optional[int] = Form(None),
+    notes: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    """Assign resource to incident from map interface"""
+    try:
+        # Get incident
+        incident = db.query(EmergencyReport).filter(
+            or_(
+                EmergencyReport.id == incident_id,
+                EmergencyReport.report_id == incident_id
+            )
+        ).first()
+        
+        if not incident:
+            return JSONResponse({
+                "success": False,
+                "error": "Incident not found"
+            }, status_code=404)
+        
+        # Create assignment record (in production, this would be a proper table)
+        assignment = {
+            "assignment_id": generate_assignment_id(),
+            "resource_id": resource_id,
+            "incident_id": incident_id,
+            "incident_title": f"{incident.type} - {incident.location}",
+            "assigned_at": datetime.utcnow().isoformat(),
+            "priority": priority,
+            "estimated_arrival": estimated_arrival,
+            "notes": notes,
+            "status": "en_route",
+            "assigned_by": "map_interface"
+        }
+        
+        # Update incident with resource assignment info
+        if incident.ai_analysis:
+            incident.ai_analysis["resource_assignments"] = incident.ai_analysis.get("resource_assignments", [])
+            incident.ai_analysis["resource_assignments"].append(assignment)
+        else:
+            incident.ai_analysis = {"resource_assignments": [assignment]}
+        
+        db.commit()
+        
+        # Broadcast real-time update
+        await broadcast_emergency_update("resource_assigned", {
+            "assignment": assignment,
+            "incident": {
+                "id": incident.id,
+                "report_id": incident.report_id,
+                "type": incident.type,
+                "location": incident.location,
+                "priority": incident.priority
+            }
+        })
+        
+        logger.info(f"Resource {resource_id} assigned to incident {incident_id}")
+        
+        return JSONResponse({
+            "success": True,
+            "assignment": assignment,
+            "message": f"Resource {resource_id} successfully assigned to incident"
+        })
+        
+    except Exception as e:
+        logger.error(f"Resource assignment error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/update-incident-status")
+async def update_incident_status(
+    request: Request,
+    incident_id: str = Form(...),
+    new_status: str = Form(...),
+    notes: Optional[str] = Form(""),
+    updated_by: Optional[str] = Form("map_user"),
+    db: Session = Depends(get_db)
+):
+    """Update incident status from map interface"""
+    try:
+        # Get incident
+        incident = db.query(EmergencyReport).filter(
+            or_(
+                EmergencyReport.id == incident_id,
+                EmergencyReport.report_id == incident_id
+            )
+        ).first()
+        
+        if not incident:
+            return JSONResponse({
+                "success": False,
+                "error": "Incident not found"
+            }, status_code=404)
+        
+        # Store old status for comparison
+        old_status = incident.status
+        
+        # Update incident
+        incident.status = new_status
+        
+        # Add status change to AI analysis
+        if incident.ai_analysis:
+            incident.ai_analysis["status_history"] = incident.ai_analysis.get("status_history", [])
+        else:
+            incident.ai_analysis = {"status_history": []}
+        
+        incident.ai_analysis["status_history"].append({
+            "from_status": old_status,
+            "to_status": new_status,
+            "changed_at": datetime.utcnow().isoformat(),
+            "changed_by": updated_by,
+            "notes": notes
+        })
+        
+        db.commit()
+        
+        # Broadcast real-time update
+        await broadcast_emergency_update("incident_status_updated", {
+            "incident_id": incident_id,
+            "report_id": incident.report_id,
+            "old_status": old_status,
+            "new_status": new_status,
+            "incident_type": incident.type,
+            "location": incident.location,
+            "updated_by": updated_by
+        })
+        
+        logger.info(f"Incident {incident_id} status updated from {old_status} to {new_status}")
+        
+        return JSONResponse({
+            "success": True,
+            "incident": {
+                "id": incident.id,
+                "report_id": incident.report_id,
+                "old_status": old_status,
+                "new_status": new_status,
+                "updated_at": datetime.utcnow().isoformat()
+            },
+            "message": f"Incident status updated to {new_status}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Incident status update error: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/create-evacuation-zone")
+async def create_evacuation_zone(
+    request: Request,
+    zone_name: str = Form(...),
+    zone_type: str = Form("evacuation"),
+    coordinates: str = Form(...),  # JSON string of coordinates
+    radius: Optional[float] = Form(None),
+    severity: str = Form("medium"),
+    description: Optional[str] = Form(""),
+    estimated_affected: Optional[int] = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Create evacuation or hazard zone from map interface"""
+    try:
+        import json
+        
+        # Parse coordinates
+        try:
+            coords = json.loads(coordinates)
+        except json.JSONDecodeError:
+            return JSONResponse({
+                "success": False,
+                "error": "Invalid coordinates format"
+            }, status_code=400)
+        
+        # Create zone record
+        zone = {
+            "zone_id": generate_zone_id(),
+            "name": zone_name,
+            "type": zone_type,
+            "coordinates": coords,
+            "radius": radius,
+            "severity": severity,
+            "description": description,
+            "estimated_affected": estimated_affected,
+            "status": "active",
+            "created_at": datetime.utcnow().isoformat(),
+            "created_by": "map_interface"
+        }
+        
+        # In production, save to database
+        # For now, we'll just return the zone data
+        
+        # Broadcast real-time update
+        await broadcast_emergency_update("evacuation_zone_created", {
+            "zone": zone,
+            "alert_message": f"New {zone_type} zone created: {zone_name}"
+        })
+        
+        logger.info(f"New {zone_type} zone created: {zone_name}")
+        
+        return JSONResponse({
+            "success": True,
+            "zone": zone,
+            "message": f"{zone_type.title()} zone '{zone_name}' created successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Zone creation error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/map-analytics")
+async def get_map_analytics(
+    timeframe: str = Query("24h", description="Analysis timeframe"),
+    include_predictions: bool = Query(True, description="Include AI predictions"),
+    db: Session = Depends(get_db)
+):
+    """Get analytics data for map dashboard"""
+    try:
+        # Calculate timeframe
+        now = datetime.utcnow()
+        if timeframe == "1h":
+            start_time = now - timedelta(hours=1)
+        elif timeframe == "7d":
+            start_time = now - timedelta(days=7)
+        elif timeframe == "30d":
+            start_time = now - timedelta(days=30)
+        else:  # 24h default
+            start_time = now - timedelta(hours=24)
+        
+        # Get incidents and reports in timeframe
+        incidents = db.query(EmergencyReport).filter(
+            EmergencyReport.timestamp >= start_time
+        ).all()
+        
+        reports = db.query(CrowdReport).filter(
+            CrowdReport.timestamp >= start_time
+        ).all()
+        
+        # Calculate analytics
+        analytics = {
+            "timeframe": timeframe,
+            "incident_analytics": {
+                "total": len(incidents),
+                "by_priority": {
+                    "critical": len([i for i in incidents if i.priority == "critical"]),
+                    "high": len([i for i in incidents if i.priority == "high"]),
+                    "medium": len([i for i in incidents if i.priority == "medium"]),
+                    "low": len([i for i in incidents if i.priority == "low"])
+                },
+                "by_status": {
+                    "pending": len([i for i in incidents if i.status == "pending"]),
+                    "active": len([i for i in incidents if i.status == "active"]),
+                    "resolved": len([i for i in incidents if i.status == "resolved"]),
+                    "investigating": len([i for i in incidents if i.status == "investigating"])
+                },
+                "by_type": {},
+                "response_times": {
+                    "avg_minutes": random.randint(5, 15),
+                    "fastest_minutes": random.randint(2, 5),
+                    "slowest_minutes": random.randint(20, 45)
+                }
+            },
+            "report_analytics": {
+                "total": len(reports),
+                "by_escalation": {
+                    "critical": len([r for r in reports if r.escalation == "critical"]),
+                    "high": len([r for r in reports if r.escalation == "high"]),
+                    "moderate": len([r for r in reports if r.escalation == "moderate"]),
+                    "low": len([r for r in reports if r.escalation == "low"])
+                },
+                "verified_percentage": random.randint(70, 90)
+            },
+            "geographic_analytics": {
+                "hotspot_areas": [
+                    {"name": "Downtown District", "incident_count": random.randint(15, 25)},
+                    {"name": "Industrial Zone", "incident_count": random.randint(8, 15)},
+                    {"name": "Residential Area", "incident_count": random.randint(5, 12)}
+                ],
+                "coverage_percentage": random.randint(85, 95)
+            }
+        }
+        
+        # Add incident type breakdown
+        for incident in incidents:
+            incident_type = incident.type
+            analytics["incident_analytics"]["by_type"][incident_type] = analytics["incident_analytics"]["by_type"].get(incident_type, 0) + 1
+        
+        # Add predictions if requested
+        if include_predictions:
+            analytics["ai_predictions"] = {
+                "next_hour": {
+                    "incident_probability": random.randint(15, 35),
+                    "high_priority_risk": random.randint(5, 15),
+                    "resource_strain_risk": random.randint(10, 30)
+                },
+                "next_24h": {
+                    "total_incidents_predicted": random.randint(20, 40),
+                    "peak_hours": ["14:00-16:00", "18:00-20:00"],
+                    "recommended_actions": [
+                        "Increase patrol coverage in downtown area",
+                        "Pre-position medical units near high-risk zones",
+                        "Monitor weather conditions for impact on incident rates"
+                    ]
+                }
+            }
+        
+        return JSONResponse({
+            "success": True,
+            "analytics": analytics,
+            "generated_at": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Map analytics error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+    
+# ================================================================================
+# WEBSOCKET ENHANCEMENTS FOR MAP
+# ================================================================================
+
+@app.websocket("/ws/map-updates")
+async def map_updates_websocket(websocket: WebSocket):
+    """WebSocket endpoint for real-time map updates"""
+    await websocket.accept()
+    try:
+        while True:
+            # Send periodic map updates every 15 seconds
+            await asyncio.sleep(15)
+            
+            # Generate real-time map update
+            update_data = {
+                "type": "map_update",
+                "timestamp": datetime.utcnow().isoformat(),
+                "updates": {
+                    "new_incidents": random.randint(0, 2),
+                    "status_changes": random.randint(0, 3),
+                    "resource_movements": random.randint(1, 5),
+                    "active_incidents": random.randint(8, 15),
+                    "available_resources": random.randint(15, 25)
+                },
+                "alerts": []
+            }
+            
+            # Add occasional alerts
+            if random.random() < 0.3:  # 30% chance
+                update_data["alerts"].append({
+                    "type": "info",
+                    "message": random.choice([
+                        "New incident reported in downtown area",
+                        "Fire unit responding to emergency call",
+                        "Traffic incident cleared - normal flow restored",
+                        "Resource deployment optimized - response times improved"
+                    ]),
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            
+            await websocket.send_text(json.dumps(update_data))
+            
+    except Exception as e:
+        logger.error(f"Map updates WebSocket error: {e}")
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
+
+# ================================================================================
+# BULK OPERATIONS FOR MAP INTERFACE
+# ================================================================================
+
+@app.post("/api/bulk-incident-operations")
+async def bulk_incident_operations(
+    request: Request,
+    operation: str = Form(...),  # assign_resources, update_status, export, archive
+    incident_ids: str = Form(...),  # Comma-separated incident IDs
+    resource_ids: Optional[str] = Form(None),  # For assign_resources operation
+    new_status: Optional[str] = Form(None),  # For update_status operation
+    notes: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    """Perform bulk operations on incidents from map interface"""
+    try:
+        # Parse incident IDs
+        ids = [id.strip() for id in incident_ids.split(',') if id.strip()]
+        
+        if not ids:
+            return JSONResponse({
+                "success": False,
+                "error": "No incident IDs provided"
+            }, status_code=400)
+        
+        # Get incidents
+        incidents = db.query(EmergencyReport).filter(
+            or_(
+                EmergencyReport.id.in_(ids),
+                EmergencyReport.report_id.in_(ids)
+            )
+        ).all()
+        
+        if not incidents:
+            return JSONResponse({
+                "success": False,
+                "error": "No incidents found with provided IDs"
+            }, status_code=404)
+        
+        results = []
+        
+        if operation == "assign_resources":
+            if not resource_ids:
+                return JSONResponse({
+                    "success": False,
+                    "error": "Resource IDs required for assignment operation"
+                }, status_code=400)
+            
+            resource_list = [id.strip() for id in resource_ids.split(',') if id.strip()]
+            
+            for incident in incidents:
+                for resource_id in resource_list:
+                    assignment = {
+                        "assignment_id": generate_assignment_id(),
+                        "resource_id": resource_id,
+                        "incident_id": incident.report_id,
+                        "assigned_at": datetime.utcnow().isoformat(),
+                        "assigned_by": "bulk_operation",
+                        "notes": notes
+                    }
+                    
+                    # Update incident
+                    if incident.ai_analysis:
+                        incident.ai_analysis["resource_assignments"] = incident.ai_analysis.get("resource_assignments", [])
+                        incident.ai_analysis["resource_assignments"].append(assignment)
+                    else:
+                        incident.ai_analysis = {"resource_assignments": [assignment]}
+                    
+                    results.append({
+                        "incident_id": incident.report_id,
+                        "resource_id": resource_id,
+                        "status": "assigned"
+                    })
+        
+        elif operation == "update_status":
+            if not new_status:
+                return JSONResponse({
+                    "success": False,
+                    "error": "New status required for status update operation"
+                }, status_code=400)
+            
+            for incident in incidents:
+                old_status = incident.status
+                incident.status = new_status
+                
+                # Add to status history
+                if incident.ai_analysis:
+                    incident.ai_analysis["status_history"] = incident.ai_analysis.get("status_history", [])
+                else:
+                    incident.ai_analysis = {"status_history": []}
+                
+                incident.ai_analysis["status_history"].append({
+                    "from_status": old_status,
+                    "to_status": new_status,
+                    "changed_at": datetime.utcnow().isoformat(),
+                    "changed_by": "bulk_operation",
+                    "notes": notes
+                })
+                
+                results.append({
+                    "incident_id": incident.report_id,
+                    "old_status": old_status,
+                    "new_status": new_status,
+                    "status": "updated"
+                })
+        
+        elif operation == "export":
+            # Prepare incident data for export
+            export_data = []
+            for incident in incidents:
+                export_data.append({
+                    "report_id": incident.report_id,
+                    "type": incident.type,
+                    "description": incident.description,
+                    "location": incident.location,
+                    "latitude": incident.latitude,
+                    "longitude": incident.longitude,
+                    "priority": incident.priority,
+                    "status": incident.status,
+                    "method": incident.method,
+                    "reporter": incident.reporter,
+                    "timestamp": incident.timestamp.isoformat(),
+                    "evidence_file": incident.evidence_file,
+                    "ai_analysis": incident.ai_analysis
+                })
+            
+            return JSONResponse({
+                "success": True,
+                "operation": "export",
+                "export_data": export_data,
+                "total_incidents": len(export_data),
+                "export_format": "json"
+            })
+        
+        elif operation == "archive":
+            for incident in incidents:
+                incident.status = "archived"
+                
+                # Add archive info
+                if incident.ai_analysis:
+                    incident.ai_analysis["archived_at"] = datetime.utcnow().isoformat()
+                    incident.ai_analysis["archived_by"] = "bulk_operation"
+                else:
+                    incident.ai_analysis = {
+                        "archived_at": datetime.utcnow().isoformat(),
+                        "archived_by": "bulk_operation"
+                    }
+                
+                results.append({
+                    "incident_id": incident.report_id,
+                    "status": "archived"
+                })
+        
+        else:
+            return JSONResponse({
+                "success": False,
+                "error": f"Unknown operation: {operation}"
+            }, status_code=400)
+        
+        # Commit changes
+        db.commit()
+        
+        # Broadcast update
+        await broadcast_emergency_update("bulk_operation_completed", {
+            "operation": operation,
+            "affected_incidents": len(incidents),
+            "results": results[:5]  # Send first 5 results
+        })
+        
+        logger.info(f"Bulk operation '{operation}' completed on {len(incidents)} incidents")
+        
+        return JSONResponse({
+            "success": True,
+            "operation": operation,
+            "affected_incidents": len(incidents),
+            "results": results,
+            "message": f"Bulk {operation} operation completed successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Bulk operation error: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+# ================================================================================
+# MAP EXPORT FUNCTIONALITY
+# ================================================================================
+
+@app.post("/api/export-map-data")
+async def export_map_data(
+    request: Request,
+    export_format: str = Form("json"),  # json, csv, geojson
+    include_incidents: bool = Form(True),
+    include_reports: bool = Form(True),
+    include_resources: bool = Form(False),
+    include_hazards: bool = Form(False),
+    time_filter: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Export map data in various formats"""
+    try:
+        export_data = {
+            "export_info": {
+                "generated_at": datetime.utcnow().isoformat(),
+                "format": export_format,
+                "filters": {
+                    "time_filter": time_filter,
+                    "include_incidents": include_incidents,
+                    "include_reports": include_reports,
+                    "include_resources": include_resources,
+                    "include_hazards": include_hazards
+                }
+            }
+        }
+        
+        # Apply time filter
+        time_filter_clause = None
+        if time_filter:
+            now = datetime.utcnow()
+            if time_filter == "1h":
+                time_filter_clause = now - timedelta(hours=1)
+            elif time_filter == "24h":
+                time_filter_clause = now - timedelta(hours=24)
+            elif time_filter == "7d":
+                time_filter_clause = now - timedelta(days=7)
+        
+        # Include incidents
+        if include_incidents:
+            query = db.query(EmergencyReport).filter(
+                EmergencyReport.latitude.isnot(None),
+                EmergencyReport.longitude.isnot(None)
+            )
+            
+            if time_filter_clause:
+                query = query.filter(EmergencyReport.timestamp >= time_filter_clause)
+            
+            incidents = query.all()
+            export_data["incidents"] = [
+                {
+                    "id": i.id,
+                    "report_id": i.report_id,
+                    "type": i.type,
+                    "description": i.description,
+                    "location": i.location,
+                    "latitude": float(i.latitude),
+                    "longitude": float(i.longitude),
+                    "priority": i.priority,
+                    "status": i.status,
+                    "timestamp": i.timestamp.isoformat()
+                }
+                for i in incidents
+            ]
+        
+        # Include crowd reports
+        if include_reports:
+            query = db.query(CrowdReport).filter(
+                CrowdReport.latitude.isnot(None),
+                CrowdReport.longitude.isnot(None)
+            )
+            
+            if time_filter_clause:
+                query = query.filter(CrowdReport.timestamp >= time_filter_clause)
+            
+            reports = query.all()
+            export_data["crowd_reports"] = [
+                {
+                    "id": r.id,
+                    "message": r.message,
+                    "escalation": r.escalation,
+                    "tone": r.tone,
+                    "user": r.user,
+                    "location": r.location,
+                    "latitude": float(r.latitude),
+                    "longitude": float(r.longitude),
+                    "timestamp": r.timestamp.isoformat()
+                }
+                for r in reports
+            ]
+        
+        # Include resources
+        if include_resources:
+            export_data["resources"] = generate_emergency_resources()
+        
+        # Include hazard zones
+        if include_hazards:
+            export_data["hazard_zones"] = generate_hazard_zones()
+        
+        # Generate appropriate response based on format
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        
+        if export_format == "csv":
+            # Create CSV export
+            import csv
+            import io
+            
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write incidents to CSV
+            if include_incidents and "incidents" in export_data:
+                writer.writerow(["TYPE", "ID", "REPORT_ID", "DESCRIPTION", "LOCATION", "LATITUDE", "LONGITUDE", "PRIORITY", "STATUS", "TIMESTAMP"])
+                for incident in export_data["incidents"]:
+                    writer.writerow([
+                        "INCIDENT",
+                        incident["id"],
+                        incident["report_id"],
+                        incident["description"][:100] + "..." if len(incident["description"]) > 100 else incident["description"],
+                        incident["location"],
+                        incident["latitude"],
+                        incident["longitude"],
+                        incident["priority"],
+                        incident["status"],
+                        incident["timestamp"]
+                    ])
+            
+            # Write reports to CSV
+            if include_reports and "crowd_reports" in export_data:
+                if include_incidents:
+                    writer.writerow([])  # Empty row separator
+                
+                writer.writerow(["TYPE", "ID", "MESSAGE", "ESCALATION", "TONE", "USER", "LOCATION", "LATITUDE", "LONGITUDE", "TIMESTAMP"])
+                for report in export_data["crowd_reports"]:
+                    writer.writerow([
+                        "CROWD_REPORT",
+                        report["id"],
+                        report["message"][:100] + "..." if len(report["message"]) > 100 else report["message"],
+                        report["escalation"],
+                        report["tone"],
+                        report["user"],
+                        report["location"],
+                        report["latitude"],
+                        report["longitude"],
+                        report["timestamp"]
+                    ])
+            
+            csv_content = output.getvalue()
+            filename = f"map_export_{timestamp}.csv"
+            
+            return Response(
+                content=csv_content,
+                media_type="text/csv",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        
+        elif export_format == "geojson":
+            # Create GeoJSON export
+            geojson = {
+                "type": "FeatureCollection",
+                "features": []
+            }
+            
+            # Add incidents as features
+            if include_incidents and "incidents" in export_data:
+                for incident in export_data["incidents"]:
+                    feature = {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [incident["longitude"], incident["latitude"]]
+                        },
+                        "properties": {
+                            "type": "incident",
+                            "id": incident["id"],
+                            "report_id": incident["report_id"],
+                            "incident_type": incident["type"],
+                            "description": incident["description"],
+                            "location": incident["location"],
+                            "priority": incident["priority"],
+                            "status": incident["status"],
+                            "timestamp": incident["timestamp"]
+                        }
+                    }
+                    geojson["features"].append(feature)
+            
+            # Add crowd reports as features
+            if include_reports and "crowd_reports" in export_data:
+                for report in export_data["crowd_reports"]:
+                    feature = {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [report["longitude"], report["latitude"]]
+                        },
+                        "properties": {
+                            "type": "crowd_report",
+                            "id": report["id"],
+                            "message": report["message"],
+                            "escalation": report["escalation"],
+                            "tone": report["tone"],
+                            "user": report["user"],
+                            "location": report["location"],
+                            "timestamp": report["timestamp"]
+                        }
+                    }
+                    geojson["features"].append(feature)
+            
+            filename = f"map_export_{timestamp}.geojson"
+            
+            return Response(
+                content=json.dumps(geojson, indent=2),
+                media_type="application/geo+json",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        
+        else:  # JSON format (default)
+            filename = f"map_export_{timestamp}.json"
+            
+            return Response(
+                content=json.dumps(export_data, indent=2, default=str),
+                media_type="application/json",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        
+    except Exception as e:
+        logger.error(f"Map export error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+# ================================================================================
+# DEMO DATA GENERATION FOR MAP
+# ================================================================================
+
+@app.post("/api/generate-demo-map-data")
+async def generate_demo_map_data(
+    request: Request,
+    incident_count: int = Form(10),
+    report_count: int = Form(15),
+    clear_existing: bool = Form(False),
+    db: Session = Depends(get_db)
+):
+    """Generate demo data for map testing"""
+    try:
+        if clear_existing:
+            # Clear existing data
+            db.query(EmergencyReport).delete()
+            db.query(CrowdReport).delete()
+            db.commit()
+            logger.info("Cleared existing demo data")
+        
+        # Generate demo incidents
+        demo_incidents = []
+        incident_types = ["Fire Emergency", "Medical Emergency", "Traffic Accident", "Security Incident", "Infrastructure Failure"]
+        priorities = ["low", "medium", "high", "critical"]
+        statuses = ["pending", "active", "investigating", "resolved"]
+        
+        # San Francisco coordinates for realistic distribution
+        sf_bounds = {
+            "lat_min": 37.7049, "lat_max": 37.8049,
+            "lon_min": -122.5194, "lon_max": -122.3594
+        }
+        
+        for i in range(incident_count):
+            lat = random.uniform(sf_bounds["lat_min"], sf_bounds["lat_max"])
+            lon = random.uniform(sf_bounds["lon_min"], sf_bounds["lon_max"])
+            
+            incident = EmergencyReport(
+                report_id=f"DEMO-INC-{i+1:03d}",
+                type=random.choice(incident_types),
+                description=f"Demo {random.choice(incident_types).lower()} reported at coordinates {lat:.4f}, {lon:.4f}. This is simulated data for testing the map interface.",
+                location=f"Demo Location {i+1}, San Francisco, CA",
+                latitude=lat,
+                longitude=lon,
+                priority=random.choice(priorities),
+                status=random.choice(statuses),
+                method="demo",
+                reporter="demo_system",
+                timestamp=datetime.utcnow() - timedelta(hours=random.randint(0, 72))
+            )
+            
+            db.add(incident)
+            demo_incidents.append(incident)
+        
+        # Generate demo crowd reports
+        demo_reports = []
+        escalations = ["low", "moderate", "high", "critical"]
+        tones = ["neutral", "concerned", "urgent", "descriptive"]
+        
+        for i in range(report_count):
+            lat = random.uniform(sf_bounds["lat_min"], sf_bounds["lat_max"])
+            lon = random.uniform(sf_bounds["lon_min"], sf_bounds["lon_max"])
+            
+            report = CrowdReport(
+                message=f"Demo crowd report {i+1}: Simulated situation reported by citizen. This is test data for the map interface showing how crowd-sourced reports appear on the map.",
+                escalation=random.choice(escalations),
+                tone=random.choice(tones),
+                user=f"Demo User {i+1}",
+                location=f"Demo Area {i+1}, San Francisco, CA",
+                latitude=lat,
+                longitude=lon,
+                severity=random.randint(1, 5),
+                confidence_score=random.uniform(0.6, 0.95),
+                source="demo",
+                verified=random.choice([True, False]),
+                response_dispatched=random.choice([True, False]),
+                timestamp=datetime.utcnow() - timedelta(hours=random.randint(0, 48))
+            )
+            
+            db.add(report)
+            demo_reports.append(report)
+        
+        db.commit()
+        
+        # Broadcast update about new demo data
+        await broadcast_emergency_update("demo_data_generated", {
+            "incidents_created": incident_count,
+            "reports_created": report_count,
+            "message": "Demo data generated for map testing"
+        })
+        
+        logger.info(f"Generated {incident_count} demo incidents and {report_count} demo crowd reports")
+        
+        return JSONResponse({
+            "success": True,
+            "demo_data": {
+                "incidents_created": incident_count,
+                "reports_created": report_count,
+                "total_map_points": incident_count + report_count
+            },
+            "map_bounds": sf_bounds,
+            "next_steps": [
+                "Refresh the map to see new demo data",
+                "Test filtering and clustering features",
+                "Try timeline playback functionality",
+                "Export data in different formats"
+            ],
+            "message": f"Successfully generated {incident_count + report_count} demo map data points"
+        })
+        
+    except Exception as e:
+        logger.error(f"Demo data generation error: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+# ================================================================================
+# MAP SEARCH AND FILTERING
+# ================================================================================
+
+@app.get("/api/search-map-items")
+async def search_map_items(
+    query: str = Query(..., description="Search query"),
+    search_type: str = Query("all", description="Search type: all, incidents, reports, resources"),
+    radius_km: Optional[float] = Query(None, description="Search radius in kilometers"),
+    center_lat: Optional[float] = Query(None, description="Search center latitude"),
+    center_lon: Optional[float] = Query(None, description="Search center longitude"),
+    db: Session = Depends(get_db)
+):
+    """Search map items by text query and location"""
+    try:
+        results = {
+            "query": query,
+            "search_type": search_type,
+            "results": {
+                "incidents": [],
+                "crowd_reports": [],
+                "resources": [],
+                "total_found": 0
+            }
+        }
+        
+        # Search incidents
+        if search_type in ["all", "incidents"]:
+            incidents_query = db.query(EmergencyReport).filter(
+                EmergencyReport.latitude.isnot(None),
+                EmergencyReport.longitude.isnot(None)
+            )
+            
+            # Text search
+            incidents_query = incidents_query.filter(
+                or_(
+                    EmergencyReport.description.ilike(f"%{query}%"),
+                    EmergencyReport.type.ilike(f"%{query}%"),
+                    EmergencyReport.location.ilike(f"%{query}%"),
+                    EmergencyReport.report_id.ilike(f"%{query}%")
+                )
+            )
+            
+            incidents = incidents_query.limit(50).all()
+            
+            for incident in incidents:
+                # Apply radius filter if specified
+                if radius_km and center_lat and center_lon:
+                    distance = calculate_distance(
+                        center_lat, center_lon,
+                        incident.latitude, incident.longitude
+                    )
+                    if distance > radius_km:
+                        continue
+                
+                results["results"]["incidents"].append({
+                    "id": incident.id,
+                    "report_id": incident.report_id,
+                    "type": incident.type,
+                    "description": incident.description[:200] + "..." if len(incident.description) > 200 else incident.description,
+                    "location": incident.location,
+                    "latitude": float(incident.latitude),
+                    "longitude": float(incident.longitude),
+                    "priority": incident.priority,
+                    "status": incident.status,
+                    "timestamp": incident.timestamp.isoformat(),
+                    "match_type": "incident"
+                })
+        
+        # Search crowd reports
+        if search_type in ["all", "reports"]:
+            reports_query = db.query(CrowdReport).filter(
+                CrowdReport.latitude.isnot(None),
+                CrowdReport.longitude.isnot(None)
+            )
+            
+            # Text search
+            reports_query = reports_query.filter(
+                or_(
+                    CrowdReport.message.ilike(f"%{query}%"),
+                    CrowdReport.location.ilike(f"%{query}%"),
+                    CrowdReport.user.ilike(f"%{query}%")
+                )
+            )
+            
+            reports = reports_query.limit(50).all()
+            
+            for report in reports:
+                # Apply radius filter if specified
+                if radius_km and center_lat and center_lon:
+                    distance = calculate_distance(
+                        center_lat, center_lon,
+                        report.latitude, report.longitude
+                    )
+                    if distance > radius_km:
+                        continue
+                
+                results["results"]["crowd_reports"].append({
+                    "id": report.id,
+                    "message": report.message[:200] + "..." if len(report.message) > 200 else report.message,
+                    "escalation": report.escalation,
+                    "tone": report.tone,
+                    "user": report.user,
+                    "location": report.location,
+                    "latitude": float(report.latitude),
+                    "longitude": float(report.longitude),
+                    "timestamp": report.timestamp.isoformat(),
+                    "match_type": "crowd_report"
+                })
+        
+        # Search resources
+        if search_type in ["all", "resources"]:
+            resources = generate_emergency_resources()
+            
+            for resource in resources:
+                # Text search in resource data
+                searchable_text = f"{resource['type']} {resource['unit']} {resource['id']} {resource['status']}".lower()
+                if query.lower() in searchable_text:
+                    # Apply radius filter if specified
+                    if radius_km and center_lat and center_lon:
+                        distance = calculate_distance(
+                            center_lat, center_lon,
+                            resource['latitude'], resource['longitude']
+                        )
+                        if distance > radius_km:
+                            continue
+                    
+                    results["results"]["resources"].append({
+                        **resource,
+                        "match_type": "resource"
+                    })
+        
+        # Calculate totals
+        results["results"]["total_found"] = (
+            len(results["results"]["incidents"]) +
+            len(results["results"]["crowd_reports"]) +
+            len(results["results"]["resources"])
+        )
+        
+        # Add search metadata
+        results["search_metadata"] = {
+            "incidents_found": len(results["results"]["incidents"]),
+            "reports_found": len(results["results"]["crowd_reports"]),
+            "resources_found": len(results["results"]["resources"]),
+            "search_radius_km": radius_km,
+            "search_center": {"lat": center_lat, "lon": center_lon} if center_lat and center_lon else None,
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+        return JSONResponse({
+            "success": True,
+            **results
+        })
+        
+    except Exception as e:
+        logger.error(f"Map search error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate distance between two coordinates in kilometers"""
+    import math
+    
+    # Convert to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    
+    # Haversine formula
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    
+    # Radius of Earth in kilometers
+    r = 6371
+    
+    return c * r
+
+# ================================================================================
+# MAP PERFORMANCE AND OPTIMIZATION
+# ================================================================================
+
+@app.get("/api/map-performance")
+async def get_map_performance():
+    """Get map performance metrics"""
+    try:
+        # Simulate performance metrics
+        performance_data = {
+            "render_performance": {
+                "avg_load_time_ms": random.randint(800, 1500),
+                "marker_render_time_ms": random.randint(50, 200),
+                "filter_response_time_ms": random.randint(100, 300),
+                "last_measured": datetime.utcnow().isoformat()
+            },
+            "data_metrics": {
+                "total_markers": random.randint(100, 500),
+                "visible_markers": random.randint(50, 200),
+                "clustered_markers": random.randint(20, 100),
+                "layers_active": random.randint(2, 6)
+            },
+            "user_interactions": {
+                "zoom_level": random.randint(8, 16),
+                "pan_operations": random.randint(5, 50),
+                "filter_changes": random.randint(0, 10),
+                "popup_opens": random.randint(0, 20)
+            },
+            "optimization_suggestions": []
+        }
+        
+        # Add optimization suggestions based on metrics
+        if performance_data["render_performance"]["avg_load_time_ms"] > 1200:
+            performance_data["optimization_suggestions"].append({
+                "type": "performance",
+                "suggestion": "Consider enabling marker clustering to improve render performance",
+                "priority": "medium"
+            })
+        
+        if performance_data["data_metrics"]["visible_markers"] > 150:
+            performance_data["optimization_suggestions"].append({
+                "type": "data",
+                "suggestion": "High marker count detected - enable clustering or increase filter granularity",
+                "priority": "high"
+            })
+        
+        if not performance_data["optimization_suggestions"]:
+            performance_data["optimization_suggestions"].append({
+                "type": "status",
+                "suggestion": "Map performance is optimal",
+                "priority": "info"
+            })
+        
+        return JSONResponse({
+            "success": True,
+            "performance": performance_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Map performance error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+# ================================================================================
+# MAP COLLABORATION FEATURES
+# ================================================================================
+
+@app.post("/api/share-map-view")
+async def share_map_view(
+    request: Request,
+    view_name: str = Form(...),
+    center_lat: float = Form(...),
+    center_lon: float = Form(...),
+    zoom_level: int = Form(...),
+    active_layers: str = Form(...),  # JSON string
+    filters: str = Form("{}"),  # JSON string
+    notes: Optional[str] = Form(""),
+    expires_hours: int = Form(24)
+):
+    """Share current map view with others"""
+    try:
+        import json
+        
+        # Parse JSON data
+        try:
+            layers = json.loads(active_layers)
+            filter_data = json.loads(filters)
+        except json.JSONDecodeError:
+            return JSONResponse({
+                "success": False,
+                "error": "Invalid JSON data for layers or filters"
+            }, status_code=400)
+        
+        # Generate share ID
+        share_id = secrets.token_urlsafe(16)
+        
+        # Create share record
+        shared_view = {
+            "share_id": share_id,
+            "view_name": view_name,
+            "map_center": {"lat": center_lat, "lon": center_lon},
+            "zoom_level": zoom_level,
+            "active_layers": layers,
+            "filters": filter_data,
+            "notes": notes,
+            "created_at": datetime.utcnow().isoformat(),
+            "expires_at": (datetime.utcnow() + timedelta(hours=expires_hours)).isoformat(),
+            "created_by": "map_user",
+            "access_count": 0
+        }
+        
+        # In production, save to database
+        # For now, we'll return the share data
+        
+        share_url = f"/map-reports?share={share_id}"
+        
+        logger.info(f"Map view shared: {view_name} (ID: {share_id})")
+        
+        return JSONResponse({
+            "success": True,
+            "shared_view": shared_view,
+            "share_url": share_url,
+            "share_id": share_id,
+            "expires_in_hours": expires_hours,
+            "message": f"Map view '{view_name}' shared successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Map share error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/shared-map-view/{share_id}")
+async def get_shared_map_view(share_id: str):
+    """Retrieve shared map view"""
+    try:
+        # In production, retrieve from database
+        # For now, return sample data
+        
+        if not share_id:
+            return JSONResponse({
+                "success": False,
+                "error": "Invalid share ID"
+            }, status_code=404)
+        
+        # Simulate shared view data
+        shared_view = {
+            "share_id": share_id,
+            "view_name": "Emergency Response Overview",
+            "map_center": {"lat": 37.7749, "lon": -122.4194},
+            "zoom_level": 12,
+            "active_layers": ["incidents", "resources", "heatmap"],
+            "filters": {
+                "priority": "high",
+                "timeRange": "24h"
+            },
+            "notes": "Shared view showing current emergency situation overview",
+            "created_at": (datetime.utcnow() - timedelta(hours=2)).isoformat(),
+            "expires_at": (datetime.utcnow() + timedelta(hours=22)).isoformat(),
+            "created_by": "Emergency Command",
+            "access_count": 1
+        }
+        
+        # Check if expired
+        expires_at = datetime.fromisoformat(shared_view["expires_at"])
+        if datetime.utcnow() > expires_at:
+            return JSONResponse({
+                "success": False,
+                "error": "Shared view has expired"
+            }, status_code=410)
+        
+        # Increment access count (in production)
+        shared_view["access_count"] += 1
+        
+        return JSONResponse({
+            "success": True,
+            "shared_view": shared_view
+        })
+        
+    except Exception as e:
+        logger.error(f"Shared view retrieval error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
 
 # ================================================================================
 # SYSTEM HEALTH & UTILITIES
