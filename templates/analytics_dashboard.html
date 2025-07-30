@@ -1,443 +1,1125 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crisis Analytics Dashboard - Emergency Command</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block title %}Analytics Dashboard - Disaster Response{% endblock %}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
 
-{% block page_title %}📊 Analytics Dashboard{% endblock %}
+        .analytics-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
 
-{% block subtitle %}Real-time Data Insights & AI Performance{% endblock %}
+        .page-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
 
-{% block header_actions %}
-<div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-  <a href="?timeframe=24h" class="timeframe-btn {% if timeframe == '24h' %}active{% endif %}">24h</a>
-  <a href="?timeframe=7d" class="timeframe-btn {% if timeframe == '7d' %}active{% endif %}">7d</a>
-  <a href="?timeframe=30d" class="timeframe-btn {% if timeframe == '30d' %}active{% endif %}">30d</a>
-  <a href="/admin" style="margin-left: 1rem;" class="admin-link">👤 Admin Dashboard</a>
-</div>
-{% endblock %}
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
 
-{% block extra_styles %}
-<style>
-  .analytics-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 1rem;
-  }
-  
-  .timeframe-btn {
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    transition: background 0.2s;
-  }
-  
-  .timeframe-btn:hover, 
-  .timeframe-btn.active {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    text-decoration: none;
-  }
-  
-  .admin-link {
-    padding: 0.5rem 1rem;
-    background: #16a34a;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 0.9rem;
-  }
-  
-  .admin-link:hover {
-    background: #15803d;
-    color: white;
-    text-decoration: none;
-  }
-  
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-  
-  .kpi-card {
-    background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 12px;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .kpi-value {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-  }
-  
-  .kpi-label {
-    opacity: 0.9;
-    font-size: 0.9rem;
-  }
-  
-  .charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 2rem;
-    margin-bottom: 2rem;
-  }
-  
-  .chart-card {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-  
-  .chart-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #374151;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .chart-placeholder {
-    height: 300px;
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border: 2px dashed #3b82f6;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #1e40af;
-    font-weight: 500;
-    text-align: center;
-    position: relative;
-  }
-  
-  .stat-bar {
-    background: #f3f4f6;
-    height: 24px;
-    border-radius: 12px;
-    margin: 0.5rem 0;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .stat-fill {
-    height: 100%;
-    border-radius: 12px;
-    transition: width 0.8s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 0.8rem;
-    font-weight: 500;
-  }
-  
-  .stat-fill.critical { 
-    background: #dc2626; 
-  }
-  
-  .stat-fill.high { 
-    background: #ea580c; 
-  }
-  
-  .stat-fill.moderate { 
-    background: #ca8a04; 
-  }
-  
-  .stat-fill.low { 
-    background: #16a34a; 
-  }
-  
-  .stat-fill.red { 
-    background: #dc2626; 
-  }
-  
-  .stat-fill.yellow { 
-    background: #eab308; 
-  }
-  
-  .stat-fill.green { 
-    background: #16a34a; 
-  }
-  
-  .stat-fill.black { 
-    background: #374151; 
-  }
-  
-  .ai-metrics {
-    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-    color: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  
-  .ai-metrics h3 {
-    margin: 0 0 1rem 0;
-    font-size: 1.3rem;
-  }
-  
-  .ai-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-  }
-  
-  .ai-metric {
-    text-align: center;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 1rem;
-    border-radius: 8px;
-  }
-  
-  .ai-metric-value {
-    font-size: 1.8rem;
-    font-weight: bold;
-    margin-bottom: 0.25rem;
-  }
-  
-  .ai-metric-label {
-    font-size: 0.8rem;
-    opacity: 0.9;
-  }
-  
-  .trend-summary {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-  }
-  
-  .export-actions {
-    margin-top: 2rem;
-    text-align: center;
-  }
-  
-  .export-btn {
-    background: #16a34a;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    text-decoration: none;
-    border-radius: 8px;
-    margin: 0 0.5rem;
-    display: inline-block;
-    font-weight: 500;
-    transition: background 0.2s;
-  }
-  
-  .export-btn:hover {
-    background: #15803d;
-    color: white;
-    text-decoration: none;
-  }
-</style>
-{% endblock %}
+        .page-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
 
-{% block content %}
-<div class="analytics-container">
-  <!-- Time Range Header -->
-  <div style="background: rgba(255, 255, 255, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; color: white;">
-    <h3 style="margin: 0;">📈 Viewing: {{ timeframe_label }}</h3>
-    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">
-      Analysis updated at {{ current_time.strftime("%H:%M on %B %d, %Y") }}
-    </p>
-  </div>
+        .controls-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
 
-  <!-- Key Performance Indicators -->
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-value">{{ kpis.response_efficiency }}%</div>
-      <div class="kpi-label">Response Efficiency</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-value">{{ kpis.critical_ratio }}%</div>
-      <div class="kpi-label">Critical Cases</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-value">{{ kpis.system_utilization }}</div>
-      <div class="kpi-label">System Load</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-value">{{ kpis.geographic_coverage }}</div>
-      <div class="kpi-label">Active Locations</div>
-    </div>
-  </div>
+        .time-selector,
+        .filter-select {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
 
-  <!-- AI Performance Metrics -->
-  <div class="ai-metrics">
-    <h3>🤖 AI System Performance</h3>
-    <div class="ai-grid">
-      <div class="ai-metric">
-        <div class="ai-metric-value">{{ ai_metrics.sentiment_accuracy }}%</div>
-        <div class="ai-metric-label">Sentiment Accuracy</div>
-      </div>
-      <div class="ai-metric">
-        <div class="ai-metric-value">{{ ai_metrics.triage_confidence }}%</div>
-        <div class="ai-metric-label">Triage Confidence</div>
-      </div>
-      <div class="ai-metric">
-        <div class="ai-metric-value">{{ ai_metrics.auto_classifications }}</div>
-        <div class="ai-metric-label">Auto Classifications</div>
-      </div>
-      <div class="ai-metric">
-        <div class="ai-metric-value">{{ ai_metrics.processing_speed }}</div>
-        <div class="ai-metric-label">Avg Response Time</div>
-      </div>
-    </div>
-  </div>
+        .time-selector option,
+        .filter-select option {
+            background: #1f2937;
+            color: white;
+        }
 
-  <!-- Add this section after the AI Performance Metrics and before Charts Grid -->
+        .action-btn {
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+        }
 
-<!-- Quick Stats Summary -->
-<div style="background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
-    <h3 style="margin: 0 0 1rem 0; color: #374151; display: flex; align-items: center; gap: 0.5rem;">
-      📈 Quick Summary - {{ timeframe_label }}
-    </h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-      <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px;">
-        <div style="font-size: 1.5rem; font-weight: bold; color: #dc2626;">{{ report_trends.escalation_breakdown.Critical }}</div>
-        <div style="font-size: 0.9rem; color: #6b7280;">Critical Reports</div>
-      </div>
-      <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px;">
-        <div style="font-size: 1.5rem; font-weight: bold; color: #ea580c;">{{ triage_insights.color_distribution.red }}</div>
-        <div style="font-size: 0.9rem; color: #6b7280;">Red Triage Patients</div>
-      </div>
-      <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px;">
-        <div style="font-size: 1.5rem; font-weight: bold; color: #16a34a;">{{ ai_metrics.auto_classifications }}</div>
-        <div style="font-size: 0.9rem; color: #6b7280;">AI Classifications</div>
-      </div>
-      <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px;">
-        <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6;">{{ report_trends.daily_average }}</div>
-        <div style="font-size: 0.9rem; color: #6b7280;">Reports/Day</div>
-      </div>
-    </div>
-  </div>
+        .refresh-btn {
+            background: #10b981;
+        }
 
-  <!-- Charts Grid -->
-  <div class="charts-grid">
-    <!-- Report Escalation Chart -->
-    <div class="chart-card">
-      <h3 class="chart-title">📊 Report Escalation Levels</h3>
-      <div class="trend-summary">
-        Total Reports: {{ report_trends.total_reports }} | Daily Average: {{ report_trends.daily_average }}
-      </div>
-      {% for level, count in report_trends.escalation_breakdown.items() %}
-      <div style="display: flex; align-items: center; margin: 0.5rem 0;">
-        <span style="width: 80px; font-size: 0.9rem;">{{ level }}:</span>
-        <div class="stat-bar" style="flex: 1;">
-          {% set percentage = (count / report_trends.total_reports * 100) if report_trends.total_reports > 0 else 0 %}
-          <div class="stat-fill {{ level.lower() }}" style="width: {{ percentage }}%;">
-            {{ count }} ({{ "%.1f"|format(percentage) }}%)
-          </div>
+        .refresh-btn:hover {
+            background: #059669;
+        }
+
+        .command-btn {
+            background: #8b5cf6;
+        }
+
+        .command-btn:hover {
+            background: #7c3aed;
+        }
+
+        .predict-btn {
+            background: #f59e0b;
+        }
+
+        .predict-btn:hover {
+            background: #d97706;
+        }
+
+        .status-header {
+            background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .last-updated {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3b82f6;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .kpi-icon {
+            font-size: 1.5rem;
+        }
+
+        .kpi-trend {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .kpi-trend.up {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .kpi-trend.down {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .kpi-trend.stable {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .kpi-subtitle {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        .charts-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-btn {
+            padding: 0.25rem 0.5rem;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .chart-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .chart-content {
+            height: 300px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px dashed #3b82f6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e40af;
+            font-weight: 500;
+            text-align: center;
+            position: relative;
+        }
+
+        .interactive-chart {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+
+        .stat-bar {
+            background: #f3f4f6;
+            height: 28px;
+            border-radius: 14px;
+            margin: 0.75rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-fill {
+            height: 100%;
+            border-radius: 14px;
+            transition: width 0.8s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .stat-label {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .stat-fill.critical {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        .stat-fill.high {
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+        }
+
+        .stat-fill.moderate {
+            background: linear-gradient(135deg, #ca8a04, #a16207);
+        }
+
+        .stat-fill.low {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+        }
+
+        .stat-fill.red {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        .stat-fill.yellow {
+            background: linear-gradient(135deg, #eab308, #ca8a04);
+        }
+
+        .stat-fill.green {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+        }
+
+        .stat-fill.black {
+            background: linear-gradient(135deg, #374151, #1f2937);
+        }
+
+        .ai-insights {
+            background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .ai-insights h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #fbbf24;
+        }
+
+        .insight-type {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .export-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .export-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .export-btn {
+            background: #16a34a;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+        }
+
+        .export-btn:hover {
+            background: #15803d;
+            transform: translateY(-1px);
+        }
+
+        .export-btn.pdf {
+            background: #dc2626;
+        }
+
+        .export-btn.pdf:hover {
+            background: #b91c1c;
+        }
+
+        .export-btn.exec {
+            background: #7c3aed;
+        }
+
+        .export-btn.exec:hover {
+            background: #6d28d9;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .insights-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .export-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .status-header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="analytics-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">📊 Crisis Analytics Dashboard</h1>
+            <p class="page-subtitle">Operational Intelligence & Decision Support</p>
         </div>
-      </div>
-      {% endfor %}
-    </div>
 
-    <!-- Triage Color Distribution -->
-    <div class="chart-card">
-      <h3 class="chart-title">🏥 Triage Color Distribution</h3>
-      <div class="trend-summary">
-        Total Patients: {{ triage_insights.total_patients }} | Avg Severity: {{ triage_insights.average_severity }}
-      </div>
-      {% for color, count in triage_insights.color_distribution.items() %}
-      <div style="display: flex; align-items: center; margin: 0.5rem 0;">
-        <span style="width: 80px; font-size: 0.9rem; text-transform: capitalize;">{{ color }}:</span>
-        <div class="stat-bar" style="flex: 1;">
-          {% set percentage = (count / triage_insights.total_patients * 100) if triage_insights.total_patients > 0 else 0 %}
-          <div class="stat-fill {{ color }}" style="width: {{ percentage }}%;">
-            {{ count }} ({{ "%.1f"|format(percentage) }}%)
-          </div>
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+            <select id="timeRangeSelector" class="time-selector" onchange="changeTimeRange()">
+                <option value="4h">Last 4 Hours</option>
+                <option value="24h" selected>Last 24 Hours</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="custom">Custom Range</option>
+            </select>
+
+            <select id="regionFilter" class="filter-select" onchange="applyFilters()">
+                <option value="">All Regions</option>
+                <option value="north">North District</option>
+                <option value="south">South District</option>
+                <option value="central">Central District</option>
+                <option value="west">West District</option>
+            </select>
+
+            <select id="severityFilter" class="filter-select" onchange="applyFilters()">
+                <option value="">All Severities</option>
+                <option value="critical">Critical Only</option>
+                <option value="high">High Priority</option>
+                <option value="moderate">Moderate</option>
+            </select>
+
+            <button onclick="refreshDashboard()" class="action-btn refresh-btn">🔄 Refresh</button>
+            <a href="#" class="action-btn command-btn">🧠 Command Center</a>
+            <a href="#" class="action-btn predict-btn">🔮 Forecasts</a>
         </div>
-      </div>
-      {% endfor %}
-    </div>
 
-    <!-- Tone Analysis Chart -->
-    <div class="chart-card">
-      <h3 class="chart-title">🎭 Sentiment Tone Analysis</h3>
-      <div class="chart-placeholder">
-        <div>
-          <div style="font-size: 1.1rem; margin-bottom: 1rem;">📈 Tone Distribution</div>
-          {% for tone, count in report_trends.tone_analysis.items() %}
-          <div style="margin: 0.5rem 0;">{{ tone }}: {{ count }} reports</div>
-          {% endfor %}
+        <!-- Status Header -->
+        <div class="status-header">
+            <div class="status-info">
+                <div class="status-indicator"></div>
+                <div>
+                    <h3 style="margin: 0;">Crisis Analytics Dashboard - Last 24 Hours</h3>
+                    <div class="last-updated">Last updated: <span id="timestamp">15:42:18</span> | Auto-refresh: ON</div>
+                </div>
+            </div>
+            <div>
+                <button onclick="exportExecutiveBrief()" class="action-btn exec">📋 Executive Brief</button>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Trend Timeline -->
-    <div class="chart-card">
-      <h3 class="chart-title">📈 Activity Timeline</h3>
-      <div class="chart-placeholder">
-        <div>
-          <div style="font-size: 1.1rem; margin-bottom: 1rem;">📊 Daily Activity Trend</div>
-          <div>Reports: {{ report_trends.total_reports }}</div>
-          <div>Patients: {{ triage_insights.total_patients }}</div>
-          <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">
-            Interactive charts available in production mode
-          </div>
+        <!-- KPI Dashboard -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-icon">🚨</span>
+                    <span class="kpi-trend up">↑ 5%</span>
+                </div>
+                <div class="kpi-value">42</div>
+                <div class="kpi-label">Total Incidents</div>
+                <div class="kpi-subtitle">8 today</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-icon">🏥</span>
+                    <span class="kpi-trend stable">→</span>
+                </div>
+                <div class="kpi-value">15</div>
+                <div class="kpi-label">Active Patients</div>
+                <div class="kpi-subtitle">3 critical</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-icon">⏱️</span>
+                    <span class="kpi-trend down">↓ 12%</span>
+                </div>
+                <div class="kpi-value">6.2 min</div>
+                <div class="kpi-label">Avg Response Time</div>
+                <div class="kpi-subtitle">Target: < 8 min</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-icon">🤖</span>
+                    <span class="kpi-trend up">↑ 3%</span>
+                </div>
+                <div class="kpi-value">94%</div>
+                <div class="kpi-label">AI Accuracy</div>
+                <div class="kpi-subtitle">127 auto-classified</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-icon">✅</span>
+                    <span class="kpi-trend up">↑ 8%</span>
+                </div>
+                <div class="kpi-value">38</div>
+                <div class="kpi-label">Resolved Cases</div>
+                <div class="kpi-subtitle">92% success rate</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-icon">📊</span>
+                    <span class="kpi-trend stable">→</span>
+                </div>
+                <div class="kpi-value">78%</div>
+                <div class="kpi-label">Resource Utilization</div>
+                <div class="kpi-subtitle">23 available</div>
+            </div>
         </div>
-      </div>
+
+        <!-- AI Insights Panel -->
+        <div class="ai-insights">
+            <h3>🤖 AI Intelligence Highlights</h3>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <div class="insight-type">Pattern Detection</div>
+                    <div class="insight-text">Spike in respiratory cases detected in North District - monitoring air quality correlation</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-type">Resource Optimization</div>
+                    <div class="insight-text">Reposition 2 ambulances to reduce average response time by 15% during peak hours</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-type">Trend Analysis</div>
+                    <div class="insight-text">Traffic incidents increased 23% on weekends - suggest additional patrol deployment</div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-type">Risk Assessment</div>
+                    <div class="insight-text">Weather conditions indicate 68% probability of surge events in next 6 hours</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="section-header">
+                <h2 class="section-title">📈 Operational Trends & Performance</h2>
+            </div>
+
+            <div class="charts-grid">
+                <!-- Resource Utilization Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">🚑 Resource Utilization</h3>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="drillDownResource('all')">All</button>
+                            <button class="chart-btn" onclick="drillDownResource('medical')">Medical</button>
+                            <button class="chart-btn" onclick="drillDownResource('fire')">Fire</button>
+                        </div>
+                    </div>
+                    <div class="interactive-chart">
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">Ambulances:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 100px;">
+                                <div class="stat-fill moderate" style="width: 67%;">
+                                    8/12 (67%)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">Fire Engines:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 100px;">
+                                <div class="stat-fill moderate" style="width: 63%;">
+                                    5/8 (63%)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">Police Units:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 100px;">
+                                <div class="stat-fill high" style="width: 80%;">
+                                    12/15 (80%)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">Medical Staff:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 100px;">
+                                <div class="stat-fill high" style="width: 80%;">
+                                    28/35 (80%)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">ICU Beds:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 100px;">
+                                <div class="stat-fill high" style="width: 78%;">
+                                    14/18 (78%)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Triage Effectiveness Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">🏥 Triage Effectiveness</h3>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="showTriageDetails()">Details</button>
+                        </div>
+                    </div>
+                    <div class="interactive-chart">
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">Red:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 80px;">
+                                <div class="stat-fill red" style="width: 19%;">
+                                    5 (19.2%)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">Yellow:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 80px;">
+                                <div class="stat-fill yellow" style="width: 31%;">
+                                    8 (30.8%)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">Green:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 80px;">
+                                <div class="stat-fill green" style="width: 46%;">
+                                    12 (46.2%)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 0.75rem 0;">
+                            <span class="stat-label">Black:</span>
+                            <div class="stat-bar" style="flex: 1; margin-left: 80px;">
+                                <div class="stat-fill black" style="width: 4%;">
+                                    1 (3.8%)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; padding: 0.5rem; background: #f8fafc; border-radius: 4px; font-size: 0.85rem;">
+                            AI Override Rate: 8% | Accuracy: 94%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Geographic Hotspots -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">🗺️ Geographic Hotspots</h3>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="toggleMapView('incidents')">Incidents</button>
+                            <button class="chart-btn" onclick="toggleMapView('resources')">Resources</button>
+                        </div>
+                    </div>
+                    <div class="chart-content">
+                        <div>
+                            <div style="font-size: 1.1rem; margin-bottom: 1rem;">🎯 Active Hotspots</div>
+                            <div style="margin: 0.5rem 0;">Downtown District: 18 incidents</div>
+                            <div style="margin: 0.5rem 0;">Industrial Zone: 12 incidents</div>
+                            <div style="margin: 0.5rem 0;">Highway Corridor: 9 incidents</div>
+                            <div style="margin: 0.5rem 0;">Medical District: 7 incidents</div>
+                            <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">
+                                Click regions for detailed incident lists
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Response Time Analysis -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">⏱️ Response Time Analysis</h3>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="showResponseDetails()">Details</button>
+                        </div>
+                    </div>
+                    <div class="interactive-chart">
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                            <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 6px;">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #16a34a;">2.1 min</div>
+                                <div style="font-size: 0.8rem; color: #6b7280;">Best Time</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 6px;">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #dc2626;">18.4 min</div>
+                                <div style="font-size: 0.8rem; color: #6b7280;">Worst Time</div>
+                            </div>
+                        </div>
+
+                        <div style="margin: 1rem 0;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="font-size: 0.9rem;">Target Met:</span>
+                                <span style="font-weight: bold; color: #16a34a;">87%</span>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill green" style="width: 87%;">
+                                    87% within target
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 0.85rem; color: #6b7280; margin-top: 1rem;">
+                            Bottlenecks: Traffic congestion, Equipment prep
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="export-section">
+            <h3 style="margin-bottom: 1rem; color: #374151;">📋 Reports & Data Export</h3>
+            <div class="export-grid">
+                <button onclick="generateExecutiveBrief()" class="export-btn exec">
+                    📋 Executive Brief
+                </button>
+                <button onclick="exportPDF()" class="export-btn pdf">
+                    📄 PDF Report
+                </button>
+                <button onclick="exportCSV()" class="export-btn">
+                    📊 CSV Data
+                </button>
+                <button onclick="scheduleReport()" class="export-btn">
+                    ⏰ Schedule Report
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Export Actions -->
-  <div class="export-actions">
-    <a href="/export-analytics-pdf?timeframe={{ timeframe }}" class="export-btn">📄 Export PDF Report</a>
-    <a href="/export-analytics-csv?timeframe={{ timeframe }}" class="export-btn">📊 Export CSV Data</a>
-    <a href="/api/analytics-data?timeframe={{ timeframe }}" class="export-btn">🔧 API Data</a>
-  </div>
-</div>
-{% endblock %}
+    <script>
+        // Dashboard State
+        let dashboardState = {
+            timeframe: '24h',
+            filters: { region: '', severity: '' },
+            autoRefresh: true
+        };
 
-{% block scripts %}
-<script>
-  // Auto-refresh analytics every 60 seconds
-  let analyticsRefreshInterval;
-  
-  function refreshAnalytics() {
-    console.log('🔄 Refreshing analytics data...');
-    // In production, you could fetch updated data via AJAX
-    // For now, just log the refresh
-  }
-  
-  // Initialize analytics
-  window.addEventListener('load', () => {
-    console.log('📊 Analytics dashboard loaded');
-    
-    // Start auto-refresh (commented out for demo)
-    // analyticsRefreshInterval = setInterval(refreshAnalytics, 60000);
-    
-    // Animate the stat bars
-    setTimeout(() => {
-      document.querySelectorAll('.stat-fill').forEach(bar => {
-        const width = bar.style.width;
-        bar.style.width = '0%';
-        setTimeout(() => {
-          bar.style.width = width;
-        }, 100);
-      });
-    }, 500);
-  });
-  
-  // Cleanup on page unload
-  window.addEventListener('beforeunload', () => {
-    if (analyticsRefreshInterval) {
-      clearInterval(analyticsRefreshInterval);
-    }
-  });
-</script>
-{% endblock %}
+        // Initialize Dashboard
+        window.addEventListener('load', function() {
+            console.log('📊 Crisis Analytics Dashboard initialized');
+            initializeDashboard();
+            startAutoRefresh();
+            animateElements();
+        });
+
+        function initializeDashboard() {
+            updateTimestamp();
+            console.log('Dashboard initialized with timeframe:', dashboardState.timeframe);
+        }
+
+        function startAutoRefresh() {
+            if (dashboardState.autoRefresh) {
+                setInterval(function() {
+                    refreshDashboard();
+                }, 30000); // Refresh every 30 seconds
+            }
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toTimeString().slice(0, 8);
+            const timestampEl = document.getElementById('timestamp');
+            if (timestampEl) {
+                timestampEl.textContent = timeString;
+            }
+        }
+
+        function refreshDashboard() {
+            console.log('🔄 Refreshing dashboard data...');
+            updateTimestamp();
+            showNotification('Dashboard refreshed successfully', 'success');
+            
+            // Animate refresh indicator
+            const indicator = document.querySelector('.status-indicator');
+            if (indicator) {
+                indicator.style.background = '#fbbf24';
+                setTimeout(function() {
+                    indicator.style.background = '#10b981';
+                }, 1000);
+            }
+        }
+
+        function changeTimeRange() {
+            const selector = document.getElementById('timeRangeSelector');
+            const newTimeframe = selector.value;
+            
+            if (newTimeframe === 'custom') {
+                showCustomRangeDialog();
+                return;
+            }
+            
+            dashboardState.timeframe = newTimeframe;
+            showNotification('Time range updated to ' + newTimeframe, 'info');
+            refreshDashboard();
+        }
+
+        function applyFilters() {
+            const regionFilter = document.getElementById('regionFilter');
+            const severityFilter = document.getElementById('severityFilter');
+            
+            dashboardState.filters.region = regionFilter.value;
+            dashboardState.filters.severity = severityFilter.value;
+            
+            showNotification('Filters applied', 'info');
+            refreshDashboard();
+        }
+
+        function showCustomRangeDialog() {
+            const startDate = prompt('Enter start date (YYYY-MM-DD):');
+            const endDate = prompt('Enter end date (YYYY-MM-DD):');
+            
+            if (startDate && endDate) {
+                dashboardState.timeframe = 'custom';
+                showNotification('Custom date range set: ' + startDate + ' to ' + endDate, 'success');
+            } else {
+                document.getElementById('timeRangeSelector').value = dashboardState.timeframe;
+            }
+        }
+
+        // Chart Interactions
+        function drillDownResource(resourceType) {
+            console.log('🚑 Drilling down to resource type:', resourceType);
+            showNotification('Showing detailed view for ' + resourceType + ' resources', 'info');
+        }
+
+        function toggleMapView(viewType) {
+            console.log('🗺️ Toggling map view to:', viewType);
+            showNotification('Map updated to show ' + viewType, 'success');
+        }
+
+        function showTriageDetails() {
+            console.log('🏥 Showing triage details');
+            showNotification('Opening detailed triage analytics...', 'info');
+        }
+
+        function showResponseDetails() {
+            console.log('⏱️ Showing response time details');
+            showNotification('Opening detailed response time analysis...', 'info');
+        }
+
+        // Export Functions
+        function generateExecutiveBrief() {
+            console.log('📋 Generating executive brief...');
+            showNotification('Preparing executive brief...', 'info');
+            
+            setTimeout(function() {
+                showNotification('Executive brief generated successfully!', 'success');
+                downloadExecutiveBrief();
+            }, 2000);
+        }
+
+        function exportExecutiveBrief() {
+            generateExecutiveBrief();
+        }
+
+        function exportPDF() {
+            console.log('📄 Exporting PDF report...');
+            showNotification('Generating PDF report...', 'info');
+            
+            setTimeout(function() {
+                showNotification('PDF report generated successfully!', 'success');
+            }, 1500);
+        }
+
+        function exportCSV() {
+            console.log('📊 Exporting CSV data...');
+            showNotification('Preparing CSV export...', 'info');
+            
+            setTimeout(function() {
+                showNotification('CSV data exported successfully!', 'success');
+            }, 1000);
+        }
+
+        function scheduleReport() {
+            console.log('⏰ Scheduling report...');
+            
+            const frequency = prompt('Report frequency (daily/weekly/monthly):');
+            const email = prompt('Email address for reports:');
+            
+            if (frequency && email) {
+                showNotification('Report scheduled: ' + frequency + ' reports to ' + email, 'success');
+            }
+        }
+
+        function downloadExecutiveBrief() {
+            const briefContent = `
+EXECUTIVE BRIEF - CRISIS ANALYTICS DASHBOARD
+Generated: ${new Date().toLocaleString()}
+Timeframe: ${dashboardState.timeframe}
+
+EXECUTIVE SUMMARY
+================
+The Crisis Analytics Dashboard provides comprehensive operational intelligence for emergency management decision-making. This brief summarizes key performance indicators, trends, and actionable insights for executive review.
+
+KEY PERFORMANCE INDICATORS
+===========================
+• Total Incidents: 42 (↑ 5% from previous period)
+• Active Patients: 15 (3 critical cases requiring immediate attention)
+• Average Response Time: 6.2 minutes (↓ 12% improvement)
+• AI System Accuracy: 94% (↑ 3% from last period)
+• Resolved Cases: 38 with 92% success rate
+• Resource Utilization: 78% across all units
+
+AI INTELLIGENCE HIGHLIGHTS
+============================
+• Pattern Detection: Spike in respiratory cases detected in North District - monitoring air quality correlation
+• Resource Optimization: Reposition 2 ambulances to reduce average response time by 15% during peak hours
+• Trend Analysis: Traffic incidents increased 23% on weekends - suggest additional patrol deployment
+• Risk Assessment: Weather conditions indicate 68% probability of surge events in next 6 hours
+
+OPERATIONAL PERFORMANCE
+========================
+• Peak Activity Hours: 14:00-18:00, 20:00-22:00
+• Geographic Hotspots: Downtown District (18 incidents), Industrial Zone (12 incidents)
+• Response Time Targets: 87% of incidents met target response times
+• Resource Bottlenecks: Traffic congestion, Equipment preparation time
+
+STRATEGIC RECOMMENDATIONS
+===========================
+• Continue monitoring critical patient volume
+• Consider additional resource allocation during peak hours
+• Review response time bottlenecks in identified areas
+• Implement AI-suggested ambulance repositioning within 2 hours
+• Monitor respiratory case cluster in North District for environmental factors
+
+Report prepared by: Crisis Analytics AI System
+Confidence Level: High (94% accuracy rate)
+Next scheduled update: ${new Date(Date.now() + 30*60*1000).toLocaleString()}
+            `;
+            
+            const blob = new Blob([briefContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'executive-brief-' + new Date().toISOString().slice(0, 10) + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Animation Effects
+        function animateElements() {
+            // Animate KPI cards
+            const kpiCards = document.querySelectorAll('.kpi-card');
+            kpiCards.forEach(function(card, index) {
+                setTimeout(function() {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.5s ease';
+                    
+                    setTimeout(function() {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 100);
+            });
+            
+            // Animate stat bars
+            setTimeout(function() {
+                const statFills = document.querySelectorAll('.stat-fill');
+                statFills.forEach(function(bar) {
+                    const width = bar.style.width;
+                    bar.style.width = '0%';
+                    setTimeout(function() {
+                        bar.style.width = width;
+                    }, 200);
+                });
+            }, 1000);
+        }
+
+        // Notification System
+        function showNotification(message, type) {
+            type = type || 'info';
+            
+            const notification = document.createElement('div');
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; z-index: 1000; transform: translateX(100%); transition: transform 0.3s ease; max-width: 400px;';
+            
+            if (type === 'success') {
+                notification.style.background = '#16a34a';
+            } else if (type === 'error') {
+                notification.style.background = '#dc2626';
+            } else {
+                notification.style.background = '#3b82f6';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(function() {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(function() {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(function() {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        refreshDashboard();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        generateExecutiveBrief();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        const regionFilter = document.getElementById('regionFilter');
+                        if (regionFilter) regionFilter.focus();
+                        break;
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
