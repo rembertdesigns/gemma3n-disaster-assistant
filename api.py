@@ -6432,6 +6432,16 @@ async def get_navigation_items():
                         "access_level": "admin"
                     },
                     {
+                        "id": "analytics-dashboard",  # ADD THIS ITEM
+                        "title": "Analytics Dashboard",
+                        "url": "/analytics-dashboard", 
+                        "icon": "📊",
+                        "description": "Advanced analytics and intelligence dashboard",
+                        "ai_powered": True,
+                        "access_level": "admin",
+                        "new": True
+                    },
+                    {
                         "id": "context-intelligence-dashboard",
                         "title": "Context Intelligence Dashboard", 
                         "url": "/context-intelligence-dashboard",
@@ -10965,6 +10975,7 @@ async def not_found_handler(request: Request, exc):
                 "Visit / for the citizen portal",
                 "Check /health for system status",
                 "Use /admin for dashboard access",
+                "Try /analytics-dashboard for analytics dashboard",
                 "Try /triage-dashboard for triage management",
                 "Try /voice-emergency-reporter for voice reporting",
                 "Try /context-intelligence-dashboard for AI analysis",
@@ -10974,6 +10985,7 @@ async def not_found_handler(request: Request, exc):
            "available_endpoints": {
                 "citizen_portal": "/",
                 "admin_dashboard": "/admin",
+                "analytics_dashboard": "/analytics-dashboard",
                 "triage_dashboard": "/triage-dashboard",
                 "staff_command_center": "/staff-triage-command", 
                 "voice_emergency": "/voice-emergency-reporter",
@@ -11318,6 +11330,7 @@ async def startup_event():
     # Log available features
     logger.info("🎯 Available features:")
     logger.info("     • 🧠 Crisis Command Center (AI-powered emergency operations)")
+    logger.info("     • 📊 Analytics Dashboard (advanced analytics and intelligence)")
     logger.info("     • 🌐 Citizen Emergency Portal (main interface)")
     logger.info("     • 🎤 PUBLIC Voice Emergency Reporter (NO LOGIN REQUIRED)")
     logger.info("     • 🤖 Multimodal AI Analysis (text + image + audio)")
@@ -11340,6 +11353,7 @@ async def startup_event():
     
     logger.info("✅ Enhanced Emergency Response Assistant ready!")
     logger.info(f"     🧠 Crisis Command Center: http://localhost:8000/crisis-command-center")
+    logger.info(f"     📊 Analytics Dashboard: http://localhost:8000/analytics-dashboard")
     logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
     logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")
     logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
