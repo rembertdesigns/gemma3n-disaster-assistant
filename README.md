@@ -75,7 +75,7 @@ A comprehensive, **offline-first AI-powered emergency response platform** design
 
 4. **Launch the System**
    ```bash
-   python app.py
+   python api.py
    # Or for production:
    gunicorn --workers 4 --bind 0.0.0.0:8000 app:app
    ```
@@ -508,7 +508,7 @@ pip install -r requirements-dev.txt
 
 # Run in development mode
 export FLASK_ENV=development
-python app.py
+python api.py
 ```
 
 ### **Code Standards**
