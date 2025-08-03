@@ -3040,6 +3040,57 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         </body></html>
         """)
     
+# 1. UPDATE THE PATIENT TRACKER ROUTE (around line 3000+)
+@app.get("/patient-tracker", response_class=HTMLResponse)
+async def patient_tracker_page(request: Request):
+    """Patient Tracker Dashboard - Enhanced Flow Management"""
+    try:
+        # Check if template exists
+        tracker_path = TEMPLATES_DIR / "patient_tracker.html"
+        
+        if tracker_path.exists():
+            return templates.TemplateResponse("patient_tracker.html", {
+                "request": request,
+                "current_time": datetime.utcnow()
+            })
+        else:
+            return HTMLResponse("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Patient Tracker - Setup Required</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 2rem; }
+                    .btn { background: #3b82f6; color: white; padding: 1rem 2rem; border: none; border-radius: 8px; margin: 1rem; text-decoration: none; display: inline-block; }
+                    .setup-info { background: white; padding: 2rem; border-radius: 12px; margin: 2rem 0; border: 1px solid #e5e7eb; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🏥 Patient Flow Tracker</h1>
+                    <div class="setup-info">
+                        <h3>Setup Required</h3>
+                        <p>To use the enhanced patient tracker interface, save your patient_tracker.html file to:</p>
+                        <code style="background: #f3f4f6; padding: 0.5rem; border-radius: 4px;">templates/patient_tracker.html</code>
+                    </div>
+                    <a href="/admin" class="btn">← Back to Admin</a>
+                    <a href="/api/docs" class="btn">📚 API Docs</a>
+                </div>
+            </body>
+            </html>
+            """)
+            
+    except Exception as e:
+        logger.error(f"Patient tracker page error: {e}")
+        return HTMLResponse(f"""
+        <html><body style="font-family: Arial; margin: 2rem;">
+        <h1>🏥 Patient Flow Tracker - Error</h1>
+        <p>Error loading tracker: {str(e)}</p>
+        <a href="/admin" style="color: #3b82f6;">← Back to Admin</a>
+        </body></html>
+        """, status_code=500)
+    
 @app.get("/staff-triage-command", response_class=HTMLResponse)
 async def staff_triage_command_center(request: Request, db: Session = Depends(get_db)):
     """Enhanced Staff Medical Triage Command Center with Gemma 3n AI Integration"""
@@ -7524,23 +7575,40 @@ async def get_patient_tracker_data(db: Session = Depends(get_db)):
                 "id": patient.id,
                 "name": patient.name,
                 "age": patient.age,
+                "gender": getattr(patient, 'gender', 'Unknown'),
                 "triage_color": patient.triage_color,
                 "injury": patient.injury_type,
+                "severity": patient.severity,
+                "consciousness": patient.consciousness,
+                "breathing": patient.breathing,
                 "assigned_doctor": getattr(patient, 'assigned_doctor', ''),
+                "assigned_nurse": getattr(patient, 'assigned_nurse', ''),
                 "bed_assignment": getattr(patient, 'bed_assignment', ''),
                 "wait_time_minutes": calculate_wait_time(patient),
                 "priority": get_priority_from_triage_color(patient.triage_color),
-                "created_at": patient.created_at.isoformat()
+                "created_at": patient.created_at.isoformat(),
+                "notes": patient.notes or "",
+                "vitals": {
+                    "hr": getattr(patient, 'heart_rate', None),
+                    "bp": f"{getattr(patient, 'bp_systolic', '') or '--'}/{getattr(patient, 'bp_diastolic', '') or '--'}" if hasattr(patient, 'bp_systolic') else "--/--",
+                    "temp": getattr(patient, 'temperature', None),
+                    "o2": getattr(patient, 'oxygen_sat', None)
+                },
+                "ai_confidence": getattr(patient, 'ai_confidence', 0.8),
+                "time_ago": calculate_time_ago(patient.created_at)
             }
             
-            # Determine workflow stage based on patient data
+            # Determine workflow stage based on patient data and timestamps
             if patient.status == "discharged":
                 workflow_stages["discharged"].append(patient_data)
             elif getattr(patient, 'treatment_started_at', None):
-                workflow_stages["in_treatment"].append(patient_data)
+                if patient.status == "ready_discharge":
+                    workflow_stages["ready_discharge"].append(patient_data)
+                else:
+                    workflow_stages["in_treatment"].append(patient_data)
             elif getattr(patient, 'triage_completed_at', None):
                 workflow_stages["waiting_treatment"].append(patient_data)
-            elif patient.triage_color in ["red", "yellow"]:
+            elif patient.triage_color in ["red", "yellow"] or patient.severity in ["critical", "severe"]:
                 workflow_stages["in_triage"].append(patient_data)
             else:
                 workflow_stages["waiting_triage"].append(patient_data)
@@ -7548,17 +7616,35 @@ async def get_patient_tracker_data(db: Session = Depends(get_db)):
         # Calculate stage statistics
         stage_stats = {}
         for stage, patients in workflow_stages.items():
+            if patients:
+                avg_wait = sum(p["wait_time_minutes"] for p in patients) / len(patients)
+                critical_count = len([p for p in patients if p["triage_color"] == "red"])
+            else:
+                avg_wait = 0
+                critical_count = 0
+                
             stage_stats[stage] = {
                 "count": len(patients),
-                "avg_wait_time": sum(p["wait_time_minutes"] for p in patients) / max(len(patients), 1),
-                "critical_count": len([p for p in patients if p["triage_color"] == "red"])
+                "avg_wait_time": round(avg_wait, 1),
+                "critical_count": critical_count
             }
+        
+        # Overall statistics
+        total_active = sum(len(patients) for stage, patients in workflow_stages.items() if stage != "discharged")
+        total_critical = sum(len([p for p in patients if p["triage_color"] == "red"]) for patients in workflow_stages.values())
         
         return JSONResponse({
             "success": True,
             "patient_flow": workflow_stages,
             "stage_statistics": stage_stats,
-            "total_active": sum(len(patients) for stage, patients in workflow_stages.items() if stage != "discharged"),
+            "summary": {
+                "total_active": total_active,
+                "total_critical": total_critical,
+                "total_discharged": len(workflow_stages["discharged"]),
+                "avg_wait_time": round(sum(p["wait_time_minutes"] for patients in workflow_stages.values() for p in patients if patients) / max(total_active, 1), 1),
+                "beds_occupied": len([p for patients in workflow_stages.values() for p in patients if p["bed_assignment"]]),
+                "unassigned_doctors": len([p for patients in workflow_stages.values() for p in patients if not p["assigned_doctor"] and patients])
+            },
             "bottlenecks": identify_workflow_bottlenecks(stage_stats),
             "last_updated": datetime.utcnow().isoformat()
         })
@@ -7871,6 +7957,299 @@ async def assign_doctor_to_patient(
     except Exception as e:
         logger.error(f"Error assigning staff to patient {patient_id}: {e}")
         db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+    
+@app.post("/api/update-patient-stage")
+async def update_patient_stage(
+    request: Request,
+    patient_id: int = Form(...),
+    new_stage: str = Form(...),
+    notes: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    """Update patient workflow stage"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            return JSONResponse({
+                "success": False,
+                "error": "Patient not found"
+            }, status_code=404)
+        
+        old_status = patient.status
+        
+        # Update patient based on new stage
+        if new_stage == "waiting_triage":
+            patient.status = "active"
+        elif new_stage == "in_triage":
+            patient.status = "active"
+            if hasattr(patient, 'last_assessment_at'):
+                patient.last_assessment_at = datetime.utcnow()
+        elif new_stage == "waiting_treatment":
+            patient.status = "active"
+            if hasattr(patient, 'triage_completed_at'):
+                patient.triage_completed_at = datetime.utcnow()
+        elif new_stage == "in_treatment":
+            patient.status = "in_treatment"
+            if hasattr(patient, 'treatment_started_at'):
+                patient.treatment_started_at = datetime.utcnow()
+        elif new_stage == "ready_discharge":
+            patient.status = "ready_discharge"
+        elif new_stage == "discharged":
+            patient.status = "discharged"
+        
+        # Add notes if provided
+        if notes:
+            timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
+            stage_note = f"\n--- STAGE UPDATE ({timestamp}) ---\nMoved to: {new_stage}\nNotes: {notes}\n"
+            patient.notes = (patient.notes or '') + stage_note
+        
+        if hasattr(patient, 'updated_at'):
+            patient.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        # Broadcast update
+        await broadcast_emergency_update("patient_stage_updated", {
+            "patient_id": patient_id,
+            "name": patient.name,
+            "old_stage": old_status,
+            "new_stage": new_stage,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+        logger.info(f"Patient {patient_id} stage updated from {old_status} to {new_stage}")
+        
+        return JSONResponse({
+            "success": True,
+            "patient": {
+                "id": patient_id,
+                "name": patient.name,
+                "old_stage": old_status,
+                "new_stage": new_stage,
+                "updated_at": datetime.utcnow().isoformat()
+            },
+            "message": f"Patient {patient.name} moved to {new_stage}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating patient stage: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/quick-patient-action")
+async def quick_patient_action(
+    request: Request,
+    patient_id: int = Form(...),
+    action: str = Form(...),  # assign_bed, assign_doctor, add_note, discharge
+    value: Optional[str] = Form(""),
+    notes: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    """Perform quick actions on patients from tracker"""
+    try:
+        patient = db.query(TriagePatient).filter(TriagePatient.id == patient_id).first()
+        if not patient:
+            return JSONResponse({
+                "success": False,
+                "error": "Patient not found"
+            }, status_code=404)
+        
+        result_message = ""
+        
+        if action == "assign_bed":
+            if hasattr(patient, 'bed_assignment'):
+                patient.bed_assignment = value
+            result_message = f"Bed {value} assigned to {patient.name}"
+            
+        elif action == "assign_doctor":
+            if hasattr(patient, 'assigned_doctor'):
+                patient.assigned_doctor = value
+            result_message = f"Dr. {value} assigned to {patient.name}"
+            
+        elif action == "assign_nurse":
+            if hasattr(patient, 'assigned_nurse'):
+                patient.assigned_nurse = value
+            result_message = f"Nurse {value} assigned to {patient.name}"
+            
+        elif action == "add_note":
+            timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
+            note = f"\n--- QUICK NOTE ({timestamp}) ---\n{notes}\n"
+            patient.notes = (patient.notes or '') + note
+            result_message = f"Note added to {patient.name}"
+            
+        elif action == "mark_critical":
+            patient.triage_color = "red"
+            patient.severity = "critical"
+            result_message = f"{patient.name} marked as critical"
+            
+        elif action == "discharge":
+            patient.status = "discharged"
+            result_message = f"{patient.name} discharged"
+            
+        else:
+            return JSONResponse({
+                "success": False,
+                "error": f"Unknown action: {action}"
+            }, status_code=400)
+        
+        if hasattr(patient, 'updated_at'):
+            patient.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        # Broadcast update
+        await broadcast_emergency_update("quick_patient_action", {
+            "patient_id": patient_id,
+            "name": patient.name,
+            "action": action,
+            "value": value,
+            "message": result_message
+        })
+        
+        return JSONResponse({
+            "success": True,
+            "action": action,
+            "patient_name": patient.name,
+            "message": result_message
+        })
+        
+    except Exception as e:
+        logger.error(f"Quick patient action error: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/patient-tracker-filters")
+async def get_patient_tracker_filters(
+    triage_color: Optional[str] = Query(None),
+    assigned_doctor: Optional[str] = Query(None),
+    severity: Optional[str] = Query(None),
+    time_range: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get filtered patient tracker data"""
+    try:
+        query = db.query(TriagePatient).filter(
+            TriagePatient.status.in_(["active", "in_treatment", "waiting", "ready_discharge"])
+        )
+        
+        # Apply filters
+        if triage_color:
+            query = query.filter(TriagePatient.triage_color == triage_color)
+        if assigned_doctor and hasattr(TriagePatient, 'assigned_doctor'):
+            query = query.filter(TriagePatient.assigned_doctor == assigned_doctor)
+        if severity:
+            query = query.filter(TriagePatient.severity == severity)
+        if time_range:
+            now = datetime.utcnow()
+            if time_range == "1h":
+                start_time = now - timedelta(hours=1)
+            elif time_range == "4h":
+                start_time = now - timedelta(hours=4)
+            elif time_range == "24h":
+                start_time = now - timedelta(hours=24)
+            else:
+                start_time = None
+            
+            if start_time:
+                query = query.filter(TriagePatient.created_at >= start_time)
+        
+        patients = query.all()
+        
+        # Format for response
+        filtered_patients = []
+        for patient in patients:
+            filtered_patients.append({
+                "id": patient.id,
+                "name": patient.name,
+                "triage_color": patient.triage_color,
+                "severity": patient.severity,
+                "assigned_doctor": getattr(patient, 'assigned_doctor', ''),
+                "status": patient.status,
+                "wait_time": calculate_wait_time(patient),
+                "created_at": patient.created_at.isoformat()
+            })
+        
+        return JSONResponse({
+            "success": True,
+            "filtered_patients": filtered_patients,
+            "total_found": len(filtered_patients),
+            "filters_applied": {
+                "triage_color": triage_color,
+                "assigned_doctor": assigned_doctor,
+                "severity": severity,
+                "time_range": time_range
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Patient tracker filters error: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/available-assignments")  
+async def get_available_assignments():
+    """Get available doctors, nurses, and beds for assignment"""
+    try:
+        # This would typically come from a staff/resources database
+        # For now, returning simulated data that matches your template
+        
+        available_doctors = [
+            "Dr. Sarah Chen",
+            "Dr. Michael Rodriguez", 
+            "Dr. Emily Johnson",
+            "Dr. David Kim",
+            "Dr. Lisa Wang",
+            "Dr. James Miller",
+            "Dr. Maria Santos",
+            "Dr. Robert Taylor"
+        ]
+        
+        available_nurses = [
+            "Nurse Jennifer Adams",
+            "Nurse Carlos Martinez",
+            "Nurse Amanda Thompson", 
+            "Nurse Kevin Brown",
+            "Nurse Rachel Green",
+            "Nurse Daniel Wilson",
+            "Nurse Sophia Lee",
+            "Nurse Mark Anderson"
+        ]
+        
+        available_beds = [
+            "ER-01", "ER-02", "ER-03", "ER-04",
+            "TR-01", "TR-02", 
+            "ICU-01", "ICU-02",
+            "OBS-01", "OBS-02", "OBS-03"
+        ]
+        
+        return JSONResponse({
+            "success": True,
+            "assignments": {
+                "doctors": available_doctors,
+                "nurses": available_nurses, 
+                "beds": available_beds
+            },
+            "capacity": {
+                "doctors_available": len(available_doctors),
+                "nurses_available": len(available_nurses),
+                "beds_available": len(available_beds)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Available assignments error: {e}")
         return JSONResponse({
             "success": False,
             "error": str(e)

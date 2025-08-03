@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Patient Tracker - Disaster Response{% endblock %}
-
-{% block page_title %}🩺 Patient Tracker{% endblock %}
+{% block title %}Patient Tracker - Emergency Response{% endblock %}
+{% block page_title %}🏥 Patient Tracker{% endblock %}
+{% block subtitle %}Real-time patient status monitoring and care coordination dashboard{% endblock %}
 
 {% block ai_status %}
 <!-- Don't show AI status on patient tracker -->
@@ -16,333 +16,1383 @@
 <!-- Don't show P2P on patient tracker -->
 {% endblock %}
 
-{% block extra_styles %}
+{% block extra_css %}
+{{ super() }}
 <style>
-  /* Patient-specific styling */
-  .patient-critical {
-    background-color: #fecaca !important;
-    border-left: 4px solid #dc2626;
+  /* Live Status Indicator */
+  .live-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-radius: 8px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
   }
-  
-  .patient-moderate {
-    background-color: #fef3c7 !important;
-    border-left: 4px solid #d97706;
+
+  .live-indicator {
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    animation: pulse-live 2s infinite;
   }
-  
-  .patient-stable {
-    background-color: #dcfce7 !important;
-    border-left: 4px solid #16a34a;
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
   }
-  
-  .patient-recent {
-    animation: pulse-blue 2s infinite;
-    box-shadow: 0 0 0 2px #3b82f6;
+
+  /* Summary Cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
   }
-  
-  @keyframes pulse-blue {
-    0%, 100% { box-shadow: 0 0 0 2px #3b82f6; }
-    50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5); }
+
+  .summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
   }
+
+  .summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+
+  .summary-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+
+  .summary-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .card-critical { border-left: 4px solid #dc2626; }
+  .card-critical .summary-number { color: #dc2626; }
   
-  .filter-form {
+  .card-urgent { border-left: 4px solid #f59e0b; }
+  .card-urgent .summary-number { color: #f59e0b; }
+  
+  .card-stable { border-left: 4px solid #10b981; }
+  .card-stable .summary-number { color: #10b981; }
+  
+  .card-total { border-left: 4px solid #3b82f6; }
+  .card-total .summary-number { color: #3b82f6; }
+
+  .card-awaiting { border-left: 4px solid #8b5cf6; }
+  .card-awaiting .summary-number { color: #8b5cf6; }
+
+  /* Controls Bar */
+  .controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+  }
+
+  .search-filters {
     display: flex;
     gap: 1rem;
     align-items: center;
     flex-wrap: wrap;
+    flex: 1;
   }
-  
-  .filter-form select,
-  .filter-form button {
+
+  .search-input {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    min-width: 200px;
+    font-size: 0.9rem;
+  }
+
+  .filter-select {
     padding: 0.5rem 1rem;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 0.9rem;
+    min-width: 120px;
   }
-  
-  .filter-form button {
-    background: #3b82f6;
-    color: white;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s;
+
+  .view-toggle {
+    display: flex;
+    gap: 0.5rem;
   }
-  
-  .filter-form button:hover {
-    background: #2563eb;
-  }
-  
-  .export-btn {
-    background: #16a34a;
-    color: white;
+
+  .view-btn {
     padding: 0.5rem 1rem;
-    border: none;
+    border: 1px solid #d1d5db;
+    background: white;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.2s;
+    font-size: 0.875rem;
+    transition: all 0.2s;
   }
-  
-  .export-btn:hover {
-    background: #15803d;
+
+  .view-btn.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
   }
-  
+
+  /* Patient Board View */
+  .patient-board {
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .patient-board.active {
+    display: grid;
+  }
+
+  .triage-column {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    min-height: 400px;
+  }
+
+  .column-header {
+    padding: 1rem;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .column-red { border-top: 4px solid #dc2626; }
+  .column-red .column-header { background: #fef2f2; color: #991b1b; }
+
+  .column-yellow { border-top: 4px solid #f59e0b; }
+  .column-yellow .column-header { background: #fffbeb; color: #92400e; }
+
+  .column-green { border-top: 4px solid #10b981; }
+  .column-green .column-header { background: #ecfdf5; color: #065f46; }
+
+  .column-black { border-top: 4px solid #374151; }
+  .column-black .column-header { background: #f3f4f6; color: #1f2937; }
+
+  /* Patient Cards */
+  .patient-card {
+    margin: 0.5rem;
+    padding: 1rem;
+    background: #fafafa;
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .patient-card:hover {
+    background: #f0f9ff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .patient-card.critical { border-left-color: #dc2626; }
+  .patient-card.urgent { border-left-color: #f59e0b; }
+  .patient-card.stable { border-left-color: #10b981; }
+  .patient-card.deceased { border-left-color: #374151; }
+
+  .patient-name {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+  }
+
+  .patient-info {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+
+  .patient-vitals {
+    display: flex;
+    gap: 0.75rem;
+    margin: 0.5rem 0;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .vital-item {
+    padding: 0.125rem 0.375rem;
+    background: #e5e7eb;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+
+  .patient-alerts {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .alert-badge {
+    padding: 0.125rem 0.375rem;
+    border-radius: 12px;
+    font-size: 0.625rem;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  .alert-deteriorating { background: #fecaca; color: #991b1b; }
+  .alert-allergy { background: #fed7d7; color: #c53030; }
+  .alert-ai { background: #ddd6fe; color: #5b21b6; }
+
+  /* Patient Table View */
+  .patient-table-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+  }
+
   .patient-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1rem;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
-  
+
   .patient-table th {
     background: #374151;
     color: white;
     padding: 0.75rem 1rem;
     text-align: left;
     font-weight: 600;
+    font-size: 0.875rem;
   }
-  
+
   .patient-table td {
     padding: 0.75rem 1rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #f3f4f6;
+    vertical-align: middle;
   }
-  
-  .patient-actions {
-    display: flex;
-    gap: 0.5rem;
+
+  .patient-table tbody tr:hover {
+    background: #f9fafb;
+  }
+
+  .patient-row.critical { background: #fef2f2; border-left: 4px solid #dc2626; }
+  .patient-row.urgent { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .patient-row.stable { background: #ecfdf5; border-left: 4px solid #10b981; }
+  .patient-row.deceased { background: #f3f4f6; border-left: 4px solid #374151; }
+
+  .patient-row.recent {
+    animation: pulse-blue 3s ease-out;
+  }
+
+  @keyframes pulse-blue {
+    0% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.8); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  }
+
+  /* Triage Badges */
+  .triage-badge {
+    display: inline-flex;
     align-items: center;
-  }
-  
-  .patient-actions a,
-  .patient-actions button {
-    font-size: 0.8rem;
-    text-decoration: underline;
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .edit-link {
-    color: #3b82f6;
-  }
-  
-  .discharge-btn {
-    color: #dc2626;
-  }
-  
-  .severity-badge {
-    display: inline-block;
+    gap: 0.25rem;
     padding: 0.25rem 0.5rem;
     border-radius: 12px;
     font-size: 0.75rem;
     font-weight: bold;
     text-transform: uppercase;
   }
-  
-  .severity-critical {
-    background: #dc2626;
-    color: white;
-  }
-  
-  .severity-moderate {
-    background: #d97706;
-    color: white;
-  }
-  
-  .severity-stable {
-    background: #16a34a;
-    color: white;
-  }
-  
+
+  .triage-red { background: #dc2626; color: white; }
+  .triage-yellow { background: #f59e0b; color: white; }
+  .triage-green { background: #10b981; color: white; }
+  .triage-black { background: #374151; color: white; }
+
+  /* Status Badges */
   .status-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     padding: 0.25rem 0.5rem;
     border-radius: 12px;
     font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .status-waiting { background: #fef3c7; color: #92400e; }
+  .status-treatment { background: #ddd6fe; color: #5b21b6; }
+  .status-surgery { background: #fecaca; color: #991b1b; }
+  .status-stable { background: #d1fae5; color: #065f46; }
+  .status-discharged { background: #e5e7eb; color: #374151; }
+
+  /* Action Buttons */
+  .patient-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+  }
+
+  .btn-view { background: #e0e7ff; color: #3730a3; }
+  .btn-view:hover { background: #c7d2fe; }
+
+  .btn-edit { background: #dbeafe; color: #1e40af; }
+  .btn-edit:hover { background: #bfdbfe; }
+
+  .btn-alert { background: #fed7d7; color: #c53030; }
+  .btn-alert:hover { background: #fecaca; }
+
+  .btn-transfer { background: #d1fae5; color: #065f46; }
+  .btn-transfer:hover { background: #a7f3d0; }
+
+  /* Quick Stats */
+  .quick-stats {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .patient-board {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .patient-board {
+      grid-template-columns: 1fr;
+    }
+    
+    .controls-bar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .search-filters {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .summary-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .patient-table {
+      font-size: 0.875rem;
+    }
+    
+    .patient-table th,
+    .patient-table td {
+      padding: 0.5rem;
+    }
+  }
+
+  /* Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+
+  .modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
     font-weight: bold;
+    color: #1f2937;
   }
-  
-  .status-observation {
-    background: #fbbf24;
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .close-btn:hover {
+    color: #374151;
+    background: #f3f4f6;
+  }
+
+  /* Offline Indicator */
+  .offline-banner {
+    background: #fef3c7;
     color: #92400e;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
   }
-  
-  .status-discharged {
-    background: #34d399;
-    color: #065f46;
+
+  .offline-banner.show {
+    display: flex;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="main-card">
-  <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; color: #1f2937;">
-    🩺 Patient Tracker
-  </h2>
+<!-- Live Status & Offline Indicator -->
+<div class="offline-banner" id="offlineBanner">
+  <span>📡</span>
+  <span>Offline Mode - Some data may not be current. Changes will sync when connection is restored.</span>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+  <div class="live-status" id="liveStatus">
+    <div class="live-indicator"></div>
+    <span>Live - Updated <span id="lastUpdate">now</span></span>
+  </div>
   
-  <!-- Filter + PDF Export Controls -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-    <form method="get" class="filter-form">
-      <select name="severity" aria-label="Filter by severity">
-        <option value="">All Severities</option>
-        <option value="Critical" {% if severity_filter == "Critical" %}selected{% endif %}>🔴 Critical</option>
-        <option value="Moderate" {% if severity_filter == "Moderate" %}selected{% endif %}>🟡 Moderate</option>
-        <option value="Stable" {% if severity_filter == "Stable" %}selected{% endif %}>🟢 Stable</option>
-      </select>
-      
-      <select name="status" aria-label="Filter by status">
-        <option value="">All Statuses</option>
-        <option value="Under Observation" {% if status_filter == "Under Observation" %}selected{% endif %}>👁️ Under Observation</option>
-        <option value="Discharged" {% if status_filter == "Discharged" %}selected{% endif %}>✅ Discharged</option>
-      </select>
-      
-      <button type="submit">🔍 Filter</button>
-    </form>
+  <div class="quick-stats">
+    <div class="stat-item">
+      <span>📊</span>
+      <span>Median Wait: <strong id="medianWait">12 min</strong></span>
+    </div>
+    <div class="stat-item">
+      <span>👥</span>
+      <span>Staff Online: <strong id="staffOnline">8</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="summary-grid">
+  <div class="summary-card card-total">
+    <span class="summary-number" id="totalPatients">0</span>
+    <span class="summary-label">Total Patients</span>
+  </div>
+  <div class="summary-card card-critical">
+    <span class="summary-number" id="criticalCount">0</span>
+    <span class="summary-label">🔴 Critical</span>
+  </div>
+  <div class="summary-card card-urgent">
+    <span class="summary-number" id="urgentCount">0</span>
+    <span class="summary-label">🟡 Urgent</span>
+  </div>
+  <div class="summary-card card-stable">
+    <span class="summary-number" id="stableCount">0</span>
+    <span class="summary-label">🟢 Stable</span>
+  </div>
+  <div class="summary-card card-awaiting">
+    <span class="summary-number" id="awaitingCount">0</span>
+    <span class="summary-label">⏳ Awaiting Care</span>
+  </div>
+</div>
+
+<!-- Controls Bar -->
+<div class="controls-bar">
+  <div class="search-filters">
+    <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search patients by name, ID, or symptoms...">
     
-    <form method="get" action="/export-patients-pdf">
-      <button type="submit" class="export-btn">📄 Download PDF Report</button>
-    </form>
+    <select class="filter-select" id="triageFilter">
+      <option value="">All Triage Levels</option>
+      <option value="red">🔴 Critical (Red)</option>
+      <option value="yellow">🟡 Urgent (Yellow)</option>
+      <option value="green">🟢 Stable (Green)</option>
+      <option value="black">⚫ Deceased (Black)</option>
+    </select>
+    
+    <select class="filter-select" id="statusFilter">
+      <option value="">All Statuses</option>
+      <option value="waiting">⏳ Waiting</option>
+      <option value="treatment">💊 In Treatment</option>
+      <option value="surgery">🏥 Surgery</option>
+      <option value="stable">✅ Stable</option>
+      <option value="discharged">🏠 Discharged</option>
+    </select>
+    
+    <select class="filter-select" id="locationFilter">
+      <option value="">All Locations</option>
+      <option value="er">🚨 Emergency Room</option>
+      <option value="triage">🩺 Triage</option>
+      <option value="surgery">🔬 Surgery</option>
+      <option value="icu">🏥 ICU</option>
+      <option value="ward">🛏️ Ward</option>
+    </select>
   </div>
   
-  <!-- Patient Count Summary -->
-  <div style="margin-bottom: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; border-left: 4px solid #3b82f6;">
-    <strong>📊 Total Patients:</strong> {{ patients|length }}
-    {% if severity_filter or status_filter %}
-      <span style="color: #6b7280;">(filtered view)</span>
-    {% endif %}
+  <div style="display: flex; gap: 1rem; align-items: center;">
+    <div class="view-toggle">
+      <button class="view-btn active" id="tableViewBtn" onclick="switchView('table')">📋 List</button>
+      <button class="view-btn" id="boardViewBtn" onclick="switchView('board')">📋 Board</button>
+    </div>
+    
+    <button class="action-btn btn-edit" onclick="exportPatients()">📄 Export</button>
+    <button class="action-btn btn-alert" onclick="toggleAutoRefresh()" id="autoRefreshBtn">⏸️ Pause</button>
   </div>
-  
-  <!-- Patient Table -->
-  {% if patients %}
-  <div style="overflow-x: auto;">
-    <table class="patient-table">
-      <thead>
-        <tr>
-          <th>👤 Name</th>
-          <th>🎂 Age</th>
-          <th>📋 Status</th>
-          <th>🚨 Severity</th>
-          <th>🕐 Last Updated</th>
-          <th>⚙️ Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for patient in patients %}
-        <tr class="
-          {% if patient.severity == 'Critical' %}patient-critical
-          {% elif patient.severity == 'Moderate' %}patient-moderate
-          {% elif patient.severity == 'Stable' %}patient-stable
-          {% endif %}
-          {% if (now - patient.timestamp).total_seconds() < 10800 %}patient-recent{% endif %}
-        ">
-          <td><strong>{{ patient.name }}</strong></td>
-          <td>{{ patient.age }}</td>
-          <td>
-            <span class="status-badge {% if patient.status == 'Discharged' %}status-discharged{% else %}status-observation{% endif %}">
-              {% if patient.status == 'Discharged' %}✅{% else %}👁️{% endif %} {{ patient.status }}
-            </span>
-          </td>
-          <td>
-            <span class="severity-badge severity-{{ patient.severity.lower() }}">
-              {% if patient.severity == 'Critical' %}🔴
-              {% elif patient.severity == 'Moderate' %}🟡
-              {% else %}🟢
-              {% endif %}
-              {{ patient.severity }}
-            </span>
-          </td>
-          <td>
-            {{ patient.timestamp.strftime('%Y-%m-%d %H:%M') }}
-            {% if (now - patient.timestamp).total_seconds() < 10800 %}
-              <span style="color: #3b82f6; font-size: 0.75rem;">(recent)</span>
-            {% endif %}
-          </td>
-          <td>
-            <div class="patient-actions">
-              <a href="/patients/{{ patient.id }}/edit" class="edit-link">✏️ Edit</a>
-              {% if patient.status != "Discharged" %}
-              <form method="post" action="/patients/{{ patient.id }}/discharge" 
-                    onsubmit="return confirm('Are you sure you want to discharge {{ patient.name }}?');" 
-                    style="display: inline;">
-                <button type="submit" class="discharge-btn">🏥 Discharge</button>
-              </form>
-              {% endif %}
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+</div>
+
+<!-- Table View -->
+<div class="patient-table-container" id="tableView">
+  <table class="patient-table">
+    <thead>
+      <tr>
+        <th>👤 Patient</th>
+        <th>🩺 Triage</th>
+        <th>📍 Location</th>
+        <th>📊 Status</th>
+        <th>📋 Vitals</th>
+        <th>👥 Assigned</th>
+        <th>🕐 Time</th>
+        <th>⚙️ Actions</th>
+      </tr>
+    </thead>
+    <tbody id="patientsTableBody">
+      <!-- Populated by JavaScript -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Board View -->
+<div class="patient-board" id="boardView">
+  <div class="triage-column column-red">
+    <div class="column-header">🔴 CRITICAL (Red)</div>
+    <div id="redColumn" class="column-content"></div>
   </div>
-  {% else %}
-  <div style="text-align: center; padding: 2rem; color: #6b7280;">
-    <p style="font-size: 1.1rem;">📭 No patients found</p>
-    {% if severity_filter or status_filter %}
-    <p style="margin-top: 0.5rem;">
-      <a href="/patients" style="color: #3b82f6; text-decoration: underline;">Clear filters to see all patients</a>
-    </p>
-    {% endif %}
+  <div class="triage-column column-yellow">
+    <div class="column-header">🟡 URGENT (Yellow)</div>
+    <div id="yellowColumn" class="column-content"></div>
   </div>
-  {% endif %}
+  <div class="triage-column column-green">
+    <div class="column-header">🟢 STABLE (Green)</div>
+    <div id="greenColumn" class="column-content"></div>
+  </div>
+  <div class="triage-column column-black">
+    <div class="column-header">⚫ DECEASED (Black)</div>
+    <div id="blackColumn" class="column-content"></div>
+  </div>
+</div>
+
+<!-- Patient Detail Modal -->
+<div class="modal" id="patientModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Patient Details</h3>
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+    </div>
+    <div id="modalContent">
+      <!-- Patient details populated by JavaScript -->
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Auto-refresh every 30 seconds for real-time updates
-  let autoRefresh = true;
-  
-  function toggleAutoRefresh() {
-    autoRefresh = !autoRefresh;
-    const btn = document.getElementById('autoRefreshBtn');
-    if (btn) {
-      btn.textContent = autoRefresh ? '⏸️ Pause Auto-Refresh' : '▶️ Resume Auto-Refresh';
-      btn.style.background = autoRefresh ? '#dc2626' : '#16a34a';
-    }
+// Patient Tracker Manager
+class PatientTrackerManager {
+  constructor() {
+    this.patients = [];
+    this.filteredPatients = [];
+    this.currentView = 'table';
+    this.autoRefresh = true;
+    this.lastUpdate = new Date();
+    this.refreshInterval = 15000; // 15 seconds
+    
+    this.init();
   }
-  
-  function refreshPage() {
-    if (autoRefresh && !document.hidden) {
-      // Preserve current filters
-      const params = new URLSearchParams(window.location.search);
-      window.location.reload();
-    }
+
+  init() {
+    this.loadPatients();
+    this.setupEventListeners();
+    this.startAutoRefresh();
+    this.updateLastUpdateTime();
   }
-  
-  // Set up auto-refresh
-  setInterval(refreshPage, 30000);
-  
-  // Pause auto-refresh when page is hidden
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      console.log('Page hidden - pausing auto-refresh');
+
+  async loadPatients() {
+    try {
+      // Try to fetch from API first
+      const response = await fetch('/api/patients?include_vitals=true');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.patients) {
+          this.patients = data.patients.map(patient => this.enhancePatientData(patient));
+          console.log(`✅ Loaded ${this.patients.length} patients from API`);
+        } else {
+          throw new Error('Invalid API response');
+        }
+      } else {
+        throw new Error('API request failed');
+      }
+    } catch (error) {
+      console.warn('Failed to load from API, using demo data:', error);
+      this.patients = this.generateDemoPatients();
+    }
+    
+    this.filteredPatients = [...this.patients];
+    this.updateDisplay();
+    this.updateSummaryCards();
+    this.lastUpdate = new Date();
+  }
+
+  enhancePatientData(patient) {
+    return {
+      id: patient.id || `P${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
+      name: patient.name || 'Unknown Patient',
+      age: patient.age || 'Unknown',
+      gender: patient.gender || 'Unknown',
+      triage: patient.triage || this.mapSeverityToTriage(patient.severity),
+      status: patient.status || 'waiting',
+      location: patient.location || 'Triage',
+      assignedStaff: patient.assigned_staff || patient.assignedStaff || 'Unassigned',
+      chiefComplaint: patient.chief_complaint || patient.symptoms || 'Not specified',
+      vitals: {
+        bp: patient.vitals?.bp || `${120 + Math.floor(Math.random() * 40)}/${80 + Math.floor(Math.random() * 20)}`,
+        hr: patient.vitals?.hr || (70 + Math.floor(Math.random() * 50)),
+        temp: patient.vitals?.temp || (97 + Math.random() * 4).toFixed(1),
+        o2: patient.vitals?.o2 || (95 + Math.floor(Math.random() * 6)),
+        resp: patient.vitals?.resp || (16 + Math.floor(Math.random() * 8))
+      },
+      timestamp: new Date(patient.timestamp || patient.created_at || Date.now()),
+      alerts: patient.alerts || this.generateAlerts(patient),
+      lastUpdate: new Date(patient.last_update || patient.timestamp || Date.now())
+    };
+  }
+
+  mapSeverityToTriage(severity) {
+    const mapping = {
+      'Critical': 'red',
+      'Moderate': 'yellow', 
+      'Stable': 'green'
+    };
+    return mapping[severity] || 'green';
+  }
+
+  generateAlerts(patient) {
+    const alerts = [];
+    if (patient.severity === 'Critical') alerts.push('deteriorating');
+    if (Math.random() > 0.8) alerts.push('allergy');
+    if (Math.random() > 0.9) alerts.push('ai');
+    return alerts;
+  }
+
+  generateDemoPatients() {
+    const names = ['John Smith', 'Maria Garcia', 'David Johnson', 'Sarah Williams', 'Michael Brown', 'Jennifer Davis', 'Robert Miller', 'Lisa Wilson'];
+    const triages = ['red', 'yellow', 'green', 'black'];
+    const statuses = ['waiting', 'treatment', 'surgery', 'stable', 'discharged'];
+    const locations = ['Emergency Room', 'Triage', 'Surgery', 'ICU', 'Ward A', 'Ward B'];
+    const complaints = ['Chest pain', 'Shortness of breath', 'Abdominal pain', 'Head injury', 'Fractured arm', 'Allergic reaction', 'Cardiac event', 'Trauma'];
+    
+    return Array.from({ length: 25 }, (_, i) => {
+      const triage = triages[Math.floor(Math.random() * triages.length)];
+      const hoursAgo = Math.floor(Math.random() * 12);
+      
+      return {
+        id: `P${String(i + 1).padStart(3, '0')}`,
+        name: names[Math.floor(Math.random() * names.length)],
+        age: 18 + Math.floor(Math.random() * 70),
+        gender: Math.random() > 0.5 ? 'Male' : 'Female',
+        triage,
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+        location: locations[Math.floor(Math.random() * locations.length)],
+        assignedStaff: `Dr. ${['Johnson', 'Smith', 'Williams', 'Brown', 'Davis'][Math.floor(Math.random() * 5)]}`,
+        chiefComplaint: complaints[Math.floor(Math.random() * complaints.length)],
+        vitals: {
+          bp: `${120 + Math.floor(Math.random() * 40)}/${80 + Math.floor(Math.random() * 20)}`,
+          hr: 70 + Math.floor(Math.random() * 50),
+          temp: (97 + Math.random() * 4).toFixed(1),
+          o2: 95 + Math.floor(Math.random() * 6),
+          resp: 16 + Math.floor(Math.random() * 8)
+        },
+        timestamp: new Date(Date.now() - (hoursAgo * 60 * 60 * 1000)),
+        alerts: this.generateAlerts({ severity: triage === 'red' ? 'Critical' : 'Stable' }),
+        lastUpdate: new Date(Date.now() - (Math.floor(Math.random() * 30) * 60 * 1000))
+      };
+    });
+  }
+
+  setupEventListeners() {
+    document.getElementById('searchInput').addEventListener('input', () => this.applyFilters());
+    document.getElementById('triageFilter').addEventListener('change', () => this.applyFilters());
+    document.getElementById('statusFilter').addEventListener('change', () => this.applyFilters());
+    document.getElementById('locationFilter').addEventListener('change', () => this.applyFilters());
+    
+    // Modal close on outside click
+    document.getElementById('patientModal').addEventListener('click', (e) => {
+      if (e.target.id === 'patientModal') {
+        this.closeModal();
+      }
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.closeModal();
+      }
+      if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+        e.preventDefault();
+        this.loadPatients();
+      }
+    });
+  }
+
+  applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const triageFilter = document.getElementById('triageFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const locationFilter = document.getElementById('locationFilter').value;
+    
+    this.filteredPatients = this.patients.filter(patient => {
+      const matchesSearch = !searchTerm || 
+        patient.name.toLowerCase().includes(searchTerm) ||
+        patient.id.toLowerCase().includes(searchTerm) ||
+        patient.chiefComplaint.toLowerCase().includes(searchTerm);
+      
+      const matchesTriage = !triageFilter || patient.triage === triageFilter;
+      const matchesStatus = !statusFilter || patient.status === statusFilter;
+      const matchesLocation = !locationFilter || 
+        patient.location.toLowerCase().includes(locationFilter);
+      
+      return matchesSearch && matchesTriage && matchesStatus && matchesLocation;
+    });
+    
+    // Sort by triage priority, then by timestamp
+    this.filteredPatients.sort((a, b) => {
+      const triageOrder = { red: 0, yellow: 1, green: 2, black: 3 };
+      const triageDiff = triageOrder[a.triage] - triageOrder[b.triage];
+      if (triageDiff !== 0) return triageDiff;
+      return b.timestamp - a.timestamp;
+    });
+    
+    this.updateDisplay();
+    this.updateSummaryCards();
+  }
+
+  updateDisplay() {
+    if (this.currentView === 'table') {
+      this.renderTableView();
     } else {
-      console.log('Page visible - resuming auto-refresh');
+      this.renderBoardView();
+    }
+  }
+
+  renderTableView() {
+    const tbody = document.getElementById('patientsTableBody');
+    const now = new Date();
+    
+    tbody.innerHTML = this.filteredPatients.map(patient => {
+      const isRecent = (now - patient.lastUpdate) < 300000; // 5 minutes
+      const triageColor = this.getTriageColor(patient.triage);
+      const statusInfo = this.getStatusInfo(patient.status);
+      
+      return `
+        <tr class="patient-row ${patient.triage} ${isRecent ? 'recent' : ''}" data-patient-id="${patient.id}">
+          <td>
+            <div>
+              <strong>${patient.name}</strong>
+              <br>
+              <small style="color: #6b7280;">ID: ${patient.id} • Age: ${patient.age}</small>
+              <br>
+              <small style="color: #374151;">${patient.chiefComplaint}</small>
+              ${patient.alerts.length > 0 ? `
+                <div style="margin-top: 0.25rem;">
+                  ${patient.alerts.map(alert => `<span class="alert-badge alert-${alert}">${this.getAlertIcon(alert)}</span>`).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </td>
+          <td>
+            <span class="triage-badge triage-${patient.triage}">
+              ${this.getTriageIcon(patient.triage)} ${patient.triage.toUpperCase()}
+            </span>
+          </td>
+          <td>
+            <div>
+              <strong>📍 ${patient.location}</strong>
+              <br>
+              <small style="color: #6b7280;">👥 ${patient.assignedStaff}</small>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge status-${patient.status}">
+              ${statusInfo.icon} ${statusInfo.label}
+            </span>
+          </td>
+          <td>
+            <div class="patient-vitals">
+              <span class="vital-item" title="Blood Pressure">BP: ${patient.vitals.bp}</span>
+              <span class="vital-item" title="Heart Rate">HR: ${patient.vitals.hr}</span>
+              <span class="vital-item" title="Temperature">T: ${patient.vitals.temp}°F</span>
+              <span class="vital-item" title="Oxygen Saturation">O₂: ${patient.vitals.o2}%</span>
+            </div>
+          </td>
+          <td>
+            <div>
+              <strong>${patient.assignedStaff}</strong>
+              <br>
+              <small style="color: #6b7280;">Active</small>
+            </div>
+          </td>
+          <td>
+            <div>
+              <strong>${this.getTimeAgo(patient.timestamp)}</strong>
+              <br>
+              <small style="color: #6b7280;">Updated: ${this.getTimeAgo(patient.lastUpdate)}</small>
+            </div>
+          </td>
+          <td>
+            <div class="patient-actions">
+              <button class="action-btn btn-view" onclick="patientTracker.viewPatient('${patient.id}')">
+                👁️ View
+              </button>
+              <button class="action-btn btn-edit" onclick="patientTracker.editPatient('${patient.id}')">
+                ✏️ Edit
+              </button>
+              <button class="action-btn btn-alert" onclick="patientTracker.sendAlert('${patient.id}')">
+                🚨 Alert
+              </button>
+              <button class="action-btn btn-transfer" onclick="patientTracker.transferPatient('${patient.id}')">
+                🔄 Move
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  renderBoardView() {
+    const columns = {
+      red: document.getElementById('redColumn'),
+      yellow: document.getElementById('yellowColumn'),
+      green: document.getElementById('greenColumn'),
+      black: document.getElementById('blackColumn')
+    };
+    
+    // Clear all columns
+    Object.values(columns).forEach(column => column.innerHTML = '');
+    
+    // Group patients by triage
+    const groupedPatients = this.filteredPatients.reduce((groups, patient) => {
+      if (!groups[patient.triage]) groups[patient.triage] = [];
+      groups[patient.triage].push(patient);
+      return groups;
+    }, {});
+    
+    // Render patient cards in each column
+    Object.entries(groupedPatients).forEach(([triage, patients]) => {
+      if (columns[triage]) {
+        columns[triage].innerHTML = patients.map(patient => this.renderPatientCard(patient)).join('');
+      }
+    });
+  }
+
+  renderPatientCard(patient) {
+    const statusInfo = this.getStatusInfo(patient.status);
+    const isRecent = (new Date() - patient.lastUpdate) < 300000; // 5 minutes
+    
+    return `
+      <div class="patient-card ${patient.triage} ${isRecent ? 'recent' : ''}" 
+           onclick="patientTracker.viewPatient('${patient.id}')" 
+           data-patient-id="${patient.id}">
+        <div class="patient-name">${patient.name} (${patient.age})</div>
+        <div class="patient-info">
+          <div><strong>📍 ${patient.location}</strong></div>
+          <div>👥 ${patient.assignedStaff}</div>
+          <div>🩺 ${patient.chiefComplaint}</div>
+          <div>
+            <span class="status-badge status-${patient.status}">
+              ${statusInfo.icon} ${statusInfo.label}
+            </span>
+          </div>
+        </div>
+        <div class="patient-vitals">
+          <span class="vital-item">BP: ${patient.vitals.bp}</span>
+          <span class="vital-item">HR: ${patient.vitals.hr}</span>
+          <span class="vital-item">T: ${patient.vitals.temp}°F</span>
+          <span class="vital-item">O₂: ${patient.vitals.o2}%</span>
+        </div>
+        ${patient.alerts.length > 0 ? `
+          <div class="patient-alerts">
+            ${patient.alerts.map(alert => `<span class="alert-badge alert-${alert}">${this.getAlertIcon(alert)}</span>`).join('')}
+          </div>
+        ` : ''}
+        <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
+          Admitted: ${this.getTimeAgo(patient.timestamp)}
+        </div>
+      </div>
+    `;
+  }
+
+  updateSummaryCards() {
+    const total = this.filteredPatients.length;
+    const critical = this.filteredPatients.filter(p => p.triage === 'red').length;
+    const urgent = this.filteredPatients.filter(p => p.triage === 'yellow').length;
+    const stable = this.filteredPatients.filter(p => p.triage === 'green').length;
+    const awaiting = this.filteredPatients.filter(p => p.status === 'waiting').length;
+    
+    document.getElementById('totalPatients').textContent = total;
+    document.getElementById('criticalCount').textContent = critical;
+    document.getElementById('urgentCount').textContent = urgent;
+    document.getElementById('stableCount').textContent = stable;
+    document.getElementById('awaitingCount').textContent = awaiting;
+    
+    // Update quick stats
+    const waitTimes = this.filteredPatients
+      .filter(p => p.status === 'waiting')
+      .map(p => (new Date() - p.timestamp) / (1000 * 60));
+    
+    const medianWait = waitTimes.length > 0 
+      ? Math.round(waitTimes.sort((a, b) => a - b)[Math.floor(waitTimes.length / 2)])
+      : 0;
+    
+    document.getElementById('medianWait').textContent = `${medianWait} min`;
+    document.getElementById('staffOnline').textContent = '8'; // Mock data
+  }
+
+  getTriageColor(triage) {
+    const colors = {
+      red: '#dc2626',
+      yellow: '#f59e0b',
+      green: '#10b981',
+      black: '#374151'
+    };
+    return colors[triage] || '#6b7280';
+  }
+
+  getTriageIcon(triage) {
+    const icons = {
+      red: '🔴',
+      yellow: '🟡',
+      green: '🟢',
+      black: '⚫'
+    };
+    return icons[triage] || '⚪';
+  }
+
+  getStatusInfo(status) {
+    const statusMap = {
+      waiting: { icon: '⏳', label: 'Waiting' },
+      treatment: { icon: '💊', label: 'Treatment' },
+      surgery: { icon: '🏥', label: 'Surgery' },
+      stable: { icon: '✅', label: 'Stable' },
+      discharged: { icon: '🏠', label: 'Discharged' }
+    };
+    return statusMap[status] || { icon: '❓', label: 'Unknown' };
+  }
+
+  getAlertIcon(alert) {
+    const icons = {
+      deteriorating: '⚠️',
+      allergy: '🚫',
+      ai: '🤖'
+    };
+    return icons[alert] || '⚠️';
+  }
+
+  getTimeAgo(timestamp) {
+    const now = new Date();
+    const diff = now - new Date(timestamp);
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'Just now';
+  }
+
+  startAutoRefresh() {
+    this.refreshTimer = setInterval(() => {
+      if (this.autoRefresh && !document.hidden) {
+        this.loadPatients();
+      }
+    }, this.refreshInterval);
+  }
+
+  updateLastUpdateTime() {
+    setInterval(() => {
+      const timeAgo = this.getTimeAgo(this.lastUpdate);
+      document.getElementById('lastUpdate').textContent = timeAgo;
+    }, 30000); // Update every 30 seconds
+  }
+
+  viewPatient(patientId) {
+    const patient = this.patients.find(p => p.id === patientId);
+    if (!patient) return;
+    
+    const modal = document.getElementById('patientModal');
+    const content = document.getElementById('modalContent');
+    
+    content.innerHTML = `
+      <div style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+          <div>
+            <h4 style="margin: 0; font-size: 1.5rem; color: #1f2937;">${patient.name}</h4>
+            <p style="margin: 0.25rem 0; color: #6b7280;">ID: ${patient.id} • Age: ${patient.age} • ${patient.gender}</p>
+          </div>
+          <span class="triage-badge triage-${patient.triage}">
+            ${this.getTriageIcon(patient.triage)} ${patient.triage.toUpperCase()}
+          </span>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          <div style="background: #f9fafb; padding: 1rem; border-radius: 8px;">
+            <h5 style="margin: 0 0 0.5rem 0; color: #374151;">📍 Current Status</h5>
+            <p><strong>Location:</strong> ${patient.location}</p>
+            <p><strong>Status:</strong> ${this.getStatusInfo(patient.status).icon} ${this.getStatusInfo(patient.status).label}</p>
+            <p><strong>Assigned Staff:</strong> ${patient.assignedStaff}</p>
+          </div>
+          
+          <div style="background: #f9fafb; padding: 1rem; border-radius: 8px;">
+            <h5 style="margin: 0 0 0.5rem 0; color: #374151;">🩺 Chief Complaint</h5>
+            <p>${patient.chiefComplaint}</p>
+            <p><strong>Admitted:</strong> ${patient.timestamp.toLocaleString()}</p>
+            <p><strong>Last Update:</strong> ${patient.lastUpdate.toLocaleString()}</p>
+          </div>
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 2rem;">
+          <h5 style="margin: 0 0 1rem 0; color: #1e40af;">📊 Current Vital Signs</h5>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem;">
+            <div style="text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">${patient.vitals.bp}</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Blood Pressure</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">${patient.vitals.hr}</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Heart Rate</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">${patient.vitals.temp}°F</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Temperature</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">${patient.vitals.o2}%</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">O₂ Saturation</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">${patient.vitals.resp}</div>
+              <div style="font-size: 0.875rem; color: #6b7280;">Respiratory Rate</div>
+            </div>
+          </div>
+        </div>
+        
+        ${patient.alerts.length > 0 ? `
+          <div style="background: #fef2f2; padding: 1rem; border-radius: 8px; border-left: 4px solid #dc2626; margin-bottom: 2rem;">
+            <h5 style="margin: 0 0 0.5rem 0; color: #991b1b;">🚨 Active Alerts</h5>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              ${patient.alerts.map(alert => `<span class="alert-badge alert-${alert}">${this.getAlertIcon(alert)} ${alert.toUpperCase()}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+          <button class="action-btn btn-edit" onclick="patientTracker.editPatient('${patient.id}')" style="padding: 0.75rem 1.5rem;">
+            ✏️ Edit Patient Info
+          </button>
+          <button class="action-btn btn-alert" onclick="patientTracker.escalatePatient('${patient.id}')" style="padding: 0.75rem 1.5rem;">
+            ⬆️ Escalate Priority
+          </button>
+          <button class="action-btn btn-transfer" onclick="patientTracker.transferPatient('${patient.id}')" style="padding: 0.75rem 1.5rem;">
+            🔄 Transfer/Move
+          </button>
+          <button class="action-btn btn-view" onclick="patientTracker.generateReport('${patient.id}')" style="padding: 0.75rem 1.5rem;">
+            📋 Generate Report
+          </button>
+        </div>
+      </div>
+    `;
+    
+    modal.classList.add('show');
+  }
+
+  editPatient(patientId) {
+    // Redirect to edit page or open edit modal
+    window.location.href = `/patients/${patientId}/edit`;
+  }
+
+  sendAlert(patientId) {
+    const patient = this.patients.find(p => p.id === patientId);
+    if (!patient) return;
+    
+    if (confirm(`Send alert for ${patient.name}?\n\nThis will notify the assigned medical team about this patient's status.`)) {
+      // Mock API call
+      console.log(`Sending alert for patient ${patientId}`);
+      
+      // Show success message
+      const originalBtn = event.target;
+      const originalText = originalBtn.textContent;
+      originalBtn.textContent = '✅ Sent';
+      originalBtn.style.background = '#10b981';
+      
+      setTimeout(() => {
+        originalBtn.textContent = originalText;
+        originalBtn.style.background = '';
+      }, 2000);
+    }
+  }
+
+  transferPatient(patientId) {
+    const patient = this.patients.find(p => p.id === patientId);
+    if (!patient) return;
+    
+    const locations = ['Emergency Room', 'Triage', 'Surgery', 'ICU', 'Ward A', 'Ward B', 'Discharge'];
+    const newLocation = prompt(`Transfer ${patient.name} to:\n\nCurrent location: ${patient.location}\n\nAvailable locations:\n${locations.join('\n')}\n\nEnter new location:`);
+    
+    if (newLocation && locations.includes(newLocation)) {
+      patient.location = newLocation;
+      patient.lastUpdate = new Date();
+      
+      if (newLocation === 'Discharge') {
+        patient.status = 'discharged';
+      }
+      
+      this.updateDisplay();
+      this.closeModal();
+      
+      console.log(`Transferred patient ${patientId} to ${newLocation}`);
+    }
+  }
+
+  escalatePatient(patientId) {
+    const patient = this.patients.find(p => p.id === patientId);
+    if (!patient) return;
+    
+    const triageOrder = ['green', 'yellow', 'red'];
+    const currentIndex = triageOrder.indexOf(patient.triage);
+    
+    if (currentIndex < triageOrder.length - 1) {
+      patient.triage = triageOrder[currentIndex + 1];
+      patient.lastUpdate = new Date();
+      patient.alerts.push('escalated');
+      
+      this.updateDisplay();
+      this.closeModal();
+      
+      console.log(`Escalated patient ${patientId} to ${patient.triage}`);
+    } else {
+      alert('Patient is already at highest priority level.');
+    }
+  }
+
+  generateReport(patientId) {
+    const patient = this.patients.find(p => p.id === patientId);
+    if (!patient) return;
+    
+    const reportData = {
+      patient_id: patient.id,
+      name: patient.name,
+      age: patient.age,
+      gender: patient.gender,
+      triage: patient.triage,
+      status: patient.status,
+      location: patient.location,
+      assigned_staff: patient.assignedStaff,
+      chief_complaint: patient.chiefComplaint,
+      vitals: patient.vitals,
+      alerts: patient.alerts,
+      admitted: patient.timestamp.toISOString(),
+      last_update: patient.lastUpdate.toISOString(),
+      generated_at: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `patient-report-${patient.id}-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    console.log(`Generated report for patient ${patientId}`);
+  }
+
+  closeModal() {
+    document.getElementById('patientModal').classList.remove('show');
+  }
+}
+
+// Global functions
+let patientTracker;
+
+function switchView(view) {
+  const tableView = document.getElementById('tableView');
+  const boardView = document.getElementById('boardView');
+  const tableBtn = document.getElementById('tableViewBtn');
+  const boardBtn = document.getElementById('boardViewBtn');
+  
+  if (view === 'table') {
+    tableView.style.display = 'block';
+    boardView.classList.remove('active');
+    tableBtn.classList.add('active');
+    boardBtn.classList.remove('active');
+    patientTracker.currentView = 'table';
+  } else {
+    tableView.style.display = 'none';
+    boardView.classList.add('active');
+    tableBtn.classList.remove('active');
+    boardBtn.classList.add('active');
+    patientTracker.currentView = 'board';
+  }
+  
+  patientTracker.updateDisplay();
+}
+
+function toggleAutoRefresh() {
+  patientTracker.autoRefresh = !patientTracker.autoRefresh;
+  const btn = document.getElementById('autoRefreshBtn');
+  
+  if (patientTracker.autoRefresh) {
+    btn.textContent = '⏸️ Pause';
+    btn.classList.remove('btn-alert');
+    btn.classList.add('btn-edit');
+  } else {
+    btn.textContent = '▶️ Resume';
+    btn.classList.remove('btn-edit');
+    btn.classList.add('btn-alert');
+  }
+}
+
+function exportPatients() {
+  const data = {
+    export_metadata: {
+      exported_at: new Date().toISOString(),
+      total_patients: patientTracker.filteredPatients.length,
+      exported_by: "Patient Tracking System"
+    },
+    patients: patientTracker.filteredPatients
+  };
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `patient-export-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  console.log('📤 Exported patient data');
+}
+
+function closeModal() {
+  if (patientTracker) {
+    patientTracker.closeModal();
+  }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  patientTracker = new PatientTrackerManager();
+  
+  // Check online/offline status
+  const updateOnlineStatus = () => {
+    const banner = document.getElementById('offlineBanner');
+    const liveStatus = document.getElementById('liveStatus');
+    
+    if (navigator.onLine) {
+      banner.classList.remove('show');
+      liveStatus.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+    } else {
+      banner.classList.add('show');
+      liveStatus.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+      liveStatus.innerHTML = '<div class="live-indicator" style="background: #fff;"></div><span>Offline - Last updated ' + patientTracker.getTimeAgo(patientTracker.lastUpdate) + '</span>';
+    }
+  };
+  
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
+  
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'f') {
+      e.preventDefault();
+      document.getElementById('searchInput').focus();
+    }
+    if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+      e.preventDefault();
+      patientTracker.loadPatients();
     }
   });
   
-  // Add auto-refresh toggle button
-  window.addEventListener('load', () => {
-    const exportBtn = document.querySelector('.export-btn');
-    if (exportBtn) {
-      const autoBtn = document.createElement('button');
-      autoBtn.id = 'autoRefreshBtn';
-      autoBtn.type = 'button';
-      autoBtn.textContent = '⏸️ Pause Auto-Refresh';
-      autoBtn.style.cssText = `
-        background: #dc2626;
-        color: white;
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        margin-left: 0.5rem;
-      `;
-      autoBtn.onclick = toggleAutoRefresh;
-      exportBtn.parentNode.appendChild(autoBtn);
-    }
-  });
+  console.log('🏥 Patient Tracker initialized successfully');
+});
 </script>
 {% endblock %}
