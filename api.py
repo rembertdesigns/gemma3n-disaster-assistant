@@ -5507,6 +5507,660 @@ async def get_emergency_reports(
             "success": False,
             "error": str(e)
         }, status_code=500)
+    
+# ================================================================================
+# REPORT ARCHIVE API ROUTES
+# ================================================================================
+
+@app.get("/report-archive", response_class=HTMLResponse)
+async def report_archive_page(request: Request):
+    """Report Archive Dashboard - Main Route"""
+    try:
+        archive_path = TEMPLATES_DIR / "report_archive.html"
+        
+        if archive_path.exists():
+            with open(archive_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            return HTMLResponse(content=html_content)
+        else:
+            return HTMLResponse("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Report Archive - Setup Required</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }
+                    .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+                    .btn { background: #3b82f6; color: white; padding: 1rem 2rem; border: none; border-radius: 8px; margin: 1rem; text-decoration: none; display: inline-block; }
+                    .setup-info { background: white; padding: 2rem; border-radius: 12px; margin: 2rem 0; border: 1px solid #e5e7eb; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>📚 Report Archive</h1>
+                    <div class="setup-info">
+                        <h3>Setup Required</h3>
+                        <p>To use the enhanced archive interface, save your report_archive.html file to:</p>
+                        <code style="background: #f3f4f6; padding: 0.5rem; border-radius: 4px;">templates/report_archive.html</code>
+                    </div>
+                    <a href="/admin" class="btn">← Back to Admin</a>
+                    <a href="/api/docs" class="btn">📚 API Docs</a>
+                </div>
+            </body>
+            </html>
+            """)
+            
+    except Exception as e:
+        logger.error(f"Report archive page error: {e}")
+        return HTMLResponse(f"""
+        <html><body style="font-family: Arial; margin: 2rem;">
+        <h1>📚 Report Archive - Error</h1>
+        <p>Error loading archive: {str(e)}</p>
+        <a href="/admin" style="color: #3b82f6;">← Back to Admin</a>
+        </body></html>
+        """, status_code=500)
+
+@app.get("/api/archived-reports")
+async def get_archived_reports(
+    limit: int = Query(100, description="Number of reports to return"),
+    offset: int = Query(0, description="Number of reports to skip"),
+    search: Optional[str] = Query(None, description="Search query"),
+    date_range: Optional[str] = Query(None, description="Date range filter"),
+    type_filter: Optional[str] = Query(None, description="Report type filter"),
+    priority_filter: Optional[str] = Query(None, description="Priority filter"),
+    status_filter: Optional[str] = Query(None, description="Status filter"),
+    sort_by: str = Query("date-desc", description="Sort order"),
+    db: Session = Depends(get_db)
+):
+    """Get archived reports with filtering and search"""
+    try:
+        # Build base query for archived reports
+        query = db.query(EmergencyReport).filter(
+            EmergencyReport.status.in_(["resolved", "archived", "closed"])
+        )
+        
+        # Apply search filter
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    EmergencyReport.description.ilike(search_term),
+                    EmergencyReport.location.ilike(search_term),
+                    EmergencyReport.reporter.ilike(search_term),
+                    EmergencyReport.report_id.ilike(search_term),
+                    EmergencyReport.type.ilike(search_term)
+                )
+            )
+        
+        # Apply date range filter
+        if date_range and date_range != "all":
+            now = datetime.utcnow()
+            if date_range == "today":
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            elif date_range == "week":
+                start_date = now - timedelta(days=7)
+            elif date_range == "month":
+                start_date = now - timedelta(days=30)
+            elif date_range == "quarter":
+                start_date = now - timedelta(days=90)
+            elif date_range == "year":
+                start_date = now - timedelta(days=365)
+            else:
+                start_date = None
+                
+            if start_date:
+                query = query.filter(EmergencyReport.timestamp >= start_date)
+        
+        # Apply type filter
+        if type_filter and type_filter != "all":
+            query = query.filter(EmergencyReport.type.ilike(f"%{type_filter}%"))
+        
+        # Apply priority filter
+        if priority_filter and priority_filter != "all":
+            query = query.filter(EmergencyReport.priority == priority_filter)
+        
+        # Apply status filter
+        if status_filter and status_filter != "all":
+            query = query.filter(EmergencyReport.status == status_filter)
+        
+        # Apply sorting
+        if sort_by == "date-desc":
+            query = query.order_by(desc(EmergencyReport.timestamp))
+        elif sort_by == "date-asc":
+            query = query.order_by(EmergencyReport.timestamp)
+        elif sort_by == "priority":
+            priority_order = {
+                "critical": 1,
+                "high": 2, 
+                "medium": 3,
+                "low": 4
+            }
+            query = query.order_by(
+                func.field(EmergencyReport.priority, "critical", "high", "medium", "low"),
+                desc(EmergencyReport.timestamp)
+            )
+        elif sort_by == "type":
+            query = query.order_by(EmergencyReport.type, desc(EmergencyReport.timestamp))
+        elif sort_by == "status":
+            query = query.order_by(EmergencyReport.status, desc(EmergencyReport.timestamp))
+        
+        # Get total count for pagination
+        total_count = query.count()
+        
+        # Apply pagination
+        reports = query.offset(offset).limit(limit).all()
+        
+        # Format reports for the frontend
+        formatted_reports = []
+        for report in reports:
+            formatted_report = {
+                "id": report.id,
+                "report_id": report.report_id,
+                "title": f"{report.type} - {report.location}",
+                "type": report.type,
+                "description": report.description,
+                "location": report.location,
+                "latitude": report.latitude,
+                "longitude": report.longitude,
+                "priority": report.priority,
+                "status": report.status,
+                "method": report.method,
+                "reporter": report.reporter or "Unknown",
+                "timestamp": report.timestamp.isoformat(),
+                "evidence_file": report.evidence_file,
+                "has_evidence": report.evidence_file is not None,
+                "ai_analysis": report.ai_analysis or {},
+                "time_ago": calculate_time_ago(report.timestamp)
+            }
+            formatted_reports.append(formatted_report)
+        
+        return JSONResponse({
+            "success": True,
+            "reports": formatted_reports,
+            "pagination": {
+                "total": total_count,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + limit < total_count
+            },
+            "filters_applied": {
+                "search": search,
+                "date_range": date_range,
+                "type_filter": type_filter,
+                "priority_filter": priority_filter,
+                "status_filter": status_filter,
+                "sort_by": sort_by
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting archived reports: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/restore-report/{report_id}")
+async def restore_report(
+    report_id: str,
+    db: Session = Depends(get_db)
+):
+    """Restore an archived report to active status"""
+    try:
+        # Find the report
+        report = db.query(EmergencyReport).filter(
+            or_(
+                EmergencyReport.id == report_id,
+                EmergencyReport.report_id == report_id
+            )
+        ).first()
+        
+        if not report:
+            return JSONResponse({
+                "success": False,
+                "error": "Report not found"
+            }, status_code=404)
+        
+        # Update status to active
+        old_status = report.status
+        report.status = "active"
+        
+        # Update AI analysis with restoration info
+        if report.ai_analysis:
+            report.ai_analysis["restored_at"] = datetime.utcnow().isoformat()
+            report.ai_analysis["restored_from"] = old_status
+        else:
+            report.ai_analysis = {
+                "restored_at": datetime.utcnow().isoformat(),
+                "restored_from": old_status
+            }
+        
+        db.commit()
+        
+        # Broadcast update
+        await broadcast_emergency_update("report_restored", {
+            "report_id": report.report_id,
+            "title": f"{report.type} - {report.location}",
+            "old_status": old_status,
+            "new_status": "active"
+        })
+        
+        logger.info(f"Report {report_id} restored from {old_status} to active")
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Report {report.report_id} restored to active status",
+            "report": {
+                "id": report.id,
+                "report_id": report.report_id,
+                "old_status": old_status,
+                "new_status": "active",
+                "restored_at": datetime.utcnow().isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error restoring report {report_id}: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.delete("/api/delete-report/{report_id}")
+async def delete_report(
+    report_id: str,
+    db: Session = Depends(get_db)
+):
+    """Permanently delete a report"""
+    try:
+        # Find the report
+        report = db.query(EmergencyReport).filter(
+            or_(
+                EmergencyReport.id == report_id,
+                EmergencyReport.report_id == report_id
+            )
+        ).first()
+        
+        if not report:
+            return JSONResponse({
+                "success": False,
+                "error": "Report not found"
+            }, status_code=404)
+        
+        # Store report info for response
+        report_info = {
+            "id": report.id,
+            "report_id": report.report_id,
+            "type": report.type,
+            "location": report.location
+        }
+        
+        # Delete associated evidence file if exists
+        if report.evidence_file:
+            try:
+                evidence_path = UPLOAD_DIR / report.evidence_file
+                if evidence_path.exists():
+                    evidence_path.unlink()
+                    logger.info(f"Deleted evidence file: {report.evidence_file}")
+            except Exception as file_error:
+                logger.warning(f"Failed to delete evidence file: {file_error}")
+        
+        # Delete the report from database
+        db.delete(report)
+        db.commit()
+        
+        logger.info(f"Report {report_id} permanently deleted")
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Report {report_info['report_id']} permanently deleted",
+            "deleted_report": report_info
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting report {report_id}: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/archive-stats")
+async def get_archive_statistics(
+    timeframe: str = Query("all", description="Timeframe for stats: all, today, week, month"),
+    db: Session = Depends(get_db)
+):
+    """Get archive statistics"""
+    try:
+        # Build base query
+        base_query = db.query(EmergencyReport).filter(
+            EmergencyReport.status.in_(["resolved", "archived", "closed"])
+        )
+        
+        # Apply timeframe filter
+        if timeframe != "all":
+            now = datetime.utcnow()
+            if timeframe == "today":
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            elif timeframe == "week":
+                start_date = now - timedelta(days=7)
+            elif timeframe == "month":
+                start_date = now - timedelta(days=30)
+            else:
+                start_date = None
+                
+            if start_date:
+                base_query = base_query.filter(EmergencyReport.timestamp >= start_date)
+        
+        # Get all reports for analysis
+        reports = base_query.all()
+        
+        # Calculate statistics
+        total_reports = len(reports)
+        
+        # This week's reports
+        week_start = datetime.utcnow() - timedelta(days=7)
+        this_week = len([r for r in reports if r.timestamp >= week_start])
+        
+        # Critical reports
+        critical_reports = len([r for r in reports if r.priority == "critical"])
+        
+        # Resolved reports
+        resolved_reports = len([r for r in reports if r.status == "resolved"])
+        
+        # Calculate average response time (simulated)
+        response_times = []
+        for report in reports:
+            if report.ai_analysis and "response_time" in report.ai_analysis:
+                response_times.append(report.ai_analysis["response_time"])
+            else:
+                # Simulate response time based on priority
+                if report.priority == "critical":
+                    response_times.append(random.uniform(5, 15))
+                elif report.priority == "high":
+                    response_times.append(random.uniform(15, 45))
+                else:
+                    response_times.append(random.uniform(30, 120))
+        
+        avg_response_time = sum(response_times) / max(len(response_times), 1) if response_times else 0
+        
+        return JSONResponse({
+            "success": True,
+            "statistics": {
+                "total_reports": total_reports,
+                "this_week": this_week,
+                "critical_reports": critical_reports,
+                "resolved_reports": resolved_reports,
+                "avg_response_time": round(avg_response_time / 60, 1),  # Convert to hours
+                "timeframe": timeframe
+            },
+            "breakdowns": {
+                "by_priority": {
+                    "critical": len([r for r in reports if r.priority == "critical"]),
+                    "high": len([r for r in reports if r.priority == "high"]),
+                    "medium": len([r for r in reports if r.priority == "medium"]),
+                    "low": len([r for r in reports if r.priority == "low"])
+                },
+                "by_type": {},
+                "by_status": {
+                    "resolved": len([r for r in reports if r.status == "resolved"]),
+                    "archived": len([r for r in reports if r.status == "archived"]),
+                    "closed": len([r for r in reports if r.status == "closed"])
+                },
+                "by_method": {
+                    "text": len([r for r in reports if r.method == "text"]),
+                    "voice": len([r for r in reports if r.method.startswith("voice")]),
+                    "image": len([r for r in reports if r.method == "image"]),
+                    "multimodal": len([r for r in reports if r.method == "multimodal"])
+                }
+            },
+            "generated_at": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting archive statistics: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/api/bulk-archive-operations")
+async def bulk_archive_operations(
+    request: Request,
+    operation: str = Form(...),  # restore, delete, export
+    report_ids: str = Form(...),  # Comma-separated report IDs
+    db: Session = Depends(get_db)
+):
+    """Perform bulk operations on archived reports"""
+    try:
+        # Parse report IDs
+        ids = [id.strip() for id in report_ids.split(',') if id.strip()]
+        
+        if not ids:
+            return JSONResponse({
+                "success": False,
+                "error": "No report IDs provided"
+            }, status_code=400)
+        
+        # Get reports
+        reports = db.query(EmergencyReport).filter(
+            or_(
+                EmergencyReport.id.in_(ids),
+                EmergencyReport.report_id.in_(ids)
+            )
+        ).all()
+        
+        if not reports:
+            return JSONResponse({
+                "success": False,
+                "error": "No reports found with provided IDs"
+            }, status_code=404)
+        
+        results = []
+        
+        if operation == "restore":
+            for report in reports:
+                old_status = report.status
+                report.status = "active"
+                
+                # Update AI analysis
+                if report.ai_analysis:
+                    report.ai_analysis["bulk_restored_at"] = datetime.utcnow().isoformat()
+                else:
+                    report.ai_analysis = {"bulk_restored_at": datetime.utcnow().isoformat()}
+                
+                results.append({
+                    "report_id": report.report_id,
+                    "old_status": old_status,
+                    "new_status": "active",
+                    "operation": "restored"
+                })
+            
+            db.commit()
+            
+        elif operation == "delete":
+            for report in reports:
+                # Delete evidence files
+                if report.evidence_file:
+                    try:
+                        evidence_path = UPLOAD_DIR / report.evidence_file
+                        if evidence_path.exists():
+                            evidence_path.unlink()
+                    except Exception as file_error:
+                        logger.warning(f"Failed to delete evidence file: {file_error}")
+                
+                results.append({
+                    "report_id": report.report_id,
+                    "operation": "deleted"
+                })
+                
+                db.delete(report)
+            
+            db.commit()
+            
+        elif operation == "export":
+            # Prepare export data
+            export_data = []
+            for report in reports:
+                export_data.append({
+                    "report_id": report.report_id,
+                    "type": report.type,
+                    "description": report.description,
+                    "location": report.location,
+                    "latitude": report.latitude,
+                    "longitude": report.longitude,
+                    "priority": report.priority,
+                    "status": report.status,
+                    "method": report.method,
+                    "reporter": report.reporter,
+                    "timestamp": report.timestamp.isoformat(),
+                    "evidence_file": report.evidence_file,
+                    "ai_analysis": report.ai_analysis
+                })
+                
+                results.append({
+                    "report_id": report.report_id,
+                    "operation": "exported"
+                })
+            
+            # Return export data
+            return JSONResponse({
+                "success": True,
+                "operation": "export",
+                "export_data": {
+                    "reports": export_data,
+                    "exported_at": datetime.utcnow().isoformat(),
+                    "total_reports": len(export_data)
+                },
+                "results": results
+            })
+        
+        else:
+            return JSONResponse({
+                "success": False,
+                "error": f"Unknown operation: {operation}"
+            }, status_code=400)
+        
+        # Broadcast update for non-export operations
+        await broadcast_emergency_update("bulk_archive_operation", {
+            "operation": operation,
+            "affected_reports": len(reports),
+            "results": results[:5]  # Send first 5 results
+        })
+        
+        logger.info(f"Bulk {operation} operation completed on {len(reports)} reports")
+        
+        return JSONResponse({
+            "success": True,
+            "operation": operation,
+            "affected_reports": len(reports),
+            "results": results,
+            "message": f"Bulk {operation} operation completed successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Bulk archive operation error: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.get("/api/report-details/{report_id}")
+async def get_report_details(
+    report_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get detailed information for a specific report"""
+    try:
+        # Find the report
+        report = db.query(EmergencyReport).filter(
+            or_(
+                EmergencyReport.id == report_id,
+                EmergencyReport.report_id == report_id
+            )
+        ).first()
+        
+        if not report:
+            return JSONResponse({
+                "success": False,
+                "error": "Report not found"
+            }, status_code=404)
+        
+        # Prepare detailed report data
+        report_details = {
+            "id": report.id,
+            "report_id": report.report_id,
+            "title": f"{report.type} - {report.location}",
+            "type": report.type,
+            "description": report.description,
+            "location": report.location,
+            "coordinates": {
+                "latitude": report.latitude,
+                "longitude": report.longitude
+            } if report.latitude and report.longitude else None,
+            "priority": report.priority,
+            "status": report.status,
+            "method": report.method,
+            "reporter": report.reporter or "Unknown",
+            "timestamp": report.timestamp.isoformat(),
+            "evidence_file": report.evidence_file,
+            "has_evidence": report.evidence_file is not None,
+            "ai_analysis": report.ai_analysis or {},
+            "time_ago": calculate_time_ago(report.timestamp),
+            "estimated_response_time": "N/A",
+            "status_history": [],
+            "related_reports": []
+        }
+        
+        # Add estimated response time if available
+        if report.ai_analysis and "response_time" in report.ai_analysis:
+            response_time = report.ai_analysis["response_time"]
+            if isinstance(response_time, (int, float)):
+                if response_time < 60:
+                    report_details["estimated_response_time"] = f"{int(response_time)} minutes"
+                else:
+                    hours = int(response_time / 60)
+                    minutes = int(response_time % 60)
+                    report_details["estimated_response_time"] = f"{hours}h {minutes}m"
+        
+        # Add status history if available
+        if report.ai_analysis and "status_history" in report.ai_analysis:
+            report_details["status_history"] = report.ai_analysis["status_history"]
+        
+        # Find related reports (same location or type)
+        related_query = db.query(EmergencyReport).filter(
+            EmergencyReport.id != report.id,
+            or_(
+                EmergencyReport.location.ilike(f"%{report.location}%"),
+                EmergencyReport.type == report.type
+            )
+        ).limit(5)
+        
+        related_reports = related_query.all()
+        report_details["related_reports"] = [
+            {
+                "report_id": r.report_id,
+                "title": f"{r.type} - {r.location}",
+                "timestamp": r.timestamp.isoformat(),
+                "status": r.status,
+                "priority": r.priority
+            }
+            for r in related_reports
+        ]
+        
+        return JSONResponse({
+            "success": True,
+            "report": report_details
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting report details for {report_id}: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
 
 # ================================================================================
 # API ENDPOINTS - STATISTICS & ANALYTICS
