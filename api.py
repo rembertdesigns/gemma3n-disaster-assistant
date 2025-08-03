@@ -6413,9 +6413,9 @@ async def implement_recommendation(
             "error": str(e)
         }, status_code=500)
     
-@app.get("/api/navigation-items")
-async def get_navigation_items():
-    """Get all navigation items including predictive analytics dashboard"""
+@app.get("/api/navigation-items-enhanced")
+async def get_enhanced_navigation_items():
+    """Get enhanced navigation items including report archive"""
     return JSONResponse({
         "success": True,
         "navigation_sections": [
@@ -6432,14 +6432,13 @@ async def get_navigation_items():
                         "access_level": "admin"
                     },
                     {
-                        "id": "analytics-dashboard",  # ADD THIS ITEM
+                        "id": "analytics-dashboard",
                         "title": "Analytics Dashboard",
                         "url": "/analytics-dashboard", 
                         "icon": "📊",
                         "description": "Advanced analytics and intelligence dashboard",
                         "ai_powered": True,
-                        "access_level": "admin",
-                        "new": True
+                        "access_level": "admin"
                     },
                     {
                         "id": "context-intelligence-dashboard",
@@ -6451,23 +6450,13 @@ async def get_navigation_items():
                         "access_level": "admin"
                     },
                     {
-                        "id": "predictive-analytics-dashboard",  # ADD THIS BLOCK
+                        "id": "predictive-analytics-dashboard",
                         "title": "Predictive Analytics Dashboard",
                         "url": "/predictive-analytics-dashboard",
                         "icon": "🔮",
                         "description": "AI-powered emergency intelligence & forecasting",
                         "ai_powered": True,
-                        "access_level": "admin",
-                        "new": True
-                    },
-                    {
-                        "id": "staff-triage-command",
-                        "title": "Medical Triage Command",
-                        "url": "/staff-triage-command",
-                        "icon": "🏥",
-                        "description": "AI-enhanced medical triage management",
-                        "ai_powered": True,
-                        "access_level": "staff"
+                        "access_level": "admin"
                     }
                 ]
             },
@@ -6481,6 +6470,24 @@ async def get_navigation_items():
                         "icon": "📊",
                         "description": "Main administrative dashboard",
                         "access_level": "admin"
+                    },
+                    {
+                        "id": "report-archive",  # NEW ITEM
+                        "title": "Report Archive",
+                        "url": "/report-archive",
+                        "icon": "📚",
+                        "description": "Browse, search, and manage archived reports",
+                        "access_level": "admin",
+                        "new": True
+                    },
+                    {
+                        "id": "staff-triage-command",
+                        "title": "Medical Triage Command",
+                        "url": "/staff-triage-command",
+                        "icon": "🏥",
+                        "description": "AI-enhanced medical triage management",
+                        "ai_powered": True,
+                        "access_level": "staff"
                     },
                     {
                         "id": "voice-emergency",
