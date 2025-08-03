@@ -5516,13 +5516,16 @@ async def get_emergency_reports(
 async def report_archive_page(request: Request):
     """Report Archive Dashboard - Main Route"""
     try:
+        # Check if template exists
         archive_path = TEMPLATES_DIR / "report_archive.html"
         
         if archive_path.exists():
-            with open(archive_path, 'r', encoding='utf-8') as f:
-                html_content = f.read()
-            return HTMLResponse(content=html_content)
+            # Use templates.TemplateResponse instead of reading raw file
+            return templates.TemplateResponse("report_archive.html", {
+                "request": request
+            })
         else:
+            # Return setup message if template doesn't exist
             return HTMLResponse("""
             <!DOCTYPE html>
             <html>
@@ -5530,7 +5533,7 @@ async def report_archive_page(request: Request):
                 <title>Report Archive - Setup Required</title>
                 <style>
                     body { font-family: Arial, sans-serif; margin: 2rem; background: #f3f4f6; }
-                    .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 2rem; }
                     .btn { background: #3b82f6; color: white; padding: 1rem 2rem; border: none; border-radius: 8px; margin: 1rem; text-decoration: none; display: inline-block; }
                     .setup-info { background: white; padding: 2rem; border-radius: 12px; margin: 2rem 0; border: 1px solid #e5e7eb; }
                 </style>
@@ -11420,6 +11423,7 @@ async def health_check():
                 "crowd_reports": True,
                 "analytics_dashboard": True,
                 "map_visualization": True,
+                "report_archive": True,
                 "export_functionality": True,
                 "demo_data_generation": True,
                 "offline_support": True,
@@ -11437,12 +11441,13 @@ async def health_check():
             "citizen_portal": "/",
             "admin_dashboard": "/admin",
             "staff_triage_command": "/staff-triage-command",
-            "voice_emergency_reporter": "/voice-emergency-reporter",  # NEW ENDPOINT
+            "voice_emergency_reporter": "/voice-emergency-reporter",
+            "report_archive": "/report-archive",
             "api_documentation": "/api/docs",
             "health_check": "/health",
             "emergency_reports": "/api/emergency-reports",
-            "voice_reports": "/api/voice-reports",  # NEW ENDPOINT
-            "voice_analytics": "/api/voice-analytics",  # NEW ENDPOINT
+            "voice_reports": "/api/voice-reports",
+            "voice_analytics": "/api/voice-analytics",
             "crowd_reports": "/api/crowd-reports",
             "patients": "/api/patients",
             "analytics": "/api/analytics-data",
@@ -12000,6 +12005,7 @@ async def startup_event():
     logger.info("     • 📢 Crowd Report System with geolocation")
     logger.info("     • 📈 Analytics Dashboard with real-time charts")
     logger.info("     • 🗺️ Map Visualization with interactive reports")
+    logger.info("     • 📚 Report Archive (browse, search & manage archived reports)")
     logger.info("     • 📁 Export functionality (JSON, CSV)")
     logger.info("     • 🎭 Demo data generation for testing")
     logger.info("     • 📱 Offline support with service worker")
@@ -12018,6 +12024,7 @@ async def startup_event():
     logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
     logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")
     logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
+    logger.info(f"     📚 Report Archive: http://localhost:8000/report-archive")
     logger.info(f"     📚 API Documentation: http://localhost:8000/api/docs")
     logger.info(f"     🏥 Health Check: http://localhost:8000/health")
     logger.info(f"     🔮 Predictive Analytics: http://localhost:8000/predictive-analytics-dashboard")
