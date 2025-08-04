@@ -1921,6 +1921,247 @@ def get_fallback_predictive_analysis() -> dict:
     }
 
 # ================================================================================
+# AI COMMAND PROCESSING FUNCTIONS
+# ================================================================================
+
+def process_gemma_command(command: str) -> Dict:
+    """Process command using Gemma 3n model (implement your AI logic here)"""
+    command_lower = command.lower()
+    
+    # Dispatch commands
+    if "dispatch" in command_lower and "ambulance" in command_lower:
+        return {
+            "status": "success",
+            "response": "Ambulance dispatch initiated. Units assigned and en route.",
+            "confidence": 95.2,
+            "actions": ["dispatch_ambulance"],
+            "automation_tasks": [{
+                "name": "Dispatching ambulances to location",
+                "progress": 15,
+                "estimated_completion": 180  # seconds
+            }]
+        }
+    
+    # Critical incidents
+    elif "critical" in command_lower and "incident" in command_lower:
+        return {
+            "status": "success",
+            "response": "Displaying 7 critical incidents. Dashboard filter applied.",
+            "confidence": 98.1,
+            "actions": ["filter_critical_incidents"],
+            "data": {
+                "critical_count": 7,
+                "filter_applied": "critical_priority"
+            }
+        }
+    
+    # Reports
+    elif "report" in command_lower and "district" in command_lower:
+        return {
+            "status": "success",
+            "response": "Generating district status report. Estimated completion: 2 minutes.",
+            "confidence": 92.8,
+            "actions": ["generate_report"],
+            "automation_tasks": [{
+                "name": "Generating district status report",
+                "progress": 5,
+                "estimated_completion": 120
+            }]
+        }
+    
+    # Hospital surge
+    elif "surge" in command_lower or ("hospital" in command_lower and "activate" in command_lower):
+        return {
+            "status": "success",
+            "response": "Hospital surge protocol activated. All medical facilities notified.",
+            "confidence": 96.5,
+            "actions": ["activate_surge_protocol"],
+            "automation_tasks": [{
+                "name": "Activating hospital surge protocol",
+                "progress": 25,
+                "estimated_completion": 300
+            }]
+        }
+    
+    # Resource pre-staging
+    elif "pre-stage" in command_lower or "anticipate" in command_lower:
+        return {
+            "status": "success",
+            "response": "Resource pre-staging initiated based on predictive analysis.",
+            "confidence": 89.3,
+            "actions": ["pre_stage_resources"],
+            "automation_tasks": [{
+                "name": "Pre-staging emergency resources",
+                "progress": 10,
+                "estimated_completion": 240
+            }]
+        }
+    
+    # Default response
+    else:
+        return {
+            "status": "success",
+            "response": f"AI command processed: {command}",
+            "confidence": 85.0,
+            "actions": ["generic_processing"],
+            "automation_tasks": [{
+                "name": f"Processing: {command[:50]}{'...' if len(command) > 50 else ''}",
+                "progress": 20,
+                "estimated_completion": 60
+            }]
+        }
+
+def create_automation_task(task_data: Dict) -> str:
+    """Create a new automation task"""
+    task_id = str(uuid.uuid4())
+    
+    automation_task = {
+        "id": task_id,
+        "name": task_data["name"],
+        "progress": task_data.get("progress", 0),
+        "status": "running",
+        "created_at": datetime.utcnow().isoformat(),
+        "estimated_completion": task_data.get("estimated_completion", 60),
+        "type": task_data.get("type", "general")
+    }
+    
+    active_automations[task_id] = automation_task
+    return task_id
+
+def generate_dynamic_recommendations() -> List[Dict]:
+    """Generate AI recommendations based on current operational state"""
+    current_time = datetime.utcnow()
+    hour = current_time.hour
+    
+    recommendations = []
+    
+    # Time-based recommendations
+    if 16 <= hour <= 19:  # Evening rush hours
+        recommendations.append({
+            "id": str(uuid.uuid4()),
+            "title": "Anticipate Evening Surge",
+            "description": "Based on traffic patterns and historical data, expect 40% increase in incidents between 5-7 PM. Recommend pre-staging 3 additional units.",
+            "priority": "HIGH",
+            "confidence": 94.2,
+            "action_type": "pre_stage_resources",
+            "estimated_impact": "Reduce response time by 15%"
+        })
+    
+    # Traffic-based recommendations
+    recommendations.append({
+        "id": str(uuid.uuid4()),
+        "title": "Optimize Route Planning",
+        "description": "Traffic congestion detected on major routes. Reroute units for 12% faster response times.",
+        "priority": "MEDIUM",
+        "confidence": 87.9,
+        "action_type": "optimize_routes",
+        "estimated_impact": "Save 3-5 minutes per response"
+    })
+    
+    return recommendations
+
+def get_playbook_config(playbook_type: str) -> Optional[Dict]:
+    """Get configuration for a specific playbook"""
+    playbooks = {
+        "shelter": {
+            "name": "Emergency Shelter Protocol",
+            "description": "Mass evacuation and shelter activation procedures",
+            "steps": [
+                {"name": "Alert evacuation zones", "duration": 60, "initial_progress": 10},
+                {"name": "Coordinate shelter facilities", "duration": 120, "initial_progress": 5},
+                {"name": "Deploy transportation", "duration": 180, "initial_progress": 0}
+            ]
+        },
+        "surge": {
+            "name": "Hospital Surge Plan",
+            "description": "Coordinate hospital capacity and overflow protocols",
+            "steps": [
+                {"name": "Notify all medical facilities", "duration": 30, "initial_progress": 25},
+                {"name": "Activate overflow protocols", "duration": 90, "initial_progress": 10},
+                {"name": "Coordinate patient transfers", "duration": 150, "initial_progress": 0}
+            ]
+        },
+        "mass-casualty": {
+            "name": "Mass Casualty Response",
+            "description": "Multi-agency coordination for mass casualty events",
+            "steps": [
+                {"name": "Deploy all available units", "duration": 45, "initial_progress": 20},
+                {"name": "Establish incident command", "duration": 60, "initial_progress": 15},
+                {"name": "Coordinate with hospitals", "duration": 120, "initial_progress": 5}
+            ]
+        },
+        "hazmat": {
+            "name": "HAZMAT Response Protocol",
+            "description": "Chemical/biological incident response procedures",
+            "steps": [
+                {"name": "Deploy specialized teams", "duration": 90, "initial_progress": 15},
+                {"name": "Establish containment perimeter", "duration": 120, "initial_progress": 10},
+                {"name": "Initiate decontamination", "duration": 240, "initial_progress": 0}
+            ]
+        },
+        "weather": {
+            "name": "Severe Weather Protocol",
+            "description": "Storm preparation and response procedures",
+            "steps": [
+                {"name": "Issue public alerts", "duration": 30, "initial_progress": 30},
+                {"name": "Pre-position resources", "duration": 90, "initial_progress": 20},
+                {"name": "Activate emergency shelters", "duration": 120, "initial_progress": 10}
+            ]
+        },
+        "fire": {
+            "name": "Wildfire Response Protocol",
+            "description": "Fire suppression and evacuation coordination",
+            "steps": [
+                {"name": "Coordinate aerial support", "duration": 60, "initial_progress": 25},
+                {"name": "Establish evacuation routes", "duration": 90, "initial_progress": 15},
+                {"name": "Deploy ground crews", "duration": 120, "initial_progress": 10}
+            ]
+        }
+    }
+    
+    return playbooks.get(playbook_type)
+
+def execute_recommendation_action(recommendation: Dict) -> Dict:
+    """Execute a specific recommendation action"""
+    action_type = recommendation.get('action_type')
+    
+    if action_type == 'pre_stage_resources':
+        # Create automation task for pre-staging
+        task_id = create_automation_task({
+            "name": "Pre-staging emergency units for surge",
+            "progress": 15,
+            "estimated_completion": 180,
+            "type": "resource_management"
+        })
+        
+        return {
+            "action": "Pre-staging initiated",
+            "automation_task_id": task_id,
+            "units_affected": 3
+        }
+    
+    elif action_type == 'optimize_routes':
+        # Create automation task for route optimization
+        task_id = create_automation_task({
+            "name": "Updating unit navigation routes",
+            "progress": 40,
+            "estimated_completion": 90,
+            "type": "navigation"
+        })
+        
+        return {
+            "action": "Route optimization applied",
+            "automation_task_id": task_id,
+            "units_affected": ["Unit 23", "Unit 31"]
+        }
+    
+    else:
+        return {
+            "action": "Generic recommendation executed",
+            "status": "completed"
+        }
+
+# ================================================================================
 # MAIN PAGE ROUTES - CITIZEN PORTAL
 # ================================================================================
 
