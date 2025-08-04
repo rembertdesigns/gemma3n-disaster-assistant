@@ -8655,6 +8655,317 @@ async def get_available_staff():
             "success": False,
             "error": str(e)
         }, status_code=500)
+    
+# ================================================================================
+# AI COMMAND PROCESSING ENDPOINTS
+# ================================================================================
+
+@app.post("/api/ai/process-command")
+@rate_limit(max_requests=30, window_seconds=60)
+async def process_ai_command(
+    request: Request,
+    command: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Process natural language AI commands"""
+    try:
+        user_id = "system_user"  # You can get from authentication if needed
+        
+        if not command.strip():
+            return JSONResponse({"error": "Command cannot be empty"}, status_code=400)
+        
+        # Create command record
+        command_record = {
+            "id": str(uuid.uuid4()),
+            "command": command,
+            "user_id": user_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "status": "processing",
+            "result": None,
+            "confidence": None
+        }
+        
+        # Add to history
+        command_history.insert(0, command_record)
+        
+        # Process command with Gemma 3n
+        result = process_gemma_command(command)
+        
+        # Update command record
+        command_record.update({
+            "status": result["status"],
+            "result": result["response"],
+            "confidence": result["confidence"],
+            "actions_triggered": result.get("actions", [])
+        })
+        
+        # Trigger any automated actions
+        if result.get("automation_tasks"):
+            for task in result["automation_tasks"]:
+                create_automation_task(task)
+        
+        # Broadcast update
+        await broadcast_emergency_update("ai_command_processed", {
+            "command": command,
+            "result": result["response"],
+            "confidence": result["confidence"]
+        })
+        
+        logger.info(f"AI command processed: {command}")
+        
+        return JSONResponse({
+            "success": True,
+            "command_id": command_record["id"],
+            "result": result,
+            "message": "Command processed successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error processing AI command: {str(e)}")
+        return JSONResponse({"error": "Failed to process command"}, status_code=500)
+
+@app.get("/api/ai/command-history")
+async def get_command_history(
+    page: int = Query(1, description="Page number"),
+    per_page: int = Query(20, description="Items per page")
+):
+    """Get command history with pagination"""
+    try:
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        
+        paginated_history = command_history[start_idx:end_idx]
+        
+        return JSONResponse({
+            "success": True,
+            "commands": paginated_history,
+            "total": len(command_history),
+            "page": page,
+            "per_page": per_page
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching command history: {str(e)}")
+        return JSONResponse({"error": "Failed to fetch command history"}, status_code=500)
+
+@app.delete("/api/ai/command-history/{command_id}")
+async def delete_command_from_history(command_id: str):
+    """Delete a command from history"""
+    try:
+        global command_history
+        command_history = [cmd for cmd in command_history if cmd['id'] != command_id]
+        
+        return JSONResponse({
+            "success": True,
+            "message": "Command deleted from history"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting command: {str(e)}")
+        return JSONResponse({"error": "Failed to delete command"}, status_code=500)
+
+@app.post("/api/ai/command-history/clear")
+async def clear_command_history():
+    """Clear all command history"""
+    try:
+        global command_history
+        command_history = []
+        
+        return JSONResponse({
+            "success": True,
+            "message": "Command history cleared"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error clearing history: {str(e)}")
+        return JSONResponse({"error": "Failed to clear history"}, status_code=500)
+
+@app.get("/api/ai/automations")
+async def get_active_automations():
+    """Get all active automation tasks"""
+    try:
+        return JSONResponse({
+            "success": True,
+            "automations": list(active_automations.values())
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching automations: {str(e)}")
+        return JSONResponse({"error": "Failed to fetch automations"}, status_code=500)
+
+@app.post("/api/ai/automations/{automation_id}/pause")
+async def pause_automation(automation_id: str):
+    """Pause an automation task"""
+    try:
+        if automation_id in active_automations:
+            active_automations[automation_id]['status'] = 'paused'
+            active_automations[automation_id]['paused_at'] = datetime.utcnow().isoformat()
+            
+            return JSONResponse({
+                "success": True,
+                "message": "Automation paused successfully"
+            })
+        else:
+            return JSONResponse({"error": "Automation not found"}, status_code=404)
+            
+    except Exception as e:
+        logger.error(f"Error pausing automation: {str(e)}")
+        return JSONResponse({"error": "Failed to pause automation"}, status_code=500)
+
+@app.post("/api/ai/automations/{automation_id}/resume")
+async def resume_automation(automation_id: str):
+    """Resume a paused automation task"""
+    try:
+        if automation_id in active_automations:
+            active_automations[automation_id]['status'] = 'running'
+            active_automations[automation_id]['resumed_at'] = datetime.utcnow().isoformat()
+            
+            return JSONResponse({
+                "success": True,
+                "message": "Automation resumed successfully"
+            })
+        else:
+            return JSONResponse({"error": "Automation not found"}, status_code=404)
+            
+    except Exception as e:
+        logger.error(f"Error resuming automation: {str(e)}")
+        return JSONResponse({"error": "Failed to resume automation"}, status_code=500)
+
+@app.post("/api/ai/automations/{automation_id}/cancel")
+async def cancel_automation(automation_id: str):
+    """Cancel an automation task"""
+    try:
+        if automation_id in active_automations:
+            active_automations[automation_id]['status'] = 'cancelled'
+            active_automations[automation_id]['cancelled_at'] = datetime.utcnow().isoformat()
+            
+            return JSONResponse({
+                "success": True,
+                "message": "Automation cancelled successfully"
+            })
+        else:
+            return JSONResponse({"error": "Automation not found"}, status_code=404)
+            
+    except Exception as e:
+        logger.error(f"Error cancelling automation: {str(e)}")
+        return JSONResponse({"error": "Failed to cancel automation"}, status_code=500)
+
+@app.get("/api/ai/recommendations")
+async def get_ai_recommendations():
+    """Get current AI recommendations"""
+    try:
+        # Generate dynamic recommendations based on current state
+        recommendations = generate_dynamic_recommendations()
+        
+        return JSONResponse({
+            "success": True,
+            "recommendations": recommendations
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching recommendations: {str(e)}")
+        return JSONResponse({"error": "Failed to fetch recommendations"}, status_code=500)
+
+@app.post("/api/ai/recommendations/{recommendation_id}/execute")
+async def execute_recommendation(recommendation_id: str):
+    """Execute an AI recommendation"""
+    try:
+        # Find the recommendation
+        recommendation = next((r for r in ai_recommendations if r['id'] == recommendation_id), None)
+        
+        if not recommendation:
+            return JSONResponse({"error": "Recommendation not found"}, status_code=404)
+        
+        # Execute the recommendation
+        result = execute_recommendation_action(recommendation)
+        
+        # Mark as executed
+        recommendation['status'] = 'executed'
+        recommendation['executed_at'] = datetime.utcnow().isoformat()
+        
+        return JSONResponse({
+            "success": True,
+            "result": result,
+            "message": "Recommendation executed successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error executing recommendation: {str(e)}")
+        return JSONResponse({"error": "Failed to execute recommendation"}, status_code=500)
+
+@app.post("/api/ai/playbooks/{playbook_type}/execute")
+async def execute_playbook(
+    playbook_type: str,
+    db: Session = Depends(get_db)
+):
+    """Execute a predefined emergency playbook"""
+    try:
+        playbook_config = get_playbook_config(playbook_type)
+        
+        if not playbook_config:
+            return JSONResponse({"error": "Playbook not found"}, status_code=404)
+        
+        # Create automation tasks for playbook execution
+        task_ids = []
+        for step in playbook_config['steps']:
+            task_id = create_automation_task({
+                "name": f"Executing {playbook_type} protocol: {step['name']}",
+                "progress": step.get('initial_progress', 0),
+                "estimated_completion": step.get('duration', 120),
+                "type": "playbook_execution"
+            })
+            task_ids.append(task_id)
+        
+        # Log playbook execution
+        command_record = {
+            "id": str(uuid.uuid4()),
+            "command": f"Execute {playbook_type} protocol via playbook",
+            "user_id": "system",
+            "timestamp": datetime.utcnow().isoformat(),
+            "status": "success",
+            "result": f"{playbook_config['name']} activated successfully",
+            "confidence": 100.0,
+            "automation_tasks": task_ids
+        }
+        command_history.insert(0, command_record)
+        
+        # Broadcast update
+        await broadcast_emergency_update("playbook_executed", {
+            "playbook_type": playbook_type,
+            "playbook_name": playbook_config['name'],
+            "task_count": len(task_ids)
+        })
+        
+        logger.info(f"Playbook executed: {playbook_type}")
+        
+        return JSONResponse({
+            "success": True,
+            "playbook": playbook_config['name'],
+            "message": f"{playbook_config['name']} activated successfully",
+            "automation_tasks": task_ids,
+            "estimated_completion": sum(step.get('duration', 120) for step in playbook_config['steps'])
+        })
+        
+    except Exception as e:
+        logger.error(f"Error executing playbook: {str(e)}")
+        return JSONResponse({"error": "Failed to execute playbook"}, status_code=500)
+
+@app.get("/api/ai/status")
+async def get_ai_system_status():
+    """Get AI system status and health"""
+    try:
+        return JSONResponse({
+            "success": True,
+            "status": system_status,
+            "active_automations_count": len([a for a in active_automations.values() if a['status'] == 'running']),
+            "total_commands_processed": len(command_history),
+            "uptime": "99.8%",
+            "last_updated": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching system status: {str(e)}")
+        return JSONResponse({"error": "Failed to fetch system status"}, status_code=500)
 
 # ================================================================================
 # HELPER FUNCTIONS FOR THE NEW ROUTES
