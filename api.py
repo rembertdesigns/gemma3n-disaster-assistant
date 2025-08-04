@@ -2675,6 +2675,51 @@ async def crisis_command_center(request: Request):
         </body></html>
         """, status_code=500)
     
+@app.get("/ai-command-center", response_class=HTMLResponse)
+async def ai_command_center(request: Request):
+    """AI Command Center - Natural Language Command Interface"""
+    try:
+        command_center_path = TEMPLATES_DIR / "ai-command-center.html"
+        
+        if command_center_path.exists():
+            return templates.TemplateResponse("ai-command-center.html", {
+                "request": request,
+                "current_time": datetime.utcnow()
+            })
+        else:
+            return HTMLResponse("""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>AI Command Center - Setup Required</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 2rem; background: #1f2937; color: white; text-align: center; }
+                    .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+                    .btn { background: #3b82f6; color: white; padding: 1rem 2rem; border: none; border-radius: 8px; margin: 1rem; text-decoration: none; display: inline-block; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🤖 AI Command Center</h1>
+                    <p>Natural Language Emergency Command Processing</p>
+                    <p>Save your ai-command-center.html file to templates/ to enable the interface.</p>
+                    <a href="/crisis-command-center" class="btn">🧠 Crisis Command Center</a>
+                    <a href="/api/docs" class="btn">📚 API Documentation</a>
+                </div>
+            </body>
+            </html>
+            """)
+            
+    except Exception as e:
+        logger.error(f"AI Command Center error: {e}")
+        return HTMLResponse(f"""
+        <html><body style="font-family: Arial; margin: 2rem; background: #1f2937; color: white;">
+        <h1>🤖 AI Command Center - Error</h1>
+        <p>Error loading command center: {str(e)}</p>
+        <a href="/crisis-command-center" style="color: #3b82f6;">← Back to Crisis Command</a>
+        </body></html>
+        """, status_code=500)
+    
 # ================================================================================
 # CONTEXT INTELLIGENCE DASHBOARD API ROUTES
 # Add these routes to your existing api.py file
@@ -7410,6 +7455,15 @@ async def get_enhanced_navigation_items():
                         "url": "/context-intelligence-dashboard",
                         "icon": "🔍",
                         "description": "Deep situation analysis with 128K context",
+                        "ai_powered": True,
+                        "access_level": "admin"
+                    },
+                    {
+                        "id": "ai-command-center",
+                        "title": "AI Command Center",
+                        "url": "/ai-command-center",
+                        "icon": "🤖",
+                        "description": "Natural language command processing",
                         "ai_powered": True,
                         "access_level": "admin"
                     },
@@ -13016,6 +13070,7 @@ async def startup_event():
     logger.info("✅ Enhanced Emergency Response Assistant ready!")
     logger.info(f"     🧠 Crisis Command Center: http://localhost:8000/crisis-command-center")
     logger.info(f"     📊 Analytics Dashboard: http://localhost:8000/analytics-dashboard")
+    logger.info(f"     🤖 AI Command Center: http://localhost:8000/ai-command-center")
     logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
     logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")
     logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
