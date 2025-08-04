@@ -7123,7 +7123,7 @@ async def implement_recommendation(
     
 @app.get("/api/navigation-items-enhanced")
 async def get_enhanced_navigation_items():
-    """Get enhanced navigation items including report archive"""
+    """Get enhanced navigation items including patient tracker"""
     return JSONResponse({
         "success": True,
         "navigation_sections": [
@@ -7180,7 +7180,7 @@ async def get_enhanced_navigation_items():
                         "access_level": "admin"
                     },
                     {
-                        "id": "report-archive",  # NEW ITEM
+                        "id": "report-archive",
                         "title": "Report Archive",
                         "url": "/report-archive",
                         "icon": "📚",
@@ -7196,6 +7196,16 @@ async def get_enhanced_navigation_items():
                         "description": "AI-enhanced medical triage management",
                         "ai_powered": True,
                         "access_level": "staff"
+                    },
+                    {
+                        "id": "patient-tracker",  # ← ADD THIS NEW ITEM
+                        "title": "Patient Flow Tracker",
+                        "url": "/patient-tracker",
+                        "icon": "🔄",
+                        "description": "Kanban-style patient workflow management",
+                        "ai_powered": True,
+                        "access_level": "staff",
+                        "new": True
                     },
                     {
                         "id": "voice-emergency",
@@ -12373,41 +12383,43 @@ async def startup_event():
         logger.error(f"❌ Crisis Command Center initialization error: {e}")
     
     # Log available features
-    logger.info("🎯 Available features:")
-    logger.info("     • 🧠 Crisis Command Center (AI-powered emergency operations)")
-    logger.info("     • 📊 Analytics Dashboard (advanced analytics and intelligence)")
-    logger.info("     • 🌐 Citizen Emergency Portal (main interface)")
-    logger.info("     • 🎤 PUBLIC Voice Emergency Reporter (NO LOGIN REQUIRED)")
-    logger.info("     • 🤖 Multimodal AI Analysis (text + image + audio)")
-    logger.info("     • 📊 Professional Admin Dashboard")
-    logger.info("     • 🏥 Patient Triage Management")
-    logger.info("     • 📢 Crowd Report System with geolocation")
-    logger.info("     • 📈 Analytics Dashboard with real-time charts")
-    logger.info("     • 🗺️ Map Visualization with interactive reports")
-    logger.info("     • 📚 Report Archive (browse, search & manage archived reports)")
-    logger.info("     • 📁 Export functionality (JSON, CSV)")
-    logger.info("     • 🎭 Demo data generation for testing")
-    logger.info("     • 📱 Offline support with service worker")
-    logger.info("     • ⚡ Real-time updates via WebSockets")
-    logger.info("     • 🔐 JWT Authentication with role-based access")
-    logger.info("     • 🛡️ Rate limiting and security monitoring")
-    logger.info("     • 📊 Performance monitoring and metrics")
-    logger.info("     • 🔧 RESTful API with comprehensive documentation")
-    logger.info("     • 📊 Voice analytics and reporting")
-    logger.info("     🔮 Predictive Analytics Dashboard (AI forecasting & intelligence)")
-    logger.info("     • 🚀 Real-Time Resource Optimizer")
-    
-    logger.info("✅ Enhanced Emergency Response Assistant ready!")
-    logger.info(f"     🧠 Crisis Command Center: http://localhost:8000/crisis-command-center")
-    logger.info(f"     📊 Analytics Dashboard: http://localhost:8000/analytics-dashboard")
-    logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
-    logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")
-    logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
-    logger.info(f"     📚 Report Archive: http://localhost:8000/report-archive")
-    logger.info(f"     📚 API Documentation: http://localhost:8000/api/docs")
-    logger.info(f"     🏥 Health Check: http://localhost:8000/health")
-    logger.info(f"     🔮 Predictive Analytics: http://localhost:8000/predictive-analytics-dashboard")
-    logger.info(f"     📊 Resource Optimizer: http://localhost:8000/real-time-resource-optimizer")
+logger.info("🎯 Available features:")
+logger.info("     • 🧠 Crisis Command Center (AI-powered emergency operations)")
+logger.info("     • 📊 Analytics Dashboard (advanced analytics and intelligence)")
+logger.info("     • 🌐 Citizen Emergency Portal (main interface)")
+logger.info("     • 🎤 PUBLIC Voice Emergency Reporter (NO LOGIN REQUIRED)")
+logger.info("     • 🤖 Multimodal AI Analysis (text + image + audio)")
+logger.info("     • 📊 Professional Admin Dashboard")
+logger.info("     • 🏥 Patient Triage Management")
+logger.info("     • 🏥 Patient Flow Tracker (Kanban-style workflow management)")
+logger.info("     • 📢 Crowd Report System with geolocation")
+logger.info("     • 📈 Analytics Dashboard with real-time charts")
+logger.info("     • 🗺️ Map Visualization with interactive reports")
+logger.info("     • 📚 Report Archive (browse, search & manage archived reports)")
+logger.info("     • 📁 Export functionality (JSON, CSV)")
+logger.info("     • 🎭 Demo data generation for testing")
+logger.info("     • 📱 Offline support with service worker")
+logger.info("     • ⚡ Real-time updates via WebSockets")
+logger.info("     • 🔐 JWT Authentication with role-based access")
+logger.info("     • 🛡️ Rate limiting and security monitoring")
+logger.info("     • 📊 Performance monitoring and metrics")
+logger.info("     • 🔧 RESTful API with comprehensive documentation")
+logger.info("     • 📊 Voice analytics and reporting")
+logger.info("     🔮 Predictive Analytics Dashboard (AI forecasting & intelligence)")
+logger.info("     • 🚀 Real-Time Resource Optimizer")
+
+logger.info("✅ Enhanced Emergency Response Assistant ready!")
+logger.info(f"     🧠 Crisis Command Center: http://localhost:8000/crisis-command-center")
+logger.info(f"     📊 Analytics Dashboard: http://localhost:8000/analytics-dashboard")
+logger.info(f"     🌐 Citizen Portal: http://localhost:8000/")
+logger.info(f"     🎤 Voice Emergency Reporter: http://localhost:8000/voice-emergency-reporter")
+logger.info(f"     📊 Admin Dashboard: http://localhost:8000/admin")
+logger.info(f"     🏥 Patient Flow Tracker: http://localhost:8000/patient-tracker")
+logger.info(f"     📚 Report Archive: http://localhost:8000/report-archive")
+logger.info(f"     📚 API Documentation: http://localhost:8000/api/docs")
+logger.info(f"     🏥 Health Check: http://localhost:8000/health")
+logger.info(f"     🔮 Predictive Analytics: http://localhost:8000/predictive-analytics-dashboard")
+logger.info(f"     📊 Resource Optimizer: http://localhost:8000/real-time-resource-optimizer")
 
 @app.on_event("shutdown")
 async def shutdown_event():
