@@ -792,22 +792,22 @@
                 </div>
 
                 <div class="integration-grid">
-                    <div class="integration-card" onclick="navigateTo('triage_dashboard.html')">
+                    <div class="integration-card" onclick="navigateTo('triage-dashboard')">
                         <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🏥</div>
                         <div>Triage Dashboard</div>
                     </div>
 
-                    <div class="integration-card" onclick="navigateTo('analytics_dashboard.html')">
+                    <div class="integration-card" onclick="navigateTo('predictive-analytics-dashboard')">
                         <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📊</div>
                         <div>Analytics Center</div>
                     </div>
 
-                    <div class="integration-card" onclick="navigateTo('resource_management.html')">
+                    <div class="integration-card" onclick="navigateTo('real-time-resource-optimizer')">
                         <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🚑</div>
                         <div>Resource Manager</div>
                     </div>
 
-                    <div class="integration-card" onclick="navigateTo('map_view.html')">
+                    <div class="integration-card" onclick="navigateTo('map-reports')">
                         <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🗺️</div>
                         <div>Live Map View</div>
                     </div>
@@ -1128,15 +1128,89 @@
             showNotification('🔧 Playbook customization panel would open here. Feature in development.', 'info');
         }
 
+        // ENHANCED NAVIGATION FUNCTION - ACTUAL PAGE NAVIGATION
         function navigateTo(page) {
-            // In a real implementation, this would navigate to the specified page
-            showNotification(`🔗 Navigating to ${page.replace('.html', '').replace('_', ' ')}...`, 'info');
+            // Show navigation notification
+            showNotification(`🔗 Navigating to ${page.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}...`, 'info');
             
-            // Simulate navigation delay
+            // Create page mapping for your browser pages
+            const pageMapping = {
+                'triage-dashboard': 'triage-dashboard',
+                'predictive-analytics-dashboard': 'predictive-analytics-dashboard',
+                'real-time-resource-optimizer': 'real-time-resource-optimizer',
+                'map-reports': 'map-reports'
+            };
+            
+            // Add navigation to history
+            addToHistory(`Navigate to ${page.replace('-', ' ')}`, 'success');
+            
+            // Simulate loading delay for better UX
             setTimeout(() => {
-                // window.location.href = page;
-                console.log(`Would navigate to: ${page}`);
+                const targetPage = pageMapping[page] || page;
+                
+                // Try to navigate to your browser pages
+                try {
+                    // For browser pages, we navigate directly without .html extension
+                    window.location.href = targetPage;
+                    
+                } catch (error) {
+                    // Fallback notification if navigation fails
+                    showNotification(`⚠️ Page ${targetPage} not found. Please check the page name.`, 'warning');
+                    console.log(`Navigation attempted to: ${targetPage}`);
+                    
+                    // Optional: Create the page dynamically or show an error page
+                    createMissingPageFallback(page);
+                }
             }, 500);
+        }
+        
+        // Fallback function for missing pages
+        function createMissingPageFallback(pageName) {
+            const fallbackContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${pageName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            text-align: center; 
+                            padding: 50px;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                        }
+                        .container { 
+                            background: rgba(255,255,255,0.1); 
+                            padding: 2rem; 
+                            border-radius: 12px; 
+                            max-width: 600px; 
+                            margin: 0 auto; 
+                        }
+                        .back-btn { 
+                            background: #3b82f6; 
+                            color: white; 
+                            padding: 10px 20px; 
+                            border: none; 
+                            border-radius: 5px; 
+                            cursor: pointer; 
+                            margin-top: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>🚨 ${pageName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h1>
+                        <p>This page is under development. Please check back later.</p>
+                        <button class="back-btn" onclick="history.back()">← Back to Command Center</button>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            // Open in new tab as fallback
+            const newWindow = window.open('', '_blank');
+            newWindow.document.write(fallbackContent);
+            newWindow.document.close();
         }
 
         function highlightCriticalData() {
@@ -1160,6 +1234,20 @@
             @keyframes fadeOut {
                 from { opacity: 1; }
                 to { opacity: 0; }
+            }
+            
+            /* Enhanced navigation card hover effects */
+            .integration-card {
+                transition: all 0.3s ease;
+            }
+            
+            .integration-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            }
+            
+            .integration-card:active {
+                transform: translateY(-1px);
             }
         `;
         document.head.appendChild(style);
@@ -1201,9 +1289,32 @@
                 e.preventDefault();
                 document.getElementById('voiceBtn').click();
             }
+            
+            // Quick navigation shortcuts
+            if (e.altKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        navigateTo('triage-dashboard');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        navigateTo('predictive-analytics-dashboard');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        navigateTo('real-time-resource-optimizer');
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        navigateTo('map-reports');
+                        break;
+                }
+            }
         });
 
         console.log('🤖 AI Command Center powered by Gemma 3n - Emergency Operations System Ready');
+        console.log('🔗 Navigation system enhanced - Alt+1/2/3/4 for quick access');
     </script>
 </body>
 </html>
