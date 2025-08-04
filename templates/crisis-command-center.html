@@ -1270,6 +1270,662 @@
         }
     </style>
     <style>
+        /* Team Chat Modal/Overlay Styles */
+        .team-chat-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .team-chat-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .team-chat-modal {
+            background: var(--bg-color-card);
+            border-radius: 16px;
+            width: 95%;
+            max-width: 1200px;
+            height: 85vh;
+            max-height: 800px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .team-chat-overlay.open .team-chat-modal {
+            transform: translateY(0);
+        }
+
+        /* Chat Header */
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .chat-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .chat-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .chat-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .online-count {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-optimal);
+            animation: pulse 2s infinite;
+        }
+
+        .close-chat-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 0.6rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: var(--transition-fast);
+        }
+
+        .close-chat-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Chat Layout */
+        .chat-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Channel Sidebar */
+        .chat-sidebar {
+            width: 280px;
+            background: var(--bg-color-light);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .channel-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-color-card);
+        }
+
+        .channel-search {
+            width: 100%;
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: var(--transition-fast);
+        }
+
+        .channel-search:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .channels-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .channel-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .channel-group-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-color-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .channel-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .channel-item:hover {
+            background: rgba(30, 64, 175, 0.1);
+        }
+
+        .channel-item.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .channel-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .channel-icon {
+            font-size: 1rem;
+        }
+
+        .channel-name {
+            font-weight: 600;
+        }
+
+        .unread-badge {
+            background: var(--color-critical);
+            color: white;
+            border-radius: 10px;
+            padding: 0.15rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Online Staff Section */
+        .online-staff {
+            border-top: 1px solid var(--border-color);
+            padding: 1rem;
+            background: var(--bg-color-card);
+        }
+
+        .staff-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-color-light);
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .staff-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .staff-member {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0;
+        }
+
+        .staff-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            position: relative;
+        }
+
+        .staff-avatar.online::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--color-optimal);
+            border: 2px solid var(--bg-color-card);
+        }
+
+        .staff-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .staff-role {
+            font-size: 0.7rem;
+            color: var(--text-color-light);
+        }
+
+        /* Main Chat Area */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-color-card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .current-channel {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .current-channel-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-color-base);
+        }
+
+        .channel-description {
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-action-btn {
+            padding: 0.5rem 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: white;
+            color: var(--text-color-base);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .chat-action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.5rem;
+            background: var(--bg-color-base);
+        }
+
+        .message-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: var(--transition-fast);
+        }
+
+        .message:hover {
+            background: rgba(30, 64, 175, 0.05);
+        }
+
+        .message.urgent {
+            background: rgba(220, 38, 38, 0.1);
+            border-left: 4px solid var(--color-critical);
+        }
+
+        .message.system {
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 4px solid var(--ai-accent);
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .message-sender {
+            font-weight: 700;
+            color: var(--text-color-base);
+            font-size: 0.9rem;
+        }
+
+        .message-role {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .message-timestamp {
+            color: var(--text-color-light);
+            font-size: 0.75rem;
+        }
+
+        .message-text {
+            color: var(--text-color-base);
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .message-attachments {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .attachment {
+            background: var(--bg-color-light);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: var(--transition-fast);
+        }
+
+        .attachment:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .message-actions {
+            display: flex;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+        }
+
+        .message-action {
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: white;
+            color: var(--text-color-light);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .message-action:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Pinned Messages */
+        .pinned-messages {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .pinned-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+            color: var(--color-warning);
+        }
+
+        .pinned-message {
+            background: white;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .pinned-message:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Message Input */
+        .message-input-container {
+            padding: 1rem 1.5rem;
+            background: var(--bg-color-card);
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .message-input-wrapper {
+            position: relative;
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+
+        .message-input {
+            flex: 1;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            resize: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            transition: var(--transition-fast);
+        }
+
+        .message-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .input-action-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            background: white;
+            color: var(--text-color-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-fast);
+            font-size: 1.1rem;
+        }
+
+        .input-action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .send-btn {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .send-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+            font-style: italic;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 0.2rem;
+        }
+
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--text-color-light);
+            animation: typingDot 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingDot {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
+        }
+
+        .mobile-sidebar-toggle {
+            display: none;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 0.6rem;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: var(--transition-fast);
+        }
+
+        .mobile-sidebar-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Responsive Design for Team Chat */
+        @media (max-width: 768px) {
+            .team-chat-modal {
+                width: 100%;
+                height: 100vh;
+                max-height: none;
+                border-radius: 0;
+            }
+
+            .chat-sidebar {
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: -100%;
+                height: 100%;
+                z-index: 10;
+                transition: left 0.3s ease;
+                background: var(--bg-color-card);
+            }
+
+            .chat-sidebar.open {
+                left: 0;
+            }
+
+            .mobile-sidebar-toggle {
+                display: block !important;
+            }
+
+            .staff-list {
+                max-height: 200px;
+                overflow-y: auto;
+            }
+
+            .message-input-wrapper {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .input-actions {
+                align-self: flex-end;
+            }
+        }
+    </style>
+    <style>
         /* Floating Action Button */
         .fab {
             position: fixed;
@@ -1644,6 +2300,7 @@
             .alert-banner,
             .fab,
             .notification-log-overlay,
+            .team-chat-overlay,
             .more-dropdown {
                 display: none !important;
             }
@@ -1993,6 +2650,319 @@
         </div>
     </div>
 
+    <!-- Team Chat Modal/Overlay -->
+    <div class="team-chat-overlay" id="teamChatOverlay" role="dialog" aria-labelledby="teamChatTitle">
+        <div class="team-chat-modal">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <button class="mobile-sidebar-toggle" onclick="toggleChatSidebar()" aria-label="Toggle sidebar">
+                    ☰
+                </button>
+                <div class="chat-title" id="teamChatTitle">
+                    💬 Team Chat - Crisis Operations
+                </div>
+                <div class="chat-controls">
+                    <div class="chat-status">
+                        <div class="online-count"></div>
+                        <span id="onlineCount">12 online</span>
+                    </div>
+                    <button class="close-chat-btn" onclick="closeTeamChat()" aria-label="Close team chat">✕</button>
+                </div>
+            </div>
+
+            <!-- Chat Body -->
+            <div class="chat-body">
+                <!-- Sidebar -->
+                <div class="chat-sidebar" id="chatSidebar">
+                    <!-- Channel Header -->
+                    <div class="channel-header">
+                        <input type="text" class="channel-search" placeholder="Search channels..." aria-label="Search channels">
+                    </div>
+
+                    <!-- Channels List -->
+                    <div class="channels-list">
+                        <div class="channel-group">
+                            <div class="channel-group-title">Active Operations</div>
+                            <div class="channel-item active" onclick="switchChannel('operations')">
+                                <div class="channel-info">
+                                    <span class="channel-icon">🚨</span>
+                                    <span class="channel-name">Crisis Room</span>
+                                </div>
+                                <span class="unread-badge">3</span>
+                            </div>
+                            <div class="channel-item" onclick="switchChannel('fire-oak-st')">
+                                <div class="channel-info">
+                                    <span class="channel-icon">🔥</span>
+                                    <span class="channel-name">Oak Street Fire</span>
+                                </div>
+                                <span class="unread-badge">7</span>
+                            </div>
+                            <div class="channel-item" onclick="switchChannel('highway-mva')">
+                                <div class="channel-info">
+                                    <span class="channel-icon">🚗</span>
+                                    <span class="channel-name">Highway MVA</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="channel-group">
+                            <div class="channel-group-title">Departments</div>
+                            <div class="channel-item" onclick="switchChannel('medical')">
+                                <div class="channel-info">
+                                    <span class="channel-icon">🚑</span>
+                                    <span class="channel-name">Medical</span>
+                                </div>
+                                <span class="unread-badge">1</span>
+                            </div>
+                            <div class="channel-item" onclick="switchChannel('logistics')">
+                                <div class="channel-info">
+                                    <span class="channel-icon">📦</span>
+                                    <span class="channel-name">Logistics</span>
+                                </div>
+                            </div>
+                            <div class="channel-item" onclick="switchChannel('command')">
+                                <div class="channel-info">
+                                    <span class="channel-icon">⭐</span>
+                                    <span class="channel-name">Command Staff</span>
+                                </div>
+                            </div>
+                            <div class="channel-item" onclick="switchChannel('field-teams')">
+                                <div class="channel-info">
+                                    <span class="channel-icon">🎯</span>
+                                    <span class="channel-name">Field Teams</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Online Staff -->
+                    <div class="online-staff">
+                        <div class="staff-title">Online Staff (12)</div>
+                        <div class="staff-list">
+                            <div class="staff-member">
+                                <div class="staff-avatar online">IC</div>
+                                <div>
+                                    <div class="staff-name">Incident Commander</div>
+                                    <div class="staff-role">Command</div>
+                                </div>
+                            </div>
+                            <div class="staff-member">
+                                <div class="staff-avatar online">DS</div>
+                                <div>
+                                    <div class="staff-name">Dispatch</div>
+                                    <div class="staff-role">Communications</div>
+                                </div>
+                            </div>
+                            <div class="staff-member">
+                                <div class="staff-avatar online">ML</div>
+                                <div>
+                                    <div class="staff-name">Medical Lead</div>
+                                    <div class="staff-role">EMS</div>
+                                </div>
+                            </div>
+                            <div class="staff-member">
+                                <div class="staff-avatar online">E15</div>
+                                <div>
+                                    <div class="staff-name">Engine 15</div>
+                                    <div class="staff-role">Fire</div>
+                                </div>
+                            </div>
+                            <div class="staff-member">
+                                <div class="staff-avatar online">A4</div>
+                                <div>
+                                    <div class="staff-name">Ambulance 4</div>
+                                    <div class="staff-role">EMS</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Chat Area -->
+                <div class="chat-main">
+                    <!-- Messages Header -->
+                    <div class="chat-messages-header">
+                        <div class="current-channel">
+                            <div>
+                                <div class="current-channel-name"># Crisis Room</div>
+                                <div class="channel-description">Main operations channel for all staff</div>
+                            </div>
+                        </div>
+                        <div class="chat-actions">
+                            <button class="chat-action-btn" onclick="searchMessages()">
+                                🔍 Search
+                            </button>
+                            <button class="chat-action-btn" onclick="viewChatHistory()">
+                                📚 History
+                            </button>
+                            <button class="chat-action-btn" onclick="pinMessage()">
+                                📌 Pin
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div class="messages-container" id="messagesContainer">
+                        <!-- Pinned Messages -->
+                        <div class="pinned-messages">
+                            <div class="pinned-header">
+                                📌 Pinned Messages
+                            </div>
+                            <div class="pinned-message">
+                                <strong>Incident Commander:</strong> All units maintain radio contact every 10 minutes. Safety first.
+                            </div>
+                            <div class="pinned-message">
+                                <strong>Dispatch:</strong> Weather update: High winds expected in next 2 hours. Be advised.
+                            </div>
+                        </div>
+
+                        <!-- Recent Messages -->
+                        <div class="message urgent">
+                            <div class="message-avatar">IC</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-sender">Incident Commander</span>
+                                    <span class="message-role">Command</span>
+                                    <span class="message-timestamp">2 minutes ago</span>
+                                </div>
+                                <div class="message-text">
+                                    🚨 <strong>URGENT:</strong> Structure fire on Oak Street has spread to adjacent building. All available units respond immediately. @Medical Lead prepare for potential casualties.
+                                </div>
+                                <div class="message-attachments">
+                                    <a href="#" class="attachment" onclick="openIncidentDetails('fire-001')">🔥 Oak Street Fire Details</a>
+                                    <a href="#" class="attachment" onclick="openResourceMap()">🗺️ Resource Map</a>
+                                </div>
+                                <div class="message-actions">
+                                    <button class="message-action" onclick="acknowledgeMessage(1)">👍 Acknowledged (5)</button>
+                                    <button class="message-action" onclick="replyToMessage(1)">💬 Reply</button>
+                                    <button class="message-action" onclick="pinMessage(1)">📌 Pin</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message">
+                            <div class="message-avatar">E15</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-sender">Engine 15</span>
+                                    <span class="message-role">Fire</span>
+                                    <span class="message-timestamp">3 minutes ago</span>
+                                </div>
+                                <div class="message-text">
+                                    Acknowledged. ETA 4 minutes to Oak Street. Requesting ladder support for rescue operations.
+                                </div>
+                                <div class="message-actions">
+                                    <button class="message-action" onclick="acknowledgeMessage(2)">👍 Acknowledged (2)</button>
+                                    <button class="message-action" onclick="replyToMessage(2)">💬 Reply</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message">
+                            <div class="message-avatar">ML</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-sender">Medical Lead</span>
+                                    <span class="message-role">EMS</span>
+                                    <span class="message-timestamp">4 minutes ago</span>
+                                </div>
+                                <div class="message-text">
+                                    Two ambulances en route. Setting up triage at corner of Oak and Main. @Ambulance 4 coordinate with me on arrival.
+                                </div>
+                                <div class="message-attachments">
+                                    <a href="#" class="attachment" onclick="openPatientTracker()">🏥 Patient Tracker</a>
+                                </div>
+                                <div class="message-actions">
+                                    <button class="message-action" onclick="acknowledgeMessage(3)">👍 Acknowledged (3)</button>
+                                    <button class="message-action" onclick="replyToMessage(3)">💬 Reply</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message system">
+                            <div class="message-avatar">🧠</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-sender">AI System</span>
+                                    <span class="message-role">System</span>
+                                    <span class="message-timestamp">5 minutes ago</span>
+                                </div>
+                                <div class="message-text">
+                                    📊 AI Analysis: Fire spread probability increased to 78%. Recommend evacuating buildings within 2-block radius. Wind patterns suggest northeast spread.
+                                </div>
+                                <div class="message-attachments">
+                                    <a href="#" class="attachment" onclick="openPredictiveAnalysis()">📈 Predictive Analysis</a>
+                                    <a href="#" class="attachment" onclick="openEvacuationMap()">🗺️ Evacuation Zones</a>
+                                </div>
+                                <div class="message-actions">
+                                    <button class="message-action" onclick="acknowledgeMessage(4)">👍 Noted (8)</button>
+                                    <button class="message-action" onclick="shareAnalysis(4)">📤 Share</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message">
+                            <div class="message-avatar">DS</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-sender">Dispatch</span>
+                                    <span class="message-role">Communications</span>
+                                    <span class="message-timestamp">6 minutes ago</span>
+                                </div>
+                                <div class="message-text">
+                                    Highway 101 MVA cleared. Units returning to service. Available for Oak Street support if needed.
+                                </div>
+                                <div class="message-actions">
+                                    <button class="message-action" onclick="acknowledgeMessage(5)">👍 Copy (4)</button>
+                                    <button class="message-action" onclick="requestSupport(5)">🚒 Request Support</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                        <span id="typingUsers">Medical Lead</span> is typing
+                        <span class="typing-dots">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                        </span>
+                    </div>
+
+                    <!-- Message Input -->
+                    <div class="message-input-container">
+                        <div class="message-input-wrapper">
+                            <textarea 
+                                class="message-input" 
+                                id="messageInput" 
+                                placeholder="Type your message... Use @name to mention someone, #incident to reference cases"
+                                rows="1"
+                                onkeydown="handleMessageInput(event)"
+                                oninput="adjustTextareaHeight(this)"
+                                aria-label="Type your message"
+                            ></textarea>
+                            <div class="input-actions">
+                                <button class="input-action-btn" onclick="attachFile()" aria-label="Attach file" title="Attach file">
+                                    📎
+                                </button>
+                                <button class="input-action-btn" onclick="insertEmoji()" aria-label="Insert emoji" title="Insert emoji">
+                                    😊
+                                </button>
+                                <button class="input-action-btn" onclick="linkIncident()" aria-label="Link incident" title="Link incident">
+                                    🔗
+                                </button>
+                                <button class="input-action-btn send-btn" onclick="sendMessage()" aria-label="Send message" title="Send message">
+                                    ➤
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Critical Alert Banner (only when active) -->
     <div class="alert-banner" id="alertBanner" role="alert" aria-live="assertive">
         <div class="alert-content">
@@ -2319,6 +3289,299 @@
     </a>
 
     <script>
+        // Team Chat Management System
+        class TeamChatManager {
+            constructor() {
+                this.currentChannel = 'operations';
+                this.isOpen = false;
+                this.isMobileSidebarOpen = false;
+                this.typingUsers = new Set();
+                this.messages = [];
+                this.onlineUsers = [
+                    { id: 'ic', name: 'Incident Commander', role: 'Command', avatar: 'IC', online: true },
+                    { id: 'dispatch', name: 'Dispatch', role: 'Communications', avatar: 'DS', online: true },
+                    { id: 'medical', name: 'Medical Lead', role: 'EMS', avatar: 'ML', online: true },
+                    { id: 'engine15', name: 'Engine 15', role: 'Fire', avatar: 'E15', online: true },
+                    { id: 'ambulance4', name: 'Ambulance 4', role: 'EMS', avatar: 'A4', online: true }
+                ];
+                
+                this.channels = {
+                    operations: { name: 'Crisis Room', description: 'Main operations channel for all staff', icon: '🚨' },
+                    'fire-oak-st': { name: 'Oak Street Fire', description: 'Incident-specific coordination', icon: '🔥' },
+                    'highway-mva': { name: 'Highway MVA', description: 'Traffic incident coordination', icon: '🚗' },
+                    medical: { name: 'Medical', description: 'EMS and medical coordination', icon: '🚑' },
+                    logistics: { name: 'Logistics', description: 'Resource and supply coordination', icon: '📦' },
+                    command: { name: 'Command Staff', description: 'Command staff only', icon: '⭐' },
+                    'field-teams': { name: 'Field Teams', description: 'Field operations coordination', icon: '🎯' }
+                };
+                
+                this.initialize();
+            }
+            
+            initialize() {
+                this.setupEventListeners();
+                this.startTypingIndicator();
+                console.log('🗨️ Team Chat initialized');
+            }
+            
+            setupEventListeners() {
+                // Auto-resize textarea
+                const messageInput = document.getElementById('messageInput');
+                if (messageInput) {
+                    messageInput.addEventListener('input', (e) => {
+                        this.adjustTextareaHeight(e.target);
+                    });
+                    
+                    // Simulate typing indicator
+                    let typingTimeout;
+                    messageInput.addEventListener('input', () => {
+                        this.showTypingIndicator('You');
+                        clearTimeout(typingTimeout);
+                        typingTimeout = setTimeout(() => {
+                            this.hideTypingIndicator('You');
+                        }, 2000);
+                    });
+                }
+                
+                // Click outside to close on mobile
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && this.isMobileSidebarOpen) {
+                        const sidebar = document.getElementById('chatSidebar');
+                        if (!sidebar.contains(e.target) && !e.target.classList.contains('mobile-sidebar-toggle')) {
+                            this.toggleChatSidebar();
+                        }
+                    }
+                });
+            }
+            
+            open() {
+                this.isOpen = true;
+                const overlay = document.getElementById('teamChatOverlay');
+                overlay.classList.add('open');
+                
+                // Focus message input
+                setTimeout(() => {
+                    const messageInput = document.getElementById('messageInput');
+                    if (messageInput) messageInput.focus();
+                }, 300);
+                
+                // Scroll to bottom of messages
+                this.scrollToBottom();
+                
+                console.log('🗨️ Team Chat opened');
+            }
+            
+            close() {
+                this.isOpen = false;
+                const overlay = document.getElementById('teamChatOverlay');
+                overlay.classList.remove('open');
+                
+                // Close mobile sidebar if open
+                if (this.isMobileSidebarOpen) {
+                    this.toggleChatSidebar();
+                }
+                
+                console.log('🗨️ Team Chat closed');
+            }
+            
+            toggleChatSidebar() {
+                this.isMobileSidebarOpen = !this.isMobileSidebarOpen;
+                const sidebar = document.getElementById('chatSidebar');
+                sidebar.classList.toggle('open', this.isMobileSidebarOpen);
+            }
+            
+            switchChannel(channelId) {
+                this.currentChannel = channelId;
+                
+                // Update active channel in sidebar
+                document.querySelectorAll('.channel-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                event.target.closest('.channel-item').classList.add('active');
+                
+                // Update header
+                const channel = this.channels[channelId];
+                if (channel) {
+                    document.querySelector('.current-channel-name').textContent = `# ${channel.name}`;
+                    document.querySelector('.channel-description').textContent = channel.description;
+                }
+                
+                // Load channel messages (simulated)
+                this.loadChannelMessages(channelId);
+                
+                // Close mobile sidebar after selection
+                if (window.innerWidth <= 768 && this.isMobileSidebarOpen) {
+                    this.toggleChatSidebar();
+                }
+                
+                console.log(`🗨️ Switched to channel: ${channelId}`);
+            }
+            
+            loadChannelMessages(channelId) {
+                // Simulate loading different messages for different channels
+                // In a real implementation, this would fetch from a backend
+                console.log(`Loading messages for channel: ${channelId}`);
+            }
+            
+            sendMessage() {
+                const input = document.getElementById('messageInput');
+                const message = input.value.trim();
+                
+                if (!message) return;
+                
+                // Create message object
+                const newMessage = {
+                    id: Date.now(),
+                    sender: 'You',
+                    role: 'Operations',
+                    text: message,
+                    timestamp: new Date(),
+                    channel: this.currentChannel,
+                    attachments: []
+                };
+                
+                // Add to messages array
+                this.messages.push(newMessage);
+                
+                // Clear input
+                input.value = '';
+                this.adjustTextareaHeight(input);
+                
+                // Add message to UI (simplified)
+                this.addMessageToUI(newMessage);
+                
+                // Scroll to bottom
+                this.scrollToBottom();
+                
+                // Simulate response after delay
+                setTimeout(() => {
+                    this.simulateResponse(message);
+                }, 1000 + Math.random() * 2000);
+                
+                console.log('📤 Message sent:', message);
+            }
+            
+            addMessageToUI(message) {
+                const container = document.getElementById('messagesContainer');
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                
+                messageElement.innerHTML = `
+                    <div class="message-avatar">YOU</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-sender">${message.sender}</span>
+                            <span class="message-role">${message.role}</span>
+                            <span class="message-timestamp">Just now</span>
+                        </div>
+                        <div class="message-text">${this.formatMessageText(message.text)}</div>
+                        <div class="message-actions">
+                            <button class="message-action" onclick="acknowledgeMessage(${message.id})">👍 Acknowledged (0)</button>
+                            <button class="message-action" onclick="replyToMessage(${message.id})">💬 Reply</button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(messageElement);
+            }
+            
+            formatMessageText(text) {
+                // Format @mentions and #incident references
+                return text
+                    .replace(/@(\w+)/g, '<strong style="color: var(--primary-color);">@$1</strong>')
+                    .replace(/#(\w+)/g, '<strong style="color: var(--ai-accent);">#$1</strong>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            }
+            
+            simulateResponse(originalMessage) {
+                const responses = [
+                    { sender: 'Dispatch', role: 'Communications', avatar: 'DS', text: 'Copy that. Updating incident log.' },
+                    { sender: 'Medical Lead', role: 'EMS', avatar: 'ML', text: 'Acknowledged. Standing by for updates.' },
+                    { sender: 'Engine 15', role: 'Fire', avatar: 'E15', text: 'Received. Adjusting response accordingly.' },
+                    { sender: 'AI System', role: 'System', avatar: '🧠', text: '📊 Analysis updated based on new information.' }
+                ];
+                
+                const response = responses[Math.floor(Math.random() * responses.length)];
+                
+                const container = document.getElementById('messagesContainer');
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                
+                messageElement.innerHTML = `
+                    <div class="message-avatar">${response.avatar}</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-sender">${response.sender}</span>
+                            <span class="message-role">${response.role}</span>
+                            <span class="message-timestamp">Just now</span>
+                        </div>
+                        <div class="message-text">${response.text}</div>
+                        <div class="message-actions">
+                            <button class="message-action" onclick="acknowledgeMessage(${Date.now()})">👍 Acknowledged (0)</button>
+                            <button class="message-action" onclick="replyToMessage(${Date.now()})">💬 Reply</button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(messageElement);
+                this.scrollToBottom();
+            }
+            
+            adjustTextareaHeight(textarea) {
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+            }
+            
+            scrollToBottom() {
+                const container = document.getElementById('messagesContainer');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+            
+            showTypingIndicator(user) {
+                this.typingUsers.add(user);
+                this.updateTypingIndicator();
+            }
+            
+            hideTypingIndicator(user) {
+                this.typingUsers.delete(user);
+                this.updateTypingIndicator();
+            }
+            
+            updateTypingIndicator() {
+                const indicator = document.getElementById('typingIndicator');
+                const usersElement = document.getElementById('typingUsers');
+                
+                if (this.typingUsers.size > 0) {
+                    const users = Array.from(this.typingUsers).filter(u => u !== 'You');
+                    if (users.length > 0) {
+                        usersElement.textContent = users.length === 1 ? users[0] : `${users.length} people`;
+                        indicator.style.display = 'block';
+                    } else {
+                        indicator.style.display = 'none';
+                    }
+                } else {
+                    indicator.style.display = 'none';
+                }
+            }
+            
+            startTypingIndicator() {
+                // Simulate random typing indicators
+                setInterval(() => {
+                    if (Math.random() > 0.8 && this.isOpen) {
+                        const users = ['Medical Lead', 'Dispatch', 'Engine 15'];
+                        const randomUser = users[Math.floor(Math.random() * users.length)];
+                        this.showTypingIndicator(randomUser);
+                        
+                        setTimeout(() => {
+                            this.hideTypingIndicator(randomUser);
+                        }, 2000 + Math.random() * 3000);
+                    }
+                }, 10000);
+            }
+        }
+
         // Enhanced Notification Log Functions
         class NotificationLogManager {
             constructor() {
@@ -2646,6 +3909,11 @@
                         e.preventDefault();
                         this.quickAction();
                     }
+                    // Ctrl+T to open team chat
+                    if (e.ctrlKey && e.key === 't') {
+                        e.preventDefault();
+                        openTeamChat();
+                    }
                 });
                 
                 // Close dropdowns when clicking outside
@@ -2772,6 +4040,13 @@
             
             closeAllDropdowns() {
                 if (this.moreMenuOpen) this.toggleMoreMenu();
+                if (teamChatManager && teamChatManager.isOpen) {
+                    closeTeamChat();
+                }
+                const logOverlay = document.getElementById('notificationLogOverlay');
+                if (logOverlay && logOverlay.classList.contains('open')) {
+                    closeNotificationLog();
+                }
             }
             
             // Utility Methods
@@ -2933,6 +4208,132 @@
         // Initialize the system
         let crisisCommand;
         let notificationManager;
+        let teamChatManager;
+
+        // Global Team Chat functions
+        function openTeamChat() {
+            if (!teamChatManager) {
+                teamChatManager = new TeamChatManager();
+            }
+            teamChatManager.open();
+        }
+
+        function closeTeamChat() {
+            if (teamChatManager) {
+                teamChatManager.close();
+            }
+        }
+
+        function toggleChatSidebar() {
+            if (teamChatManager) {
+                teamChatManager.toggleChatSidebar();
+            }
+        }
+
+        function switchChannel(channelId) {
+            if (teamChatManager) {
+                teamChatManager.switchChannel(channelId);
+            }
+        }
+
+        function sendMessage() {
+            if (teamChatManager) {
+                teamChatManager.sendMessage();
+            }
+        }
+
+        function handleMessageInput(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function adjustTextareaHeight(textarea) {
+            if (teamChatManager) {
+                teamChatManager.adjustTextareaHeight(textarea);
+            }
+        }
+
+        // Chat message actions
+        function acknowledgeMessage(messageId) {
+            console.log('👍 Message acknowledged:', messageId);
+            event.target.textContent = event.target.textContent.replace(/\((\d+)\)/, (match, count) => {
+                return `(${parseInt(count) + 1})`;
+            });
+        }
+
+        function replyToMessage(messageId) {
+            const input = document.getElementById('messageInput');
+            input.focus();
+            console.log('💬 Replying to message:', messageId);
+        }
+
+        function pinMessage(messageId) {
+            console.log('📌 Message pinned:', messageId);
+        }
+
+        // Chat actions
+        function searchMessages() {
+            console.log('🔍 Searching messages');
+        }
+
+        function viewChatHistory() {
+            console.log('📚 Viewing chat history');
+        }
+
+        function attachFile() {
+            console.log('📎 Attaching file');
+        }
+
+        function insertEmoji() {
+            const input = document.getElementById('messageInput');
+            const emojis = ['👍', '🚨', '🔥', '🚑', '⚠️', '✅', '❌', '📋'];
+            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+            input.value += randomEmoji;
+            input.focus();
+        }
+
+        function linkIncident() {
+            const input = document.getElementById('messageInput');
+            input.value += '#OakStreetFire ';
+            input.focus();
+        }
+
+        function requestSupport(messageId) {
+            console.log('🚒 Requesting support for message:', messageId);
+        }
+
+        // Integration functions for chat
+        function openIncidentDetails(incidentId) {
+            console.log('🔥 Opening incident details:', incidentId);
+            crisisCommand.showNotification('📋 Opening incident details...', 'info');
+        }
+
+        function openResourceMap() {
+            console.log('🗺️ Opening resource map');
+            crisisCommand.showNotification('🗺️ Opening resource map...', 'info');
+        }
+
+        function openPatientTracker() {
+            console.log('🏥 Opening patient tracker');
+            crisisCommand.showNotification('🏥 Opening patient tracker...', 'info');
+        }
+
+        function openPredictiveAnalysis() {
+            console.log('📈 Opening predictive analysis');
+            crisisCommand.showNotification('📈 Opening predictive analysis...', 'info');
+        }
+
+        function openEvacuationMap() {
+            console.log('🗺️ Opening evacuation zones map');
+            crisisCommand.showNotification('🗺️ Opening evacuation zones...', 'info');
+        }
+
+        function shareAnalysis(messageId) {
+            console.log('📤 Sharing analysis from message:', messageId);
+            crisisCommand.showNotification('📤 Analysis shared with team', 'success');
+        }
 
         // Global notification manager functions
         function openNotificationLog() {
@@ -3037,6 +4438,14 @@
                     }
                 }
             }
+
+            // Team Chat keyboard shortcuts
+            const chatOverlay = document.getElementById('teamChatOverlay');
+            if (chatOverlay && chatOverlay.classList.contains('open')) {
+                if (e.key === 'Escape') {
+                    closeTeamChat();
+                }
+            }
         });
 
         function navigateNotifications(direction) {
@@ -3057,11 +4466,16 @@
             }
         }
 
-        // Click outside to close notification log
+        // Click outside to close overlays
         document.addEventListener('click', (e) => {
-            const overlay = document.getElementById('notificationLogOverlay');
-            if (overlay && overlay.classList.contains('open') && e.target === overlay) {
+            const notificationOverlay = document.getElementById('notificationLogOverlay');
+            if (notificationOverlay && notificationOverlay.classList.contains('open') && e.target === notificationOverlay) {
                 closeNotificationLog();
+            }
+
+            const chatOverlay = document.getElementById('teamChatOverlay');
+            if (chatOverlay && chatOverlay.classList.contains('open') && e.target === chatOverlay) {
+                closeTeamChat();
             }
         });
 
@@ -3240,7 +4654,8 @@
         
         function toggleChat() {
             crisisCommand.toggleMoreMenu();
-            crisisCommand.showNotification('💬 Team chat opened', 'info');
+            // Open team chat instead of just showing notification
+            openTeamChat();
         }
         
         function showSettings() {
@@ -3312,13 +4727,14 @@
                     <ul style="margin-left: 1rem;">
                         <li><strong>Alt+1-4:</strong> Navigate between main sections</li>
                         <li><strong>Ctrl+N:</strong> Create new incident (opens AI Command Center)</li>
+                        <li><strong>Ctrl+T:</strong> Open Team Chat</li>
                         <li><strong>Escape:</strong> Close open menus and dropdowns</li>
                     </ul>
                 </div>
                 
                 <div>
-                    <h3 style="color: var(--text-color-base); margin-bottom: 1rem;">🔔 Notifications</h3>
-                    <p style="margin-left: 1rem;">Click the notification bell to view/acknowledge alerts and access the notification log for full alert history.</p>
+                    <h3 style="color: var(--text-color-base); margin-bottom: 1rem;">🔔 Notifications & Chat</h3>
+                    <p style="margin-left: 1rem;">Click the notification bell to view/acknowledge alerts and access the notification log. Use Team Chat for real-time coordination with incident command, field teams, and support staff.</p>
                 </div>
             `;
             
@@ -3360,7 +4776,7 @@
             }, 500);
         });
         
-        console.log('🚀 Clean Crisis Command Center JavaScript loaded');
+        console.log('🚀 Clean Crisis Command Center with Team Chat loaded');
     </script>
 </body>
-</html>
+</html> 
