@@ -12118,6 +12118,36 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return c * r
 
 # ================================================================================
+# BACKGROUND AUTOMATION PROGRESS UPDATER
+# ================================================================================
+
+def update_automation_progress():
+    """Background task to update automation progress"""
+    import threading
+    import time
+    
+    def progress_updater():
+        while True:
+            try:
+                for automation_id, automation in active_automations.items():
+                    if automation['status'] == 'running' and automation['progress'] < 100:
+                        # Simulate progress
+                        automation['progress'] = min(100, automation['progress'] + 2)
+                        
+                        if automation['progress'] >= 100:
+                            automation['status'] = 'completed'
+                            automation['completed_at'] = datetime.utcnow().isoformat()
+                
+                time.sleep(5)  # Update every 5 seconds
+                
+            except Exception as e:
+                logger.error(f"Error updating automation progress: {str(e)}")
+                time.sleep(10)
+    
+    thread = threading.Thread(target=progress_updater, daemon=True)
+    thread.start()
+
+# ================================================================================
 # MAP PERFORMANCE AND OPTIMIZATION
 # ================================================================================
 
