@@ -6220,6 +6220,225 @@ async def get_report_details(
 # API ENDPOINTS - STATISTICS & ANALYTICS
 # ================================================================================
 
+@app.get("/api/patients")
+async def get_patients(
+    include_vitals: bool = Query(False, description="Include vital signs data"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    triage_color: Optional[str] = Query(None, description="Filter by triage color"),
+    limit: int = Query(100, description="Maximum number of patients to return"),
+    db: Session = Depends(get_db)
+):
+    """Get patients list with optional vitals and filtering"""
+    try:
+        # Build query
+        query = db.query(TriagePatient)
+        
+        # Apply filters
+        if status:
+            query = query.filter(TriagePatient.status == status)
+        if triage_color:
+            query = query.filter(TriagePatient.triage_color == triage_color)
+        
+        # Get patients
+        patients = query.order_by(
+            TriagePatient.triage_color.desc(),
+            TriagePatient.created_at.desc()
+        ).limit(limit).all()
+        
+        # Format patient data
+        patients_data = []
+        for patient in patients:
+            patient_data = {
+                "id": patient.id,
+                "name": patient.name,
+                "age": patient.age,
+                "gender": getattr(patient, 'gender', 'Unknown'),
+                "injury_type": patient.injury_type,
+                "consciousness": patient.consciousness,
+                "breathing": patient.breathing,
+                "severity": patient.severity,
+                "triage_color": patient.triage_color,
+                "status": patient.status,
+                "notes": patient.notes or "",
+                "assigned_doctor": getattr(patient, 'assigned_doctor', ''),
+                "assigned_nurse": getattr(patient, 'assigned_nurse', ''),
+                "bed_assignment": getattr(patient, 'bed_assignment', ''),
+                "created_at": patient.created_at.isoformat(),
+                "updated_at": getattr(patient, 'updated_at', patient.created_at).isoformat(),
+                "wait_time_minutes": calculate_wait_time(patient),
+                "priority": get_priority_from_triage_color(patient.triage_color),
+                "time_ago": calculate_time_ago(patient.created_at)
+            }
+            
+            # Include vitals if requested
+            if include_vitals:
+                patient_data["vitals"] = {
+                    "heart_rate": getattr(patient, 'heart_rate', None),
+                    "bp_systolic": getattr(patient, 'bp_systolic', None),
+                    "bp_diastolic": getattr(patient, 'bp_diastolic', None),
+                    "respiratory_rate": getattr(patient, 'respiratory_rate', None),
+                    "temperature": getattr(patient, 'temperature', None),
+                    "oxygen_sat": getattr(patient, 'oxygen_sat', None),
+                    "bp_display": f"{getattr(patient, 'bp_systolic', '') or '--'}/{getattr(patient, 'bp_diastolic', '') or '--'}" if hasattr(patient, 'bp_systolic') else "--/--"
+                }
+            
+            patients_data.append(patient_data)
+        
+        # Calculate summary statistics
+        total_patients = len(patients_data)
+        active_patients = len([p for p in patients_data if p["status"] == "active"])
+        critical_patients = len([p for p in patients_data if p["triage_color"] == "red"])
+        
+        return JSONResponse({
+            "success": True,
+            "patients": patients_data,
+            "summary": {
+                "total": total_patients,
+                "active": active_patients,
+                "critical": critical_patients,
+                "by_triage": {
+                    "red": len([p for p in patients_data if p["triage_color"] == "red"]),
+                    "yellow": len([p for p in patients_data if p["triage_color"] == "yellow"]),
+                    "green": len([p for p in patients_data if p["triage_color"] == "green"]),
+                    "black": len([p for p in patients_data if p["triage_color"] == "black"])
+                },
+                "by_status": {
+                    "active": len([p for p in patients_data if p["status"] == "active"]),
+                    "in_treatment": len([p for p in patients_data if p["status"] == "in_treatment"]),
+                    "discharged": len([p for p in patients_data if p["status"] == "discharged"])
+                }
+            },
+            "last_updated": datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting patients: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+    
+@app.get("/live-generate")
+async def live_generate_demo_patients(
+    count: int = Query(5, description="Number of demo patients to generate"),
+    db: Session = Depends(get_db)
+):
+    """Generate live demo patients for testing patient tracker"""
+    try:
+        # Demo patient templates
+        demo_templates = [
+            {
+                "name": "Demo Patient Alpha",
+                "age": 45,
+                "gender": "male",
+                "injury_type": "Chest trauma",
+                "consciousness": "verbal",
+                "breathing": "labored",
+                "severity": "critical",
+                "triage_color": "red"
+            },
+            {
+                "name": "Demo Patient Beta", 
+                "age": 32,
+                "gender": "female",
+                "injury_type": "Fracture - arm",
+                "consciousness": "alert",
+                "breathing": "normal",
+                "severity": "moderate",
+                "triage_color": "yellow"
+            },
+            {
+                "name": "Demo Patient Gamma",
+                "age": 28,
+                "gender": "male",
+                "injury_type": "Minor laceration",
+                "consciousness": "alert",
+                "breathing": "normal",
+                "severity": "mild",
+                "triage_color": "green"
+            },
+            {
+                "name": "Demo Patient Delta",
+                "age": 67,
+                "gender": "female",
+                "injury_type": "Cardiac event",
+                "consciousness": "pain",
+                "breathing": "shallow",
+                "severity": "critical",
+                "triage_color": "red"
+            },
+            {
+                "name": "Demo Patient Echo",
+                "age": 19,
+                "gender": "female",
+                "injury_type": "Sprain - ankle",
+                "consciousness": "alert",
+                "breathing": "normal",
+                "severity": "mild",
+                "triage_color": "green"
+            }
+        ]
+        
+        created_patients = []
+        
+        for i in range(min(count, len(demo_templates))):
+            template = demo_templates[i]
+            
+            # Create patient with some randomization
+            patient = TriagePatient(
+                name=f"{template['name']} {i+1}",
+                age=template['age'] + random.randint(-5, 5),
+                injury_type=template['injury_type'],
+                consciousness=template['consciousness'],
+                breathing=template['breathing'],
+                severity=template['severity'],
+                triage_color=template['triage_color'],
+                status="active",
+                notes=f"Demo patient created at {datetime.utcnow().strftime('%H:%M:%S')} for testing patient tracker functionality."
+            )
+            
+            # Add extended fields if they exist
+            if hasattr(patient, 'gender'):
+                patient.gender = template['gender']
+            if hasattr(patient, 'heart_rate'):
+                patient.heart_rate = random.randint(60, 120)
+            if hasattr(patient, 'bp_systolic'):
+                patient.bp_systolic = random.randint(90, 140)
+            if hasattr(patient, 'bp_diastolic'):
+                patient.bp_diastolic = random.randint(60, 90)
+            if hasattr(patient, 'oxygen_sat'):
+                patient.oxygen_sat = random.randint(88, 99)
+            if hasattr(patient, 'temperature'):
+                patient.temperature = round(random.uniform(97.0, 102.0), 1)
+            
+            db.add(patient)
+            created_patients.append(template['name'])
+        
+        db.commit()
+        
+        # Broadcast update
+        await broadcast_emergency_update("demo_patients_generated", {
+            "count": len(created_patients),
+            "patients": created_patients
+        })
+        
+        logger.info(f"Generated {len(created_patients)} demo patients for tracker testing")
+        
+        return JSONResponse({
+            "success": True,
+            "generated_patients": created_patients,
+            "count": len(created_patients),
+            "message": f"Generated {len(created_patients)} demo patients successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Demo patient generation error: {e}")
+        db.rollback()
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
 @app.get("/api/dashboard-stats")
 async def get_dashboard_stats(db: Session = Depends(get_db)):
     """Get comprehensive dashboard statistics"""
@@ -11914,6 +12133,16 @@ async def get_favicon():
     else:
         # Return empty response for missing favicon
         return Response(content="", media_type="image/x-icon")
+    
+@app.get("/icons/{icon_name}")
+async def get_icon(icon_name: str):
+    """Serve PWA icons"""
+    icon_path = STATIC_DIR / "icons" / icon_name
+    if icon_path.exists():
+        return FileResponse(icon_path)
+    else:
+        # Return a placeholder response for missing icons
+        return Response(content="", media_type="image/png", status_code=404)
 
 @app.get("/manifest.json")
 async def get_manifest():
