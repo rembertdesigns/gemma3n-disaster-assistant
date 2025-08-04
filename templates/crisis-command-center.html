@@ -896,6 +896,380 @@
         }
     </style>
     <style>
+        /* Enhanced Notification Log */
+        .notification-log-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .notification-log-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .notification-log-modal {
+            background: var(--bg-color-card);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification-log-overlay.open .notification-log-modal {
+            transform: translateY(0);
+        }
+
+        .notification-log-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .notification-log-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .notification-log-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-optimal);
+            animation: pulse 2s infinite;
+        }
+
+        .close-log-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 0.6rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: var(--transition-fast);
+        }
+
+        .close-log-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .notification-filters {
+            background: var(--bg-color-light);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 0.6rem 1.2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            background: white;
+            color: var(--text-color-base);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .filter-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .filter-tab:hover:not(.active) {
+            background: var(--bg-color-light);
+            border-color: var(--primary-color);
+        }
+
+        .notification-search {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 200px;
+            transition: var(--transition-fast);
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .notification-log-content {
+            height: 60vh;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .notification-log-list {
+            padding: 0;
+        }
+
+        .log-notification-item {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: var(--transition-fast);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .log-notification-item:hover {
+            background: var(--bg-color-light);
+        }
+
+        .log-notification-item.unread {
+            background: rgba(30, 64, 175, 0.05);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .log-notification-item.critical {
+            background: rgba(220, 38, 38, 0.05);
+            border-left: 4px solid var(--color-critical);
+        }
+
+        .log-notification-item.warning {
+            background: rgba(245, 158, 11, 0.05);
+            border-left: 4px solid var(--color-warning);
+        }
+
+        .notification-type-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            margin-top: 0.25rem;
+        }
+
+        .notification-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notification-meta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+            gap: 1rem;
+        }
+
+        .notification-category-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-critical {
+            background: var(--color-critical);
+            color: white;
+        }
+
+        .badge-operational {
+            background: var(--color-warning);
+            color: white;
+        }
+
+        .badge-communication {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .badge-system {
+            background: var(--text-color-light);
+            color: white;
+        }
+
+        .notification-timestamp {
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+            flex-shrink: 0;
+        }
+
+        .notification-log-subject {
+            font-weight: 700;
+            color: var(--text-color-base);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .notification-log-message {
+            color: var(--text-color-light);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: white;
+            color: var(--text-color-base);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .action-btn.acknowledge {
+            background: var(--color-optimal);
+            color: white;
+            border-color: var(--color-optimal);
+        }
+
+        .action-btn.acknowledge:hover {
+            background: #15803d;
+        }
+
+        .unread-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            position: absolute;
+            left: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .log-notification-item.critical .unread-indicator {
+            background: var(--color-critical);
+        }
+
+        .log-notification-item.warning .unread-indicator {
+            background: var(--color-warning);
+        }
+
+        .archived-section {
+            border-top: 2px solid var(--border-color);
+            background: var(--bg-color-light);
+        }
+
+        .archived-header {
+            padding: 1rem 2rem;
+            background: var(--bg-color-card);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition-fast);
+        }
+
+        .archived-header:hover {
+            background: var(--bg-color-light);
+        }
+
+        .archived-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .archived-content.expanded {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .no-notifications {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-color-light);
+        }
+
+        .no-notifications-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+    <style>
         /* Floating Action Button */
         .fab {
             position: fixed;
@@ -998,90 +1372,6 @@
             gap: 0.5rem;
             flex-wrap: wrap;
         }
-        /* Notification Dropdown */
-        .notification-dropdown {
-            position: fixed;
-            top: 70px;
-            right: 1.5rem;
-            width: 350px;
-            max-height: 500px;
-            background: var(--bg-color-card);
-            border-radius: 12px;
-            box-shadow: var(--shadow-xl);
-            z-index: 1001;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: var(--transition-smooth);
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-        }
-        .notification-dropdown.open {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        .notification-header {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--bg-color-light);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .notification-title {
-            font-weight: 700;
-            color: var(--text-color-base);
-        }
-        .notification-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .notification-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: var(--transition-fast);
-        }
-        .notification-item:hover {
-            background: var(--bg-color-light);
-        }
-        .notification-item:last-child {
-            border-bottom: none;
-        }
-        .notification-item.unread {
-            background: rgba(30, 64, 175, 0.05);
-            border-left: 3px solid var(--primary-color);
-        }
-        .notification-item.critical {
-            background: rgba(220, 38, 38, 0.05);
-            border-left: 3px solid var(--color-critical);
-        }
-        .notification-content {
-            display: flex;
-            gap: 0.75rem;
-        }
-        .notification-icon {
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-        .notification-text {
-            flex: 1;
-        }
-        .notification-subject {
-            font-weight: 600;
-            color: var(--text-color-base);
-            margin-bottom: 0.25rem;
-        }
-        .notification-message {
-            font-size: 0.9rem;
-            color: var(--text-color-light);
-            margin-bottom: 0.5rem;
-        }
-        .notification-time {
-            font-size: 0.8rem;
-            color: var(--text-color-light);
-        }
     </style>
     <style>
         /* Responsive Design */
@@ -1096,9 +1386,8 @@
             .insights-grid {
                 grid-template-columns: 1fr;
             }
-            .notification-dropdown {
+            .notification-log-modal {
                 width: calc(100vw - 2rem);
-                right: 1rem;
             }
         }
         @media (max-width: 768px) {
@@ -1169,6 +1458,49 @@
             .insight-actions .btn {
                 width: 100%;
                 justify-content: center;
+            }
+            .notification-log-modal {
+                width: 95%;
+                max-height: 95vh;
+            }
+            
+            .notification-log-header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            
+            .notification-filters {
+                padding: 1rem;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            .filter-tabs {
+                justify-content: center;
+            }
+            
+            .notification-search {
+                width: 100%;
+            }
+            
+            .search-input {
+                flex: 1;
+            }
+            
+            .log-notification-item {
+                padding: 1rem;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+            }
+            
+            .notification-meta-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
             }
         }
         @media (max-width: 480px) {
@@ -1311,7 +1643,7 @@
             .main-header,
             .alert-banner,
             .fab,
-            .notification-dropdown,
+            .notification-log-overlay,
             .more-dropdown {
                 display: none !important;
             }
@@ -1402,566 +1734,987 @@
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
     </div>
-<!-- Clean Compact Header -->
-<header class="main-header">
-    <div class="header-content">
-        <div class="header-left">
-            <a href="crisis-command-center.html" class="logo" role="button" tabindex="0" aria-label="Crisis Command Center - Return to main dashboard">
-                <span class="logo-icon">🧠</span>
-                <span class="logo-text">Crisis Command</span>
-            </a>
-            
-            <nav class="main-nav" role="navigation" aria-label="Main navigation">
-                <a href="ai-command-center.html" class="nav-item active" aria-label="AI Command Center - AI command and incident creation">Command</a>
-                <a href="context-intelligence-dashboard" class="nav-item" aria-label="Context Intelligence Dashboard - Deep analytics/tracing">Intelligence</a>
-                <a href="predictive-analytics-dashboard" class="nav-item" aria-label="Predictive Analysis - Forecasts, risk modeling, surge planning">Analysis</a>
-                <a href="map-reports" class="nav-item" aria-label="Live Emergency Map - Geospatial resource/incident view">Map</a>
-            </nav>
-            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle mobile menu">
-                <span>☰</span>
-            </button>
-        </div>
-        
-        <div class="header-right">
-            <div class="status-pill" role="status" aria-label="System status">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Online</span>
-            </div>
-            
-            <div class="notification-bell" onclick="openNotificationLog()" role="button" tabindex="0" aria-label="Notifications - View/acknowledge alerts">
-                <span class="notification-icon">🔔</span>
-                <div class="notification-count" id="notificationCount">3</div>
-            </div>
-            
-            <div class="more-menu">
-                <button class="more-btn" onclick="toggleMoreMenu()" aria-label="More options menu">⋯</button>
-                <div class="more-dropdown" id="moreDropdown" role="menu">
-                    <a href="triage-dashboard" class="dropdown-item" role="menuitem">
-                        <span class="dropdown-icon">🚨</span>
-                        Active Incidents
-                    </a>
-                    <a href="real-time-resource-optimizer" class="dropdown-item" role="menuitem">
-                        <span class="dropdown-icon">🚒</span>
-                        Resource Management
-                    </a>
-                    <a href="analytics-dashboard" class="dropdown-item" role="menuitem">
-                        <span class="dropdown-icon">📊</span>
-                        Analytics
-                    </a>
-                    <a href="/report-archive" class="dropdown-item" role="menuitem">
-                        <span class="dropdown-icon">📚</span>
-                        Archive
-                    </a>
-                    <a href="#" class="dropdown-item" onclick="openNotificationLog()" role="menuitem">
-                        <span class="dropdown-icon">🔔</span>
-                        Notification Log
-                    </a>
-                    <a href="patient-tracker" class="dropdown-item" role="menuitem">
-                        <span class="dropdown-icon">📋</span>
-                        Patient Tracker
-                    </a>
-                    <a href="#" class="dropdown-item" onclick="showTemplates()" role="menuitem">
-                        <span class="dropdown-icon">📋</span>
-                        Templates
-                    </a>
-                    <a href="#" class="dropdown-item" onclick="exportReport()" role="menuitem">
-                        <span class="dropdown-icon">📄</span>
-                        Export Report
-                    </a>
-                    <a href="#" class="dropdown-item" onclick="toggleChat()" role="menuitem">
-                        <span class="dropdown-icon">💬</span>
-                        Team Chat
-                    </a>
-                    <a href="#" class="dropdown-item" onclick="showSettings()" role="menuitem">
-                        <span class="dropdown-icon">⚙️</span>
-                        Settings
-                    </a>
-                    <a href="#" class="dropdown-item" onclick="showHelp()" role="menuitem">
-                        <span class="dropdown-icon">❓</span>
-                        Help
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</header>
-<!-- Notification Dropdown -->
-<div class="notification-dropdown" id="notificationDropdown" role="dialog" aria-labelledby="notificationTitle">
-    <div class="notification-header">
-        <h3 class="notification-title" id="notificationTitle">🔔 Recent Alerts</h3>
-        <div style="display: flex; gap: 0.5rem;">
-            <button onclick="openNotificationLog()" aria-label="View all notifications" style="background: var(--primary-color); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">View All</button>
-            <button onclick="toggleNotifications()" aria-label="Close notifications" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">✕</button>
-        </div>
-    </div>
-    <div class="notification-list" id="notificationList">
-        <div class="notification-item critical unread" onclick="openIncidentDetails(1)">
-            <div class="notification-content">
-                <span class="notification-icon">⚠️</span>
-                <div class="notification-text">
-                    <div class="notification-subject">Structure Fire Escalation</div>
-                    <div class="notification-message">Oak Street fire spreading to adjacent buildings. Immediate response required.</div>
-                    <div class="notification-time">2 minutes ago</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="notification-item unread" onclick="openIncidentDetails(2)">
-            <div class="notification-content">
-                <span class="notification-icon">🚗</span>
-                <div class="notification-text">
-                    <div class="notification-subject">Traffic Incident Alert</div>
-                    <div class="notification-message">Multi-vehicle accident on Highway 101. Traffic backup extending 2+ miles.</div>
-                    <div class="notification-time">5 minutes ago</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="notification-item" onclick="viewNotification(3)">
-            <div class="notification-content">
-                <span class="notification-icon">🧠</span>
-                <div class="notification-text">
-                    <div class="notification-subject">AI Analysis Complete</div>
-                    <div class="notification-message">Risk assessment updated. New fire risk zones identified in downtown area.</div>
-                    <div class="notification-time">8 minutes ago</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Critical Alert Banner (only when active) -->
-<div class="alert-banner" id="alertBanner" role="alert" aria-live="assertive">
-    <div class="alert-content">
-        <span class="alert-icon">⚠️</span>
-        <span class="alert-text" id="alertText">ALERT LEVEL 3 - Structure fire expanding to adjacent buildings</span>
+    <!-- Clean Compact Header -->
+    <header class="main-header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="crisis-command-center" class="logo" role="button" tabindex="0" aria-label="Crisis Command Center - Return to main dashboard">
+                    <span class="logo-icon">🧠</span>
+                    <span class="logo-text">Crisis Command</span>
+                </a>
+                
+                <nav class="main-nav" role="navigation" aria-label="Main navigation">
+                    <a href="ai-command-center.html" class="nav-item active" aria-label="AI Command Center - AI command and incident creation">Command</a>
+                    <a href="context-intelligence-dashboard" class="nav-item" aria-label="Context Intelligence Dashboard - Deep analytics/tracing">Intelligence</a>
+                    <a href="predictive-analytics-dashboard" class="nav-item" aria-label="Predictive Analysis - Forecasts, risk modeling, surge planning">Analysis</a>
+                    <a href="map-reports" class="nav-item" aria-label="Live Emergency Map - Geospatial resource/incident view">Map</a>
+                </nav>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle mobile menu">
+                    <span>☰</span>
+                </button>
+            </div>
+            
+            <div class="header-right">
+                <div class="status-pill" role="status" aria-label="System status">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Online</span>
+                </div>
+                
+                <div class="notification-bell" onclick="openNotificationLog()" role="button" tabindex="0" aria-label="Notifications - View/acknowledge alerts">
+                    <span class="notification-icon">🔔</span>
+                    <div class="notification-count" id="notificationCount">3</div>
+                </div>
+                
+                <div class="more-menu">
+                    <button class="more-btn" onclick="toggleMoreMenu()" aria-label="More options menu">⋯</button>
+                    <div class="more-dropdown" id="moreDropdown" role="menu">
+                        <a href="triage-dashboard" class="dropdown-item" role="menuitem">
+                            <span class="dropdown-icon">🚨</span>
+                            Active Incidents
+                        </a>
+                        <a href="real-time-resource-optimizer" class="dropdown-item" role="menuitem">
+                            <span class="dropdown-icon">🚒</span>
+                            Resource Management
+                        </a>
+                        <a href="analytics-dashboard" class="dropdown-item" role="menuitem">
+                            <span class="dropdown-icon">📊</span>
+                            Analytics
+                        </a>
+                        <a href="/report-archive" class="dropdown-item" role="menuitem">
+                            <span class="dropdown-icon">📚</span>
+                            Archive
+                        </a>
+                        <a href="#" class="dropdown-item" onclick="openNotificationLog()" role="menuitem">
+                            <span class="dropdown-icon">🔔</span>
+                            Notification Log
+                        </a>
+                        <a href="patient-tracker" class="dropdown-item" role="menuitem">
+                            <span class="dropdown-icon">📋</span>
+                            Patient Tracker
+                        </a>
+                        <a href="#" class="dropdown-item" onclick="showTemplates()" role="menuitem">
+                            <span class="dropdown-icon">📋</span>
+                            Templates
+                        </a>
+                        <a href="#" class="dropdown-item" onclick="exportReport()" role="menuitem">
+                            <span class="dropdown-icon">📄</span>
+                            Export Report
+                        </a>
+                        <a href="#" class="dropdown-item" onclick="toggleChat()" role="menuitem">
+                            <span class="dropdown-icon">💬</span>
+                            Team Chat
+                        </a>
+                        <a href="#" class="dropdown-item" onclick="showSettings()" role="menuitem">
+                            <span class="dropdown-icon">⚙️</span>
+                            Settings
+                        </a>
+                        <a href="#" class="dropdown-item" onclick="showHelp()" role="menuitem">
+                            <span class="dropdown-icon">❓</span>
+                            Help
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Enhanced Notification Log Modal -->
+    <div class="notification-log-overlay" id="notificationLogOverlay" role="dialog" aria-labelledby="notificationLogTitle">
+        <div class="notification-log-modal">
+            <!-- Header -->
+            <div class="notification-log-header">
+                <div class="notification-log-title" id="notificationLogTitle">
+                    🔔 Notification Log
+                </div>
+                <div class="notification-log-controls">
+                    <div class="live-indicator">
+                        <div class="live-dot"></div>
+                        <span>Live</span>
+                    </div>
+                    <button class="close-log-btn" onclick="closeNotificationLog()" aria-label="Close notification log">✕</button>
+                </div>
+            </div>
+            
+            <!-- Filters and Search -->
+            <div class="notification-filters">
+                <div class="filter-tabs" role="tablist">
+                    <button class="filter-tab active" data-filter="all" role="tab" onclick="filterNotifications('all')">All</button>
+                    <button class="filter-tab" data-filter="critical" role="tab" onclick="filterNotifications('critical')">Critical</button>
+                    <button class="filter-tab" data-filter="operational" role="tab" onclick="filterNotifications('operational')">Operational</button>
+                    <button class="filter-tab" data-filter="communication" role="tab" onclick="filterNotifications('communication')">Communication</button>
+                    <button class="filter-tab" data-filter="resolved" role="tab" onclick="filterNotifications('resolved')">Resolved</button>
+                </div>
+                
+                <div class="notification-search">
+                    <input type="text" class="search-input" placeholder="Search notifications..." id="notificationSearchInput" oninput="searchNotifications()" aria-label="Search notifications">
+                    <div class="bulk-actions">
+                        <button class="btn btn-sm btn-outline" onclick="markAllRead()" aria-label="Mark all as read">Mark All Read</button>
+                        <button class="btn btn-sm btn-outline" onclick="acknowledgeAll()" aria-label="Acknowledge all">Acknowledge All</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notification Content -->
+            <div class="notification-log-content">
+                <div class="notification-log-list" id="notificationLogList" role="list">
+                    <!-- Recent Active Alerts -->
+                    <div class="log-notification-item critical unread" data-category="critical" data-id="1" onclick="selectNotification(1)">
+                        <div class="unread-indicator"></div>
+                        <div class="notification-type-icon">⚠️</div>
+                        <div class="notification-details">
+                            <div class="notification-meta-header">
+                                <div class="notification-category-badge badge-critical">Critical Incident</div>
+                                <div class="notification-timestamp">4 minutes ago</div>
+                            </div>
+                            <div class="notification-log-subject">Structure Fire - Oak Street, Expansion Detected</div>
+                            <div class="notification-log-message">
+                                Multi-story residential building fire has spread to adjacent structures. 15+ occupants potentially affected. Immediate escalation required.
+                            </div>
+                            <div class="notification-actions">
+                                <button class="action-btn acknowledge" onclick="acknowledgeNotification(1, event)">✓ Acknowledge</button>
+                                <a href="patient_tracker.html?incident=fire-001" class="action-btn" onclick="event.stopPropagation()">📋 View Details</a>
+                                <button class="action-btn" onclick="escalateNotification(1, event)">🚨 Escalate</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="log-notification-item operational unread" data-category="operational" data-id="2" onclick="selectNotification(2)">
+                        <div class="unread-indicator"></div>
+                        <div class="notification-type-icon">🚨</div>
+                        <div class="notification-details">
+                            <div class="notification-meta-header">
+                                <div class="notification-category-badge badge-operational">New Patient</div>
+                                <div class="notification-timestamp">7 minutes ago</div>
+                            </div>
+                            <div class="notification-log-subject">MVA Highway 101 - Multiple Casualties</div>
+                            <div class="notification-log-message">
+                                Multi-vehicle accident with 3+ vehicles involved. Traffic backup extending 2.1 miles. Potential injuries reported.
+                            </div>
+                            <div class="notification-actions">
+                                <button class="action-btn acknowledge" onclick="acknowledgeNotification(2, event)">✓ Acknowledge</button>
+                                <a href="patient_tracker.html?incident=mva-002" class="action-btn" onclick="event.stopPropagation()">📋 View Details</a>
+                                <button class="action-btn" onclick="dispatchResources(2, event)">🚒 Dispatch</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="log-notification-item communication" data-category="communication" data-id="3" onclick="selectNotification(3)">
+                        <div class="notification-type-icon">🧠</div>
+                        <div class="notification-details">
+                            <div class="notification-meta-header">
+                                <div class="notification-category-badge badge-communication">System Update</div>
+                                <div class="notification-timestamp">12 minutes ago</div>
+                            </div>
+                            <div class="notification-log-subject">AI Analysis Complete - Risk Assessment Updated</div>
+                            <div class="notification-log-message">
+                                Machine learning models have identified new fire risk zones in downtown area. Predictive accuracy: 94.2%
+                            </div>
+                            <div class="notification-actions">
+                                <a href="predictive-analytics-dashboard.html" class="action-btn" onclick="event.stopPropagation()">📊 View Analysis</a>
+                                <button class="action-btn" onclick="shareAnalysis(3, event)">📤 Share</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="log-notification-item operational" data-category="operational" data-id="4" onclick="selectNotification(4)">
+                        <div class="notification-type-icon">⏲️</div>
+                        <div class="notification-details">
+                            <div class="notification-meta-header">
+                                <div class="notification-category-badge badge-operational">Task Reminder</div>
+                                <div class="notification-timestamp">25 minutes ago</div>
+                            </div>
+                            <div class="notification-log-subject">Shift Change Protocol Reminder</div>
+                            <div class="notification-log-message">
+                                Evening shift transition begins in 30 minutes. Please complete handoff documentation.
+                            </div>
+                            <div class="notification-actions">
+                                <button class="action-btn acknowledge" onclick="acknowledgeNotification(4, event)">✓ Acknowledge</button>
+                                <a href="analytics_dashboard.html" class="action-btn" onclick="event.stopPropagation()">📋 View Tasks</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="log-notification-item communication" data-category="communication" data-id="5" onclick="selectNotification(5)">
+                        <div class="notification-type-icon">💬</div>
+                        <div class="notification-details">
+                            <div class="notification-meta-header">
+                                <div class="notification-category-badge badge-communication">Communication</div>
+                                <div class="notification-timestamp">1 hour ago</div>
+                            </div>
+                            <div class="notification-log-subject">Team Message - Resource Allocation Update</div>
+                            <div class="notification-log-message">
+                                Command has updated resource allocation protocols for high-priority incidents effective immediately.
+                            </div>
+                            <div class="notification-actions">
+                                <a href="real-time-resource-optimizer.html" class="action-btn" onclick="event.stopPropagation()">🚒 View Resources</a>
+                                <button class="action-btn" onclick="viewProtocol(5, event)">📖 View Protocol</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Archived Section -->
+                <div class="archived-section">
+                    <div class="archived-header" onclick="toggleArchivedNotifications()">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span id="archivedToggleIcon">▶</span>
+                            <span>Older Notifications (24 total)</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-color-light);">Click to expand</div>
+                    </div>
+                    <div class="archived-content" id="archivedContent">
+                        <div class="log-notification-item resolved" data-category="resolved" data-id="6">
+                            <div class="notification-type-icon">✅</div>
+                            <div class="notification-details">
+                                <div class="notification-meta-header">
+                                    <div class="notification-category-badge badge-system">Resolved</div>
+                                    <div class="notification-timestamp">Yesterday 14:32</div>
+                                </div>
+                                <div class="notification-log-subject">Medical Emergency - Main Street Resolved</div>
+                                <div class="notification-log-message">Patient successfully transported to hospital. All units returned to service.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="log-notification-item resolved" data-category="resolved" data-id="7">
+                            <div class="notification-type-icon">🛠️</div>
+                            <div class="notification-details">
+                                <div class="notification-meta-header">
+                                    <div class="notification-category-badge badge-system">System</div>
+                                    <div class="notification-timestamp">Yesterday 02:15</div>
+                                </div>
+                                <div class="notification-log-subject">Scheduled Maintenance Completed</div>
+                                <div class="notification-log-message">System maintenance window completed successfully. All services restored.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="alert-actions">
-        <div class="alert-time" id="alertTime">Updated 23s ago</div>
-        <button class="alert-close" onclick="dismissAlert()" aria-label="Dismiss alert">✕</button>
-    </div>
-</div>
-<!-- Clean KPI Cards Row -->
-<div class="kpi-row">
-    <div class="kpi-container">
-        <div class="kpi-card ai-enhanced" onclick="showDetails('reports')" role="button" tabindex="0" aria-label="AI Processed Reports: 127, up 15 this hour">
-            <div class="kpi-value ai-value" id="kpiReports">127</div>
-            <div class="kpi-label">AI Processed</div>
-            <div class="kpi-trend trend-up">↗ +15 this hour</div>
-            <div class="kpi-update-time">
-                <div class="update-dot"></div>
-                <span>Updated 12s ago</span>
-            </div>
+
+    <!-- Critical Alert Banner (only when active) -->
+    <div class="alert-banner" id="alertBanner" role="alert" aria-live="assertive">
+        <div class="alert-content">
+            <span class="alert-icon">⚠️</span>
+            <span class="alert-text" id="alertText">ALERT LEVEL 3 - Structure fire expanding to adjacent buildings</span>
         </div>
-        
-        <div class="kpi-card critical" onclick="showDetails('incidents')" role="button" tabindex="0" aria-label="Active Incidents: 7, down 2 today">
-            <div class="kpi-value critical-value" id="kpiIncidents">7</div>
-            <div class="kpi-label">Active Incidents</div>
-            <div class="kpi-trend trend-down">↘ -2 today</div>
-            <div class="kpi-update-time">
-                <div class="update-dot"></div>
-                <span>Updated 5s ago</span>
-            </div>
-        </div>
-        
-        <div class="kpi-card ai-enhanced" onclick="showDetails('risk')" role="button" tabindex="0" aria-label="AI Risk Score: 7.2 out of 10, stable">
-            <div class="kpi-value ai-value" id="kpiRisk">7.2</div>
-            <div class="kpi-label">AI Risk Score</div>
-            <div class="kpi-trend trend-stable">→ Stable</div>
-            <div class="kpi-update-time">
-                <div class="update-dot"></div>
-                <span>Updated 3s ago</span>
-            </div>
-        </div>
-        
-        <div class="kpi-card" onclick="showDetails('resources')" role="button" tabindex="0" aria-label="Units Deployed: 45, optimal level">
-            <div class="kpi-value" id="kpiResources">45</div>
-            <div class="kpi-label">Units Deployed</div>
-            <div class="kpi-trend trend-stable">→ Optimal</div>
-            <div class="kpi-update-time">
-                <div class="update-dot"></div>
-                <span>Updated 18s ago</span>
-            </div>
+        <div class="alert-actions">
+            <div class="alert-time" id="alertTime">Updated 23s ago</div>
+            <button class="alert-close" onclick="dismissAlert()" aria-label="Dismiss alert">✕</button>
         </div>
     </div>
-</div>
-<!-- Main Content -->
-<main class="main-content" role="main">
-    <!-- Command Section -->
-    <div id="command-section" class="section-content active">
-        <div class="content-grid">
-            <!-- AI-Enhanced Situation Map -->
+
+    <!-- Clean KPI Cards Row -->
+    <div class="kpi-row">
+        <div class="kpi-container">
+            <div class="kpi-card ai-enhanced" onclick="showDetails('reports')" role="button" tabindex="0" aria-label="AI Processed Reports: 127, up 15 this hour">
+                <div class="kpi-value ai-value" id="kpiReports">127</div>
+                <div class="kpi-label">AI Processed</div>
+                <div class="kpi-trend trend-up">↗ +15 this hour</div>
+                <div class="kpi-update-time">
+                    <div class="update-dot"></div>
+                    <span>Updated 12s ago</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card critical" onclick="showDetails('incidents')" role="button" tabindex="0" aria-label="Active Incidents: 7, down 2 today">
+                <div class="kpi-value critical-value" id="kpiIncidents">7</div>
+                <div class="kpi-label">Active Incidents</div>
+                <div class="kpi-trend trend-down">↘ -2 today</div>
+                <div class="kpi-update-time">
+                    <div class="update-dot"></div>
+                    <span>Updated 5s ago</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card ai-enhanced" onclick="showDetails('risk')" role="button" tabindex="0" aria-label="AI Risk Score: 7.2 out of 10, stable">
+                <div class="kpi-value ai-value" id="kpiRisk">7.2</div>
+                <div class="kpi-label">AI Risk Score</div>
+                <div class="kpi-trend trend-stable">→ Stable</div>
+                <div class="kpi-update-time">
+                    <div class="update-dot"></div>
+                    <span>Updated 3s ago</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card" onclick="showDetails('resources')" role="button" tabindex="0" aria-label="Units Deployed: 45, optimal level">
+                <div class="kpi-value" id="kpiResources">45</div>
+                <div class="kpi-label">Units Deployed</div>
+                <div class="kpi-trend trend-stable">→ Optimal</div>
+                <div class="kpi-update-time">
+                    <div class="update-dot"></div>
+                    <span>Updated 18s ago</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" role="main">
+        <!-- Command Section -->
+        <div id="command-section" class="section-content active">
+            <div class="content-grid">
+                <!-- AI-Enhanced Situation Map -->
+                <div class="panel ai-enhanced">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span class="panel-title-icon">🗺️</span>
+                            AI-Enhanced Situation Map
+                        </div>
+                        <div class="panel-actions">
+                            <button class="btn btn-ai" onclick="runAIAnalysis()" aria-label="Run AI map analysis">
+                                🧠 AI Analysis
+                            </button>
+                            <a href="map-reports" class="btn btn-primary" aria-label="View full interactive map">
+                                Full Map
+                            </a>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <a href="map-reports" class="map-placeholder" role="button" tabindex="0" aria-label="Interactive AI-Enhanced Map - Click to open full view">
+                            <div class="map-icon">🗺️</div>
+                            <div class="map-title">Interactive AI-Enhanced Map</div>
+                            <div class="map-subtitle">Real-time incidents & predictive zones</div>
+                            <div style="margin-top: 1rem;">
+                                <div class="status-indicator online">
+                                    <div class="status-dot-inline animated"></div>
+                                    Live Data Active
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- AI-Prioritized Incidents -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span class="panel-title-icon">🚨</span>
+                            Priority Incidents
+                        </div>
+                        <div class="panel-actions">
+                            <button class="btn btn-ai" onclick="reprioritize()" aria-label="Re-prioritize incidents using AI">
+                                🎯 Re-prioritize
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="incident-list" role="list" aria-label="Priority incidents">
+                            <a href="patient_tracker.html?incident=fire-001" class="incident-item critical" role="listitem" tabindex="0" aria-label="Critical incident: Structure Fire on Oak Street">
+                                <div class="incident-header">
+                                    <div class="incident-title">
+                                        <span class="incident-icon">🔥</span>
+                                        Structure Fire - Oak Street
+                                    </div>
+                                    <div class="incident-priority priority-critical">Critical</div>
+                                </div>
+                                <div class="incident-description">
+                                    Multi-story residential. AI detected structural damage, 15+ occupants.
+                                </div>
+                                <div class="incident-meta">
+                                    <span class="incident-priority-score">AI Priority: 9.7/10</span>
+                                    <div class="incident-time">
+                                        <div class="time-dot"></div>
+                                        <span>Updated 8s ago</span>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="patient_tracker.html?incident=mva-002" class="incident-item high" role="listitem" tabindex="0" aria-label="High priority incident: Vehicle accident on Highway 101">
+                                <div class="incident-header">
+                                    <div class="incident-title">
+                                        <span class="incident-icon">🚗</span>
+                                        MVA Highway 101
+                                    </div>
+                                    <div class="incident-priority priority-high">High</div>
+                                </div>
+                                <div class="incident-description">
+                                    Multi-vehicle accident. 3 vehicles, likely injuries, 2.1mi backup.
+                                </div>
+                                <div class="incident-meta">
+                                    <span class="incident-priority-score">AI Priority: 7.3/10</span>
+                                    <div class="incident-time">
+                                        <div class="time-dot"></div>
+                                        <span>Updated 32s ago</span>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="patient_tracker.html?incident=med-003" class="incident-item normal" role="listitem" tabindex="0" aria-label="Normal priority incident: Medical emergency on Main Street">
+                                <div class="incident-header">
+                                    <div class="incident-title">
+                                        <span class="incident-icon">🚑</span>
+                                        Medical Emergency - Main St
+                                    </div>
+                                    <div class="incident-priority priority-normal">Normal</div>
+                                </div>
+                                <div class="incident-description">
+                                    Elderly patient with chest pain. Stable vitals, no immediate danger.
+                                </div>
+                                <div class="incident-meta">
+                                    <span class="incident-priority-score">AI Priority: 4.2/10</span>
+                                    <div class="incident-time">
+                                        <div class="time-dot"></div>
+                                        <span>Updated 2m ago</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div style="margin-top: 1rem; text-align: center;">
+                            <a href="triage-dashboard" class="btn btn-outline" aria-label="View all active incidents">
+                                📋 View All Incidents
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Intelligence Section -->
+        <div id="intelligence-section" class="section-content">
+            <div class="panel ai-enhanced">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-title-icon">🔮</span>
+                        Intelligence Dashboard
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-ai" onclick="runDeepAnalysis()" aria-label="Run deep intelligence analysis">
+                            🧠 Deep Analysis
+                        </button>
+                        <a href="context-intelligence-dashboard.html" class="btn btn-primary" aria-label="Open full intelligence dashboard">
+                            Full Dashboard
+                        </a>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div style="text-align: center; padding: 3rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔮</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">AI Intelligence Center</div>
+                        <div style="color: var(--text-color-light); margin-bottom: 2rem;">Advanced pattern recognition and threat analysis</div>
+                        <div class="insights-grid">
+                            <div class="insight-card info">
+                                <div class="insight-header">
+                                    <div class="insight-title">📊 Pattern Analysis</div>
+                                    <div class="confidence-badge medium">87% Complete</div>
+                                </div>
+                                <div class="insight-description">
+                                    Analyzing historical incident patterns to predict future hotspots.
+                                </div>
+                            </div>
+                            <div class="insight-card warning">
+                                <div class="insight-header">
+                                    <div class="insight-title">🌡️ Environmental Monitoring</div>
+                                    <div class="confidence-badge high">Real-time</div>
+                                </div>
+                                <div class="insight-description">
+                                    Weather conditions indicate increased fire risk in zones 3-7.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div id="analysis-section" class="section-content">
+            <div class="panel ai-enhanced">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="panel-title-icon">📊</span>
+                        Predictive Analysis
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-ai" onclick="generateForecast()" aria-label="Generate predictive forecast">
+                            🔮 Generate Forecast
+                        </button>
+                        <a href="predictive-analytics-dashboard.html" class="btn btn-primary" aria-label="Open full analytics dashboard">
+                            Full Analytics
+                        </a>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div style="text-align: center; padding: 3rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">Predictive Analytics Engine</div>
+                        <div style="color: var(--text-color-light); margin-bottom: 2rem;">Machine learning models for incident forecasting</div>
+                        <div class="content-grid">
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <div class="panel-title">🔥 Fire Risk Model</div>
+                                </div>
+                                <div style="padding: 1rem; text-align: center;">
+                                    <div style="font-size: 2rem; color: var(--color-warning); margin-bottom: 0.5rem;">High</div>
+                                    <div style="font-size: 0.9rem; color: var(--text-color-light);">Next 6 hours</div>
+                                </div>
+                            </div>
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <div class="panel-title">🚗 Traffic Incidents</div>
+                                </div>
+                                <div style="padding: 1rem; text-align: center;">
+                                    <div style="font-size: 2rem; color: var(--color-optimal); margin-bottom: 0.5rem;">Low</div>
+                                    <div style="font-size: 0.9rem; color: var(--text-color-light);">Next 4 hours</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <div id="map-section" class="section-content">
             <div class="panel ai-enhanced">
                 <div class="panel-header">
                     <div class="panel-title">
                         <span class="panel-title-icon">🗺️</span>
-                        AI-Enhanced Situation Map
+                        Live Emergency Map
                     </div>
                     <div class="panel-actions">
                         <button class="btn btn-ai" onclick="runAIAnalysis()" aria-label="Run AI map analysis">
                             🧠 AI Analysis
                         </button>
-                        <a href="map-reports" class="btn btn-primary" aria-label="View full interactive map">
-                            Full Map
+                        <button class="btn btn-primary" onclick="toggleMapLayers()" aria-label="Toggle map layers">
+                            🔄 Layers
+                        </button>
+                        <a href="map_reports" class="btn btn-primary" aria-label="Open full map interface">
+                            Full Interface
                         </a>
                     </div>
                 </div>
                 <div class="panel-content">
-                    <a href="map-reports" class="map-placeholder" role="button" tabindex="0" aria-label="Interactive AI-Enhanced Map - Click to open full view">
-                        <div class="map-icon">🗺️</div>
-                        <div class="map-title">Interactive AI-Enhanced Map</div>
-                        <div class="map-subtitle">Real-time incidents & predictive zones</div>
-                        <div style="margin-top: 1rem;">
+                    <div style="height: 500px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid var(--primary-color); cursor: pointer;" onclick="window.location.href='map_reports.html'">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">🗺️</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Interactive Emergency Map</div>
+                        <div style="color: var(--text-color-light); margin-bottom: 2rem; text-align: center;">
+                            Real-time incident tracking, resource positioning, and AI-powered predictive zones
+                        </div>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
                             <div class="status-indicator online">
                                 <div class="status-dot-inline animated"></div>
-                                Live Data Active
+                                7 Active Incidents
                             </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- AI-Prioritized Incidents -->
-            <div class="panel">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span class="panel-title-icon">🚨</span>
-                        Priority Incidents
-                    </div>
-                    <div class="panel-actions">
-                        <button class="btn btn-ai" onclick="reprioritize()" aria-label="Re-prioritize incidents using AI">
-                            🎯 Re-prioritize
-                        </button>
-                    </div>
-                </div>
-                <div class="panel-content">
-                    <div class="incident-list" role="list" aria-label="Priority incidents">
-                        <a href="patient_tracker.html?incident=fire-001" class="incident-item critical" role="listitem" tabindex="0" aria-label="Critical incident: Structure Fire on Oak Street">
-                            <div class="incident-header">
-                                <div class="incident-title">
-                                    <span class="incident-icon">🔥</span>
-                                    Structure Fire - Oak Street
-                                </div>
-                                <div class="incident-priority priority-critical">Critical</div>
+                            <div class="status-indicator processing">
+                                <div class="status-dot-inline animated"></div>
+                                45 Resources Deployed
                             </div>
-                            <div class="incident-description">
-                                Multi-story residential. AI detected structural damage, 15+ occupants.
-                            </div>
-                            <div class="incident-meta">
-                                <span class="incident-priority-score">AI Priority: 9.7/10</span>
-                                <div class="incident-time">
-                                    <div class="time-dot"></div>
-                                    <span>Updated 8s ago</span>
-                                </div>
-                            </div>
-                        </a>
-                        
-                        <a href="patient_tracker.html?incident=mva-002" class="incident-item high" role="listitem" tabindex="0" aria-label="High priority incident: Vehicle accident on Highway 101">
-                            <div class="incident-header">
-                                <div class="incident-title">
-                                    <span class="incident-icon">🚗</span>
-                                    MVA Highway 101
-                                </div>
-                                <div class="incident-priority priority-high">High</div>
-                            </div>
-                            <div class="incident-description">
-                                Multi-vehicle accident. 3 vehicles, likely injuries, 2.1mi backup.
-                            </div>
-                            <div class="incident-meta">
-                                <span class="incident-priority-score">AI Priority: 7.3/10</span>
-                                <div class="incident-time">
-                                    <div class="time-dot"></div>
-                                    <span>Updated 32s ago</span>
-                                </div>
-                            </div>
-                        </a>
-                        
-                        <a href="patient_tracker.html?incident=med-003" class="incident-item normal" role="listitem" tabindex="0" aria-label="Normal priority incident: Medical emergency on Main Street">
-                            <div class="incident-header">
-                                <div class="incident-title">
-                                    <span class="incident-icon">🚑</span>
-                                    Medical Emergency - Main St
-                                </div>
-                                <div class="incident-priority priority-normal">Normal</div>
-                            </div>
-                            <div class="incident-description">
-                                Elderly patient with chest pain. Stable vitals, no immediate danger.
-                            </div>
-                            <div class="incident-meta">
-                                <span class="incident-priority-score">AI Priority: 4.2/10</span>
-                                <div class="incident-time">
-                                    <div class="time-dot"></div>
-                                    <span>Updated 2m ago</span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    
-                    <div style="margin-top: 1rem; text-align: center;">
-                        <a href="triage-dashboard" class="btn btn-outline" aria-label="View all active incidents">
-                            📋 View All Incidents
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Intelligence Section -->
-    <div id="intelligence-section" class="section-content">
-        <div class="panel ai-enhanced">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <span class="panel-title-icon">🔮</span>
-                    Intelligence Dashboard
-                </div>
-                <div class="panel-actions">
-                    <button class="btn btn-ai" onclick="runDeepAnalysis()" aria-label="Run deep intelligence analysis">
-                        🧠 Deep Analysis
-                    </button>
-                    <a href="context-intelligence-dashboard.html" class="btn btn-primary" aria-label="Open full intelligence dashboard">
-                        Full Dashboard
-                    </a>
-                </div>
-            </div>
-            <div class="panel-content">
-                <div style="text-align: center; padding: 3rem;">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🔮</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">AI Intelligence Center</div>
-                    <div style="color: var(--text-color-light); margin-bottom: 2rem;">Advanced pattern recognition and threat analysis</div>
-                    <div class="insights-grid">
-                        <div class="insight-card info">
-                            <div class="insight-header">
-                                <div class="insight-title">📊 Pattern Analysis</div>
-                                <div class="confidence-badge medium">87% Complete</div>
-                            </div>
-                            <div class="insight-description">
-                                Analyzing historical incident patterns to predict future hotspots.
-                            </div>
-                        </div>
-                        <div class="insight-card warning">
-                            <div class="insight-header">
-                                <div class="insight-title">🌡️ Environmental Monitoring</div>
-                                <div class="confidence-badge high">Real-time</div>
-                            </div>
-                            <div class="insight-description">
-                                Weather conditions indicate increased fire risk in zones 3-7.
+                            <div class="status-indicator online">
+                                <div class="status-dot-inline animated"></div>
+                                AI Predictions Active
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!-- Analysis Section -->
-    <div id="analysis-section" class="section-content">
-        <div class="panel ai-enhanced">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <span class="panel-title-icon">📊</span>
-                    Predictive Analysis
-                </div>
-                <div class="panel-actions">
-                    <button class="btn btn-ai" onclick="generateForecast()" aria-label="Generate predictive forecast">
-                        🔮 Generate Forecast
-                    </button>
-                    <a href="predictive-analytics-dashboard.html" class="btn btn-primary" aria-label="Open full analytics dashboard">
-                        Full Analytics
-                    </a>
-                </div>
-            </div>
-            <div class="panel-content">
-                <div style="text-align: center; padding: 3rem;">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">Predictive Analytics Engine</div>
-                    <div style="color: var(--text-color-light); margin-bottom: 2rem;">Machine learning models for incident forecasting</div>
-                    <div class="content-grid">
-                        <div class="panel">
-                            <div class="panel-header">
-                                <div class="panel-title">🔥 Fire Risk Model</div>
-                            </div>
-                            <div style="padding: 1rem; text-align: center;">
-                                <div style="font-size: 2rem; color: var(--color-warning); margin-bottom: 0.5rem;">High</div>
-                                <div style="font-size: 0.9rem; color: var(--text-color-light);">Next 6 hours</div>
-                            </div>
-                        </div>
-                        <div class="panel">
-                            <div class="panel-header">
-                                <div class="panel-title">🚗 Traffic Incidents</div>
-                            </div>
-                            <div style="padding: 1rem; text-align: center;">
-                                <div style="font-size: 2rem; color: var(--color-optimal); margin-bottom: 0.5rem;">Low</div>
-                                <div style="font-size: 0.9rem; color: var(--text-color-light);">Next 4 hours</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Map Section -->
-    <div id="map-section" class="section-content">
-        <div class="panel ai-enhanced">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <span class="panel-title-icon">🗺️</span>
-                    Live Emergency Map
-                </div>
-                <div class="panel-actions">
-                    <button class="btn btn-ai" onclick="runAIAnalysis()" aria-label="Run AI map analysis">
-                        🧠 AI Analysis
-                    </button>
-                    <button class="btn btn-primary" onclick="toggleMapLayers()" aria-label="Toggle map layers">
-                        🔄 Layers
-                    </button>
-                    <a href="map_reports" class="btn btn-primary" aria-label="Open full map interface">
-                        Full Interface
-                    </a>
-                </div>
-            </div>
-            <div class="panel-content">
-                <div style="height: 500px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid var(--primary-color); cursor: pointer;" onclick="window.location.href='map_reports.html'">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🗺️</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary-color);">Interactive Emergency Map</div>
-                    <div style="color: var(--text-color-light); margin-bottom: 2rem; text-align: center;">
-                        Real-time incident tracking, resource positioning, and AI-powered predictive zones
-                    </div>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-                        <div class="status-indicator online">
-                            <div class="status-dot-inline animated"></div>
-                            7 Active Incidents
-                        </div>
-                        <div class="status-indicator processing">
-                            <div class="status-dot-inline animated"></div>
-                            45 Resources Deployed
-                        </div>
-                        <div class="status-indicator online">
-                            <div class="status-dot-inline animated"></div>
-                            AI Predictions Active
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</main>
+    </main>
 
-<!-- Floating Action Button -->
-<a href="#" class="fab" onclick="quickAction()" role="button" tabindex="0" aria-label="Quick action - Create new incident">
-    <span class="fab-icon">🚨</span>
-</a>
-<script>
-    // Clean Crisis Command Center JavaScript
-    class CleanCrisisCommand {
-        constructor() {
-            this.currentSection = 'command';
-            this.moreMenuOpen = false;
-            this.notificationsOpen = false;
-            this.mobileMenuOpen = false;
-            this.isOnline = navigator.onLine;
-            this.notifications = [];
+    <!-- Floating Action Button -->
+    <a href="#" class="fab" onclick="quickAction()" role="button" tabindex="0" aria-label="Quick action - Create new incident">
+        <span class="fab-icon">🚨</span>
+    </a>
+
+    <script>
+        // Enhanced Notification Log Functions
+        class NotificationLogManager {
+            constructor() {
+                this.notifications = [];
+                this.currentFilter = 'all';
+                this.searchTerm = '';
+                this.archivedExpanded = false;
+                this.selectedNotifications = new Set();
+                
+                this.initializeNotifications();
+            }
             
-            this.initialize();
-        }
-        
-        initialize() {
-            this.setupEventListeners();
-            this.initializeNotifications();
-            this.startRealTimeUpdates();
-            this.hideLoading();
-            console.log('🚀 Clean Crisis Command Center initialized');
-        }
-        
-        setupEventListeners() {
-            // Keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                if (e.altKey && e.key >= '1' && e.key <= '4') {
-                    e.preventDefault();
-                    const sections = ['command', 'intelligence', 'analysis', 'map'];
-                    const sectionIndex = parseInt(e.key) - 1;
-                    if (sections[sectionIndex]) {
-                        this.showSection(sections[sectionIndex]);
+            initializeNotifications() {
+                this.notifications = [
+                    {
+                        id: 1,
+                        type: 'critical',
+                        category: 'critical',
+                        icon: '⚠️',
+                        subject: 'Structure Fire - Oak Street, Expansion Detected',
+                        message: 'Multi-story residential building fire has spread to adjacent structures. 15+ occupants potentially affected. Immediate escalation required.',
+                        timestamp: Date.now() - 240000, // 4 minutes ago
+                        read: false,
+                        acknowledged: false,
+                        priority: 'critical',
+                        linkedPage: 'patient_tracker.html?incident=fire-001'
+                    },
+                    {
+                        id: 2,
+                        type: 'operational',
+                        category: 'operational',
+                        icon: '🚨',
+                        subject: 'MVA Highway 101 - Multiple Casualties',
+                        message: 'Multi-vehicle accident with 3+ vehicles involved. Traffic backup extending 2.1 miles. Potential injuries reported.',
+                        timestamp: Date.now() - 420000, // 7 minutes ago
+                        read: false,
+                        acknowledged: false,
+                        priority: 'high',
+                        linkedPage: 'patient_tracker.html?incident=mva-002'
+                    },
+                    {
+                        id: 3,
+                        type: 'communication',
+                        category: 'communication',
+                        icon: '🧠',
+                        subject: 'AI Analysis Complete - Risk Assessment Updated',
+                        message: 'Machine learning models have identified new fire risk zones in downtown area. Predictive accuracy: 94.2%',
+                        timestamp: Date.now() - 720000, // 12 minutes ago
+                        read: true,
+                        acknowledged: true,
+                        priority: 'medium',
+                        linkedPage: 'predictive-analytics-dashboard.html'
+                    },
+                    {
+                        id: 4,
+                        type: 'operational',
+                        category: 'operational',
+                        icon: '⏲️',
+                        subject: 'Shift Change Protocol Reminder',
+                        message: 'Evening shift transition begins in 30 minutes. Please complete handoff documentation.',
+                        timestamp: Date.now() - 1500000, // 25 minutes ago
+                        read: true,
+                        acknowledged: false,
+                        priority: 'low',
+                        linkedPage: 'analytics_dashboard.html'
+                    },
+                    {
+                        id: 5,
+                        type: 'communication',
+                        category: 'communication',
+                        icon: '💬',
+                        subject: 'Team Message - Resource Allocation Update',
+                        message: 'Command has updated resource allocation protocols for high-priority incidents effective immediately.',
+                        timestamp: Date.now() - 3600000, // 1 hour ago
+                        read: true,
+                        acknowledged: true,
+                        priority: 'medium',
+                        linkedPage: 'real-time-resource-optimizer.html'
+                    }
+                ];
+            }
+            
+            openNotificationLog() {
+                const overlay = document.getElementById('notificationLogOverlay');
+                overlay.classList.add('open');
+                this.renderNotifications();
+                
+                // Close any other open dropdowns
+                if (crisisCommand.notificationsOpen) {
+                    crisisCommand.toggleNotifications();
+                }
+                if (crisisCommand.moreMenuOpen) {
+                    crisisCommand.toggleMoreMenu();
+                }
+                
+                // Focus management for accessibility
+                const firstFocusable = overlay.querySelector('button, input, [tabindex="0"]');
+                if (firstFocusable) {
+                    setTimeout(() => firstFocusable.focus(), 100);
+                }
+            }
+            
+            closeNotificationLog() {
+                const overlay = document.getElementById('notificationLogOverlay');
+                overlay.classList.remove('open');
+            }
+            
+            renderNotifications() {
+                const container = document.getElementById('notificationLogList');
+                const filteredNotifications = this.getFilteredNotifications();
+                
+                if (filteredNotifications.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-notifications">
+                            <div class="no-notifications-icon">🔔</div>
+                            <div>No notifications match your criteria</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = filteredNotifications.map(notification => {
+                    const timeAgo = this.formatTimeAgo(notification.timestamp);
+                    const unreadClass = notification.read ? '' : 'unread';
+                    const categoryClass = notification.category;
+                    
+                    return `
+                        <div class="log-notification-item ${categoryClass} ${unreadClass}" data-category="${notification.category}" data-id="${notification.id}" onclick="selectNotification(${notification.id})">
+                            ${!notification.read ? '<div class="unread-indicator"></div>' : ''}
+                            <div class="notification-type-icon">${notification.icon}</div>
+                            <div class="notification-details">
+                                <div class="notification-meta-header">
+                                    <div class="notification-category-badge badge-${notification.category}">${this.getCategoryDisplayName(notification.category)}</div>
+                                    <div class="notification-timestamp">${timeAgo}</div>
+                                </div>
+                                <div class="notification-log-subject">${notification.subject}</div>
+                                <div class="notification-log-message">${notification.message}</div>
+                                <div class="notification-actions">
+                                    ${!notification.acknowledged ? `<button class="action-btn acknowledge" onclick="acknowledgeNotification(${notification.id}, event)">✓ Acknowledge</button>` : ''}
+                                    ${notification.linkedPage ? `<a href="${notification.linkedPage}" class="action-btn" onclick="event.stopPropagation()">📋 View Details</a>` : ''}
+                                    ${notification.priority === 'critical' ? `<button class="action-btn" onclick="escalateNotification(${notification.id}, event)">🚨 Escalate</button>` : ''}
+                                    <button class="action-btn" onclick="shareNotification(${notification.id}, event)">📤 Share</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            getFilteredNotifications() {
+                return this.notifications.filter(notification => {
+                    // Filter by category
+                    const categoryMatch = this.currentFilter === 'all' || notification.category === this.currentFilter;
+                    
+                    // Filter by search term
+                    const searchMatch = !this.searchTerm || 
+                        notification.subject.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                        notification.message.toLowerCase().includes(this.searchTerm.toLowerCase());
+                    
+                    return categoryMatch && searchMatch;
+                }).sort((a, b) => b.timestamp - a.timestamp); // Most recent first
+            }
+            
+            getCategoryDisplayName(category) {
+                const names = {
+                    critical: 'Critical Incident',
+                    operational: 'Operational',
+                    communication: 'Communication',
+                    system: 'System Update',
+                    resolved: 'Resolved'
+                };
+                return names[category] || category;
+            }
+            
+            formatTimeAgo(timestamp) {
+                const diff = Date.now() - timestamp;
+                const minutes = Math.floor(diff / 60000);
+                const hours = Math.floor(diff / 3600000);
+                const days = Math.floor(diff / 86400000);
+                
+                if (minutes < 1) return 'Just now';
+                if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+                if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+                if (days === 1) return 'Yesterday';
+                if (days < 7) return `${days} days ago`;
+                
+                // Format as date for older notifications
+                return new Date(timestamp).toLocaleDateString();
+            }
+            
+            filterNotifications(category) {
+                this.currentFilter = category;
+                
+                // Update active tab
+                document.querySelectorAll('.filter-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelector(`[data-filter="${category}"]`).classList.add('active');
+                
+                this.renderNotifications();
+                crisisCommand.showNotification(`Filtered to ${category} notifications`, 'info');
+            }
+            
+            searchNotifications() {
+                const input = document.getElementById('notificationSearchInput');
+                this.searchTerm = input.value.trim();
+                this.renderNotifications();
+            }
+            
+            acknowledgeNotification(id, event) {
+                event.stopPropagation();
+                const notification = this.notifications.find(n => n.id === id);
+                if (notification) {
+                    notification.acknowledged = true;
+                    notification.read = true;
+                    this.renderNotifications();
+                    crisisCommand.updateNotificationCount();
+                    crisisCommand.showNotification('✓ Notification acknowledged', 'success');
+                }
+            }
+            
+            markAllRead() {
+                this.notifications.forEach(n => n.read = true);
+                this.renderNotifications();
+                crisisCommand.updateNotificationCount();
+                crisisCommand.showNotification('✓ All notifications marked as read', 'success');
+            }
+            
+            acknowledgeAll() {
+                const visibleNotifications = this.getFilteredNotifications();
+                visibleNotifications.forEach(n => {
+                    n.acknowledged = true;
+                    n.read = true;
+                });
+                this.renderNotifications();
+                crisisCommand.updateNotificationCount();
+                crisisCommand.showNotification(`✓ ${visibleNotifications.length} notifications acknowledged`, 'success');
+            }
+            
+            selectNotification(id) {
+                const notification = this.notifications.find(n => n.id === id);
+                if (notification) {
+                    notification.read = true;
+                    this.renderNotifications();
+                    crisisCommand.updateNotificationCount();
+                    
+                    // Navigate to linked page if available
+                    if (notification.linkedPage) {
+                        crisisCommand.showNotification(`Opening ${notification.subject}...`, 'info');
+                        setTimeout(() => {
+                            window.location.href = notification.linkedPage;
+                        }, 500);
                     }
                 }
-                if (e.key === 'Escape') {
-                    this.closeAllDropdowns();
-                }
-                if (e.ctrlKey && e.key === 'n') {
-                    e.preventDefault();
-                    this.quickAction();
-                }
-            });
+            }
             
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.more-menu') && this.moreMenuOpen) {
-                    this.toggleMoreMenu();
+            toggleArchivedNotifications() {
+                this.archivedExpanded = !this.archivedExpanded;
+                const content = document.getElementById('archivedContent');
+                const icon = document.getElementById('archivedToggleIcon');
+                
+                if (this.archivedExpanded) {
+                    content.classList.add('expanded');
+                    icon.textContent = '▼';
+                } else {
+                    content.classList.remove('expanded');
+                    icon.textContent = '▶';
                 }
-                if (!e.target.closest('.notification-bell') && 
-                    !e.target.closest('.notification-dropdown') && 
-                    this.notificationsOpen) {
-                    this.toggleNotifications();
-                }
-            });
+            }
             
-            // Connection monitoring
-            window.addEventListener('online', () => this.updateConnectionStatus(true));
-            window.addEventListener('offline', () => this.updateConnectionStatus(false));
+            addNotification(notification) {
+                notification.id = Date.now();
+                notification.timestamp = Date.now();
+                notification.read = false;
+                notification.acknowledged = false;
+                
+                this.notifications.unshift(notification);
+                
+                // If log is open, update the display
+                const overlay = document.getElementById('notificationLogOverlay');
+                if (overlay.classList.contains('open')) {
+                    this.renderNotifications();
+                }
+                
+                crisisCommand.updateNotificationCount();
+            }
         }
-        
-        initializeNotifications() {
-            this.notifications = [
-                {
-                    id: 1,
-                    type: 'critical',
-                    icon: '⚠️',
-                    subject: 'Structure Fire Escalation',
-                    message: 'Oak Street fire spreading to adjacent buildings. Immediate response required.',
-                    timestamp: Date.now() - 120000,
-                    read: false
-                },
-                {
-                    id: 2,
-                    type: 'warning',
-                    icon: '🚗',
-                    subject: 'Traffic Incident Alert',
-                    message: 'Multi-vehicle accident on Highway 101. Traffic backup extending 2+ miles.',
-                    timestamp: Date.now() - 300000,
-                    read: false
-                },
-                {
-                    id: 3,
-                    type: 'info',
-                    icon: '🧠',
-                    subject: 'AI Analysis Complete',
-                    message: 'Risk assessment updated. New fire risk zones identified in downtown area.',
-                    timestamp: Date.now() - 480000,
-                    read: true
-                }
-            ];
+
+        // Clean Crisis Command Center JavaScript
+        class CleanCrisisCommand {
+            constructor() {
+                this.currentSection = 'command';
+                this.moreMenuOpen = false;
+                this.notificationsOpen = false;
+                this.mobileMenuOpen = false;
+                this.isOnline = navigator.onLine;
+                this.notifications = [];
+                
+                this.initialize();
+            }
             
-            this.updateNotificationCount();
-        }
-        
-        startRealTimeUpdates() {
-            // Update timestamps every 5 seconds
-            setInterval(() => {
-                this.updateTimestamps();
-            }, 5000);
+            initialize() {
+                this.setupEventListeners();
+                this.initializeNotifications();
+                this.startRealTimeUpdates();
+                this.hideLoading();
+                console.log('🚀 Clean Crisis Command Center initialized');
+            }
             
-            // Simulate new notifications occasionally
-            setInterval(() => {
-                if (Math.random() > 0.95) {
-                    this.addRandomNotification();
-                }
-            }, 30000);
+            setupEventListeners() {
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.altKey && e.key >= '1' && e.key <= '4') {
+                        e.preventDefault();
+                        const sections = ['command', 'intelligence', 'analysis', 'map'];
+                        const sectionIndex = parseInt(e.key) - 1;
+                        if (sections[sectionIndex]) {
+                            this.showSection(sections[sectionIndex]);
+                        }
+                    }
+                    if (e.key === 'Escape') {
+                        this.closeAllDropdowns();
+                    }
+                    if (e.ctrlKey && e.key === 'n') {
+                        e.preventDefault();
+                        this.quickAction();
+                    }
+                });
+                
+                // Close dropdowns when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.more-menu') && this.moreMenuOpen) {
+                        this.toggleMoreMenu();
+                    }
+                });
+                
+                // Connection monitoring
+                window.addEventListener('online', () => this.updateConnectionStatus(true));
+                window.addEventListener('offline', () => this.updateConnectionStatus(false));
+            }
             
-            // Update KPI values
-            setInterval(() => {
-                this.updateKPIValues();
-            }, 10000);
-        }
-        // Navigation Methods
-        showSection(sectionId) {
+            initializeNotifications() {
+                this.notifications = [
+                    {
+                        id: 1,
+                        type: 'critical',
+                        icon: '⚠️',
+                        subject: 'Structure Fire Escalation',
+                        message: 'Oak Street fire spreading to adjacent buildings. Immediate response required.',
+                        timestamp: Date.now() - 120000,
+                        read: false
+                    },
+                    {
+                        id: 2,
+                        type: 'warning',
+                        icon: '🚗',
+                        subject: 'Traffic Incident Alert',
+                        message: 'Multi-vehicle accident on Highway 101. Traffic backup extending 2+ miles.',
+                        timestamp: Date.now() - 300000,
+                        read: false
+                    },
+                    {
+                        id: 3,
+                        type: 'info',
+                        icon: '🧠',
+                        subject: 'AI Analysis Complete',
+                        message: 'Risk assessment updated. New fire risk zones identified in downtown area.',
+                        timestamp: Date.now() - 480000,
+                        read: true
+                    }
+                ];
+                
+                this.updateNotificationCount();
+            }
+            
+            startRealTimeUpdates() {
+                // Update timestamps every 5 seconds
+                setInterval(() => {
+                    this.updateTimestamps();
+                }, 5000);
+                
+                // Simulate new notifications occasionally
+                setInterval(() => {
+                    if (Math.random() > 0.95) {
+                        this.addRandomNotification();
+                    }
+                }, 30000);
+                
+                // Update KPI values
+                setInterval(() => {
+                    this.updateKPIValues();
+                }, 10000);
+            }
+            
+            // Navigation Methods
+            showSection(sectionId) {
                 this.currentSection = sectionId;
                 
                 // Hide all sections
@@ -2012,12 +2765,6 @@
                 dropdown.classList.toggle('open', this.moreMenuOpen);
             }
             
-            toggleNotifications() {
-                this.notificationsOpen = !this.notificationsOpen;
-                const dropdown = document.getElementById('notificationDropdown');
-                dropdown.classList.toggle('open', this.notificationsOpen);
-            }
-            
             toggleMobileMenu() {
                 this.mobileMenuOpen = !this.mobileMenuOpen;
                 console.log('Mobile menu toggled:', this.mobileMenuOpen);
@@ -2025,8 +2772,8 @@
             
             closeAllDropdowns() {
                 if (this.moreMenuOpen) this.toggleMoreMenu();
-                if (this.notificationsOpen) this.toggleNotifications();
             }
+            
             // Utility Methods
             updateConnectionStatus(online) {
                 this.isOnline = online;
@@ -2185,6 +2932,139 @@
         
         // Initialize the system
         let crisisCommand;
+        let notificationManager;
+
+        // Global notification manager functions
+        function openNotificationLog() {
+            if (!notificationManager) {
+                notificationManager = new NotificationLogManager();
+            }
+            notificationManager.openNotificationLog();
+        }
+
+        function closeNotificationLog() {
+            if (notificationManager) {
+                notificationManager.closeNotificationLog();
+            }
+        }
+
+        function filterNotifications(category) {
+            if (notificationManager) {
+                notificationManager.filterNotifications(category);
+            }
+        }
+
+        function searchNotifications() {
+            if (notificationManager) {
+                notificationManager.searchNotifications();
+            }
+        }
+
+        function acknowledgeNotification(id, event) {
+            if (notificationManager) {
+                notificationManager.acknowledgeNotification(id, event);
+            }
+        }
+
+        function markAllRead() {
+            if (notificationManager) {
+                notificationManager.markAllRead();
+            }
+        }
+
+        function acknowledgeAll() {
+            if (notificationManager) {
+                notificationManager.acknowledgeAll();
+            }
+        }
+
+        function selectNotification(id) {
+            if (notificationManager) {
+                notificationManager.selectNotification(id);
+            }
+        }
+
+        function toggleArchivedNotifications() {
+            if (notificationManager) {
+                notificationManager.toggleArchivedNotifications();
+            }
+        }
+
+        // Additional action handlers
+        function escalateNotification(id, event) {
+            event.stopPropagation();
+            crisisCommand.showNotification('🚨 Incident escalated to Command', 'warning');
+        }
+
+        function dispatchResources(id, event) {
+            event.stopPropagation();
+            crisisCommand.showNotification('🚒 Resources dispatched', 'success');
+        }
+
+        function shareAnalysis(id, event) {
+            event.stopPropagation();
+            crisisCommand.showNotification('📊 Analysis shared with team', 'info');
+        }
+
+        function shareNotification(id, event) {
+            event.stopPropagation();
+            crisisCommand.showNotification('📤 Notification shared', 'info');
+        }
+
+        function viewProtocol(id, event) {
+            event.stopPropagation();
+            crisisCommand.showNotification('📖 Opening protocol document...', 'info');
+        }
+
+        // Enhanced keyboard navigation for notification log
+        document.addEventListener('keydown', (e) => {
+            const overlay = document.getElementById('notificationLogOverlay');
+            if (overlay && overlay.classList.contains('open')) {
+                if (e.key === 'Escape') {
+                    closeNotificationLog();
+                }
+                // Add arrow key navigation between notifications
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    navigateNotifications(e.key === 'ArrowDown' ? 1 : -1);
+                }
+                // Enter to select focused notification
+                if (e.key === 'Enter') {
+                    const focused = document.activeElement;
+                    if (focused && focused.classList.contains('log-notification-item')) {
+                        const id = parseInt(focused.dataset.id);
+                        selectNotification(id);
+                    }
+                }
+            }
+        });
+
+        function navigateNotifications(direction) {
+            const items = document.querySelectorAll('.log-notification-item');
+            const currentIndex = Array.from(items).findIndex(item => item === document.activeElement);
+            
+            let newIndex;
+            if (currentIndex === -1) {
+                newIndex = direction > 0 ? 0 : items.length - 1;
+            } else {
+                newIndex = currentIndex + direction;
+                if (newIndex < 0) newIndex = items.length - 1;
+                if (newIndex >= items.length) newIndex = 0;
+            }
+            
+            if (items[newIndex]) {
+                items[newIndex].focus();
+            }
+        }
+
+        // Click outside to close notification log
+        document.addEventListener('click', (e) => {
+            const overlay = document.getElementById('notificationLogOverlay');
+            if (overlay && overlay.classList.contains('open') && e.target === overlay) {
+                closeNotificationLog();
+            }
+        });
+
         // Global function implementations
         function showSection(sectionId) {
             crisisCommand.showSection(sectionId);
@@ -2198,10 +3078,6 @@
             crisisCommand.toggleMoreMenu();
         }
         
-        function toggleNotifications() {
-            crisisCommand.toggleNotifications();
-        }
-        
         function toggleMobileMenu() {
             crisisCommand.toggleMobileMenu();
         }
@@ -2210,24 +3086,6 @@
             const banner = document.getElementById('alertBanner');
             banner.classList.add('hidden');
             crisisCommand.showNotification('Alert dismissed', 'info');
-        }
-        
-        // New function to handle notification log
-        function openNotificationLog() {
-            // If notification dropdown is open, close it first
-            if (crisisCommand.notificationsOpen) {
-                crisisCommand.toggleNotifications();
-            }
-            
-            // Navigate to notification log page or show modal
-            crisisCommand.showNotification('🔔 Opening notification log...', 'info');
-            
-            // In a real implementation, this would open a dedicated notification log page
-            // For now, we'll simulate opening a modal or new page
-            setTimeout(() => {
-                // You can replace this with actual navigation to notification log page
-                window.open('notification-log.html', '_blank');
-            }, 500);
         }
         
         function openIncidentDetails(incidentId) {
@@ -2286,6 +3144,7 @@
             crisisCommand.showNotification('📋 Loading all incidents...', 'info');
             crisisCommand.showSection('incidents');
         }
+        
         function refreshInsights() {
             const btn = event.target;
             btn.classList.add('loading');
@@ -2388,6 +3247,7 @@
             crisisCommand.toggleMoreMenu();
             crisisCommand.showNotification('⚙️ Opening settings...', 'info');
         }
+        
         function showHelp() {
             crisisCommand.toggleMoreMenu();
             
@@ -2502,5 +3362,5 @@
         
         console.log('🚀 Clean Crisis Command Center JavaScript loaded');
     </script>
-    </body>
-    </html>
+</body>
+</html>
