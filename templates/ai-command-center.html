@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Command Center - Emergency Operations</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #334155;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            color: #60a5fa;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ai-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Command Console */
+        .command-console {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .console-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .console-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .command-input-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .command-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1rem;
+            background: rgba(51, 65, 85, 0.5);
+            border: 2px solid #475569;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .command-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+        }
+
+        .voice-btn {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #3b82f6;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .voice-btn:hover {
+            background: #2563eb;
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .voice-btn.listening {
+            background: #ef4444;
+            animation: pulse 1s infinite;
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .suggestion-chip {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            border-radius: 20px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-chip:hover {
+            background: rgba(59, 130, 246, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Processing Indicator */
+        .processing-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .processing-indicator.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #475569;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Command History */
+        .command-history {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid #64748b;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: rgba(51, 65, 85, 0.5);
+            transform: translateX(4px);
+        }
+
+        .history-item.success {
+            border-left-color: #10b981;
+        }
+
+        .history-item.failed {
+            border-left-color: #ef4444;
+        }
+
+        .history-item.in-progress {
+            border-left-color: #f59e0b;
+        }
+
+        .history-command {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #e2e8f0;
+        }
+
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            background: none;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            color: #60a5fa;
+        }
+
+        /* Live Automations */
+        .live-automations {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .automation-item {
+            background: rgba(51, 65, 85, 0.4);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .automation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .automation-title {
+            font-weight: 500;
+            color: #e2e8f0;
+        }
+
+        .automation-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .control-btn {
+            background: none;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 0.3rem 0.6rem;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            color: #60a5fa;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200px 0; }
+            100% { background-position: 200px 0; }
+        }
+
+        /* AI Recommendations */
+        .ai-recommendations {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .recommendation-item {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .recommendation-priority {
+            position: absolute;
+            top: -8px;
+            right: 1rem;
+            background: #10b981;
+            color: #0f172a;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .recommendation-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #10b981;
+        }
+
+        .recommendation-desc {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin-bottom: 0.8rem;
+        }
+
+        .recommendation-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .rec-btn {
+            background: #10b981;
+            border: none;
+            border-radius: 6px;
+            padding: 0.4rem 0.8rem;
+            color: #0f172a;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .rec-btn:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .rec-btn.secondary {
+            background: none;
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+
+        .rec-btn.secondary:hover {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        /* Playbooks */
+        .playbooks {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .playbook-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .playbook-card {
+            background: rgba(51, 65, 85, 0.4);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .playbook-card:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .playbook-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .playbook-name {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+
+        .playbook-desc {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Integration Panel */
+        .integration-panel {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .integration-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .integration-card {
+            background: rgba(51, 65, 85, 0.4);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .integration-card:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .right-panel {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .header {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .playbook-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>
+            🤖 AI Command Center
+        </h1>
+        <div class="ai-status">
+            <div class="status-indicator"></div>
+            <span>AI System: Online</span>
+            <span>Model: Gemma 3n Emergency</span>
+            <span>Confidence: 98.7%</span>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <!-- Command Console -->
+            <div class="command-console">
+                <div class="section-header">
+                    <h2 class="section-title">🎤 Natural Language Command Console</h2>
+                </div>
+                
+                <div class="command-input-container">
+                    <input 
+                        type="text" 
+                        class="command-input" 
+                        placeholder="Ask AI, assign tasks, query data... (e.g., 'Show critical cardiac incidents' or 'Dispatch 2 ambulances to Oak Street')"
+                        id="commandInput"
+                    >
+                    <button class="voice-btn" id="voiceBtn" title="Voice Command">🎤</button>
+                </div>
+
+                <div class="suggestions">
+                    <span class="suggestion-chip" onclick="fillCommand('Show only critical cardiac incidents')">Show critical incidents</span>
+                    <span class="suggestion-chip" onclick="fillCommand('Generate status report for District 4')">District 4 report</span>
+                    <span class="suggestion-chip" onclick="fillCommand('Pre-stage ambulances in Zone B')">Pre-stage resources</span>
+                    <span class="suggestion-chip" onclick="fillCommand('Activate Hospital Surge Plan')">Surge protocol</span>
+                </div>
+
+                <div class="processing-indicator" id="processingIndicator">
+                    <div class="spinner"></div>
+                    <span>AI processing your command...</span>
+                </div>
+            </div>
+
+            <!-- Command History -->
+            <div class="command-history">
+                <div class="section-header">
+                    <h2 class="section-title">📋 Command History & Active Tasks</h2>
+                    <div class="section-actions">
+                        <button class="action-btn" onclick="clearHistory()">Clear All</button>
+                    </div>
+                </div>
+
+                <div id="historyContainer">
+                    <div class="history-item success">
+                        <div class="history-command">"Show critical cardiac incidents in District 2"</div>
+                        <div class="history-meta">
+                            <span>14:32 - Dispatcher A. Johnson</span>
+                            <div class="history-actions">
+                                <button class="action-btn">Repeat</button>
+                                <button class="action-btn">Edit</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="history-item in-progress">
+                        <div class="history-command">"Generate comprehensive incident report for past 4 hours"</div>
+                        <div class="history-meta">
+                            <span>14:28 - Chief M. Rodriguez</span>
+                            <div class="history-actions">
+                                <button class="action-btn">Cancel</button>
+                                <button class="action-btn">Details</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="history-item success">
+                        <div class="history-command">"Dispatch 2 ambulances to 1247 Oak Street"</div>
+                        <div class="history-meta">
+                            <span>14:25 - Dispatcher K. Chen</span>
+                            <div class="history-actions">
+                                <button class="action-btn">Repeat</button>
+                                <button class="action-btn">Status</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Automations -->
+            <div class="live-automations">
+                <div class="section-header">
+                    <h2 class="section-title">⚡ Live AI Automations</h2>
+                </div>
+
+                <div class="automation-item">
+                    <div class="automation-header">
+                        <div class="automation-title">Auto-dispatching Unit 47 to cardiac emergency</div>
+                        <div class="automation-controls">
+                            <button class="control-btn">Pause</button>
+                            <button class="control-btn">Override</button>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 75%"></div>
+                    </div>
+                </div>
+
+                <div class="automation-item">
+                    <div class="automation-header">
+                        <div class="automation-title">Generating real-time resource allocation report</div>
+                        <div class="automation-controls">
+                            <button class="control-btn">Pause</button>
+                            <button class="control-btn">Priority+</button>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 45%"></div>
+                    </div>
+                </div>
+
+                <div class="automation-item">
+                    <div class="automation-header">
+                        <div class="automation-title">Smart alerting: Notifying hospitals of incoming patients</div>
+                        <div class="automation-controls">
+                            <button class="control-btn">Monitor</button>
+                            <button class="control-btn">Details</button>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 90%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <!-- AI Recommendations -->
+            <div class="ai-recommendations">
+                <div class="section-header">
+                    <h2 class="section-title">💡 AI Recommendations</h2>
+                </div>
+
+                <div class="recommendation-item">
+                    <div class="recommendation-priority">HIGH</div>
+                    <div class="recommendation-title">Anticipate Evening Surge</div>
+                    <div class="recommendation-desc">
+                        Based on traffic patterns and historical data, expect 40% increase in incidents between 5-7 PM. Recommend pre-staging 3 additional units.
+                    </div>
+                    <div class="recommendation-actions">
+                        <button class="rec-btn" onclick="executeRecommendation('pre-stage')">Execute</button>
+                        <button class="rec-btn secondary">More Info</button>
+                    </div>
+                </div>
+
+                <div class="recommendation-item">
+                    <div class="recommendation-priority">MED</div>
+                    <div class="recommendation-title">Optimize Route Planning</div>
+                    <div class="recommendation-desc">
+                        Traffic congestion on Highway 101 detected. Reroute Units 23 and 31 via alternate paths for 12% faster response.
+                    </div>
+                    <div class="recommendation-actions">
+                        <button class="rec-btn" onclick="executeRecommendation('reroute')">Apply Routes</button>
+                        <button class="rec-btn secondary">View Map</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playbooks -->
+            <div class="playbooks">
+                <div class="section-header">
+                    <h2 class="section-title">📖 AI Playbooks & Shortcuts</h2>
+                    <button class="action-btn" onclick="customizePlaybooks()">Customize</button>
+                </div>
+
+                <div class="playbook-grid">
+                    <div class="playbook-card" onclick="executePlaybook('shelter')">
+                        <div class="playbook-icon">🏠</div>
+                        <div class="playbook-name">Shelter Protocol</div>
+                        <div class="playbook-desc">Mass evacuation & shelter activation</div>
+                    </div>
+
+                    <div class="playbook-card" onclick="executePlaybook('surge')">
+                        <div class="playbook-icon">🏥</div>
+                        <div class="playbook-name">Hospital Surge</div>
+                        <div class="playbook-desc">Coordinate hospital capacity</div>
+                    </div>
+
+                    <div class="playbook-card" onclick="executePlaybook('mass-casualty')">
+                        <div class="playbook-icon">🚑</div>
+                        <div class="playbook-name">Mass Casualty</div>
+                        <div class="playbook-desc">Multi-agency response</div>
+                    </div>
+
+                    <div class="playbook-card" onclick="executePlaybook('hazmat')">
+                        <div class="playbook-icon">☢️</div>
+                        <div class="playbook-name">HAZMAT Response</div>
+                        <div class="playbook-desc">Chemical/biological incident</div>
+                    </div>
+
+                    <div class="playbook-card" onclick="executePlaybook('weather')">
+                        <div class="playbook-icon">🌪️</div>
+                        <div class="playbook-name">Severe Weather</div>
+                        <div class="playbook-desc">Storm preparation protocol</div>
+                    </div>
+
+                    <div class="playbook-card" onclick="executePlaybook('fire')">
+                        <div class="playbook-icon">🔥</div>
+                        <div class="playbook-name">Wildfire Response</div>
+                        <div class="playbook-desc">Fire suppression coordination</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Panel -->
+            <div class="integration-panel">
+                <div class="section-header">
+                    <h2 class="section-title">🔗 Quick Navigation</h2>
+                </div>
+
+                <div class="integration-grid">
+                    <div class="integration-card" onclick="navigateTo('triage_dashboard.html')">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🏥</div>
+                        <div>Triage Dashboard</div>
+                    </div>
+
+                    <div class="integration-card" onclick="navigateTo('analytics_dashboard.html')">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📊</div>
+                        <div>Analytics Center</div>
+                    </div>
+
+                    <div class="integration-card" onclick="navigateTo('resource_management.html')">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🚑</div>
+                        <div>Resource Manager</div>
+                    </div>
+
+                    <div class="integration-card" onclick="navigateTo('map_view.html')">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🗺️</div>
+                        <div>Live Map View</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Voice Recognition Setup
+        let recognition;
+        let isListening = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                isListening = true;
+                document.getElementById('voiceBtn').classList.add('listening');
+                document.getElementById('voiceBtn').innerHTML = '🔴';
+            };
+
+            recognition.onresult = function(event) {
+                const command = event.results[0][0].transcript;
+                document.getElementById('commandInput').value = command;
+                processCommand(command);
+            };
+
+            recognition.onend = function() {
+                isListening = false;
+                document.getElementById('voiceBtn').classList.remove('listening');
+                document.getElementById('voiceBtn').innerHTML = '🎤';
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                isListening = false;
+                document.getElementById('voiceBtn').classList.remove('listening');
+                document.getElementById('voiceBtn').innerHTML = '🎤';
+            };
+        }
+
+        // Voice Button Click Handler
+        document.getElementById('voiceBtn').addEventListener('click', function() {
+            if (!recognition) {
+                alert('Speech recognition not supported in this browser.');
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+
+        // Command Input Handler
+        document.getElementById('commandInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const command = this.value.trim();
+                if (command) {
+                    processCommand(command);
+                    this.value = '';
+                }
+            }
+        });
+
+        // Process AI Command
+        function processCommand(command) {
+            // Show processing indicator
+            const indicator = document.getElementById('processingIndicator');
+            indicator.classList.add('active');
+
+            // Add to history
+            addToHistory(command, 'in-progress');
+
+            // Simulate AI processing
+            setTimeout(() => {
+                indicator.classList.remove('active');
+                
+                // Update history status
+                updateHistoryStatus(command, 'success');
+                
+                // Execute based on command content
+                executeAICommand(command);
+            }, 2000);
+        }
+
+        // Execute AI Command Logic
+        function executeAICommand(command) {
+            const lowerCommand = command.toLowerCase();
+            
+            if (lowerCommand.includes('dispatch') && lowerCommand.includes('ambulance')) {
+                showNotification('✅ Ambulance dispatch initiated. Units 23 and 47 en route.', 'success');
+                addAutomationTask('Dispatching ambulances to location', 85);
+            } else if (lowerCommand.includes('critical') && lowerCommand.includes('incident')) {
+                showNotification('📊 Displaying 7 critical incidents. Filter applied to main dashboard.', 'info');
+                highlightCriticalData();
+            } else if (lowerCommand.includes('report') && lowerCommand.includes('district')) {
+                showNotification('📋 Generating district status report. Estimated completion: 2 minutes.', 'info');
+                addAutomationTask('Generating district status report', 35);
+            } else if (lowerCommand.includes('surge') || lowerCommand.includes('hospital')) {
+                showNotification('🏥 Hospital surge protocol activated. Notifying all medical facilities.', 'warning');
+                executePlaybook('surge');
+            } else if (lowerCommand.includes('pre-stage') || lowerCommand.includes('resource')) {
+                showNotification('🚑 Resource pre-staging initiated based on predictive analysis.', 'success');
+                addAutomationTask('Pre-staging emergency resources', 60);
+            } else {
+                showNotification('🤖 AI command processed. Check automation panel for details.', 'info');
+                addAutomationTask(`Processing: ${command}`, Math.random() * 80 + 10);
+            }
+        }
+
+        // Add command to history
+        function addToHistory(command, status = 'success') {
+            const historyContainer = document.getElementById('historyContainer');
+            const timestamp = new Date().toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            const historyItem = document.createElement('div');
+            historyItem.className = `history-item ${status}`;
+            historyItem.innerHTML = `
+                <div class="history-command">"${command}"</div>
+                <div class="history-meta">
+                    <span>${timestamp} - Current User</span>
+                    <div class="history-actions">
+                        <button class="action-btn" onclick="repeatCommand('${command}')">Repeat</button>
+                        <button class="action-btn" onclick="editCommand('${command}')">Edit</button>
+                    </div>
+                </div>
+            `;
+            
+            historyContainer.insertBefore(historyItem, historyContainer.firstChild);
+            
+            // Keep only last 10 items
+            const items = historyContainer.children;
+            if (items.length > 10) {
+                historyContainer.removeChild(items[items.length - 1]);
+            }
+        }
+
+        // Update history status
+        function updateHistoryStatus(command, newStatus) {
+            const historyItems = document.querySelectorAll('.history-item');
+            for (let item of historyItems) {
+                const commandText = item.querySelector('.history-command').textContent;
+                if (commandText.includes(command)) {
+                    item.className = `history-item ${newStatus}`;
+                    break;
+                }
+            }
+        }
+
+        // Add automation task
+        function addAutomationTask(taskName, progress) {
+            const automationContainer = document.querySelector('.live-automations');
+            const existingTasks = automationContainer.querySelectorAll('.automation-item');
+            
+            // Remove oldest if we have too many
+            if (existingTasks.length > 3) {
+                existingTasks[existingTasks.length - 1].remove();
+            }
+            
+            const taskElement = document.createElement('div');
+            taskElement.className = 'automation-item';
+            taskElement.innerHTML = `
+                <div class="automation-header">
+                    <div class="automation-title">${taskName}</div>
+                    <div class="automation-controls">
+                        <button class="control-btn" onclick="pauseAutomation(this)">Pause</button>
+                        <button class="control-btn" onclick="cancelAutomation(this)">Cancel</button>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progress}%"></div>
+                </div>
+            `;
+            
+            automationContainer.appendChild(taskElement);
+            
+            // Animate progress
+            animateProgress(taskElement.querySelector('.progress-fill'), progress);
+        }
+
+        // Animate progress bar
+        function animateProgress(progressElement, startValue) {
+            let current = startValue;
+            const interval = setInterval(() => {
+                current += Math.random() * 5;
+                if (current >= 100) {
+                    current = 100;
+                    clearInterval(interval);
+                    // Mark as completed after a delay
+                    setTimeout(() => {
+                        const taskItem = progressElement.closest('.automation-item');
+                        taskItem.style.opacity = '0.6';
+                        taskItem.querySelector('.automation-title').innerHTML += ' ✅ Completed';
+                    }, 1000);
+                }
+                progressElement.style.width = current + '%';
+            }, 800);
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                max-width: 400px;
+                font-size: 0.9rem;
+            `;
+            
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        // Helper functions
+        function fillCommand(command) {
+            document.getElementById('commandInput').value = command;
+            document.getElementById('commandInput').focus();
+        }
+
+        function repeatCommand(command) {
+            document.getElementById('commandInput').value = command.replace(/"/g, '');
+            processCommand(command.replace(/"/g, ''));
+        }
+
+        function editCommand(command) {
+            document.getElementById('commandInput').value = command.replace(/"/g, '');
+            document.getElementById('commandInput').focus();
+        }
+
+        function clearHistory() {
+            if (confirm('Clear all command history?')) {
+                document.getElementById('historyContainer').innerHTML = '';
+                showNotification('Command history cleared.', 'info');
+            }
+        }
+
+        function executePlaybook(type) {
+            const playbooks = {
+                'shelter': 'Shelter Protocol activated. Coordinating evacuation routes and shelter facilities.',
+                'surge': 'Hospital Surge Plan initiated. Notifying all medical facilities and activating overflow protocols.',
+                'mass-casualty': 'Mass Casualty Protocol active. Deploying all available units and coordinating with hospitals.',
+                'hazmat': 'HAZMAT Response initiated. Specialized teams en route, establishing containment perimeter.',
+                'weather': 'Severe Weather Protocol active. Pre-positioning resources and issuing public alerts.',
+                'fire': 'Wildfire Response activated. Coordinating aerial support and evacuation procedures.'
+            };
+            
+            showNotification(`🚨 ${playbooks[type] || 'Protocol activated successfully.'}`, 'warning');
+            addAutomationTask(`Executing ${type} protocol`, 25);
+            addToHistory(`Execute ${type} protocol via playbook`, 'success');
+        }
+
+        function executeRecommendation(type) {
+            if (type === 'pre-stage') {
+                showNotification('🚑 Pre-staging 3 additional units based on AI prediction.', 'success');
+                addAutomationTask('Pre-staging emergency units for surge', 40);
+            } else if (type === 'reroute') {
+                showNotification('🗺️ Optimal routes calculated and sent to Units 23 and 31.', 'success');
+                addAutomationTask('Updating unit navigation routes', 70);
+            }
+            
+            // Remove the recommendation after execution
+            event.target.closest('.recommendation-item').style.animation = 'fadeOut 0.5s ease';
+            setTimeout(() => {
+                event.target.closest('.recommendation-item').remove();
+            }, 500);
+        }
+
+        function pauseAutomation(button) {
+            const taskItem = button.closest('.automation-item');
+            const progressFill = taskItem.querySelector('.progress-fill');
+            
+            if (button.textContent === 'Pause') {
+                button.textContent = 'Resume';
+                button.style.background = '#f59e0b';
+                progressFill.style.animationPlayState = 'paused';
+                showNotification('⏸️ Automation task paused.', 'warning');
+            } else {
+                button.textContent = 'Pause';
+                button.style.background = '';
+                progressFill.style.animationPlayState = 'running';
+                showNotification('▶️ Automation task resumed.', 'info');
+            }
+        }
+
+        function cancelAutomation(button) {
+            if (confirm('Cancel this automation task?')) {
+                const taskItem = button.closest('.automation-item');
+                taskItem.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => taskItem.remove(), 300);
+                showNotification('❌ Automation task cancelled.', 'info');
+            }
+        }
+
+        function customizePlaybooks() {
+            showNotification('🔧 Playbook customization panel would open here. Feature in development.', 'info');
+        }
+
+        function navigateTo(page) {
+            // In a real implementation, this would navigate to the specified page
+            showNotification(`🔗 Navigating to ${page.replace('.html', '').replace('_', ' ')}...`, 'info');
+            
+            // Simulate navigation delay
+            setTimeout(() => {
+                // window.location.href = page;
+                console.log(`Would navigate to: ${page}`);
+            }, 500);
+        }
+
+        function highlightCriticalData() {
+            // Simulate highlighting critical incidents on dashboard
+            showNotification('🔍 Critical incident filter applied. 7 high-priority cases highlighted.', 'info');
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize with welcome message
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                showNotification('🤖 AI Command Center initialized. Gemma 3n Emergency system ready for commands.', 'success');
+            }, 1000);
+            
+            // Simulate some initial activity
+            setTimeout(() => {
+                addAutomationTask('System health monitoring', 95);
+            }, 2000);
+        });
+
+        // Auto-refresh automations progress
+        setInterval(() => {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach(bar => {
+                const currentWidth = parseInt(bar.style.width);
+                if (currentWidth < 100 && currentWidth > 0) {
+                    const newWidth = Math.min(100, currentWidth + Math.random() * 3);
+                    bar.style.width = newWidth + '%';
+                }
+            });
+        }, 3000);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+K to focus command input
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('commandInput').focus();
+            }
+            
+            // Ctrl+Space for voice command
+            if (e.ctrlKey && e.code === 'Space') {
+                e.preventDefault();
+                document.getElementById('voiceBtn').click();
+            }
+        });
+
+        console.log('🤖 AI Command Center powered by Gemma 3n - Emergency Operations System Ready');
+    </script>
+</body>
+</html>

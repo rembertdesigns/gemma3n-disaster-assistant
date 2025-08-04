@@ -207,6 +207,21 @@ class AppConfig:
 config = AppConfig()
 
 # ================================================================================
+# AI COMMAND PROCESSING GLOBALS
+# ================================================================================
+
+# In-memory storage for AI command processing
+command_history = []
+active_automations = {}
+ai_recommendations = []
+system_status = {
+    "model": "Gemma 3n Emergency",
+    "status": "online",
+    "confidence": 98.7,
+    "version": "3.0.1"
+}
+
+# ================================================================================
 # ENHANCED LOGGING SETUP
 # ================================================================================
 
