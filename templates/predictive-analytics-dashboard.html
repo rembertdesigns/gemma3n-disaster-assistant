@@ -516,6 +516,360 @@
         .heat-level-4 { background: #f87171; }
         .heat-level-5 { background: #dc2626; }
 
+        .trend-up { color: var(--color-optimal); }
+        .trend-down { color: var(--color-critical); }
+        .trend-stable { color: var(--color-good); }
+
+        /* Scenario Settings Modal Styles */
+        .scenario-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .scenario-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scenario-modal {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 600px;
+            height: 100vh;
+            background: var(--bg-color-main);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            z-index: 1001;
+        }
+
+        .scenario-modal.active {
+            transform: translateX(0);
+        }
+
+        .scenario-modal-header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .scenario-modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .scenario-modal-subtitle {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .scenario-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .scenario-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .scenario-modal-content {
+            padding: 2rem;
+        }
+
+        .scenario-section {
+            margin-bottom: 2rem;
+            background: var(--bg-color-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .scenario-section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-color-base);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .scenario-form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .scenario-form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .scenario-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-color-base);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .scenario-input,
+        .scenario-select,
+        .scenario-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color-main);
+            color: var(--text-color-base);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .scenario-input:focus,
+        .scenario-select:focus,
+        .scenario-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .scenario-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .scenario-slider-container {
+            margin: 1rem 0;
+        }
+
+        .scenario-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-color-light);
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .scenario-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .scenario-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .scenario-slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+            margin-top: 0.5rem;
+        }
+
+        .scenario-slider-value {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+
+        .scenario-checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .scenario-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: var(--bg-color-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .scenario-checkbox-item:hover {
+            background: var(--bg-color-card);
+        }
+
+        .scenario-checkbox {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary-color);
+        }
+
+        .scenario-preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .scenario-preset {
+            background: var(--bg-color-light);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .scenario-preset:hover,
+        .scenario-preset.selected {
+            border-color: var(--primary-color);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .scenario-preset-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--text-color-base);
+        }
+
+        .scenario-preset-desc {
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+        }
+
+        .scenario-results-preview {
+            background: var(--bg-color-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .scenario-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .scenario-result-metric {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-color-main);
+            border-radius: 8px;
+        }
+
+        .scenario-result-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .scenario-result-label {
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+            margin-top: 0.25rem;
+        }
+
+        .scenario-modal-actions {
+            background: var(--bg-color-card);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            bottom: 0;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .scenario-action-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .scenario-action-btn.primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .scenario-action-btn.secondary {
+            background: var(--bg-color-light);
+            color: var(--text-color-base);
+            border: 1px solid var(--border-color);
+        }
+
+        .scenario-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-color-dark);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+
         @media (max-width: 768px) {
             .dashboard-container {
                 padding: 1rem;
@@ -549,6 +903,16 @@
                 flex-direction: column;
                 align-items: center;
             }
+
+            .scenario-modal {
+                width: 100%;
+                right: 0;
+            }
+
+            .scenario-preset-grid,
+            .scenario-checkbox-group {
+                grid-template-columns: 1fr;
+            }
         }
 
         @keyframes pulse-alert {
@@ -559,10 +923,6 @@
         .critical-alert {
             animation: pulse-alert 2s infinite;
         }
-
-        .trend-up { color: var(--color-optimal); }
-        .trend-down { color: var(--color-critical); }
-        .trend-stable { color: var(--color-good); }
     </style>
 </head>
 <body>
@@ -797,15 +1157,372 @@
             <a href="/map-reports" class="nav-button">
                 🗺️ Map Reports
             </a>
-            <a href="/resource-optimizer" class="nav-button">
+            <a href="/real-time-resource-optimizer" class="nav-button">
                 ⚙️ Resource Optimizer
             </a>
             <a href="/report-archive" class="nav-button">
                 📚 Historical Archive
             </a>
-            <a href="/scenario-settings" class="nav-button">
+            <button class="nav-button" onclick="openScenarioSettings()">
                 🔧 Scenario Settings
-            </a>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scenario Settings Modal -->
+    <div class="scenario-modal-overlay" id="scenarioModalOverlay" onclick="closeScenarioSettings()">
+        <div class="scenario-modal" id="scenarioModal" onclick="event.stopPropagation()">
+            <div class="scenario-modal-header">
+                <h2 class="scenario-modal-title">🔧 Scenario Settings & Configuration</h2>
+                <p class="scenario-modal-subtitle">Configure and simulate crisis scenarios for predictive planning</p>
+                <button class="scenario-close-btn" onclick="closeScenarioSettings()">×</button>
+            </div>
+
+            <div class="scenario-modal-content">
+                <!-- Quick Presets Section -->
+                <div class="scenario-section">
+                    <h3 class="scenario-section-title">⚡ Quick Preset Templates</h3>
+                    <div class="scenario-preset-grid">
+                        <div class="scenario-preset" onclick="selectPreset('storm-surge')">
+                            <div class="scenario-preset-title">🌪️ Storm Surge</div>
+                            <div class="scenario-preset-desc">Major weather event with flooding and power outages</div>
+                        </div>
+                        <div class="scenario-preset" onclick="selectPreset('mass-casualty')">
+                            <div class="scenario-preset-title">🚨 Mass Casualty</div>
+                            <div class="scenario-preset-desc">Large-scale incident requiring immediate surge response</div>
+                        </div>
+                        <div class="scenario-preset" onclick="selectPreset('pandemic-wave')">
+                            <div class="scenario-preset-title">🦠 Pandemic Wave</div>
+                            <div class="scenario-preset-desc">Infectious disease surge with isolation requirements</div>
+                        </div>
+                        <div class="scenario-preset" onclick="selectPreset('cyber-attack')">
+                            <div class="scenario-preset-title">💻 Cyber Attack</div>
+                            <div class="scenario-preset-desc">IT system disruption affecting operations</div>
+                        </div>
+                        <div class="scenario-preset" onclick="selectPreset('staff-shortage')">
+                            <div class="scenario-preset-title">👥 Staff Shortage</div>
+                            <div class="scenario-preset-desc">Critical staffing deficit during peak demand</div>
+                        </div>
+                        <div class="scenario-preset" onclick="selectPreset('custom')">
+                            <div class="scenario-preset-title">🎯 Custom Scenario</div>
+                            <div class="scenario-preset-desc">Build your own scenario from scratch</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenario Parameters Section -->
+                <div class="scenario-section">
+                    <h3 class="scenario-section-title">📋 Scenario Parameters</h3>
+                    
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Scenario Name</label>
+                        <input type="text" class="scenario-input" id="scenarioName" placeholder="Enter scenario name for reference">
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Description</label>
+                        <textarea class="scenario-textarea" id="scenarioDescription" placeholder="Detailed description of the scenario conditions and assumptions"></textarea>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Scenario Type</label>
+                        <select class="scenario-select" id="scenarioTypeDetailed">
+                            <option value="mass-casualty">Mass Casualty Event</option>
+                            <option value="severe-weather">Severe Weather Emergency</option>
+                            <option value="outbreak">Disease Outbreak</option>
+                            <option value="resource-shortage">Resource Shortage</option>
+                            <option value="infrastructure">Infrastructure Failure</option>
+                            <option value="cyber-security">Cyber Security Incident</option>
+                            <option value="chemical-hazmat">Chemical/HAZMAT Incident</option>
+                            <option value="custom">Custom Scenario</option>
+                        </select>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Time Window <span class="tooltip" data-tooltip="Duration of the scenario simulation">ℹ️</span></label>
+                        <select class="scenario-select" id="timeWindow">
+                            <option value="6h">Next 6 Hours</option>
+                            <option value="12h">Next 12 Hours</option>
+                            <option value="24h" selected>Next 24 Hours</option>
+                            <option value="48h">Next 48 Hours</option>
+                            <option value="72h">Next 3 Days</option>
+                            <option value="1w">Next Week</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Event Frequency & Intensity Section -->
+                <div class="scenario-section">
+                    <h3 class="scenario-section-title">📊 Event Frequency & Intensity</h3>
+                    
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Incident Rate Increase <span class="scenario-slider-value" id="incidentRateValue">+50%</span></label>
+                        <div class="scenario-slider-container">
+                            <input type="range" class="scenario-slider" id="incidentRate" min="0" max="300" value="50" oninput="updateSliderValue('incidentRate', this.value)">
+                            <div class="scenario-slider-labels">
+                                <span>Baseline</span>
+                                <span>+100%</span>
+                                <span>+200%</span>
+                                <span>+300%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Severity Distribution <span class="scenario-slider-value" id="severityValue">Moderate</span></label>
+                        <div class="scenario-slider-container">
+                            <input type="range" class="scenario-slider" id="severity" min="1" max="5" value="3" oninput="updateSeverityValue(this.value)">
+                            <div class="scenario-slider-labels">
+                                <span>Minor</span>
+                                <span>Moderate</span>
+                                <span>Major</span>
+                                <span>Critical</span>
+                                <span>Catastrophic</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Event Frequency Pattern</label>
+                        <select class="scenario-select" id="frequencyPattern">
+                            <option value="constant">Constant Rate</option>
+                            <option value="peak-hours">Peak During Rush Hours</option>
+                            <option value="random-bursts">Random Burst Events</option>
+                            <option value="escalating">Escalating Over Time</option>
+                            <option value="de-escalating">De-escalating Over Time</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Location & Region Filters Section -->
+                <div class="scenario-section">
+                    <h3 class="scenario-section-title">📍 Location & Region Filters</h3>
+                    
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Affected Regions</label>
+                        <div class="scenario-checkbox-group">
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="north-sector" checked>
+                                <span>North Sector</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="south-sector">
+                                <span>South Sector</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="east-sector">
+                                <span>East Sector</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="west-sector">
+                                <span>West Sector</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="downtown">
+                                <span>Downtown Core</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="suburbs">
+                                <span>Suburban Areas</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Hospital/Facility Focus</label>
+                        <div class="scenario-checkbox-group">
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="general-hospital" checked>
+                                <span>General Hospital</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="trauma-center">
+                                <span>Trauma Center</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="pediatric-hospital">
+                                <span>Pediatric Hospital</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="specialty-clinics">
+                                <span>Specialty Clinics</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resource Variables Section -->
+                <div class="scenario-section">
+                    <h3 class="scenario-section-title">🏥 Resource Variables</h3>
+                    
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Available Beds <span class="scenario-slider-value" id="bedsValue">85%</span></label>
+                        <div class="scenario-slider-container">
+                            <input type="range" class="scenario-slider" id="availableBeds" min="0" max="100" value="85" oninput="updateSliderValue('beds', this.value)">
+                            <div class="scenario-slider-labels">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Staff Availability <span class="scenario-slider-value" id="staffValue">90%</span></label>
+                        <div class="scenario-slider-container">
+                            <input type="range" class="scenario-slider" id="staffAvailability" min="0" max="100" value="90" oninput="updateSliderValue('staff', this.value)">
+                            <div class="scenario-slider-labels">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Vehicle Fleet <span class="scenario-slider-value" id="vehicleValue">80%</span></label>
+                        <div class="scenario-slider-container">
+                            <input type="range" class="scenario-slider" id="vehicleFleet" min="0" max="100" value="80" oninput="updateSliderValue('vehicle', this.value)">
+                            <div class="scenario-slider-labels">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Supply Levels <span class="scenario-slider-value" id="supplyValue">75%</span></label>
+                        <div class="scenario-slider-container">
+                            <input type="range" class="scenario-slider" id="supplyLevels" min="0" max="100" value="75" oninput="updateSliderValue('supply', this.value)">
+                            <div class="scenario-slider-labels">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- External Factors Section -->
+                <div class="scenario-section">
+                    <h3 class="scenario-section-title">🌡️ External Factors & Modifiers</h3>
+                    
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Weather Impact</label>
+                        <select class="scenario-select" id="weatherImpact">
+                            <option value="none">Normal Conditions</option>
+                            <option value="minor">Minor Weather Impact</option>
+                            <option value="moderate">Moderate Storm</option>
+                            <option value="severe">Severe Weather Event</option>
+                            <option value="extreme">Extreme Weather Emergency</option>
+                        </select>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Infrastructure Status</label>
+                        <div class="scenario-checkbox-group">
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="power-outage">
+                                <span>Power Outages</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="comm-disruption">
+                                <span>Communication Disruption</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="transport-issues">
+                                <span>Transportation Issues</span>
+                            </label>
+                            <label class="scenario-checkbox-item">
+                                <input type="checkbox" class="scenario-checkbox" value="water-shortage">
+                                <span>Water System Problems</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Population Factors</label>
+                        <select class="scenario-select" id="populationFactors">
+                            <option value="normal">Normal Population Density</option>
+                            <option value="event">Special Event (Increased Population)</option>
+                            <option value="evacuation">Evacuation in Progress</option>
+                            <option value="shelter">Mass Sheltering Active</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Simulation Controls Section -->
+                <div class="scenario-section">
+                    <h3 class="scenario-section-title">⚙️ Simulation Controls</h3>
+                    
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Model Selection</label>
+                        <select class="scenario-select" id="modelSelection">
+                            <option value="default">Default Predictive Model</option>
+                            <option value="accelerated">Accelerated Timeline Model</option>
+                            <option value="detailed">High Detail Analysis</option>
+                            <option value="worst-case">Worst Case Scenario</option>
+                            <option value="monte-carlo">Monte Carlo Simulation</option>
+                        </select>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Confidence Level <span class="scenario-slider-value" id="confidenceValue">95%</span></label>
+                        <div class="scenario-slider-container">
+                            <input type="range" class="scenario-slider" id="confidenceLevel" min="80" max="99" value="95" oninput="updateSliderValue('confidence', this.value)">
+                            <div class="scenario-slider-labels">
+                                <span>80%</span>
+                                <span>90%</span>
+                                <span>95%</span>
+                                <span>99%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scenario-form-group">
+                        <label class="scenario-label">Baseline Comparison</label>
+                        <select class="scenario-select" id="baselineComparison">
+                            <option value="current">Current Conditions</option>
+                            <option value="historical">Historical Average</option>
+                            <option value="seasonal">Seasonal Baseline</option>
+                            <option value="saved-scenario">Saved Scenario</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Results Preview Section -->
+                <div class="scenario-section">
+                    <h3 class="scenario-section-title">📊 Results Preview</h3>
+                    <div class="scenario-results-preview">
+                        <p>Run simulation to see projected outcomes and resource impacts</p>
+                        <div class="scenario-results-grid" id="previewResults" style="display: none;">
+                            <div class="scenario-result-metric">
+                                <div class="scenario-result-value" id="previewBeds">+45</div>
+                                <div class="scenario-result-label">Additional Beds Needed</div>
+                            </div>
+                            <div class="scenario-result-metric">
+                                <div class="scenario-result-value" id="previewStaff">+28</div>
+                                <div class="scenario-result-label">Additional Staff Required</div>
+                            </div>
+                            <div class="scenario-result-metric">
+                                <div class="scenario-result-value" id="previewVehicles">+8</div>
+                                <div class="scenario-result-label">Additional Vehicles</div>
+                            </div>
+                            <div class="scenario-result-metric">
+                                <div class="scenario-result-value" id="previewDuration">12-18h</div>
+                                <div class="scenario-result-label">Expected Duration</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario-modal-actions">
+                <button class="scenario-action-btn secondary" onclick="resetScenarioSettings()">Reset</button>
+                <button class="scenario-action-btn secondary" onclick="saveScenario()">Save Scenario</button>
+                <button class="scenario-action-btn primary" onclick="runAdvancedScenario()">Run Simulation</button>
+            </div>
         </div>
     </div>
 
@@ -838,6 +1555,54 @@
                     disaster: { baseImpact: 3.0, duration: '12-48h', staffMultiplier: 2.5 },
                     pandemic: { baseImpact: 2.2, duration: '2-8w', staffMultiplier: 1.8 },
                     staffing: { baseImpact: 0.8, duration: '1-3d', staffMultiplier: 0.7 }
+                };
+
+                this.scenarioPresets = {
+                    'storm-surge': {
+                        name: 'Major Storm Surge Response',
+                        type: 'severe-weather',
+                        description: 'Category 3+ storm with flooding, power outages, and infrastructure damage',
+                        incidentRate: 180,
+                        severity: 4,
+                        resources: { beds: 60, staff: 70, vehicles: 50, supplies: 40 },
+                        factors: ['power-outage', 'comm-disruption', 'transport-issues']
+                    },
+                    'mass-casualty': {
+                        name: 'Mass Casualty Incident',
+                        type: 'mass-casualty',
+                        description: 'Large-scale incident requiring immediate surge capacity activation',
+                        incidentRate: 250,
+                        severity: 5,
+                        resources: { beds: 30, staff: 50, vehicles: 60, supplies: 70 },
+                        factors: []
+                    },
+                    'pandemic-wave': {
+                        name: 'Pandemic Surge Wave',
+                        type: 'outbreak',
+                        description: 'Infectious disease surge requiring isolation and specialized care',
+                        incidentRate: 120,
+                        severity: 3,
+                        resources: { beds: 40, staff: 60, vehicles: 85, supplies: 30 },
+                        factors: ['comm-disruption']
+                    },
+                    'cyber-attack': {
+                        name: 'Cyber Security Incident',
+                        type: 'cyber-security',
+                        description: 'IT systems compromised affecting hospital operations',
+                        incidentRate: 80,
+                        severity: 2,
+                        resources: { beds: 90, staff: 80, vehicles: 95, supplies: 85 },
+                        factors: ['comm-disruption']
+                    },
+                    'staff-shortage': {
+                        name: 'Critical Staff Shortage',
+                        type: 'resource-shortage',
+                        description: 'Significant staffing deficit during peak demand period',
+                        incidentRate: 110,
+                        severity: 3,
+                        resources: { beds: 85, staff: 40, vehicles: 90, supplies: 90 },
+                        factors: []
+                    }
                 };
                 
                 this.init();
@@ -1193,6 +1958,207 @@
                 const activityTypes = ['Very Low', 'Low', 'Moderate', 'High', 'Very High', 'Critical'];
                 alert(`Hour ${hour}:00 Activity Details\n\nActivity Level: ${activityTypes[activityLevel]}\nPredicted Incidents: ${3 + activityLevel * 2}\nResource Utilization: ${20 + activityLevel * 15}%\nRecommendation: ${activityLevel > 3 ? 'Increase staffing' : 'Standard operations'}`);
             }
+        }
+
+        // Scenario Settings Functions
+        function openScenarioSettings() {
+            document.getElementById('scenarioModalOverlay').classList.add('active');
+            document.getElementById('scenarioModal').classList.add('active');
+        }
+
+        function closeScenarioSettings() {
+            document.getElementById('scenarioModalOverlay').classList.remove('active');
+            document.getElementById('scenarioModal').classList.remove('active');
+        }
+
+        function selectPreset(presetId) {
+            // Remove previous selections
+            document.querySelectorAll('.scenario-preset').forEach(preset => {
+                preset.classList.remove('selected');
+            });
+            
+            // Select current preset
+            event.target.closest('.scenario-preset').classList.add('selected');
+            
+            // Load preset data if available
+            if (analytics.scenarioPresets[presetId]) {
+                const preset = analytics.scenarioPresets[presetId];
+                document.getElementById('scenarioName').value = preset.name;
+                document.getElementById('scenarioDescription').value = preset.description;
+                document.getElementById('scenarioTypeDetailed').value = preset.type;
+                document.getElementById('incidentRate').value = preset.incidentRate;
+                document.getElementById('severity').value = preset.severity;
+                
+                // Update resource sliders
+                document.getElementById('availableBeds').value = preset.resources.beds;
+                document.getElementById('staffAvailability').value = preset.resources.staff;
+                document.getElementById('vehicleFleet').value = preset.resources.vehicles;
+                document.getElementById('supplyLevels').value = preset.resources.supplies;
+                
+                // Update all slider values
+                updateSliderValue('incidentRate', preset.incidentRate);
+                updateSeverityValue(preset.severity);
+                updateSliderValue('beds', preset.resources.beds);
+                updateSliderValue('staff', preset.resources.staff);
+                updateSliderValue('vehicle', preset.resources.vehicles);
+                updateSliderValue('supply', preset.resources.supplies);
+                
+                // Check appropriate infrastructure factors
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = preset.factors.includes(checkbox.value);
+                });
+            }
+        }
+
+        function updateSliderValue(type, value) {
+            const valueMap = {
+                'incidentRate': `+${value}%`,
+                'beds': `${value}%`,
+                'staff': `${value}%`,
+                'vehicle': `${value}%`,
+                'supply': `${value}%`,
+                'confidence': `${value}%`
+            };
+            
+            const element = document.getElementById(`${type}Value`);
+            if (element) {
+                element.textContent = valueMap[type] || `${value}%`;
+            }
+        }
+
+        function updateSeverityValue(value) {
+            const severityMap = {
+                1: 'Minor',
+                2: 'Low',
+                3: 'Moderate',
+                4: 'Major',
+                5: 'Critical'
+            };
+            document.getElementById('severityValue').textContent = severityMap[value] || 'Moderate';
+        }
+
+        function runAdvancedScenario() {
+            // Collect all form data
+            const scenarioData = {
+                name: document.getElementById('scenarioName').value,
+                description: document.getElementById('scenarioDescription').value,
+                type: document.getElementById('scenarioTypeDetailed').value,
+                timeWindow: document.getElementById('timeWindow').value,
+                incidentRate: document.getElementById('incidentRate').value,
+                severity: document.getElementById('severity').value,
+                frequencyPattern: document.getElementById('frequencyPattern').value,
+                weatherImpact: document.getElementById('weatherImpact').value,
+                populationFactors: document.getElementById('populationFactors').value,
+                modelSelection: document.getElementById('modelSelection').value,
+                confidenceLevel: document.getElementById('confidenceLevel').value,
+                baselineComparison: document.getElementById('baselineComparison').value,
+                resources: {
+                    beds: document.getElementById('availableBeds').value,
+                    staff: document.getElementById('staffAvailability').value,
+                    vehicles: document.getElementById('vehicleFleet').value,
+                    supplies: document.getElementById('supplyLevels').value
+                }
+            };
+            
+            // Calculate impacts based on scenario data
+            const baseImpact = parseInt(scenarioData.incidentRate) / 100;
+            const severityMultiplier = parseInt(scenarioData.severity) / 3;
+            const resourceConstraint = Math.min(
+                scenarioData.resources.beds,
+                scenarioData.resources.staff,
+                scenarioData.resources.vehicles,
+                scenarioData.resources.supplies
+            ) / 100;
+            
+            const bedsNeeded = Math.round(25 * baseImpact * severityMultiplier / resourceConstraint);
+            const staffNeeded = Math.round(15 * baseImpact * severityMultiplier);
+            const vehiclesNeeded = Math.round(5 * baseImpact * severityMultiplier);
+            
+            // Duration calculation
+            const durationHours = Math.round(6 + (baseImpact * severityMultiplier * 8));
+            const duration = durationHours > 24 ? `${Math.round(durationHours/24)}d` : `${durationHours}h`;
+            
+            // Update preview results
+            document.getElementById('previewBeds').textContent = `+${bedsNeeded}`;
+            document.getElementById('previewStaff').textContent = `+${staffNeeded}`;
+            document.getElementById('previewVehicles').textContent = `+${vehiclesNeeded}`;
+            document.getElementById('previewDuration').textContent = duration;
+            
+            // Show results
+            document.getElementById('previewResults').style.display = 'grid';
+            
+            // Update main dashboard scenario results
+            document.getElementById('impactBeds').textContent = `+${bedsNeeded}`;
+            document.getElementById('impactStaff').textContent = `+${staffNeeded}`;
+            document.getElementById('impactDuration').textContent = duration;
+            
+            console.log('Advanced scenario simulation completed:', scenarioData);
+            
+            // Show success message
+            alert(`Scenario "${scenarioData.name}" simulation completed!\n\nKey Results:\n• Additional beds needed: ${bedsNeeded}\n• Additional staff required: ${staffNeeded}\n• Expected duration: ${duration}\n\nResults have been applied to the main dashboard.`);
+        }
+
+        function saveScenario() {
+            const scenarioName = document.getElementById('scenarioName').value || 'Unnamed Scenario';
+            const savedScenarios = JSON.parse(localStorage.getItem('savedScenarios') || '[]');
+            
+            const scenarioData = {
+                id: Date.now(),
+                name: scenarioName,
+                description: document.getElementById('scenarioDescription').value,
+                type: document.getElementById('scenarioTypeDetailed').value,
+                savedAt: new Date().toISOString(),
+                // Include all other scenario parameters
+            };
+            
+            savedScenarios.push(scenarioData);
+            localStorage.setItem('savedScenarios', JSON.stringify(savedScenarios));
+            
+            alert(`Scenario "${scenarioName}" saved successfully!`);
+        }
+
+        function resetScenarioSettings() {
+            // Reset all form fields to defaults
+            document.getElementById('scenarioName').value = '';
+            document.getElementById('scenarioDescription').value = '';
+            document.getElementById('scenarioTypeDetailed').value = 'mass-casualty';
+            document.getElementById('timeWindow').value = '24h';
+            document.getElementById('incidentRate').value = '50';
+            document.getElementById('severity').value = '3';
+            document.getElementById('frequencyPattern').value = 'constant';
+            document.getElementById('weatherImpact').value = 'none';
+            document.getElementById('populationFactors').value = 'normal';
+            document.getElementById('modelSelection').value = 'default';
+            document.getElementById('confidenceLevel').value = '95';
+            document.getElementById('baselineComparison').value = 'current';
+            
+            // Reset resource sliders
+            document.getElementById('availableBeds').value = '85';
+            document.getElementById('staffAvailability').value = '90';
+            document.getElementById('vehicleFleet').value = '80';
+            document.getElementById('supplyLevels').value = '75';
+            
+            // Update slider displays
+            updateSliderValue('incidentRate', 50);
+            updateSeverityValue(3);
+            updateSliderValue('beds', 85);
+            updateSliderValue('staff', 90);
+            updateSliderValue('vehicle', 80);
+            updateSliderValue('supply', 75);
+            updateSliderValue('confidence', 95);
+            
+            // Uncheck all checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Remove preset selections
+            document.querySelectorAll('.scenario-preset').forEach(preset => {
+                preset.classList.remove('selected');
+            });
+            
+            // Hide results
+            document.getElementById('previewResults').style.display = 'none';
         }
 
         // Global functions for UI interactions
