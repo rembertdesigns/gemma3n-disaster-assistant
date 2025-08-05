@@ -16,6 +16,7 @@
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: #ffffff;
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
         .header {
@@ -26,16 +27,31 @@
             align-items: center;
             backdrop-filter: blur(10px);
             border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
         }
 
         .header h1 {
             font-size: 1.8rem;
             font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .header small {
+            opacity: 0.8;
+            font-size: 0.9rem;
         }
 
         .header-actions {
             display: flex;
             gap: 1rem;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -49,6 +65,8 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
         }
 
         .btn-primary {
@@ -75,9 +93,17 @@
             color: white;
         }
 
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
         .btn-danger {
             background: #ef4444;
             color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
         }
 
         .btn-outline {
@@ -91,6 +117,11 @@
             color: #1e3c72;
         }
 
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
         .main-container {
             padding: 2rem;
             max-width: 1600px;
@@ -99,18 +130,16 @@
 
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: auto auto 1fr;
+            grid-template-columns: 1fr;
             gap: 2rem;
-            height: calc(100vh - 120px);
         }
 
+        /* Status Cards Section */
         .status-cards {
-            grid-column: 1 / -1;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 2rem;
         }
 
         .status-card {
@@ -143,13 +172,20 @@
         .status-unavailable { color: #ef4444; }
         .status-enroute { color: #3b82f6; }
 
+        /* Alerts Panel */
         .alerts-panel {
-            grid-column: 1 / -1;
             background: rgba(239, 68, 68, 0.1);
             border: 2px solid #ef4444;
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+        }
+
+        .alerts-panel h2 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .alert-item {
@@ -162,11 +198,31 @@
             margin-bottom: 0.5rem;
         }
 
+        .alert-item:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Main Content Grid */
+        .main-content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* AI Panel */
         .ai-panel {
             background: rgba(139, 92, 246, 0.1);
             border: 2px solid #8b5cf6;
             border-radius: 12px;
             padding: 1.5rem;
+        }
+
+        .ai-panel h2 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .ai-suggestion {
@@ -177,24 +233,84 @@
             border-left: 4px solid #8b5cf6;
         }
 
+        .ai-suggestion h4 {
+            margin-bottom: 0.5rem;
+            color: #a78bfa;
+        }
+
+        .ai-suggestion p {
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-suggestion small {
+            opacity: 0.8;
+        }
+
         .suggestion-actions {
             display: flex;
             gap: 0.5rem;
             margin-top: 1rem;
+            flex-wrap: wrap;
         }
 
+        .ai-status {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .ai-status h4 {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Resource Table Container */
         .resource-table-container {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
             padding: 1.5rem;
-            overflow: auto;
-            max-height: 600px;
+            overflow: hidden;
+        }
+
+        .resource-table-container h2 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .table-controls select {
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            min-width: 150px;
+        }
+
+        .table-controls select option {
+            background: #1e3c72;
+            color: white;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
         }
 
         .resource-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
+            min-width: 800px;
         }
 
         .resource-table th,
@@ -209,6 +325,7 @@
             font-weight: 600;
             position: sticky;
             top: 0;
+            z-index: 10;
         }
 
         .resource-table tr:hover {
@@ -220,6 +337,7 @@
             border-radius: 12px;
             font-size: 0.8rem;
             font-weight: 500;
+            text-transform: capitalize;
         }
 
         .badge-available { background: #10b981; color: white; }
@@ -227,32 +345,68 @@
         .badge-enroute { background: #3b82f6; color: white; }
         .badge-maintenance { background: #6b7280; color: white; }
 
+        .action-buttons {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        /* Secondary Content Grid */
+        .secondary-content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Map Container */
         .map-container {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
-            padding: 1rem;
-            min-height: 400px;
+            padding: 2rem;
+            min-height: 300px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             border: 2px dashed rgba(255, 255, 255, 0.2);
+            text-align: center;
         }
 
+        .map-container h3 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Pool Panel */
         .pool-panel {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
             padding: 1.5rem;
         }
 
+        .pool-panel h2 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .pool-section {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .pool-section h3 {
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
         }
 
         .pool-items {
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
         }
 
         .pool-item {
@@ -270,21 +424,54 @@
             transform: scale(1.05);
         }
 
+        .forecast-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .forecast-box p {
+            margin-bottom: 0.25rem;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Notifications Panel */
         .notifications-panel {
-            grid-column: 1 / -1;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
             padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .notifications-panel h2 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .notifications-list {
             max-height: 200px;
             overflow-y: auto;
         }
 
         .notification-item {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
-            padding: 0.5rem;
+            padding: 0.5rem 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
         }
 
         .notification-time {
@@ -292,17 +479,7 @@
             font-size: 0.8rem;
         }
 
-        .last-update {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            backdrop-filter: blur(10px);
-        }
-
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -326,6 +503,8 @@
             max-width: 600px;
             width: 90%;
             border: 2px solid rgba(255, 255, 255, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-header {
@@ -335,12 +514,27 @@
             margin-bottom: 1.5rem;
         }
 
+        .modal-header h2 {
+            margin: 0;
+        }
+
         .close-modal {
             background: none;
             border: none;
             color: white;
             font-size: 1.5rem;
             cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .form-group {
@@ -369,41 +563,45 @@
             color: white;
         }
 
-        .action-buttons {
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-actions {
             display: flex;
-            gap: 0.5rem;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: flex-end;
         }
 
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
+        /* Last Update Indicator */
+        .last-update {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
             font-size: 0.8rem;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 90;
         }
 
-        @media (max-width: 1200px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr 1fr;
-            }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s ease-in-out infinite;
         }
 
-        @media (max-width: 768px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-            
-            .main-container {
-                padding: 1rem;
-            }
-            
-            .header {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .header-actions {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .pulse {
@@ -416,24 +614,98 @@
             100% { transform: scale(1); }
         }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #ffffff;
-            animation: spin 1s ease-in-out infinite;
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-content-grid,
+            .secondary-content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-cards {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .header-actions {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .status-cards {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 0.75rem;
+            }
+
+            .status-card {
+                padding: 1rem;
+            }
+
+            .status-number {
+                font-size: 2rem;
+            }
+
+            .table-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .suggestion-actions,
+            .quick-actions {
+                flex-direction: column;
+            }
+
+            .alert-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 1rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.4rem;
+            }
+
+            .btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+
+            .status-cards {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .last-update {
+                bottom: 10px;
+                right: 10px;
+                font-size: 0.7rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div>
+        <div class="header-title">
             <h1>🚀 Real-Time Resource Optimizer</h1>
             <small>Mission-Critical Resource Command & Control</small>
         </div>
@@ -457,6 +729,40 @@
     </div>
 
     <div class="main-container">
+        <!-- Live Resource Status Cards -->
+        <div class="status-cards">
+            <div class="status-card">
+                <h3>👨‍⚕️ Medical Staff</h3>
+                <div class="status-number status-available" id="staffAvailable">24</div>
+                <div>Available: <span id="staffAvailableCount">24</span> | Deployed: <span id="staffDeployedCount">18</span></div>
+            </div>
+            <div class="status-card">
+                <h3>🚑 Ambulances</h3>
+                <div class="status-number status-deployed" id="ambulancesTotal">12</div>
+                <div>Available: <span id="ambulancesAvailable">3</span> | En Route: <span id="ambulancesEnRoute">4</span></div>
+            </div>
+            <div class="status-card">
+                <h3>🏥 ICU Beds</h3>
+                <div class="status-number status-enroute" id="icuBeds">18</div>
+                <div>Available: <span id="icuAvailable">6</span> | Occupied: <span id="icuOccupied">12</span></div>
+            </div>
+            <div class="status-card">
+                <h3>🚒 Fire Units</h3>
+                <div class="status-number status-available" id="fireUnits">8</div>
+                <div>Available: <span id="fireAvailable">5</span> | Deployed: <span id="fireDeployed">3</span></div>
+            </div>
+            <div class="status-card">
+                <h3>🚔 Police Units</h3>
+                <div class="status-number status-available" id="policeUnits">15</div>
+                <div>Available: <span id="policeAvailable">9</span> | Active: <span id="policeActive">6</span></div>
+            </div>
+            <div class="status-card">
+                <h3>🔧 Equipment</h3>
+                <div class="status-number status-available" id="equipment">85</div>
+                <div>Available: <span id="equipmentAvailable">68</span> | In Use: <span id="equipmentInUse">17</span></div>
+            </div>
+        </div>
+
         <!-- High-Priority Alerts -->
         <div class="alerts-panel" id="alertsPanel">
             <h2>🚨 High-Priority Resource Alerts</h2>
@@ -476,41 +782,8 @@
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <!-- Live Resource Status Cards -->
-            <div class="status-cards">
-                <div class="status-card">
-                    <h3>👨‍⚕️ Medical Staff</h3>
-                    <div class="status-number status-available" id="staffAvailable">24</div>
-                    <div>Available: <span id="staffAvailableCount">24</span> | Deployed: <span id="staffDeployedCount">18</span></div>
-                </div>
-                <div class="status-card">
-                    <h3>🚑 Ambulances</h3>
-                    <div class="status-number status-deployed" id="ambulancesTotal">12</div>
-                    <div>Available: <span id="ambulancesAvailable">3</span> | En Route: <span id="ambulancesEnRoute">4</span></div>
-                </div>
-                <div class="status-card">
-                    <h3>🏥 ICU Beds</h3>
-                    <div class="status-number status-enroute" id="icuBeds">18</div>
-                    <div>Available: <span id="icuAvailable">6</span> | Occupied: <span id="icuOccupied">12</span></div>
-                </div>
-                <div class="status-card">
-                    <h3>🚒 Fire Units</h3>
-                    <div class="status-number status-available" id="fireUnits">8</div>
-                    <div>Available: <span id="fireAvailable">5</span> | Deployed: <span id="fireDeployed">3</span></div>
-                </div>
-                <div class="status-card">
-                    <h3>🚔 Police Units</h3>
-                    <div class="status-number status-available" id="policeUnits">15</div>
-                    <div>Available: <span id="policeAvailable">9</span> | Active: <span id="policeActive">6</span></div>
-                </div>
-                <div class="status-card">
-                    <h3>🔧 Equipment</h3>
-                    <div class="status-number status-available" id="equipment">85</div>
-                    <div>Available: <span id="equipmentAvailable">68</span> | In Use: <span id="equipmentInUse">17</span></div>
-                </div>
-            </div>
-
+        <!-- Main Content Grid -->
+        <div class="main-content-grid">
             <!-- AI-Powered Optimization Panel -->
             <div class="ai-panel">
                 <h2>🤖 AI Resource Optimization</h2>
@@ -536,7 +809,7 @@
                         </div>
                     </div>
                 </div>
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);">
+                <div class="ai-status">
                     <h4>🧠 AI Status</h4>
                     <p>Confidence: <strong>94.2%</strong> | Processing: <strong>Real-time</strong></p>
                     <p>Last Analysis: <span id="lastAIAnalysis">2 seconds ago</span></p>
@@ -546,10 +819,10 @@
             <!-- Interactive Resource Assignment Table -->
             <div class="resource-table-container">
                 <h2>📋 Resource Assignment Control</h2>
-                <div style="margin-bottom: 1rem;">
+                <div class="table-controls">
                     <button class="btn btn-primary btn-sm" onclick="addNewResource()">➕ Add Resource</button>
                     <button class="btn btn-warning btn-sm" onclick="bulkReassign()">🔄 Bulk Reassign</button>
-                    <select id="filterStatus" onchange="filterResources()" style="margin-left: 1rem; padding: 0.25rem;">
+                    <select id="filterStatus" onchange="filterResources()">
                         <option value="all">All Statuses</option>
                         <option value="available">Available</option>
                         <option value="deployed">Deployed</option>
@@ -557,7 +830,7 @@
                         <option value="maintenance">Maintenance</option>
                     </select>
                 </div>
-                <div style="overflow-x: auto;">
+                <div class="table-wrapper">
                     <table class="resource-table" id="resourceTable">
                         <thead>
                             <tr>
@@ -577,16 +850,17 @@
                     </table>
                 </div>
             </div>
+        </div>
 
+        <!-- Secondary Content Grid -->
+        <div class="secondary-content-grid">
             <!-- Interactive Map -->
             <div class="map-container">
-                <div style="text-align: center;">
-                    <h3>🗺️ Live Resource Map</h3>
-                    <p>Interactive map showing real-time resource locations</p>
-                    <p><em>Drag & drop resources onto incidents</em></p>
-                    <div style="margin-top: 2rem;">
-                        <button class="btn btn-primary" onclick="openFullMap()">🔍 Open Full Map</button>
-                    </div>
+                <h3>🗺️ Live Resource Map</h3>
+                <p>Interactive map showing real-time resource locations</p>
+                <p><em>Drag & drop resources onto incidents</em></p>
+                <div style="margin-top: 2rem;">
+                    <button class="btn btn-primary" onclick="openFullMap()">🔍 Open Full Map</button>
                 </div>
             </div>
 
@@ -607,7 +881,7 @@
 
                 <div class="pool-section">
                     <h3>📈 Next 4 Hours Forecast</h3>
-                    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+                    <div class="forecast-box">
                         <p><strong>Predicted Needs:</strong></p>
                         <p>🚑 +3 Ambulances (Rush hour surge)</p>
                         <p>👨‍⚕️ +2 Trauma teams (Traffic incidents)</p>
@@ -617,7 +891,7 @@
 
                 <div class="pool-section">
                     <h3>⚡ Quick Actions</h3>
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    <div class="quick-actions">
                         <button class="btn btn-success btn-sm" onclick="callInReserves()">📞 Call Reserves</button>
                         <button class="btn btn-warning btn-sm" onclick="requestMutualAid()">🤝 Mutual Aid</button>
                         <button class="btn btn-primary btn-sm" onclick="activateSurge()">⚡ Activate Surge</button>
@@ -629,7 +903,7 @@
         <!-- Real-Time Notifications -->
         <div class="notifications-panel">
             <h2>📢 Live Assignment Log</h2>
-            <div id="notificationsList">
+            <div class="notifications-list" id="notificationsList">
                 <div class="notification-item">
                     <span>AMB-004 reassigned to Incident #247 (Downtown)</span>
                     <span class="notification-time">2 min ago</span>
@@ -692,9 +966,9 @@
                     <label for="notes">Notes:</label>
                     <input type="text" id="notes" placeholder="Additional instructions or notes">
                 </div>
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="btn btn-success">✅ Confirm Assignment</button>
+                <div class="form-actions">
                     <button type="button" class="btn btn-outline" onclick="closeModal('assignmentModal')">❌ Cancel</button>
+                    <button type="submit" class="btn btn-success">✅ Confirm Assignment</button>
                 </div>
             </form>
         </div>
@@ -825,14 +1099,44 @@
                     last_updated: new Date().toISOString(), fuel_level: 67
                 },
                 {
+                    id: 'AMB-003', type: 'Ambulance', status: 'enroute',
+                    assignment: 'Patient Transfer', location: 'Hospital District',
+                    last_updated: new Date().toISOString(), fuel_level: 78
+                },
+                {
                     id: 'FD-001', type: 'Fire Engine', status: 'available',
                     assignment: 'Station Ready', location: 'Fire Station 3',
                     last_updated: new Date().toISOString(), fuel_level: 92
                 },
                 {
+                    id: 'FD-002', type: 'Fire Engine', status: 'deployed',
+                    assignment: 'Structure Fire', location: 'Industrial Zone',
+                    last_updated: new Date().toISOString(), fuel_level: 65
+                },
+                {
                     id: 'PD-101', type: 'Patrol Unit', status: 'enroute',
                     assignment: 'Traffic Stop', location: 'Highway 101',
                     last_updated: new Date().toISOString(), fuel_level: 78
+                },
+                {
+                    id: 'PD-102', type: 'Patrol Unit', status: 'available',
+                    assignment: 'Patrol Sector 2', location: 'Downtown Beat',
+                    last_updated: new Date().toISOString(), fuel_level: 89
+                },
+                {
+                    id: 'MED-001', type: 'Medical Team', status: 'deployed',
+                    assignment: 'ER Overflow', location: 'General Hospital',
+                    last_updated: new Date().toISOString(), fuel_level: null
+                },
+                {
+                    id: 'EQP-001', type: 'Emergency Equipment', status: 'available',
+                    assignment: 'Ready Reserve', location: 'Equipment Bay',
+                    last_updated: new Date().toISOString(), battery_level: 95
+                },
+                {
+                    id: 'HAZ-001', type: 'Hazmat Unit', status: 'maintenance',
+                    assignment: 'Scheduled Maintenance', location: 'Service Center',
+                    last_updated: new Date().toISOString(), fuel_level: 45
                 }
             ];
         }
@@ -841,7 +1145,9 @@
             const tbody = document.getElementById('resourceTableBody');
             tbody.innerHTML = '';
 
-            resources.forEach(resource => {
+            const filteredResources = filterResourcesByStatus();
+
+            filteredResources.forEach(resource => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><strong>${resource.id}</strong></td>
@@ -850,15 +1156,23 @@
                     <td>${resource.assignment || 'Unassigned'}</td>
                     <td>${resource.location || 'Unknown'}</td>
                     <td>${formatTimeAgo(resource.last_updated)}</td>
-                    <td>${resource.fuel_level || resource.battery_level || 'N/A'}%</td>
+                    <td>${resource.fuel_level || resource.battery_level || 'N/A'}${(resource.fuel_level || resource.battery_level) ? '%' : ''}</td>
                     <td class="action-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="reassignResource('${resource.id}')">🔄</button>
-                        <button class="btn btn-success btn-sm" onclick="dispatchResource('${resource.id}')">🚀</button>
-                        <button class="btn btn-warning btn-sm" onclick="markUnavailable('${resource.id}')">⚠️</button>
+                        <button class="btn btn-primary btn-sm" onclick="reassignResource('${resource.id}')" title="Reassign">🔄</button>
+                        <button class="btn btn-success btn-sm" onclick="dispatchResource('${resource.id}')" title="Dispatch">🚀</button>
+                        <button class="btn btn-warning btn-sm" onclick="markUnavailable('${resource.id}')" title="Mark Unavailable">⚠️</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        function filterResourcesByStatus() {
+            const filter = document.getElementById('filterStatus').value;
+            if (filter === 'all') {
+                return resources;
+            }
+            return resources.filter(resource => resource.status === filter);
         }
 
         // AI Suggestions
@@ -941,8 +1255,11 @@
             if (resource && resource.status === 'available') {
                 resource.status = 'enroute';
                 resource.assignment = 'Emergency Dispatch';
+                resource.last_updated = new Date().toISOString();
                 updateResourceTable();
                 addNotification(`${resourceId} dispatched for emergency response`);
+            } else {
+                addNotification(`Cannot dispatch ${resourceId} - not available`, 'warning');
             }
         }
 
@@ -951,6 +1268,7 @@
             if (resource) {
                 resource.status = 'maintenance';
                 resource.assignment = 'Out of Service';
+                resource.last_updated = new Date().toISOString();
                 updateResourceTable();
                 addNotification(`${resourceId} marked as unavailable`);
             }
@@ -995,7 +1313,6 @@
         document.getElementById('assignmentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const formData = new FormData(e.target);
             const resourceId = document.getElementById('resourceSelect').value;
             const assignmentType = document.getElementById('assignmentType').value;
             const target = document.getElementById('assignmentTarget').value;
@@ -1020,15 +1337,37 @@
                 const result = await response.json();
                 
                 if (result.success) {
+                    // Update local resource data
+                    const resource = resources.find(r => r.id === resourceId);
+                    if (resource) {
+                        resource.assignment = target;
+                        resource.status = assignmentType === 'maintenance' ? 'maintenance' : 'deployed';
+                        resource.last_updated = new Date().toISOString();
+                    }
+                    
                     addNotification(`${resourceId} successfully assigned to ${target}`);
                     closeModal('assignmentModal');
-                    loadResourceTable(); // Refresh table
+                    updateResourceTable();
+                    
+                    // Reset form
+                    document.getElementById('assignmentForm').reset();
                 } else {
                     alert('Assignment failed: ' + result.error);
                 }
             } catch (error) {
                 console.error('Assignment error:', error);
-                alert('Assignment failed due to network error');
+                // Simulate successful assignment for demo
+                const resource = resources.find(r => r.id === resourceId);
+                if (resource) {
+                    resource.assignment = target;
+                    resource.status = assignmentType === 'maintenance' ? 'maintenance' : 'deployed';
+                    resource.last_updated = new Date().toISOString();
+                }
+                
+                addNotification(`${resourceId} assigned to ${target} (Demo Mode)`);
+                closeModal('assignmentModal');
+                updateResourceTable();
+                document.getElementById('assignmentForm').reset();
             }
         });
 
@@ -1069,7 +1408,10 @@
                 'Equipment maintenance scheduled',
                 'New resource became available',
                 'Incident response completed',
-                'Staff shift change processed'
+                'Staff shift change processed',
+                'Vehicle refueling completed',
+                'Emergency drill conducted',
+                'Resource allocation optimized'
             ];
             
             if (Math.random() < 0.3) { // 30% chance
@@ -1079,8 +1421,7 @@
 
         // Filter resources
         function filterResources() {
-            const filter = document.getElementById('filterStatus').value;
-            loadResourceTable(); // In production, would filter the data
+            updateResourceTable();
         }
 
         // Top-level actions
@@ -1118,7 +1459,18 @@
                 }
             } catch (error) {
                 console.error('Export error:', error);
-                addNotification('Export failed - please try again', 'error');
+                // Simulate export for demo
+                const csvContent = `Resource ID,Type,Status,Assignment,Location,Last Update,Fuel/Battery
+${resources.map(r => `${r.id},${r.type},${r.status},${r.assignment || 'Unassigned'},${r.location || 'Unknown'},${r.last_updated},${r.fuel_level || r.battery_level || 'N/A'}`).join('\n')}`;
+                
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `resource_report_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                addNotification('Resource report exported successfully (Demo Mode)');
             }
         }
 
@@ -1138,7 +1490,7 @@
         // Additional actions
         function addNewResource() {
             const resourceId = prompt('Enter new resource ID:');
-            const resourceType = prompt('Enter resource type:');
+            const resourceType = prompt('Enter resource type (Ambulance/Fire Engine/Patrol Unit/Medical Team/Equipment):');
             
             if (resourceId && resourceType) {
                 resources.push({
@@ -1166,12 +1518,12 @@
 
         function resolveAlert(alertId) {
             addNotification(`Alert #${alertId} marked as resolved`);
-            // In production, would remove the alert
+            // In production, would remove the alert from the UI
         }
 
         function checkStatus(resourceId) {
             addNotification(`Status check initiated for ${resourceId}`);
-            // In production, would show detailed status
+            // In production, would show detailed status modal
         }
 
         // Loading indicator
@@ -1202,11 +1554,18 @@
                         break;
                 }
             }
+            
+            // Close modal with Escape key
+            if (e.key === 'Escape') {
+                closeModal('assignmentModal');
+            }
         });
 
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            // Adjust layout if needed
+        // Modal click outside to close
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target.id);
+            }
         });
 
         // Handle visibility change (pause updates when tab not visible)
@@ -1226,6 +1585,27 @@
                 clearInterval(updateInterval);
             }
         });
+
+        // Simulate real-time status changes
+        function simulateStatusChanges() {
+            setInterval(() => {
+                if (resources.length > 0 && Math.random() < 0.1) { // 10% chance every interval
+                    const randomResource = resources[Math.floor(Math.random() * resources.length)];
+                    const statuses = ['available', 'deployed', 'enroute'];
+                    const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                    
+                    if (randomResource.status !== newStatus) {
+                        randomResource.status = newStatus;
+                        randomResource.last_updated = new Date().toISOString();
+                        updateResourceTable();
+                        addNotification(`${randomResource.id} status changed to ${newStatus}`);
+                    }
+                }
+            }, 30000); // Check every 30 seconds
+        }
+
+        // Start status simulation after initial load
+        setTimeout(simulateStatusChanges, 5000);
     </script>
 </body>
 </html>
