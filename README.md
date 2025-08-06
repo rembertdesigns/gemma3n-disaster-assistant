@@ -865,61 +865,80 @@ gunicorn api:app \
 
 Create .env file with your configuration:
 
-bash
-# Security
+Security
+```
 SECRET_KEY=your-super-secret-key-change-this-in-production
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
 
-# Database
+Database
+```
 DATABASE_URL=sqlite:///data/emergency_response.db
 # For PostgreSQL: postgresql://user:password@localhost/emergency_db
 # For MySQL: mysql://user:password@localhost/emergency_db
+```
 
-# File Uploads
+File Uploads
+```
 MAX_FILE_SIZE_MB=10
 UPLOAD_FOLDER=uploads
+```
 
-# AI Configuration
+AI Configuration
+```
 AI_MODEL_VARIANT=gemma-3n-4b
 AI_CONTEXT_WINDOW=128000
+```
 
-# Rate Limiting
+Rate Limiting
+```
 RATE_LIMIT_REQUESTS=100
 RATE_LIMIT_WINDOW=3600
+```
 
-# Environment
+Environment
+```
 DEBUG=true
 ENVIRONMENT=development
 LOG_LEVEL=INFO
+```
 
-# Optional: External Services
+Optional: External Services
+```
 ENABLE_NOTIFICATIONS=false
 NOTIFICATION_WEBHOOK_URL=https://your-webhook-url.com
+```
 
 
 ### Database Configuration
 
 **SQLite (Default - Development):**
-python
+```
 DATABASE_URL=sqlite:///data/emergency_response.db
-
-
+```
 **PostgreSQL (Production Recommended):**
-bash
-# Install PostgreSQL adapter
+
+Install PostgreSQL adapter
+```
 pip install psycopg2-binary
+```
 
-# Configure connection
+Configure connection
+```
 DATABASE_URL=postgresql://username:password@localhost:5432/emergency_db
-
+```
 
 **MySQL (Alternative):**
-bash
-# Install MySQL adapter
-pip install pymysql
 
-# Configure connection
+Install MySQL adapter
+```
+pip install pymysql
+```
+
+Configure connection
+```
 DATABASE_URL=mysql+pymysql://username:password@localhost:3306/emergency_db
+```
 
 ---
 
