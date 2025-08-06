@@ -1223,7 +1223,6 @@ GET /api/performance-metrics
 }
 ```
 
-
 **🔍 Health Monitoring:**
 
 Comprehensive health check
@@ -1308,7 +1307,7 @@ templates/
 ### API Extensions
 
 **🔌 Custom Endpoints:**
-python
+```
 # Add to api.py
 @app.get("/api/custom/organization-alerts")
 async def get_organization_alerts():
@@ -1317,7 +1316,7 @@ async def get_organization_alerts():
 @app.post("/api/custom/workflow")
 async def custom_workflow(request: CustomRequest):
     return process_organization_workflow(request)
-
+```
 
 ---
 
@@ -1326,85 +1325,98 @@ async def custom_workflow(request: CustomRequest):
 ### Common Issues
 
 **❌ Database Connection Errors:**
-bash
-# Check database file permissions
-ls -la data/emergency_response.db
 
+Check database file permissions
+```
+ls -la data/emergency_response.db
+```
 # Reset database
+```
 rm data/emergency_response.db
 python api.py  # Recreates database
-
+```
 
 **❌ AI Model Loading Issues:**
-bash
-# Check system resources
+
+Check system resources
+```
 python -c "import psutil; print(f'RAM: {psutil.virtual_memory().available/1e9:.1f}GB')"
-
+```
 # Test AI components
+```
 python -c "from api import gemma_processor; print('AI Ready')"
-
+```
 
 **❌ Voice Recognition Problems:**
-bash
-# Check browser compatibility
-# Chrome 90+, Firefox 88+, Safari 14+
 
-# Test microphone permissions
-# Visit: chrome://settings/privacy
+- Check browser compatibility
+- Chrome 90+, Firefox 88+, Safari 14+
+
+- Test microphone permissions
+- Visit: chrome://settings/privacy
 
 
 **❌ WebSocket Connection Issues:**
-javascript
+```js
 // Test WebSocket connection
 const ws = new WebSocket('ws://localhost:8000/ws/dashboard');
 ws.onopen = () => console.log('Connected');
 ws.onerror = (error) => console.error('WebSocket error:', error);
-
+```
 
 ### Performance Optimization
 
 **⚡ Speed Improvements:**
-python
-# Enable database connection pooling
-DATABASE_URL=postgresql+asyncpg://user:pass@host/db
 
-# Use Redis for caching
+Enable database connection pooling
+```
+DATABASE_URL=postgresql+asyncpg://user:pass@host/db
+```
+
+Use Redis for caching
+```
 pip install redis
 export REDIS_URL=redis://localhost:6379
+```
 
-# Optimize AI settings
+Optimize AI settings
+```
 export AI_MODEL_VARIANT=gemma-3n-2b  # Smaller, faster model
 export AI_CONTEXT_WINDOW=32000       # Reduced context for speed
-
+```
 
 **💾 Memory Optimization:**
-bash
-# Limit concurrent requests
+
+Limit concurrent requests
+```
 export WORKER_PROCESSES=2
 export MAX_CONCURRENT_REQUESTS=50
+```
 
-# Enable garbage collection
+Enable garbage collection
+```
 export PYTHONOPTIMIZE=1
-
+```
 
 ### Debug Mode
 
 **🐛 Enable Detailed Logging:**
-bash
+```
 export DEBUG=true
 export LOG_LEVEL=DEBUG
-python api.py
-
+python3 api.py
+```
 
 **🔍 Inspect Database:**
-python
-# In Python shell
+
+In Python shell
+```
 from api import engine
 from sqlalchemy import inspect
 
 inspector = inspect(engine)
 print(inspector.get_table_names())
-
+```
 
 ---
 
@@ -1413,7 +1425,7 @@ print(inspector.get_table_names())
 ### Production Environment
 
 **🌐 Nginx Configuration:**
-nginx
+```
 server {
     listen 80;
     server_name your-emergency-domain.com;
@@ -1433,10 +1445,10 @@ server {
         proxy_set_header Connection "upgrade";
     }
 }
-
+```
 
 **🐳 Docker Compose Production:**
-yaml
+```
 version: '3.8'
 services:
   emergency-app:
@@ -1475,21 +1487,23 @@ services:
 
 volumes:
   postgres_data:
-
+```
 
 ### Scaling & High Availability
 
 **⚖️ Load Balancing:**
-bash
-# Multiple app instances
+
+Multiple app instances
+```
 gunicorn api:app --workers 8 --bind 0.0.0.0:8000
 gunicorn api:app --workers 8 --bind 0.0.0.0:8001
 gunicorn api:app --workers 8 --bind 0.0.0.0:8002
-
+```
 
 **📊 Monitoring Stack:**
-yaml
-# Add to docker-compose.yml
+
+Add to docker-compose.yml
+```
   prometheus:
     image: prom/prometheus
     ports:
@@ -1504,7 +1518,7 @@ yaml
     image: prom/alertmanager
     ports:
       - "9093:9093"
-
+```
 
 ---
 
@@ -1513,42 +1527,58 @@ yaml
 ### Development Setup
 
 **🔧 Development Environment:**
-bash
-# Fork and clone
+
+Fork and clone
+```
 git clone https://github.com/your-username/emergency-response-assistant.git
 cd emergency-response-assistant
+```
 
-# Install dev dependencies
+Install dev dependencies
+```
 pip install -r requirements-dev.txt
+```
 
-# Install pre-commit hooks
+Install pre-commit hooks
+```
 pre-commit install
+```
 
-# Run tests
+Run tests
+```
 pytest tests/ -v
+```
 
-# Code formatting
+Code formatting
+```
 black api.py
 isort api.py
 flake8 api.py
-
+```
 
 ### Testing
 
 **🧪 Run Test Suite:**
-bash
-# Unit tests
+
+Unit tests
+```
 pytest tests/test_api.py -v
+```
 
-# Integration tests
+Integration tests
+```
 pytest tests/test_integration.py -v
+```
 
-# AI model tests
+AI model tests
+```
 pytest tests/test_ai_models.py -v
+```
 
-# Load testing
+Load testing
+```
 locust -f tests/load_test.py --host=http://localhost:8000
-
+```
 
 ### Code Standards
 
