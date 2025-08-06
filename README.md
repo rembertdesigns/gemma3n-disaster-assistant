@@ -1589,17 +1589,22 @@ locust -f tests/load_test.py --host=http://localhost:8000
 - **Documentation:** Comprehensive docstrings
 
 **🔍 Quality Checks:**
-bash
-# Code quality
+
+Code quality
+```
 pylint api.py
 mypy api.py --ignore-missing-imports
+```
 
-# Security scanning
+Security scanning
+```
 bandit -r . -f json -o security-report.json
+```
 
-# Dependency checking
+Dependency checking
+```
 safety check
-
+```
 
 ---
 
@@ -1612,25 +1617,31 @@ safety check
 - **ReDoc:** http://localhost:8000/api/redoc
 
 **📋 Postman Collection:**
-bash
-# Download Postman collection
+
+Download Postman collection
+```
 curl -o emergency-api.postman_collection.json \
   http://localhost:8000/api/postman-collection
-
+```
 
 ### Code Documentation
 
 **📚 Generate Docs:**
-bash
-# Install documentation dependencies
+
+Install documentation dependencies
+```
 pip install sphinx sphinx-rtd-theme
+```
 
-# Generate documentation
+Generate documentation
+```
 sphinx-build -b html docs/ docs/_build/html
+```
 
-# Serve documentation
+Serve documentation
+```
 python -m http.server 8080 --directory docs/_build/html
-
+```
 
 ---
 
@@ -1650,11 +1661,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ### Compliance & Standards
 
-**🏥 Healthcare Compliance:**
-- HIPAA considerations for patient data
-- HL7 FHIR compatibility
-- Medical device software guidance (FDA)
-
 **🌍 International Standards:**
 - ISO 27001 security framework
 - GDPR privacy compliance
@@ -1670,25 +1676,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **📧 Support Channels:**
 - **Documentation:** http://localhost:8000/api/docs
 - **Health Check:** http://localhost:8000/health
-- **GitHub Issues:** https://github.com/your-org/emergency-response-assistant/issues
-- **Community Forum:** [Your Forum Link]
-
-**🚨 Emergency Support:**
-- **Critical Issues:** emergency@your-organization.com
-- **24/7 Hotline:** +1-XXX-XXX-XXXX
-- **Security Issues:** security@your-organization.com
-
-### Community Resources
-
-**📖 Learning Resources:**
-- [Emergency Management Best Practices](link)
-- [AI in Healthcare Guidelines](link)
-- [Crisis Communication Handbook](link)
-
-**🤝 Community:**
-- [Discord Server](link)
-- [Reddit Community](link)
-- [LinkedIn Group](link)
 
 ---
 
@@ -1732,9 +1719,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **🏥 Medical Disclaimer:**
 This system is designed to **supplement**, not **replace**, professional emergency medical services. For life-threatening emergencies, always call your local emergency number (911 in the US) first.
 
-**📍 Regulatory Compliance:**
-Ensure compliance with local emergency services protocols, healthcare regulations, and data protection laws in your jurisdiction.
-
 ---
 
 ## 🙏 Acknowledgments
@@ -1755,5 +1739,3 @@ Ensure compliance with local emergency services protocols, healthcare regulation
 ---
 
 *🆘 **Emergency Response Assistant** - Saving Lives Through Technology*
-
-*For additional help or questions, visit http://localhost:8000/api/docs after starting the application.*
