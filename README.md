@@ -969,7 +969,7 @@ DATABASE_URL=mysql+pymysql://username:password@localhost:3306/emergency_db
 ### For Medical Staff
 
 **🏥 Patient Triage:**
-1. Login at http://localhost:8000/admin
+1. Login at http://localhost:8000/staff-traige-command
 2. Navigate to "Staff Triage Command"
 3. Click "New Patient"
 4. Fill triage form (AI assists automatically)
@@ -1011,20 +1011,23 @@ DATABASE_URL=mysql+pymysql://username:password@localhost:3306/emergency_db
 - **Accuracy:** 94.7% average confidence
 
 **⚡ Real-time Processing:**
-python
-# Voice emergency analysis
+
+Voice emergency analysis
+```
 result = voice_processor.process_emergency_call(
     audio_path="emergency_call.wav",
     context={"location": "downtown", "time": "night"}
 )
+```
 
-# Multimodal assessment
+Multimodal assessment
+```
 assessment = gemma_processor.analyze_multimodal_emergency(
     text="Fire in building",
     image_data=fire_image,
     audio_data=emergency_call
 )
-
+```
 
 **🎯 Capabilities:**
 - Emergency type classification
@@ -1037,8 +1040,9 @@ assessment = gemma_processor.analyze_multimodal_emergency(
 ### AI-Powered Triage
 
 **🏥 Medical Decision Support:**
-python
-# Automatic triage assessment
+
+Automatic triage assessment
+```
 triage_result = await ai_triage_assessment(
     patient_data={
         "age": 45,
@@ -1048,7 +1052,7 @@ triage_result = await ai_triage_assessment(
     }
 )
 # Returns: color, priority, recommendations
-
+```
 
 **📊 Predictive Analytics:**
 - Patient deterioration prediction
@@ -1063,10 +1067,11 @@ triage_result = await ai_triage_assessment(
 ### Core Endpoints
 
 **🚨 Emergency Reporting:**
-http
+```
 POST /api/submit-emergency-report
 Content-Type: multipart/form-data
-
+```
+```
 {
   "type": "fire",
   "description": "Building fire downtown",
@@ -1075,13 +1080,14 @@ Content-Type: multipart/form-data
   "latitude": 37.7749,
   "longitude": -122.4194
 }
-
+```
 
 **🎤 Voice Emergency (PUBLIC):**
-http
+```
 POST /api/submit-voice-report
 Content-Type: multipart/form-data
-
+```
+```
 {
   "transcript": "There's a fire at 123 Main Street",
   "urgency": "critical",
@@ -1089,10 +1095,10 @@ Content-Type: multipart/form-data
   "latitude": 37.7749,
   "longitude": -122.4194
 }
-
+```
 
 **🏥 Patient Management:**
-http
+```
 POST /api/ai-triage-assessment
 Content-Type: multipart/form-data
 
@@ -1104,24 +1110,26 @@ Content-Type: multipart/form-data
   "breathing": "labored",
   "severity": "critical"
 }
+```
 
 
 **📊 Analytics Data:**
-http
+```
 GET /api/analytics-dashboard-data?timeframe=24h
 Authorization: Bearer <token>
-
+```
+```
 Response: {
   "kpis": {...},
   "ai_insights": {...},
   "resource_analysis": {...}
 }
-
+```
 
 ### WebSocket Endpoints
 
 **🔄 Real-time Updates:**
-javascript
+```js
 const ws = new WebSocket('ws://localhost:8000/ws/dashboard');
 
 ws.onmessage = function(event) {
@@ -1130,13 +1138,14 @@ ws.onmessage = function(event) {
         updateDashboard(data.data);
     }
 };
+```
 
 
 **🗺️ Map Updates:**
-javascript
+```js
 const mapWs = new WebSocket('ws://localhost:8000/ws/map-updates');
 // Receives real-time incident and resource updates
-
+```
 
 ---
 
@@ -1145,8 +1154,9 @@ const mapWs = new WebSocket('ws://localhost:8000/ws/map-updates');
 ### Authentication & Authorization
 
 **🔐 JWT Implementation:**
-python
-# Login to get token
+
+Login to get token
+```
 response = requests.post('/token', data={
     'username': 'admin',
     'password': 'your_password'
@@ -1155,7 +1165,7 @@ token = response.json()['access_token']
 
 # Use token in requests
 headers = {'Authorization': f'Bearer {token}'}
-
+```
 
 **👥 Role-Based Access:**
 - **Public:** Emergency reporting, voice submission
@@ -1194,8 +1204,9 @@ headers = {'Authorization': f'Bearer {token}'}
 ### Performance Monitoring
 
 **📈 System Metrics:**
-python
-# Get system performance
+
+Get system performance
+```
 GET /api/performance-metrics
 
 {
@@ -1210,22 +1221,25 @@ GET /api/performance-metrics
     "5xx": 0.001
   }
 }
+```
 
 
 **🔍 Health Monitoring:**
-bash
-# Comprehensive health check
-curl http://localhost:8000/health
 
-# Check specific components
+Comprehensive health check
+```
+curl http://localhost:8000/health
+```
+Check specific components
+```
 curl http://localhost:8000/api/ai-system-status
 curl http://localhost:8000/api/database-health
-
+```
 
 ### Logging & Auditing
 
 **📝 Structured Logging:**
-json
+```js
 {
   "timestamp": "2024-01-15T10:30:00Z",
   "level": "INFO",
@@ -1236,7 +1250,7 @@ json
   "duration_ms": 1250,
   "urgency": "critical"
 }
-
+```
 
 **🔐 Security Audit Trail:**
 - All login attempts logged
@@ -1252,7 +1266,7 @@ json
 ### Theming & Branding
 
 **🎨 CSS Customization:**
-css
+```css
 /* static/css/custom.css */
 :root {
   --primary-color: #your-brand-color;
@@ -1263,23 +1277,24 @@ css
 .citizen-portal {
   --background: linear-gradient(135deg, var(--primary-color), #667eea);
 }
+```
 
 
 **🏢 Organization Branding:**
-html
+```html
 <!-- templates/base.html -->
 <nav class="navbar">
   <img src="/static/images/your-logo.png" alt="Your Organization">
   <h1>Your Emergency Response Center</h1>
 </nav>
-
+```
 
 ### Template Customization
 
 **📄 Custom Templates:**
 Create your own HTML templates in the templates/ directory:
 
-bash
+```
 templates/
 ├── custom_dashboard.html      # Your dashboard
 ├── organization_header.html   # Custom header
@@ -1288,7 +1303,7 @@ templates/
     ├── es/                    # Spanish templates
     ├── fr/                    # French templates
     └── zh/                    # Chinese templates
-
+```
 
 ### API Extensions
 
