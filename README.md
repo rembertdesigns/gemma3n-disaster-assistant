@@ -643,72 +643,84 @@ Before installation, ensure your system meets these requirements:
 
 ### 1️⃣ Clone & Setup
 
-bash
-# Clone the repository
+Clone the repository
+```
 git clone https://github.com/your-org/emergency-response-assistant.git
 cd emergency-response-assistant
+```
 
-# Create virtual environment
+Create virtual environment
+```
 python -m venv venv
+```
 
-# Activate virtual environment
-# On Windows:
+Activate virtual environment
+- On Windows:
+```
 venv\Scripts\activate
-# On macOS/Linux:
+```
+- On macOS/Linux:
+```
 source venv/bin/activate
-
-# Install dependencies
+```
+Install dependencies
+```
 pip install -r requirements.txt
-
+```
 
 ### 2️⃣ Environment Configuration
 
-bash
-# Copy environment template
+Copy environment template
+```
 cp .env.example .env
+```
+Edit configuration (optional - defaults work for development)
 
-# Edit configuration (optional - defaults work for development)
-# Environment variables in .env:
+Environment variables in .env:
+```
 SECRET_KEY=your-secret-key-here
 DATABASE_URL=sqlite:///data/emergency_response.db
 AI_MODEL_VARIANT=gemma-3n-4b
 DEBUG=true
 ENVIRONMENT=development
-
+```
 
 ### 3️⃣ Database Initialization
 
-bash
-# Create directories
+Create directories
+```
 mkdir -p data uploads outputs logs templates static
-
-# Initialize database (automatic on first run)
-python api.py
-# OR using uvicorn directly:
+```
+Initialize database (automatic on first run)
+```
+python3 api.py
+```
+OR using uvicorn directly:
+```
 uvicorn api:app --host 0.0.0.0 --port 8000 --reload
-
+```
 
 ### 4️⃣ Launch Application
 
-bash
-# Start the server
-python api.py
-
-# The system will automatically:
-# ✅ Create database tables
-# ✅ Initialize AI components  
-# ✅ Create default admin user (admin/admin)
-# ✅ Set up sample data
-# ✅ Start WebSocket services
-# ✅ Enable offline support
-
+Start the server
+```
+python3 api.py
+```
+The system will automatically:
+- ✅ Create database tables
+- ✅ Initialize AI components  
+- ✅ Create default admin user (admin/admin)
+- ✅ Set up sample data
+- ✅ Start WebSocket services
+- ✅ Enable offline support
 
 ### 5️⃣ Access the System
 
 **🌐 Main Interfaces:**
 - **Citizen Portal:** http://localhost:8000/
-- **Crisis Command Center:** http://localhost:8000/crisis-command-center
 - **Voice Emergency Reporter:** http://localhost:8000/voice-emergency-reporter (PUBLIC - NO LOGIN)
+- **Staff Triage Dashboard:** http://localhost:8000/staff-triage-command
+- **Crisis Command Center:** http://localhost:8000/crisis-command-center
 - **Admin Dashboard:** http://localhost:8000/admin
 - **API Documentation:** http://localhost:8000/api/docs
 - **System Health:** http://localhost:8000/health
@@ -726,31 +738,31 @@ python api.py
 
 #### **Tier 1: 👥 Citizen Engagement Layer**
 Public-facing interfaces for emergency reporting and community alerts:
-- home.html - Unified emergency dashboard
-- onboarding.html - 7-step interactive setup
-- submit_report.html - Multi-method emergency submission
-- voice-emergency-reporter.html - AI-powered voice analysis (PUBLIC ACCESS)
-- view-reports.html - Personal report tracking
-- predict.html - AI risk assessment
-- offline.html - Offline emergency reporting
+- `home.html` - Unified emergency dashboard
+- `onboarding.html` - 7-step interactive setup
+- `submit_report.html` - Multi-method emergency submission
+- `voice-emergency-reporter.html` - AI-powered voice analysis (PUBLIC ACCESS)
+- `view-reports.html` - Personal report tracking
+- `predict.html` - AI risk assessment
+- `offline.html` - Offline emergency reporting
 
 #### **Tier 2: 👩‍⚕️ Professional Response Layer**
 Medical and responder tools for AI-enhanced operations:
-- triage_form.html - AI-integrated patient intake
-- patient_tracker.html - Kanban-style patient workflow
-- staff_triage_command.html - Medical command center
-- patient_list.html - Comprehensive patient management
-- generate.html - AI analysis tools
-- export_pdf.html - Medical report generation
+- `triage_form.html` - AI-integrated patient intake
+- `patient_tracker.html` - Kanban-style patient workflow
+- `staff_triage_command.html` - Medical command center
+- `patient_list.html` - Comprehensive patient management
+- `generate.html` - AI analysis tools
+- `export_pdf.html` - Medical report generation
 
 #### **Tier 3: 🛠️ Command & Control Layer**
 Executive interfaces for incident command and analytics:
-- crisis-command-center.html - Main operations center
-- analytics_dashboard.html - Intelligence dashboard
-- context-intelligence-dashboard.html - 128K context analysis
-- predictive-analytics-dashboard.html - AI forecasting
-- real-time-resource-optimizer.html - Resource management
-- report_archive.html - Historical data management
+- `crisis-command-center.htm`l - Main operations center
+- `analytics_dashboard.html` - Intelligence dashboard
+- `context-intelligence-dashboard.html` - 128K context analysis
+- `predictive-analytics-dashboard.html` - AI forecasting
+- `real-time-resource-optimizer.html` - Resource management
+- `report_archive.html` - Historical data management
 
 ---
 
