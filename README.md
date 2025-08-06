@@ -289,6 +289,8 @@ This citizen-facing ecosystem transforms emergency response from a **reactive pr
 ---
 
 ### 🏥 **Advanced Medical Triage Command Center**
+![screencapture-localhost-8000-staff-triage-command-2025-08-06-11_41_33](https://github.com/user-attachments/assets/7ee9ea47-fb0f-48d5-b7cf-be0583564c36)
+
 
 The **👩‍⚕️ STAFF / FIELD RESPONDERS (Ops + Triage Team)** interface represents the nerve center of AI-powered emergency medical response, providing comprehensive tools for medical professionals managing everything from single patient incidents to mass casualty events.
 
