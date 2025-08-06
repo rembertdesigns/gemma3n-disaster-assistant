@@ -156,6 +156,8 @@ Each tier integrates seamlessly, forming a unified ecosystem where reports flow 
 ---
 
 ### 📱 Citizen Interface Excellence
+<img width="3584" height="8884" alt="screencapture-localhost-8000-2025-08-06-11_18_02" src="https://github.com/user-attachments/assets/b6bbb8f0-ae83-4b23-9521-022c6463b028" />
+
 
 The **🧍‍♂️ INDIVIDUAL / PUBLIC USERS (Citizen UI)** represents the front-line of emergency response technology, designed to empower citizens with AI-powered tools during critical situations. These interconnected interfaces work seamlessly together to provide comprehensive emergency reporting and response capabilities.
 
