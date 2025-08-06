@@ -454,6 +454,8 @@ This comprehensive medical triage ecosystem transforms emergency response from *
 ---
 
 ### 🚨 **Crisis Command & Emergency Operations Center**
+![screencapture-localhost-8000-crisis-command-center-2025-08-06-12_04_43](https://github.com/user-attachments/assets/d9e39506-dc13-4572-baaf-3783798516c1)
+
 
 The **🛠️ ADMIN + ANALYTICS (HQ & Command Use)** interface represents the apex of emergency response coordination—a sophisticated command ecosystem where AI-powered intelligence meets real-world crisis management. This mission-critical infrastructure supports everything from routine emergency response to large-scale disaster coordination across multiple agencies and jurisdictions.
 
