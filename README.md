@@ -785,73 +785,77 @@ Executive interfaces for incident command and analytics:
 
 ### Dependencies Installation
 
-bash
-# Core dependencies
-pip install fastapi[all]==0.104.1
-pip install uvicorn[standard]==0.23.2
-pip install sqlalchemy==2.0.21
-pip install pydantic==2.4.2
-pip install python-multipart==0.0.6
-pip install python-jwt==4.0.0
-pip install bcrypt==4.0.1
-pip install jinja2==3.1.2
-pip install psutil==5.9.6
+Core dependencies
+- `pip install fastapi[all]==0.104.1`
+- `pip install uvicorn[standard]==0.23.2`
+- `pip install sqlalchemy==2.0.21`
+- `pip install pydantic==2.4.2`
+- `pip install python-multipart==0.0.6`
+- `pip install python-jwt==4.0.0`
+- `pip install bcrypt==4.0.1`
+- `pip install jinja2==3.1.2`
+- `pip install psutil==5.9.6`
 
-# AI & ML dependencies
-pip install torch>=2.0.0
-pip install transformers>=4.33.0
-pip install numpy>=1.24.0
-pip install scikit-learn>=1.3.0
+AI & ML dependencies
+- `pip install torch>=2.0.0`
+- `pip install transformers>=4.33.0`
+- `pip install numpy>=1.24.0`
+- `pip install scikit-learn>=1.3.0`
 
-# Optional: PDF generation
-pip install weasyprint==60.2
-pip install reportlab==4.0.4
+Optional: PDF generation
+- `pip install weasyprint==60.2`
+- `pip install reportlab==4.0.4`
 
-# Optional: Enhanced voice processing
-pip install speechrecognition>=3.10.0
-pip install pydub>=0.25.1
-
+Optional: Enhanced voice processing
+- `pip install speechrecognition>=3.10.0`
+- `pip install pydub>=0.25.1`
 
 ### Docker Installation (Alternative)
 
-bash
-# Build container
+Build container
+```
 docker build -t emergency-response .
-
-# Run with persistent data
+```
+Run with persistent data
+```
 docker run -d \
   --name emergency-app \
   -p 8000:8000 \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/uploads:/app/uploads \
   emergency-response
-
-# Access logs
+```
+Access logs
+```
 docker logs -f emergency-app
-
+```
 
 ### Production Deployment
 
-bash
-# Install production dependencies
+Install production dependencies
+```
 pip install gunicorn==21.2.0
 pip install redis>=4.6.0  # For caching
 pip install postgresql-adapter>=3.1.0  # For PostgreSQL
+```
 
-# Production environment
+Production environment
+```
 export ENVIRONMENT=production
 export DEBUG=false
 export DATABASE_URL=postgresql://user:pass@localhost/emergency_db
 export REDIS_URL=redis://localhost:6379
+```
 
-# Start with Gunicorn
+Start with Gunicorn
+```
 gunicorn api:app \
   --workers 4 \
   --worker-class uvicorn.workers.UvicornWorker \
   --bind 0.0.0.0:8000 \
   --access-logfile - \
   --error-logfile -
-
+```
 
 ---
 
