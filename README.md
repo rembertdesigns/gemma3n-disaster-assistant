@@ -9,8 +9,6 @@ A **comprehensive, mission-critical AI-powered emergency response ecosystem** en
 ---
 
 ## 🏗️ **System Architecture Overview**
-
-
    
 **🔄 End-to-End Emergency Workflow:**  
 `Crisis Detection` → `AI Triage` → `Resource Dispatch` → `Real-time Coordination` → `Outcome Tracking` → `System Learning`
